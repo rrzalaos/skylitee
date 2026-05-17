@@ -78,25 +78,25 @@ export default function CommandCenterPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-[#181816]">Command Center</h2>
+            <h2 className="text-lg font-semibold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
             {loading ? (
-              <span className="text-[14px] text-[#9e9e9a] flex items-center gap-1">
+              <span className="text-[13px] text-[#A1A1AA] flex items-center gap-1">
                 <RefreshCw size={11} className="animate-spin" /> Connecting...
               </span>
             ) : dash ? (
-              <span className="flex items-center gap-1 text-[14px] text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" /> Live — {shopName}
+              <span className="flex items-center gap-1 text-[13px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2 py-0.5 rounded-full font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]" /> Live — {shopName}
               </span>
             ) : (
-              <span className="text-[14px] text-[#e89820] bg-[#faecd7] px-2 py-0.5 rounded-full">Not connected</span>
+              <span className="text-[13px] text-[#92400E] bg-[#FFFBEB] px-2 py-0.5 rounded-full font-medium">Not connected</span>
             )}
           </div>
-          <p className="text-[15px] text-[#686864] mt-0.5">
+          <p className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
             {range.label} · Shopify live data
           </p>
         </div>
         {projected > 0 && (
-          <div className="text-[15px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <div className="text-[13px] font-semibold text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-3 py-1.5 rounded-xl flex items-center gap-1.5">
             <TrendingUp size={13} /> ₹{projected.toLocaleString("en-IN")} projected this month
           </div>
         )}
@@ -106,8 +106,8 @@ export default function CommandCenterPage() {
         <div className="text-[15px] text-[#686864] py-16 text-center">Loading live store data...</div>
       ) : !dash ? (
         <div className="text-center py-16">
-          <p className="text-[16px] text-[#686864] mb-3">Shopify not connected</p>
-          <Link href="/dashboard/connections" className="px-4 py-2 bg-[#17a773] text-white rounded-lg text-[15px] font-medium">Connect store →</Link>
+          <p className="text-[14px] text-[#71717A] dark:text-[#A1A1AA] mb-3">Shopify not connected</p>
+          <Link href="/dashboard/connections" className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold hover:bg-[#EA580C] transition-colors">Connect store →</Link>
         </div>
       ) : (
         <>
@@ -132,9 +132,9 @@ export default function CommandCenterPage() {
                       formatter={(v) => [formatINR(Number(v)), "Revenue"]}
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e5e5" }}
                     />
-                    <Bar dataKey="revenue" radius={[3, 3, 0, 0]}>
+                    <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                       {dash.dailyRevenue.map((entry, i) => (
-                        <Cell key={i} fill={entry.revenue > 0 ? "#17a773" : "#e5e5e5"} />
+                        <Cell key={i} fill={entry.revenue > 0 ? "#F97316" : "#E5E5E5"} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -144,25 +144,25 @@ export default function CommandCenterPage() {
 
             <Card>
               <CardHeader title="Period forecast" />
-              <div className="bg-[#f7f7f5] rounded-xl p-3 mb-2.5">
-                <div className="text-[14px] text-[#686864] mb-1">At current pace ({days} days)</div>
-                <div className="text-2xl font-bold text-[#0d6b4f]">{formatINR(projected)}</div>
-                <div className="text-[15px] text-[#686864] mt-1">
+              <div className="bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl p-3 mb-2.5 border border-[#FED7AA] dark:border-[#7C2D12]">
+                <div className="text-[12px] text-[#EA580C] dark:text-[#FB923C] mb-1 font-medium">At current pace ({days} days)</div>
+                <div className="text-2xl font-bold text-[#EA580C] dark:text-[#FB923C]">{formatINR(projected)}</div>
+                <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1">
                   {formatINR(dash.kpis.grossSales)} earned so far
                 </div>
               </div>
-              <div className="space-y-2 text-[15px]">
+              <div className="space-y-2 text-[13px]">
                 <div className="flex justify-between">
-                  <span className="text-[#686864]">Prepaid orders</span>
-                  <span className="font-semibold text-[#0d6b4f]">{dash.kpis.prepaidOrders}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Prepaid orders</span>
+                  <span className="font-semibold text-[#F97316]">{dash.kpis.prepaidOrders}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#686864]">COD orders</span>
-                  <span className={`font-semibold ${codPct > 50 ? "text-[#d94040]" : "text-[#e89820]"}`}>{dash.kpis.codOrders} ({codPct}%)</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">COD orders</span>
+                  <span className={`font-semibold ${codPct > 50 ? "text-[#EF4444]" : "text-[#EAB308]"}`}>{dash.kpis.codOrders} ({codPct}%)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#686864]">Returning customers</span>
-                  <span className="font-semibold">{dash.kpis.returningCustomers}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Returning customers</span>
+                  <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{dash.kpis.returningCustomers}</span>
                 </div>
               </div>
             </Card>
@@ -189,45 +189,45 @@ export default function CommandCenterPage() {
             <Card>
               <CardHeader title="Alerts & signals" right={
                 allAlerts.length > 0
-                  ? <span className="text-[14px] text-[#d94040] font-semibold">{allAlerts.length} action needed</span>
-                  : <span className="text-[14px] text-[#0d6b4f] font-semibold">All clear</span>
+                  ? <span className="text-[12px] text-[#EF4444] font-semibold">{allAlerts.length} action needed</span>
+                  : <span className="text-[12px] text-[#22C55E] font-semibold">All clear</span>
               } />
 
               {(anomalies?.critical ?? []).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06]">
-                  <AlertCircle size={14} className="text-[#d94040] shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <AlertCircle size={13} className="text-[#EF4444] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[15px] font-semibold text-[#181816]">{a.title}</div>
-                    <div className="text-[14px] text-[#686864] mt-0.5">{a.desc}</div>
+                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
                   </div>
                 </div>
               ))}
 
               {(anomalies?.warnings ?? []).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06]">
-                  <AlertTriangle size={14} className="text-[#e89820] shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <AlertTriangle size={13} className="text-[#EAB308] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[15px] font-semibold text-[#181816]">{a.title}</div>
-                    <div className="text-[14px] text-[#686864] mt-0.5">{a.desc}</div>
+                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
                   </div>
                 </div>
               ))}
 
               {(anomalies?.positive ?? []).slice(0, 2).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] last:border-0">
-                  <CheckCircle2 size={14} className="text-[#17a773] shrink-0 mt-0.5" />
+                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
+                  <CheckCircle2 size={13} className="text-[#22C55E] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-[15px] font-semibold text-[#064d38]">{a.title}</div>
-                    <div className="text-[14px] text-[#686864] mt-0.5">{a.desc}</div>
+                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
                   </div>
                 </div>
               ))}
 
               {allAlerts.length === 0 && (anomalies?.positive ?? []).length === 0 && (
-                <div className="text-[15px] text-[#686864] py-4 text-center">No anomalies detected</div>
+                <div className="text-[13px] text-[#A1A1AA] py-4 text-center">No anomalies detected</div>
               )}
 
-              <Link href="/dashboard/anomaly" className="block mt-2 text-[15px] font-semibold text-[#0a3d7a]">View all alerts →</Link>
+              <Link href="/dashboard/anomaly" className="block mt-2 text-[13px] font-semibold text-[#F97316]">View all alerts →</Link>
             </Card>
           </div>
         </>

@@ -14,19 +14,19 @@ interface KPICardProps {
 export function KPICard({ label, value, change, changeLabel, sub, icon }: KPICardProps) {
   const isUp = change !== undefined && change >= 0;
   return (
-    <div className="bg-white border border-black/[0.09] rounded-xl p-3.5 hover:shadow-sm transition-shadow">
-      <div className="text-[15px] text-[#686864] mb-1.5 flex items-center gap-1 font-medium">
+    <div className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2 uppercase tracking-wider flex items-center gap-1.5">
         {icon && <span>{icon}</span>}
         {label}
       </div>
-      <div className="text-2xl font-semibold text-[#181816] leading-tight">{value}</div>
+      <div className="text-[26px] font-bold text-[#18181B] dark:text-[#F4F4F5] leading-none tracking-tight">{value}</div>
       {change !== undefined && (
-        <div className={cn("text-[15px] mt-1 font-semibold flex items-center gap-1", isUp ? "text-[#0d6b4f]" : "text-[#d94040]")}>
-          {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-          {changeLabel || (isUp ? `+${change}% vs last mo` : `${change}% vs last mo`)}
+        <div className={cn("text-[12px] mt-2 font-semibold flex items-center gap-1", isUp ? "text-[#F97316]" : "text-[#EF4444]")}>
+          {isUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {changeLabel || (isUp ? `+${change}%` : `${change}%`)}
         </div>
       )}
-      {sub && <div className="text-[14px] text-[#9e9e9a] mt-0.5">{sub}</div>}
+      {sub && <div className="text-[12px] text-[#A1A1AA] dark:text-[#71717A] mt-1">{sub}</div>}
     </div>
   );
 }

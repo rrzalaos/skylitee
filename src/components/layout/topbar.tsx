@@ -1,8 +1,9 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { RefreshCw, Bell, ChevronDown, Calendar } from "lucide-react";
+import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useDateRange, DatePreset } from "@/lib/date-range-context";
+import { useTheme } from "@/lib/theme-context";
 
 const titles: Record<string, string> = {
   "/dashboard": "Command Center",
@@ -51,6 +52,7 @@ const compareOptions = [
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const title = titles[pathname] || "Skylitee";
   const [toast, setToast] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -120,14 +122,14 @@ export function Topbar() {
 
   return (
     <>
-      <header className="bg-white border-b border-black/[0.09] px-4 h-13 flex items-center gap-2 sticky top-0 z-20">
-        <h1 className="text-[14px] font-semibold text-[#181816] flex-1">{title}</h1>
+      <header className="bg-white dark:bg-[#111111] border-b border-black/[0.06] dark:border-white/[0.06] px-4 h-12 flex items-center gap-2 sticky top-0 z-20">
+        <h1 className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] flex-1 uppercase tracking-wider">{title}</h1>
 
         {/* Date picker */}
         <div className="relative" ref={datePickerRef}>
           <button
             onClick={() => setShowDatePicker(v => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-black/[0.09] rounded-lg text-[15px] text-[#686864] bg-[#f7f7f5] hover:bg-[#f1f0ed] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-black/[0.08] dark:border-white/[0.08] rounded-lg text-[13px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] hover:bg-[#EBEBEB] dark:hover:bg-[#262626] transition-colors"
           >
             <Calendar size={11} />
             {range.label}
@@ -135,38 +137,40 @@ export function Topbar() {
           </button>
 
           {showDatePicker && (
-            <div className="absolute top-full right-0 mt-1 bg-white border border-black/[0.09] rounded-xl shadow-lg z-50 py-1.5 min-w-[200px]">
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5 min-w-[200px]">
               {presets.map(p => (
                 <button
                   key={p.id}
                   onClick={() => handlePreset(p.id)}
-                  className={`w-full text-left px-3.5 py-2 text-[15px] hover:bg-[#f7f7f5] transition-colors ${
-                    range.preset === p.id ? "font-semibold text-[#0d6b4f] bg-[#f0faf5]" : "text-[#181816]"
+                  className={`w-full text-left px-3.5 py-2 text-[13px] transition-colors ${
+                    range.preset === p.id
+                      ? "font-semibold text-[#EA580C] bg-[#FFF7ED] dark:bg-[#2A1A0E] dark:text-[#FB923C]"
+                      : "text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626]"
                   }`}
                 >
                   {p.label}
                 </button>
               ))}
               {range.preset === "custom" && (
-                <div className="px-3.5 pb-2.5 pt-1.5 border-t border-black/[0.06] space-y-1.5">
-                  <div className="text-[13px] text-[#686864] font-medium pt-1">From</div>
+                <div className="px-3.5 pb-2.5 pt-1.5 border-t border-black/[0.06] dark:border-white/[0.06] space-y-1.5">
+                  <div className="text-[12px] text-[#71717A] font-semibold pt-1">From</div>
                   <input
                     type="date"
                     value={customFrom}
                     onChange={e => setCustomFrom(e.target.value)}
-                    className="w-full text-[14px] border border-black/[0.12] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#17a773]"
+                    className="w-full text-[13px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#262626] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#F97316]"
                   />
-                  <div className="text-[13px] text-[#686864] font-medium">To</div>
+                  <div className="text-[12px] text-[#71717A] font-semibold">To</div>
                   <input
                     type="date"
                     value={customTo}
                     onChange={e => setCustomTo(e.target.value)}
-                    className="w-full text-[14px] border border-black/[0.12] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#17a773]"
+                    className="w-full text-[13px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#262626] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#F97316]"
                   />
                   <button
                     onClick={applyCustom}
                     disabled={!customFrom || !customTo}
-                    className="w-full py-1.5 bg-[#17a773] text-white rounded-lg text-[14px] font-semibold disabled:opacity-50 hover:bg-[#0d6b4f] transition-colors"
+                    className="w-full py-1.5 bg-[#F97316] text-white rounded-lg text-[13px] font-semibold disabled:opacity-40 hover:bg-[#EA580C] transition-colors"
                   >
                     Apply
                   </button>
@@ -180,7 +184,7 @@ export function Topbar() {
         <select
           value={compareWith}
           onChange={e => setCompareWith(e.target.value)}
-          className="text-[15px] px-2.5 py-1.5 border border-black/[0.09] rounded-lg bg-[#f7f7f5] text-[#181816]"
+          className="text-[13px] px-2.5 py-1.5 border border-black/[0.08] dark:border-white/[0.08] rounded-lg bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]"
         >
           {compareOptions.map(o => (
             <option key={o.id} value={o.id}>{o.label}</option>
@@ -193,39 +197,48 @@ export function Topbar() {
             key={p.label}
             onClick={() => !p.connected && router.push("/dashboard/connections")}
             title={p.connected ? `${p.label} connected` : `${p.label} not connected — click to connect`}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[14px] border transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
               p.connected
-                ? "bg-[#f7f7f5] border-black/[0.09] text-[#0d6b4f]"
-                : "bg-[#fce8e8] border-[#f5a0a0] text-[#6e1c1c] cursor-pointer hover:bg-[#fbd5d5]"
+                ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
+                : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-[#FCA5A5] dark:border-[#991B1B] text-[#991B1B] dark:text-[#FCA5A5] cursor-pointer hover:bg-[#FEE2E2] dark:hover:bg-[#3D0F0F]"
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${p.connected ? "bg-[#17a773]" : "bg-[#d94040]"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${p.connected ? "bg-[#22C55E]" : "bg-[#EF4444]"}`} />
             {p.label}
           </div>
         ))}
 
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors"
+        >
+          {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+
         {/* Refresh */}
         <button
           onClick={() => { showToast("Refreshing data..."); window.location.reload(); }}
-          className="w-8 h-8 rounded-lg border border-black/[0.09] flex items-center justify-center text-[#686864] hover:bg-[#f7f7f5] transition-colors"
+          className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors"
         >
           <RefreshCw size={14} />
         </button>
 
         {/* Bell */}
-        <button className="w-8 h-8 rounded-lg border border-black/[0.09] flex items-center justify-center text-[#686864] hover:bg-[#f7f7f5] transition-colors relative">
+        <button className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors relative">
           <Bell size={14} />
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#d94040] rounded-full" />
+          <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#EF4444] rounded-full" />
         </button>
 
         {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-[#9FE1CB] flex items-center justify-center text-[14px] font-semibold text-[#064d38] cursor-pointer">
+        <div className="w-8 h-8 rounded-full bg-[#F97316] flex items-center justify-center text-[13px] font-bold text-white cursor-pointer">
           S
         </div>
       </header>
 
       {toast && (
-        <div className="fixed bottom-4 right-4 bg-[#18181e] text-white px-3.5 py-2 rounded-lg text-[15px] font-medium z-50 flex items-center gap-2 shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] px-3.5 py-2 rounded-xl text-[13px] font-semibold z-50 flex items-center gap-2 shadow-xl">
           ✓ {toast}
         </div>
       )}

@@ -20,7 +20,7 @@ const navSections = [
       { href: "/dashboard", label: "Command Center", icon: LayoutDashboard, badge: null, dot: null },
       { href: "/dashboard/anomaly", label: "Anomaly Feed", icon: Radar, badge: { text: "5", color: "red" }, dot: null },
       { href: "/dashboard/insights", label: "AI Insights", icon: Brain, badge: { text: "11", color: "amber" }, dot: null },
-      { href: "/dashboard/chat", label: "AI Assistant", icon: MessageSquareText, badge: { text: "New", color: "green" }, dot: null },
+      { href: "/dashboard/chat", label: "AI Assistant", icon: MessageSquareText, badge: { text: "New", color: "orange" }, dot: null },
     ],
   },
   {
@@ -73,16 +73,17 @@ const navSections = [
   },
 ];
 
-const badgeStyles = {
-  red: "bg-[#d94040] text-white",
-  amber: "bg-[#faecd7] text-[#5c3608]",
-  green: "bg-[#e0f5ee] text-[#064d38]",
+const badgeStyles: Record<string, string> = {
+  red: "bg-[#FEF2F2] text-[#991B1B] dark:bg-[#2D0A0A] dark:text-[#FCA5A5]",
+  amber: "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]",
+  orange: "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]",
+  green: "bg-[#F0FDF4] text-[#166534] dark:bg-[#052E16] dark:text-[#4ADE80]",
 };
 
 const dotStyles = {
-  on: "bg-[#17a773]",
-  off: "bg-[#d94040]",
-  warn: "bg-[#e89820]",
+  on: "bg-[#22C55E]",
+  off: "bg-[#EF4444]",
+  warn: "bg-[#EAB308]",
 };
 
 export function Sidebar() {
@@ -122,26 +123,29 @@ export function Sidebar() {
   const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0) + (metaConnected ? 1 : 0);
 
   return (
-    <aside className="w-[218px] min-w-[218px] bg-white border-r border-black/[0.09] flex flex-col shrink-0 h-screen sticky top-0">
-      <div className="px-3 py-3.5 border-b border-black/[0.09] flex items-center gap-2.5">
-        <div className="w-7 h-7 bg-[#17a773] rounded-lg flex items-center justify-center text-white">
+    <aside className="w-[218px] min-w-[218px] bg-white dark:bg-[#111111] border-r border-black/[0.06] dark:border-white/[0.06] flex flex-col shrink-0 h-screen sticky top-0">
+      {/* Logo */}
+      <div className="px-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2.5">
+        <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center text-white">
           <Activity size={14} />
         </div>
         <div>
-          <div className="text-[16px] font-semibold text-[#181816]">Skylitee</div>
-          <div className="text-[13px] text-[#9e9e9a] tracking-wide">Analytics Platform</div>
+          <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Skylitee</div>
+          <div className="text-[11px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
         </div>
       </div>
 
-      <div className="mx-2 mt-2.5 bg-[#f7f7f5] rounded-lg px-2.5 py-1.5 flex items-center justify-between border border-black/[0.09] cursor-pointer hover:bg-[#f1f0ed] transition-colors">
-        <span className="text-[15px] font-semibold text-[#181816]">{shopName}</span>
-        <ChevronDown size={10} className="text-[#9e9e9a]" />
+      {/* Store switcher */}
+      <div className="mx-2 mt-2.5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-black/[0.06] dark:border-white/[0.06] cursor-pointer hover:bg-[#EBEBEB] dark:hover:bg-[#262626] transition-colors">
+        <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
+        <ChevronDown size={10} className="text-[#A1A1AA] shrink-0" />
       </div>
 
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
         {navSections.map((section) => (
           <div key={section.label}>
-            <div className="text-[13px] font-semibold text-[#9e9e9a] px-3 pt-2 pb-1 uppercase tracking-widest">
+            <div className="text-[10px] font-bold text-[#A1A1AA] dark:text-[#525252] px-3 pt-3 pb-1 uppercase tracking-[0.1em]">
               {section.label}
             </div>
             {section.items.map((item) => {
@@ -153,19 +157,19 @@ export function Sidebar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-[15px] transition-all relative cursor-pointer",
+                    "flex items-center gap-2 px-3 py-1.5 text-[13px] transition-all relative cursor-pointer mx-1 rounded-lg",
                     isActive
-                      ? "bg-[#e0f5ee] text-[#0d6b4f] font-medium"
-                      : "text-[#686864] hover:bg-[#f7f7f5] hover:text-[#181816]"
+                      ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] font-semibold"
+                      : "text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
                   )}
                 >
                   {isActive && (
-                    <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#17a773] rounded-r" />
+                    <span className="absolute left-0 top-1 bottom-1 w-[3px] bg-[#F97316] rounded-r-full" />
                   )}
                   <Icon size={13} className="shrink-0" />
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.badge && (
-                    <span className={cn("text-[13px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color as keyof typeof badgeStyles])}>
+                    <span className={cn("text-[11px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color])}>
                       {item.badge.text}
                     </span>
                   )}
@@ -179,10 +183,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-3 py-2.5 border-t border-black/[0.09] text-[14px] text-[#9e9e9a]">
-        <div>Shopify live sync</div>
-        <div className="flex items-center gap-1 mt-0.5 text-[#0d6b4f] font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" />
+      {/* Footer */}
+      <div className="px-3 py-2.5 border-t border-black/[0.06] dark:border-white/[0.06] text-[12px] text-[#A1A1AA]">
+        <div className="dark:text-[#71717A]">Shopify live sync</div>
+        <div className="flex items-center gap-1 mt-0.5 text-[#EA580C] dark:text-[#FB923C] font-semibold">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]" />
           {liveCount} of 5 platforms live
         </div>
       </div>
