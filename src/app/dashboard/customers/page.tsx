@@ -1,113 +1,126 @@
 "use client";
+import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
-import { Badge } from "@/components/ui/badge";
-import { customerKpis, rfmSegments } from "@/lib/mock-data";
-import { formatINR, formatNumber } from "@/lib/utils";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { BarRow } from "@/components/ui/bar-row";
+import { formatINR } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
-const segmentColors: Record<string, string> = {
-  green: "text-[#0d6b4f]", blue: "text-[#0a3d7a]", teal: "text-[#0a4a50]",
-  amber: "text-[#5c3608]", red: "text-[#6e1c1c]", purple: "text-[#32297a]",
-};
-const segmentBorderColors: Record<string, string> = {
-  green: "border-[#e0f5ee]", blue: "border-[#e4eef9]", teal: "border-[#e0f3f5]",
-  amber: "border-[#faecd7]", red: "border-[#fce8e8]", purple: "border-[#eceafb]",
-};
-const badgeVariants: Record<string, "green" | "blue" | "teal" | "amber" | "red" | "purple"> = {
-  green: "green", blue: "blue", teal: "teal", amber: "amber", red: "red", purple: "purple",
-};
+interface CustomerData {
+  kpis: {
+    totalCustomers: number;
+    repeat: number;
+    oneTime: number;
+    avgLTV: number;
+    newThisMonth: number;
+  };
+  topCities: { city: string; count: number; pct: number }[];
+}
 
 export default function CustomersPage() {
+  const [data, setData] = useState<CustomerData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/shopify/customers")
+      .then(r => r.json())
+      .then(d => { if (d.kpis) setData(d); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const repeatRate = data ? Math.round((data.kpis.repeat / Math.max(data.kpis.totalCustomers, 1)) * 100) : 0;
+  const maxCity = data ? Math.max(...data.topCities.map(c => c.count), 1) : 1;
+
+  const segments = data ? [
+    { name: "Repeat buyers", icon: "🏆", count: data.kpis.repeat, color: "text-[#0d6b4f]", border: "border-[#e0f5ee]", desc: "Ordered more than once" },
+    { name: "One-time", icon: "🛍️", count: data.kpis.oneTime, color: "text-[#5c3608]", border: "border-[#faecd7]", desc: "Only one order so far" },
+    { name: "New this month", icon: "🆕", count: data.kpis.newThisMonth, color: "text-[#0a3d7a]", border: "border-[#e4eef9]", desc: "Joined this month" },
+  ] : [];
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Customer Intelligence</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">RFM segmentation · LTV prediction · behaviour analysis</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">Real customer data from Shopify</p>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-            <FileSpreadsheet size={12} /> CSV
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
-            <FileText size={12} /> PDF
-          </button>
-        </div>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
+          <FileSpreadsheet size={12} /> CSV
+        </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-3">
-        <KPICard label="Total Customers" value={formatNumber(customerKpis.total)} change={customerKpis.totalChange} />
-        <KPICard label="Avg LTV" value={formatINR(customerKpis.avgLtv)} sub="Based on 2× repeat purchase" />
-        <KPICard label="Repeat Rate" value={`${customerKpis.repeatRate}%`} changeLabel="Below 25% benchmark" change={-1} />
-        <KPICard label="Champions LTV" value={formatINR(customerKpis.championsLtv)} sub="Top 20% · 4.1× avg" />
-      </div>
-
-      {/* RFM Segments */}
-      <Card className="mb-2">
-        <CardHeader title="RFM Customer Segmentation" right="AI-powered · 6,820 customers" />
-        <div className="grid grid-cols-6 gap-2 mt-1">
-          {rfmSegments.map((seg) => (
-            <div key={seg.name} className={`border rounded-xl p-3 text-center cursor-default hover:shadow-sm transition-all ${segmentBorderColors[seg.color]}`}>
-              <div className="text-2xl mb-1.5">{seg.icon}</div>
-              <div className="text-[11px] font-semibold text-[#181816]">{seg.name}</div>
-              <div className={`text-lg font-semibold mt-0.5 ${segmentColors[seg.color]}`}>{formatNumber(seg.count)}</div>
-              <div className="text-[10px] text-[#686864] mt-1 leading-snug">
-                {seg.name === "Champions" && "Bought recently, often, and spent the most"}
-                {seg.name === "Loyal" && "Regular buyers with high frequency"}
-                {seg.name === "Potential" && "Recent buyers who could become loyal"}
-                {seg.name === "At Risk" && "Used to buy often but haven't lately"}
-                {seg.name === "Dormant" && "Haven't purchased in 90+ days"}
-                {seg.name === "New" && "First purchase in last 30 days"}
-              </div>
-              {seg.ltv && (
-                <div className="mt-1.5">
-                  <Badge variant={badgeVariants[seg.color]}>LTV {formatINR(seg.ltv)}</Badge>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Card>
-          <CardHeader title="AI actions by segment" />
-          <InsightCard title="🏆 Champions (412): Give VIP early access" body="Send WhatsApp message: 'You're one of our top customers — here's a 72-hour early preview of our new drop.' Cost: ₹0. Expected revenue: ₹18–25K." />
-          <InsightCard type="info" title="⚠️ At Risk (680): Win-back campaign now" body="Email with personalised subject: 'We miss you, [Name]' + 15% discount valid 7 days. At 12% reactivation rate = 82 orders × ₹1,091 = ₹89,462 recovery." />
-          <InsightCard type="warning" title="😴 Dormant (920): Last chance offer" body="SMS campaign: 'Your exclusive offer expires in 24 hours.' 6% reactivation expected = 55 orders. After this, remove from ad audiences to reduce wasted spend." />
-          <InsightCard type="purple" title="🆕 New (2,734): 2nd purchase trigger" body="Email Day 7 post-purchase: 'What to pair with your [product]' with complementary product suggestion. 2nd purchase rate increases from 18% → 31% with this nudge." />
-        </Card>
-
-        <Card>
-          <CardHeader title="LTV predictor by segment" />
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-collapse">
-              <thead>
-                <tr className="border-b border-black/[0.09]">
-                  {["Segment", "Customers", "Avg LTV", "12-mo potential", "Priority"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rfmSegments.filter(s => s.ltv).map((seg, i) => (
-                  <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
-                    <td className="py-2 px-2">{seg.name}</td>
-                    <td className="py-2 px-2">{formatNumber(seg.count)}</td>
-                    <td className="py-2 px-2">{formatINR(seg.ltv!)}</td>
-                    <td className="py-2 px-2">{seg.potential ? formatINR(seg.potential) : "—"}</td>
-                    <td className="py-2 px-2">
-                      <Badge variant={badgeVariants[seg.color]}>{seg.action}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {loading ? (
+        <div className="text-[12px] text-[#686864] py-8 text-center">Loading real customer data...</div>
+      ) : !data ? (
+        <div className="text-[12px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <KPICard label="Total Customers" value={data.kpis.totalCustomers.toLocaleString()} />
+            <KPICard label="Avg LTV" value={formatINR(data.kpis.avgLTV)} sub="Revenue per customer" />
+            <KPICard
+              label="Repeat Rate"
+              value={`${repeatRate}%`}
+              change={repeatRate >= 25 ? 1 : -1}
+              changeLabel={repeatRate >= 25 ? "Above 25% benchmark" : "Below 25% benchmark"}
+            />
+            <KPICard label="New This Month" value={data.kpis.newThisMonth.toString()} sub="New customers acquired" />
           </div>
-        </Card>
-      </div>
+
+          <Card className="mb-2">
+            <CardHeader title="Customer Segments" right={`${data.kpis.totalCustomers.toLocaleString()} total customers`} />
+            <div className="grid grid-cols-3 gap-3 mt-1">
+              {segments.map(seg => (
+                <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
+                  <div className="text-2xl mb-1.5">{seg.icon}</div>
+                  <div className="text-[11px] font-semibold text-[#181816]">{seg.name}</div>
+                  <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
+                  <div className="text-[10px] text-[#686864] mt-1">{seg.desc}</div>
+                  <div className={`text-[10px] font-semibold mt-1 ${seg.color}`}>
+                    {Math.round((seg.count / Math.max(data.kpis.totalCustomers, 1)) * 100)}% of total
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Card>
+              <CardHeader title="AI actions" />
+              {data.kpis.repeat > 0 && (
+                <InsightCard title={`${data.kpis.repeat} repeat buyers — reward them`} body="Send a WhatsApp or email with early access to new drops. Repeat buyers spend 3× more on average." />
+              )}
+              {data.kpis.oneTime > 0 && (
+                <InsightCard type="info" title={`${data.kpis.oneTime} one-time buyers — trigger 2nd purchase`} body="Email Day 7 post-purchase with complementary product suggestion. 2nd purchase rate increases from ~18% → 31% with this nudge." />
+              )}
+              {data.kpis.newThisMonth > 0 && (
+                <InsightCard type="purple" title={`${data.kpis.newThisMonth} new customers this month`} body="Welcome flow: send a personalised thank-you with brand story + product care tips. Sets the tone for long-term loyalty." />
+              )}
+              {repeatRate < 25 && (
+                <InsightCard type="warning" title={`Repeat rate ${repeatRate}% — below 25% benchmark`} body="Focus on post-purchase flows: 7-day follow-up email, loyalty points, or a small discount on the next order." />
+              )}
+            </Card>
+
+            <Card>
+              <CardHeader title="Top cities by customers" />
+              {data.topCities.length === 0 ? (
+                <div className="text-[12px] text-[#686864] py-4 text-center">No location data available</div>
+              ) : (
+                data.topCities.map((c, i) => (
+                  <BarRow
+                    key={i}
+                    label={c.city}
+                    pct={Math.round((c.count / maxCity) * 100)}
+                    value={`${c.count} customers (${c.pct}%)`}
+                    color={["green", "blue", "amber", "purple", "teal", "green", "blue", "amber"][i] as "green" | "blue" | "amber" | "purple" | "teal"}
+                  />
+                ))
+              )}
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }

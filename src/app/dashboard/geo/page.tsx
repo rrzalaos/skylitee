@@ -1,102 +1,130 @@
 "use client";
+import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
-import { Badge } from "@/components/ui/badge";
 import { BarRow } from "@/components/ui/bar-row";
-import { geoData, stateRevenue } from "@/lib/mock-data";
 import { formatINR } from "@/lib/utils";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 
-const signalConfig: Record<string, { label: string; variant: "green" | "amber" | "red" | "blue" | "teal" | "purple" }> = {
-  scale: { label: "Scale", variant: "green" },
-  best_roas: { label: "Best ROAS", variant: "green" },
-  high_cod: { label: "High COD", variant: "amber" },
-  optimise: { label: "Optimise", variant: "amber" },
-  growing: { label: "Growing", variant: "blue" },
-  tier2: { label: "Tier-2 opp", variant: "purple" },
-};
-
-const maxRev = Math.max(...stateRevenue.map(s => s.pct));
+interface CityRevenue { city: string; revenue: number; }
+interface CityCustomers { city: string; count: number; pct: number; }
 
 export default function GeoPage() {
+  const [revenueByCity, setRevenueByCity] = useState<CityRevenue[]>([]);
+  const [customersByCity, setCustomersByCity] = useState<CityCustomers[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/shopify/dashboard").then(r => r.json()),
+      fetch("/api/shopify/customers").then(r => r.json()),
+    ]).then(([d, c]) => {
+      if (d.topCities) setRevenueByCity(d.topCities);
+      if (c.topCities) setCustomersByCity(c.topCities);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const topCity = revenueByCity[0];
+  const totalRevenue = revenueByCity.reduce((s, c) => s + c.revenue, 0);
+  const maxRev = Math.max(...revenueByCity.map(c => c.revenue), 1);
+
+  // Merge city data
+  const merged = revenueByCity.map(r => {
+    const custData = customersByCity.find(c => c.city.toLowerCase() === r.city.toLowerCase());
+    return { city: r.city, revenue: r.revenue, customers: custData?.count ?? 0 };
+  });
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Geo Performance</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">City & state level ROAS, AOV and order intelligence</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">City-level revenue & customer data from Shopify · This month</p>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-            <FileSpreadsheet size={12} /> CSV
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
-            <FileText size={12} /> PDF
-          </button>
-        </div>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
+          <FileSpreadsheet size={12} /> CSV
+        </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-3">
-        <KPICard label="Top city" value="Mumbai" sub="68 orders · AOV ₹1,840" />
-        <KPICard label="Highest ROAS city" value="Bengaluru" sub="ROAS 1.82 · 52 orders" />
-        <KPICard label="Metro revenue share" value="48%" sub="Mumbai + Bengaluru" />
-        <KPICard label="Tier-2 opportunity" value="High" changeLabel="Jaipur, Surat growing 34%" change={1} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <Card>
-          <CardHeader title="City performance" right="Top 10 by revenue" />
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-collapse">
-              <thead>
-                <tr className="border-b border-black/[0.09]">
-                  {["City", "Orders", "Revenue", "AOV", "ROAS", "COD%", "Signal"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {geoData.map((g, i) => (
-                  <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
-                    <td className="py-1.5 px-1.5 font-medium">{g.city}</td>
-                    <td className="py-2 px-2">{g.orders}</td>
-                    <td className="py-2 px-2">{formatINR(g.revenue)}</td>
-                    <td className="py-2 px-2">{formatINR(g.aov)}</td>
-                    <td className="py-2 px-2">
-                      <Badge variant={g.roas >= 1.5 ? "green" : g.roas >= 1.2 ? "amber" : "red"}>{g.roas}</Badge>
-                    </td>
-                    <td className="py-2 px-2">{g.codPct}%</td>
-                    <td className="py-2 px-2">
-                      <Badge variant={signalConfig[g.signal]?.variant}>{signalConfig[g.signal]?.label}</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {loading ? (
+        <div className="text-[12px] text-[#686864] py-8 text-center">Loading real geo data...</div>
+      ) : revenueByCity.length === 0 ? (
+        <div className="text-[12px] text-[#686864] py-8 text-center">No geo data available yet — orders need shipping addresses to show city data.</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <KPICard label="Top city" value={topCity?.city ?? "—"} sub={topCity ? formatINR(topCity.revenue) : ""} />
+            <KPICard label="Cities with orders" value={revenueByCity.length.toString()} sub="Unique delivery cities" />
+            <KPICard
+              label="Top city share"
+              value={topCity ? `${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}%` : "—"}
+              sub="of total revenue"
+            />
+            <KPICard label="Total customers tracked" value={customersByCity.reduce((s, c) => s + c.count, 0).toString()} sub="With location data" />
           </div>
-        </Card>
 
-        <div>
-          <Card className="mb-2">
-            <CardHeader title="Geo AI insights" />
-            <InsightCard title="Mumbai + Bengaluru: 48% revenue, premium AOV" body="Create Metro-specific campaigns with same-day delivery badge. These buyers convert better when fulfilment speed is highlighted. Est. +18% CVR." />
-            <InsightCard type="teal" title="Bengaluru has best ROAS (1.82) — scale here" body="Low COD ratio (31%) + high AOV (₹1,702) = most profitable city. Allocate 30% more Meta budget to Bengaluru with pincode-level targeting." />
-            <InsightCard type="warning" title="Delhi NCR: 62% COD is a return time bomb" body="Delhi has highest COD ratio. Either use COD verification calls or offer ₹100 prepaid discount specifically for Delhi audience." />
-            <InsightCard type="purple" title="Jaipur + Surat: Tier-2 growth opportunity" body="34% MoM growth in Tier-2 cities with lower CPMs. Test ₹500/day campaigns in Jaipur, Surat, Indore, Nagpur. Lower competition = cheaper clicks." />
-          </Card>
+          <div className="grid grid-cols-2 gap-2">
+            <Card>
+              <CardHeader title="City performance" right="By revenue · This month" />
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-black/[0.09]">
+                      {["City", "Revenue", "Customers", "Revenue share"].map(h => (
+                        <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {merged.map((g, i) => (
+                      <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
+                        <td className="py-1.5 px-1.5 font-medium">{g.city}</td>
+                        <td className="py-1.5 px-1.5 font-semibold">{formatINR(g.revenue)}</td>
+                        <td className="py-1.5 px-1.5">{g.customers > 0 ? g.customers : "—"}</td>
+                        <td className="py-1.5 px-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1 h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
+                              <div className="h-full bg-[#17a773] rounded-full" style={{ width: `${Math.round((g.revenue / totalRevenue) * 100)}%` }} />
+                            </div>
+                            <span className="text-[10px] text-[#686864] w-8 text-right">{Math.round((g.revenue / totalRevenue) * 100)}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
 
-          <Card>
-            <CardHeader title="State-level revenue share" />
-            {stateRevenue.map((s, i) => (
-              <BarRow
-                key={i} label={s.state} pct={s.pct} value={`${s.pct}%`}
-                color={["green", "blue", "purple", "teal", "amber", "green"][i] as "green" | "blue" | "purple" | "teal" | "amber"}
-              />
-            ))}
-          </Card>
-        </div>
-      </div>
+            <div>
+              <Card className="mb-2">
+                <CardHeader title="Revenue by city" />
+                {revenueByCity.map((c, i) => (
+                  <BarRow
+                    key={i}
+                    label={c.city}
+                    pct={Math.round((c.revenue / maxRev) * 100)}
+                    value={formatINR(c.revenue)}
+                    color={["green", "blue", "amber", "purple", "teal"][i % 5] as "green" | "blue" | "amber" | "purple" | "teal"}
+                  />
+                ))}
+              </Card>
+
+              <Card>
+                <CardHeader title="Geo AI insights" />
+                {topCity && (
+                  <InsightCard title={`${topCity.city} is your top market`} body={`${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}% of revenue. Run city-specific Meta ads targeting ${topCity.city} for higher relevance and lower CPMs.`} />
+                )}
+                {revenueByCity.length >= 3 && (
+                  <InsightCard type="info" title="Multi-city presence detected" body={`Revenue spread across ${revenueByCity.length} cities. Consider city-specific delivery speed messaging in ads — converts better in metros.`} />
+                )}
+                <InsightCard type="warning" title="Add ROAS by city" body="Connect Meta Ads and Google Ads to see which cities give the best return on ad spend." />
+              </Card>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
