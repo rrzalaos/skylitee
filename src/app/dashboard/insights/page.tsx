@@ -1,83 +1,149 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
-import { InsightCard } from "@/components/ui/insight-card";
-import { Badge } from "@/components/ui/badge";
-import { BarRow } from "@/components/ui/bar-row";
-import { aiInsights } from "@/lib/mock-data";
-import { FileText } from "lucide-react";
 import { formatINR } from "@/lib/utils";
+import { Brain, RefreshCw, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
-const typeToInsight: Record<string, "default" | "warning" | "danger" | "info" | "purple" | "teal" | "pink"> = {
-  scale: "info", danger: "danger", warning: "warning",
-  audience: "purple", seo: "teal", customer: "pink",
-};
+interface InsightMetrics {
+  grossSales: number;
+  totalOrders: number;
+  aov: number;
+  codPct: number;
+  repeatRate: number;
+  avgLTV: number;
+  projectedMonthly: number;
+  days: number;
+}
 
 export default function InsightsPage() {
-  const [targetRoas, setTargetRoas] = useState(1.5);
-  const projectedRevenue = Math.round(175811 * targetRoas);
+  const [insights, setInsights] = useState<string>("");
+  const [metrics, setMetrics] = useState<InsightMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchInsights = () => {
+    setLoading(true);
+    setError("");
+    fetch("/api/ai/insights")
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) { setError("Could not load — check Shopify connection"); return; }
+        setInsights(d.insights);
+        setMetrics(d.metrics);
+      })
+      .catch(() => setError("Failed to generate insights"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchInsights(); }, []);
+
+  // Parse Claude's **Title** format into sections
+  const parsedInsights = insights.split(/\*\*(.+?)\*\*/).filter(s => s.trim()).reduce<{ title: string; body: string }[]>((acc, part, i) => {
+    if (i % 2 === 0) { acc.push({ title: part.trim(), body: "" }); }
+    else if (acc.length > 0) { acc[acc.length - 1].body = part.trim(); }
+    return acc;
+  }, []);
+
+  const insightColors = ["border-[#e0f5ee] bg-[#f7fdf9]", "border-[#e4eef9] bg-[#f5f8fd]", "border-[#faecd7] bg-[#fffaf4]"];
+  const titleColors = ["text-[#064d38]", "text-[#0a3d7a]", "text-[#5c3608]"];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">AI Insights</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Top actions to take today · updated every 3 hours</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">Claude AI · analysing your real Shopify data</p>
         </div>
+        <button
+          onClick={fetchInsights}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[#17a773] text-[#17a773] bg-[#f0faf4] hover:bg-[#e0f5ee] disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">Revenue forecast</div>
+          {/* Metrics summary */}
+          {metrics && (
+            <Card className="mb-3">
+              <CardHeader title="Store snapshot" right={`${metrics.days} days this month`} />
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Revenue so far", value: formatINR(metrics.grossSales) },
+                  { label: "Projected monthly", value: formatINR(metrics.projectedMonthly) },
+                  { label: "Total orders", value: metrics.totalOrders.toString() },
+                  { label: "AOV", value: formatINR(metrics.aov) },
+                  { label: "COD ratio", value: `${metrics.codPct}%` },
+                  { label: "Repeat rate", value: `${metrics.repeatRate}%` },
+                ].map(m => (
+                  <div key={m.label} className="bg-[#f7f7f5] rounded-lg p-2.5">
+                    <div className="text-[10px] text-[#686864]">{m.label}</div>
+                    <div className="text-[15px] font-bold text-[#181816] mt-0.5">{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
-          <div className="bg-[#f7f7f5] rounded-xl p-3.5 mb-2.5">
-            <div className="text-[12px] text-[#686864] mb-1">Month-end forecast</div>
-            <div className="text-2xl font-bold text-[#0d6b4f]">₹4,02,000</div>
-            <div className="text-[12px] text-[#d94040] font-medium mt-0.5">₹48K below target · 89% confidence</div>
-          </div>
-
-          <div className="bg-[#e4eef9] rounded-xl p-3.5 mb-4">
-            <div className="text-[12px] text-[#686864] mb-1">Demand spike: Position Print</div>
-            <div className="text-2xl font-bold text-[#0a3d7a]">↑ 28% demand</div>
-            <div className="text-[12px] text-[#3478d4] font-medium mt-0.5">Stock up 200 units before Sep 1</div>
-          </div>
-
-          <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">Campaign actions</div>
-          {aiInsights.slice(0, 3).map((insight, i) => (
-            <InsightCard key={i} type={typeToInsight[insight.type]} title={insight.title} body={insight.body} />
-          ))}
+          {/* Month forecast */}
+          {metrics && (
+            <Card>
+              <CardHeader title="Month-end forecast" />
+              <div className="bg-[#f7f7f5] rounded-xl p-3.5 mb-2">
+                <div className="flex items-center gap-1.5 text-[11px] text-[#686864] mb-1">
+                  <TrendingUp size={11} /> At current pace
+                </div>
+                <div className="text-2xl font-bold text-[#0d6b4f]">{formatINR(metrics.projectedMonthly)}</div>
+                <div className="text-[12px] text-[#686864] mt-1">
+                  Based on {metrics.days} days of real data
+                </div>
+              </div>
+              <Link href="/dashboard/connections" className="block text-[12px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">
+                <span className="font-medium text-[#92400e]">Connect Meta/Google Ads</span> to see ROAS and channel attribution →
+              </Link>
+            </Card>
+          )}
         </div>
 
         <div>
-          <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">Key actions</div>
-          <InsightCard type="pink" title="Top 20% customers spend 4.1× more" body="Create WhatsApp VIP group for Champions. Expected lift: +₹18–25K/month." action="Set up VIP group" />
-          <InsightCard title="Pause Combo Fabric ads now" body="Only 34 units left. Stockout in 12 days. Wasting ₹320/day on unfulfillable orders." action="Go to Products" />
-          <InsightCard type="warning" title="512 abandoned carts = ₹5.6L missed" body="3-email recovery sequence can recover 8–12% = +₹44–67K/month." action="Set up recovery flow" />
+          <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 flex items-center gap-1.5">
+            <Brain size={11} /> Claude AI insights · your actual data
+          </div>
 
-          <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 mt-4">Budget reallocation</div>
-
-          <Card>
-            <CardHeader title="AI budget split" right={<Badge variant="purple">+₹53K revenue at same spend</Badge>} />
-            <BarRow label="Meta (now)" pct={100} value="₹1,75,811" color="green" />
-            <BarRow label="Meta (AI rec.)" pct={76} value="₹1,33,000" color="green" />
-            <BarRow label="Google Search" pct={20} value="₹35,000" color="amber" />
-            <BarRow label="Google PMax" pct={5} value="₹9,000" color="teal" />
-
-            <div className="mt-3">
-              <div className="text-[12px] text-[#686864] mb-1.5">
-                ROAS simulator: <strong className="text-[#181816]">{targetRoas.toFixed(1)}×</strong>
-              </div>
-              <input
-                type="range" min={1.0} max={3.0} step={0.1}
-                value={targetRoas}
-                onChange={(e) => setTargetRoas(parseFloat(e.target.value))}
-                className="w-full accent-[#17a773]"
-              />
-              <div className="text-xl font-bold text-[#0d6b4f] mt-2">
-                Projected: {formatINR(projectedRevenue)}
-              </div>
+          {loading && (
+            <div className="flex items-center gap-2 text-[12px] text-[#686864] py-8">
+              <RefreshCw size={13} className="animate-spin text-[#17a773]" />
+              Analysing your Shopify data with Claude AI...
             </div>
-          </Card>
+          )}
+
+          {error && (
+            <div className="text-[12px] text-[#d94040] py-4">{error}</div>
+          )}
+
+          {!loading && !error && parsedInsights.length === 0 && insights && (
+            <div className="text-[12px] text-[#686864] leading-relaxed bg-[#f7f7f5] rounded-xl p-4 whitespace-pre-wrap">
+              {insights}
+            </div>
+          )}
+
+          {parsedInsights.map((item, i) => (
+            <div key={i} className={`border rounded-xl p-4 mb-2.5 ${insightColors[i % insightColors.length]}`}>
+              <div className={`text-[12px] font-semibold mb-1.5 ${titleColors[i % titleColors.length]}`}>
+                {item.title}
+              </div>
+              <div className="text-[12px] text-[#686864] leading-relaxed">{item.body}</div>
+            </div>
+          ))}
+
+          {!loading && !error && (
+            <div className="text-[10px] text-[#9e9e9a] mt-3 flex items-center gap-1">
+              <Brain size={10} /> Generated by Claude AI using your live Shopify data
+            </div>
+          )}
         </div>
       </div>
     </div>
