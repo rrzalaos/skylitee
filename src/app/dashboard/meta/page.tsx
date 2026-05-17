@@ -133,7 +133,7 @@ export default function MetaPage() {
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                     <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ fontSize: 13, border: "1px solid #e8e6e1", borderRadius: 8 }}
-                      formatter={(v: number) => [`${cur}${v}`, "Spend"]} />
+                      formatter={(v) => [`${cur}${v ?? 0}`, "Spend"]} />
                     <Area type="monotone" dataKey="spend" stroke="#1877F2" strokeWidth={2} fill="url(#spendGrad)" dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
