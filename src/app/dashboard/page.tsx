@@ -1,237 +1,536 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, RefreshCw, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+  AreaChart, Area, Cell,
+} from "recharts";
+import {
+  AlertCircle, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown,
+  ShoppingCart, Share2, Search, Plug, MessageSquareText, Layout,
+  BarChart2, ArrowRight, Zap, Target, RefreshCw,
+} from "lucide-react";
 import Link from "next/link";
 import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
+import { cn } from "@/lib/utils";
 
-interface DashData {
+/* ─── Types ─────────────────────────────────────────────────── */
+interface ShopData {
   shop: string;
-  kpis: { grossSales: number; totalOrders: number; aov: number; newCustomers: number; returningCustomers: number; codOrders: number; prepaidOrders: number; };
+  kpis: { grossSales: number; totalOrders: number; aov: number; newCustomers: number; returningCustomers: number; codOrders: number; prepaidOrders: number };
   dailyRevenue: { day: string; revenue: number }[];
   topCities: { city: string; revenue: number }[];
   period: { days: number };
 }
-
 interface AnomalyData {
   critical: { title: string; desc: string }[];
   warnings: { title: string; desc: string }[];
   positive: { title: string; desc: string }[];
-  summary: { projectedMonthly: number; grossSales: number; totalOrders: number };
+  summary: { projectedMonthly: number; grossSales: number; totalOrders: number; codPct: number; repeatRate: number };
+}
+interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; clicks: number; ctr: number; impressions: number; frequency: number }
+interface GscKPIs { clicks: number; impressions: number; ctr: number; position: number }
+interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgDuration: number }
+
+/* ─── Helpers ────────────────────────────────────────────────── */
+function signal(type: "roas" | "ctr" | "freq" | "cod", val: number): { label: string; color: string } {
+  if (type === "roas") {
+    if (val >= 3) return { label: "Strong", color: "text-[#22C55E] bg-[#F0FDF4]" };
+    if (val >= 2) return { label: "Average", color: "text-[#EAB308] bg-[#FFFBEB]" };
+    return { label: "Low", color: "text-[#EF4444] bg-[#FEF2F2]" };
+  }
+  if (type === "ctr") {
+    if (val >= 1.5) return { label: "Above avg", color: "text-[#22C55E] bg-[#F0FDF4]" };
+    if (val >= 0.9) return { label: "Average", color: "text-[#EAB308] bg-[#FFFBEB]" };
+    return { label: "Below avg", color: "text-[#EF4444] bg-[#FEF2F2]" };
+  }
+  if (type === "cod") {
+    if (val > 60) return { label: `${val}% COD — High`, color: "text-[#EF4444] bg-[#FEF2F2]" };
+    if (val > 40) return { label: `${val}% COD — Monitor`, color: "text-[#EAB308] bg-[#FFFBEB]" };
+    return { label: `${val}% COD — Healthy`, color: "text-[#22C55E] bg-[#F0FDF4]" };
+  }
+  return { label: "", color: "" };
 }
 
+const quickActions = [
+  { label: "Sales Report", sub: "Revenue, orders, COD vs prepaid", href: "/dashboard/sales", icon: ShoppingCart, color: "bg-[#FFF7ED] text-[#F97316]" },
+  { label: "Meta Campaigns", sub: "Spend, ROAS, funnel analysis", href: "/dashboard/meta", icon: Share2, color: "bg-[#EFF6FF] text-[#1877F2]" },
+  { label: "Search Console", sub: "Keywords, clicks, impressions", href: "/dashboard/gsc", icon: Search, color: "bg-[#F0FDF4] text-[#16A34A]" },
+  { label: "Ads Placement", sub: "Top performing placements", href: "/dashboard/placement", icon: Layout, color: "bg-[#F5F3FF] text-[#7C3AED]" },
+  { label: "AI Assistant", sub: "Ask anything about your store", href: "/dashboard/chat", icon: MessageSquareText, color: "bg-[#FEF2F2] text-[#DC2626]" },
+  { label: "Connections", sub: "Manage platform integrations", href: "/dashboard/connections", icon: Plug, color: "bg-[#F5F5F4] text-[#71717A]" },
+];
+
+/* ─── Component ─────────────────────────────────────────────── */
 export default function CommandCenterPage() {
-  const [dash, setDash] = useState<DashData | null>(null);
-  const [compDash, setCompDash] = useState<DashData | null>(null);
-  const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
-  const [loading, setLoading] = useState(true);
   const { range, compareWith } = useDateRange();
+
+  const [shop, setShop] = useState<ShopData | null>(null);
+  const [compShop, setCompShop] = useState<ShopData | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
+  const [meta, setMeta] = useState<MetaKPIs | null>(null);
+  const [metaDaily, setMetaDaily] = useState<{ date: string; spend: number; purchaseValue: number }[]>([]);
+  const [gsc, setGsc] = useState<GscKPIs | null>(null);
+  const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
+  const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    setCompDash(null);
     const compRange = getComparisonRange(range, compareWith);
-    const reqs = [
+
+    Promise.allSettled([
       fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch("/api/shopify/anomalies").then(r => r.json()),
-      compRange
-        ? fetch(`/api/shopify/dashboard?from=${compRange.from}&to=${compRange.to}`).then(r => r.json())
-        : Promise.resolve(null),
-    ];
-    Promise.all(reqs).then(([d, a, comp]) => {
-      if (d && !d.error) setDash(d);
-      if (a && !a.error) setAnomalies(a);
-      if (comp && !comp.error) setCompDash(comp);
+      compRange ? fetch(`/api/shopify/dashboard?from=${compRange.from}&to=${compRange.to}`).then(r => r.json()) : Promise.resolve(null),
+      fetch(`/api/meta?from=${range.from}&to=${range.to}`).then(r => r.json()),
+      fetch(`/api/gsc?from=${range.from}&to=${range.to}`).then(r => r.json()),
+      fetch(`/api/ga4?from=${range.from}&to=${range.to}`).then(r => r.json()),
+    ]).then(results => {
+      const [shopRes, anomRes, compRes, metaRes, gscRes, ga4Res] = results;
+
+      if (shopRes.status === "fulfilled" && !shopRes.value?.error) {
+        setShop(shopRes.value);
+        setConnections(c => ({ ...c, shopify: true }));
+      }
+      if (anomRes.status === "fulfilled" && !anomRes.value?.error) setAnomalies(anomRes.value);
+      if (compRes.status === "fulfilled" && compRes.value && !compRes.value?.error) setCompShop(compRes.value);
+      if (metaRes.status === "fulfilled" && !metaRes.value?.error) {
+        setMeta(metaRes.value.kpis ?? null);
+        setMetaDaily(metaRes.value.daily ?? []);
+        setConnections(c => ({ ...c, meta: true }));
+      }
+      if (gscRes.status === "fulfilled" && !gscRes.value?.error) {
+        setGsc(gscRes.value.kpis ?? null);
+        setConnections(c => ({ ...c, gsc: true }));
+      }
+      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) {
+        setGa4(ga4Res.value.kpis ?? null);
+        setConnections(c => ({ ...c, ga4: true }));
+      }
     }).finally(() => setLoading(false));
   }, [range.from, range.to, compareWith]);
 
-  function pctChange(curr: number, prev: number): number | undefined {
-    if (!prev || !compDash) return undefined;
+  /* ── Derived values ── */
+  const shopName = shop?.shop?.replace(".myshopify.com", "") ?? "";
+  const days = shop?.period.days ?? 1;
+  const projected = anomalies?.summary.projectedMonthly ?? 0;
+  const codPct = shop ? Math.round((shop.kpis.codOrders / Math.max(shop.kpis.totalOrders, 1)) * 100) : 0;
+  const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev period";
+
+  function pct(curr: number, prev: number | undefined): number | undefined {
+    if (!prev || !compShop) return undefined;
     return +((curr - prev) / prev * 100).toFixed(1);
   }
-
-  const shopName = dash?.shop?.replace(".myshopify.com", "") ?? "";
-  const days = dash?.period.days ?? new Date().getDate();
-  const projected = anomalies?.summary.projectedMonthly ?? 0;
-  const allAlerts = [...(anomalies?.critical ?? []), ...(anomalies?.warnings ?? [])];
-  const maxCity = Math.max(...(dash?.topCities.map(c => c.revenue) ?? [1]), 1);
-  const codPct = dash ? Math.round((dash.kpis.codOrders / Math.max(dash.kpis.totalOrders, 1)) * 100) : 0;
-
-  const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev period";
-  const salesChange = dash && compDash ? pctChange(dash.kpis.grossSales, compDash.kpis.grossSales) : undefined;
-  const ordersChange = dash && compDash ? pctChange(dash.kpis.totalOrders, compDash.kpis.totalOrders) : undefined;
-  const aovChange = dash && compDash ? pctChange(dash.kpis.aov, compDash.kpis.aov) : undefined;
-  const customersChange = dash && compDash ? pctChange(dash.kpis.newCustomers, compDash.kpis.newCustomers) : undefined;
-
-  function deltaLabel(val: number | undefined): string | undefined {
-    if (val === undefined) return undefined;
-    return `${val >= 0 ? "+" : ""}${val}% vs ${compLabel}`;
+  function deltaLabel(v: number | undefined) {
+    if (v === undefined) return undefined;
+    return `${v >= 0 ? "+" : ""}${v}% vs ${compLabel}`;
   }
 
+  const salesChange = pct(shop?.kpis.grossSales ?? 0, compShop?.kpis.grossSales);
+  const ordersChange = pct(shop?.kpis.totalOrders ?? 0, compShop?.kpis.totalOrders);
+  const aovChange = pct(shop?.kpis.aov ?? 0, compShop?.kpis.aov);
+
+  /* ── Combined chart data ── */
+  const chartData = useMemo(() => {
+    if (!shop) return [];
+    return shop.dailyRevenue.map(d => {
+      const md = metaDaily.find(m => m.date === d.day);
+      return { day: d.day.slice(5), revenue: d.revenue, spend: md?.spend ?? 0 };
+    });
+  }, [shop, metaDaily]);
+
+  /* ── Key Insights (computed, no API) ── */
+  const insights = useMemo(() => {
+    const list: { type: "positive" | "warning" | "danger"; title: string; body: string }[] = [];
+    if (meta) {
+      if (meta.roas < 2.0) list.push({ type: "danger", title: "ROAS below benchmark", body: `Current ROAS is ${meta.roas}x against a D2C target of 2x. Campaign efficiency needs attention.` });
+      else if (meta.roas >= 3.0) list.push({ type: "positive", title: "Strong ROAS performance", body: `ROAS at ${meta.roas}x is above the 3x D2C benchmark — campaigns are profitable.` });
+    }
+    if (shop) {
+      if (codPct > 55) list.push({ type: "warning", title: `COD at ${codPct}% — consider prepaid incentive`, body: "High COD increases return risk. A ₹75–100 prepaid discount can shift buyer behaviour." });
+    }
+    if (anomalies?.positive?.length) {
+      list.push({ type: "positive", title: anomalies.positive[0].title, body: anomalies.positive[0].desc });
+    }
+    if (anomalies?.critical?.length) {
+      list.push({ type: "danger", title: anomalies.critical[0].title, body: anomalies.critical[0].desc });
+    }
+    if (gsc && gsc.ctr < 2.0) list.push({ type: "warning", title: "Search CTR needs improvement", body: `Your GSC CTR is ${gsc.ctr.toFixed(1)}% — industry average is 2-3%. Review title tags and meta descriptions.` });
+    return list.slice(0, 4);
+  }, [meta, shop, codPct, anomalies, gsc]);
+
+  const allAlerts = [...(anomalies?.critical ?? []), ...(anomalies?.warnings ?? [])];
+  const liveCount = [connections.shopify, connections.meta, connections.gsc, connections.ga4].filter(Boolean).length;
+
+  /* ─── Platform status strip ── */
+  const platforms = [
+    { label: "Shopify", connected: connections.shopify },
+    { label: "Meta Ads", connected: connections.meta },
+    { label: "GSC", connected: connections.gsc },
+    { label: "GA4", connected: connections.ga4 },
+    { label: "Google Ads", connected: false },
+  ];
+
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-3">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
             {loading ? (
-              <span className="text-[13px] text-[#A1A1AA] flex items-center gap-1">
-                <RefreshCw size={11} className="animate-spin" /> Connecting...
+              <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1">
+                <RefreshCw size={10} className="animate-spin" /> Loading…
               </span>
-            ) : dash ? (
-              <span className="flex items-center gap-1 text-[13px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2 py-0.5 rounded-full font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F97316]" /> Live — {shopName}
+            ) : connections.shopify ? (
+              <span className="flex items-center gap-1 text-[12px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-0.5 rounded-full font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" /> Live · {shopName}
               </span>
-            ) : (
-              <span className="text-[13px] text-[#92400E] bg-[#FFFBEB] px-2 py-0.5 rounded-full font-medium">Not connected</span>
-            )}
+            ) : null}
           </div>
-          <p className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-            {range.label} · Shopify live data
-          </p>
+          <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
         </div>
-        {projected > 0 && (
-          <div className="text-[13px] font-semibold text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-            <TrendingUp size={13} /> ₹{projected.toLocaleString("en-IN")} projected this month
-          </div>
-        )}
+
+        {/* Platform status pills */}
+        <div className="flex items-center gap-1.5">
+          {platforms.map(p => (
+            <div key={p.label} className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border",
+              p.connected
+                ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
+                : "bg-white dark:bg-[#171717] border-black/[0.04] dark:border-white/[0.04] text-[#A1A1AA]"
+            )}>
+              <span className={cn("w-1.5 h-1.5 rounded-full", p.connected ? "bg-[#22C55E]" : "bg-[#D4D4D4] dark:bg-[#525252]")} />
+              {p.label}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="text-[15px] text-[#686864] py-16 text-center">Loading live store data...</div>
-      ) : !dash ? (
-        <div className="text-center py-16">
-          <p className="text-[14px] text-[#71717A] dark:text-[#A1A1AA] mb-3">Shopify not connected</p>
-          <Link href="/dashboard/connections" className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold hover:bg-[#EA580C] transition-colors">Connect store →</Link>
-        </div>
-      ) : (
-        <>
-          {/* KPI Grid */}
-          <div className="grid grid-cols-4 gap-2.5 mb-4">
-            <KPICard label="Gross Sales" value={formatINR(dash.kpis.grossSales)} change={salesChange} changeLabel={deltaLabel(salesChange)} />
-            <KPICard label="Total Orders" value={dash.kpis.totalOrders.toString()} change={ordersChange} changeLabel={deltaLabel(ordersChange)} />
-            <KPICard label="AOV" value={formatINR(dash.kpis.aov)} change={aovChange} changeLabel={deltaLabel(aovChange)} />
-            <KPICard label="New Customers" value={dash.kpis.newCustomers.toString()} sub={`${dash.kpis.returningCustomers} returning`} change={customersChange} changeLabel={deltaLabel(customersChange)} />
-          </div>
+      {/* ── KPI Row: 6 cross-channel cards ── */}
+      <div className="grid grid-cols-6 gap-2.5">
+        <KPICard
+          label="Monthly Sales"
+          value={shop ? formatINR(shop.kpis.grossSales) : "—"}
+          change={salesChange}
+          changeLabel={deltaLabel(salesChange)}
+        />
+        <KPICard
+          label="ROAS"
+          value={meta ? `${meta.roas}x` : "—"}
+          change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
+          changeLabel={meta ? signal("roas", meta.roas).label : undefined}
+        />
+        <KPICard
+          label="Orders"
+          value={shop ? shop.kpis.totalOrders.toString() : "—"}
+          change={ordersChange}
+          changeLabel={deltaLabel(ordersChange)}
+        />
+        <KPICard
+          label="AOV"
+          value={shop ? formatINR(shop.kpis.aov) : "—"}
+          change={aovChange}
+          changeLabel={deltaLabel(aovChange)}
+        />
+        <KPICard
+          label="Ad Spend"
+          value={meta ? formatINR(meta.spend) : "—"}
+          change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
+          changeLabel={meta ? `ROAS ${meta.roas}x` : undefined}
+        />
+        <KPICard
+          label={gsc ? "GSC Clicks" : ga4 ? "Sessions" : "New Customers"}
+          value={gsc ? gsc.clicks.toLocaleString("en-IN") : ga4 ? ga4.sessions.toLocaleString("en-IN") : (shop?.kpis.newCustomers.toString() ?? "—")}
+          change={gsc ? (gsc.ctr >= 1.5 ? 1 : -1) : undefined}
+          changeLabel={gsc ? `${gsc.ctr.toFixed(1)}% CTR` : undefined}
+        />
+      </div>
 
-          {/* Row 1: Chart + Forecast */}
-          <div className="grid grid-cols-3 gap-3 mb-3">
-            <div className="col-span-2">
-              <Card>
-                <CardHeader title="Daily revenue" right={`${range.label} · ${days} days`} />
-                <ResponsiveContainer width="100%" height={145}>
-                  <BarChart data={dash.dailyRevenue} barSize={12}>
-                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#9e9e9a" }} tickLine={false} axisLine={false} interval={4} />
-                    <YAxis hide />
-                    <Tooltip
-                      formatter={(v) => [formatINR(Number(v)), "Revenue"]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e5e5" }}
-                    />
-                    <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
-                      {dash.dailyRevenue.map((entry, i) => (
-                        <Cell key={i} fill={entry.revenue > 0 ? "#F97316" : "#E5E5E5"} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
+      {/* ── Main: Revenue chart + Channel panel ── */}
+      <div className="grid grid-cols-3 gap-3">
+
+        {/* Combined revenue + spend chart */}
+        <div className="col-span-2">
+          <Card className="h-full">
+            <CardHeader
+              title="Revenue vs Ad Spend"
+              right={<span className="flex items-center gap-3 text-[11px]">
+                <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-[#F97316] inline-block" /> Revenue</span>
+                {connections.meta && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
+              </span>}
+            />
+            {loading ? (
+              <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">Loading chart…</div>
+            ) : chartData.length === 0 ? (
+              <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">No revenue data for this period</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={176}>
+                <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                  <defs>
+                    <linearGradient id="revGradCmd" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#F97316" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#F97316" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} interval={Math.floor(chartData.length / 6)} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, border: "1px solid #E5E5E5", borderRadius: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}
+                    formatter={(v, name) => [formatINR(Number(v)), name === "revenue" ? "Revenue" : "Ad Spend"]}
+                  />
+                  <Bar dataKey="revenue" fill="#F97316" radius={[3, 3, 0, 0]} barSize={10} opacity={0.9} />
+                  {connections.meta && (
+                    <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
+
+            {/* Forecast strip */}
+            {projected > 0 && (
+              <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[12px] text-[#A1A1AA]">
+                  <TrendingUp size={12} className="text-[#F97316]" />
+                  At current pace ({days} days into period)
+                </div>
+                <div className="text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C]">
+                  {formatINR(projected)} projected
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Channel performance panel */}
+        <Card>
+          <CardHeader title="Channel Performance" />
+          <div className="space-y-0">
+            {/* Shopify */}
+            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.shopify && "opacity-50")}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.shopify ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
+                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Shopify</span>
+                </div>
+                <span className="text-[10px] text-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full font-bold">Live</span>
+              </div>
+              {shop ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(shop.kpis.grossSales)}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{shop.kpis.totalOrders} orders · AOV {formatINR(shop.kpis.aov)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[12px] font-semibold text-[#EAB308]">{codPct}% COD</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{shop.kpis.newCustomers} new</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[12px] text-[#A1A1AA]">Not connected</div>
+              )}
             </div>
 
-            <Card>
-              <CardHeader title="Period forecast" />
-              <div className="bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl p-3 mb-2.5 border border-[#FED7AA] dark:border-[#7C2D12]">
-                <div className="text-[12px] text-[#EA580C] dark:text-[#FB923C] mb-1 font-medium">At current pace ({days} days)</div>
-                <div className="text-2xl font-bold text-[#EA580C] dark:text-[#FB923C]">{formatINR(projected)}</div>
-                <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1">
-                  {formatINR(dash.kpis.grossSales)} earned so far
+            {/* Meta */}
+            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.meta && "opacity-50")}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.meta ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
+                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Meta Ads</span>
                 </div>
+                {connections.meta && meta && (
+                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", signal("roas", meta.roas).color)}>
+                    ROAS {meta.roas}x
+                  </span>
+                )}
               </div>
-              <div className="space-y-2 text-[13px]">
-                <div className="flex justify-between">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Prepaid orders</span>
-                  <span className="font-semibold text-[#F97316]">{dash.kpis.prepaidOrders}</span>
+              {connections.meta && meta ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(meta.spend)}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">spend · {meta.purchases} purchases</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[12px] font-semibold">{formatINR(meta.purchaseValue)}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{meta.ctr}% CTR</div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">COD orders</span>
-                  <span className={`font-semibold ${codPct > 50 ? "text-[#EF4444]" : "text-[#EAB308]"}`}>{dash.kpis.codOrders} ({codPct}%)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Returning customers</span>
-                  <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{dash.kpis.returningCustomers}</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Row 2: Top Cities + Alerts */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card>
-              <CardHeader title="Top cities by revenue" right="This month" />
-              {dash.topCities.length === 0 ? (
-                <div className="text-[15px] text-[#686864] py-4 text-center">No shipping address data yet</div>
               ) : (
-                dash.topCities.map((c, i) => (
-                  <BarRow
-                    key={i} label={c.city}
-                    pct={Math.round((c.revenue / maxCity) * 100)}
-                    value={formatINR(c.revenue)}
-                    color={["green", "blue", "amber", "purple", "teal"][i % 5] as "green" | "blue" | "amber" | "purple" | "teal"}
-                  />
-                ))
+                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect Meta →</Link>
               )}
-            </Card>
+            </div>
 
-            <Card>
-              <CardHeader title="Alerts & signals" right={
-                allAlerts.length > 0
-                  ? <span className="text-[12px] text-[#EF4444] font-semibold">{allAlerts.length} action needed</span>
-                  : <span className="text-[12px] text-[#22C55E] font-semibold">All clear</span>
-              } />
-
-              {(anomalies?.critical ?? []).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
-                  <AlertCircle size={13} className="text-[#EF4444] shrink-0 mt-0.5" />
+            {/* GSC */}
+            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.gsc && "opacity-50")}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.gsc ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
+                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Search Console</span>
+                </div>
+              </div>
+              {connections.gsc && gsc ? (
+                <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
+                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{gsc.clicks.toLocaleString("en-IN")}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">clicks · {gsc.impressions.toLocaleString("en-IN")} impressions</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={cn("text-[12px] font-semibold", gsc.ctr >= 1.5 ? "text-[#F97316]" : "text-[#EAB308]")}>{gsc.ctr.toFixed(1)}% CTR</div>
+                    <div className="text-[11px] text-[#A1A1AA]">pos {gsc.position.toFixed(1)}</div>
                   </div>
                 </div>
-              ))}
-
-              {(anomalies?.warnings ?? []).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
-                  <AlertTriangle size={13} className="text-[#EAB308] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
-                  </div>
-                </div>
-              ))}
-
-              {(anomalies?.positive ?? []).slice(0, 2).map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
-                  <CheckCircle2 size={13} className="text-[#22C55E] shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                    <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{a.desc}</div>
-                  </div>
-                </div>
-              ))}
-
-              {allAlerts.length === 0 && (anomalies?.positive ?? []).length === 0 && (
-                <div className="text-[13px] text-[#A1A1AA] py-4 text-center">No anomalies detected</div>
+              ) : (
+                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect GSC →</Link>
               )}
+            </div>
 
-              <Link href="/dashboard/anomaly" className="block mt-2 text-[13px] font-semibold text-[#F97316]">View all alerts →</Link>
-            </Card>
+            {/* GA4 */}
+            <div className={cn("py-3", !connections.ga4 && "opacity-50")}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.ga4 ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
+                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Analytics GA4</span>
+                </div>
+              </div>
+              {connections.ga4 && ga4 ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{ga4.sessions.toLocaleString("en-IN")}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">sessions · {ga4.users.toLocaleString("en-IN")} users</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[12px] font-semibold text-[#A1A1AA]">{ga4.bounceRate.toFixed(0)}% bounce</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{Math.floor(ga4.avgDuration / 60)}m avg</div>
+                  </div>
+                </div>
+              ) : (
+                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect GA4 →</Link>
+              )}
+            </div>
           </div>
-        </>
-      )}
+        </Card>
+      </div>
+
+      {/* ── Bottom row: Alerts + Insights + Quick Actions ── */}
+      <div className="grid grid-cols-3 gap-3">
+
+        {/* Alerts & Signals */}
+        <Card>
+          <CardHeader title="Alerts & Signals" right={
+            allAlerts.length > 0
+              ? <span className="text-[11px] text-[#EF4444] font-bold bg-[#FEF2F2] dark:bg-[#2D0A0A] px-2 py-0.5 rounded-full">{allAlerts.length} action needed</span>
+              : <span className="text-[11px] text-[#22C55E] font-bold bg-[#F0FDF4] dark:bg-[#052E16] px-2 py-0.5 rounded-full">All clear</span>
+          } />
+
+          {(anomalies?.critical ?? []).map((a, i) => (
+            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+              <div className="w-7 h-7 rounded-lg bg-[#FEF2F2] dark:bg-[#2D0A0A] flex items-center justify-center shrink-0 border border-[#FCA5A5] dark:border-[#991B1B]">
+                <AlertCircle size={12} className="text-[#EF4444]" />
+              </div>
+              <div>
+                <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
+              </div>
+            </div>
+          ))}
+
+          {(anomalies?.warnings ?? []).map((a, i) => (
+            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+              <div className="w-7 h-7 rounded-lg bg-[#FFFBEB] dark:bg-[#2D1C00] flex items-center justify-center shrink-0 border border-[#FCD34D] dark:border-[#92400E]">
+                <AlertTriangle size={12} className="text-[#EAB308]" />
+              </div>
+              <div>
+                <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
+              </div>
+            </div>
+          ))}
+
+          {(anomalies?.positive ?? []).slice(0, 2).map((a, i) => (
+            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
+              <div className="w-7 h-7 rounded-lg bg-[#FFF7ED] dark:bg-[#2A1A0E] flex items-center justify-center shrink-0 border border-[#FED7AA] dark:border-[#7C2D12]">
+                <CheckCircle2 size={12} className="text-[#F97316]" />
+              </div>
+              <div>
+                <div className="text-[12px] font-bold text-[#EA580C] dark:text-[#FB923C]">{a.title}</div>
+                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
+              </div>
+            </div>
+          ))}
+
+          {allAlerts.length === 0 && (anomalies?.positive ?? []).length === 0 && !loading && (
+            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No anomalies detected</div>
+          )}
+          {loading && <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Checking alerts…</div>}
+
+          <Link href="/dashboard/anomaly" className="block mt-3 text-[12px] font-bold text-[#F97316]">View all alerts →</Link>
+        </Card>
+
+        {/* Key Insights */}
+        <Card>
+          <CardHeader title="Key Insights" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Zap size={11} /> Computed live</span>} />
+
+          {loading ? (
+            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing insights…</div>
+          ) : insights.length === 0 ? (
+            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Connect more platforms for insights</div>
+          ) : (
+            <div className="space-y-2">
+              {insights.map((ins, i) => (
+                <div key={i} className={cn(
+                  "rounded-xl p-3 border-l-[3px]",
+                  ins.type === "positive" ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] border-l-[#F97316]" :
+                  ins.type === "warning" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] border-l-[#EAB308]" :
+                  "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[#EF4444]"
+                )}>
+                  <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div>
+                  <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{ins.body}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* COD + prepaid mini stats */}
+          {shop && (
+            <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 gap-2">
+              <div className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
+                <div className="text-[16px] font-black text-[#F97316]">{shop.kpis.prepaidOrders}</div>
+                <div className="text-[10px] text-[#A1A1AA] mt-0.5">Prepaid orders</div>
+              </div>
+              <div className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
+                <div className={cn("text-[16px] font-black", codPct > 50 ? "text-[#EF4444]" : "text-[#EAB308]")}>{shop.kpis.codOrders}</div>
+                <div className="text-[10px] text-[#A1A1AA] mt-0.5">COD orders ({codPct}%)</div>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader title="Quick Actions" right="Jump to any section" />
+          <div className="grid grid-cols-2 gap-2">
+            {quickActions.map(a => (
+              <Link key={a.href} href={a.href}
+                className="group flex items-start gap-2 p-2.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-[#FAFAF9] dark:bg-[#1C1C1C] hover:border-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-all">
+                <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", a.color)}>
+                  <a.icon size={13} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] group-hover:text-[#EA580C] dark:group-hover:text-[#FB923C] transition-colors leading-tight">{a.label}</div>
+                  <div className="text-[10px] text-[#A1A1AA] mt-0.5 leading-tight">{a.sub}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
+
     </div>
   );
 }
