@@ -7,7 +7,7 @@ import { formatINR } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { TrendingUp, RefreshCw, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { useDateRange } from "@/lib/date-range-context";
+import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
 
 interface DashData {
   shop: string;
@@ -26,20 +26,33 @@ interface AnomalyData {
 
 export default function CommandCenterPage() {
   const [dash, setDash] = useState<DashData | null>(null);
+  const [compDash, setCompDash] = useState<DashData | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { range } = useDateRange();
+  const { range, compareWith } = useDateRange();
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
+    setCompDash(null);
+    const compRange = getComparisonRange(range, compareWith);
+    const reqs = [
       fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch("/api/shopify/anomalies").then(r => r.json()),
-    ]).then(([d, a]) => {
-      if (!d.error) setDash(d);
-      if (!a.error) setAnomalies(a);
+      compRange
+        ? fetch(`/api/shopify/dashboard?from=${compRange.from}&to=${compRange.to}`).then(r => r.json())
+        : Promise.resolve(null),
+    ];
+    Promise.all(reqs).then(([d, a, comp]) => {
+      if (d && !d.error) setDash(d);
+      if (a && !a.error) setAnomalies(a);
+      if (comp && !comp.error) setCompDash(comp);
     }).finally(() => setLoading(false));
-  }, [range.from, range.to]);
+  }, [range.from, range.to, compareWith]);
+
+  function pctChange(curr: number, prev: number): number | undefined {
+    if (!prev || !compDash) return undefined;
+    return +((curr - prev) / prev * 100).toFixed(1);
+  }
 
   const shopName = dash?.shop?.replace(".myshopify.com", "") ?? "";
   const days = dash?.period.days ?? new Date().getDate();
@@ -47,6 +60,17 @@ export default function CommandCenterPage() {
   const allAlerts = [...(anomalies?.critical ?? []), ...(anomalies?.warnings ?? [])];
   const maxCity = Math.max(...(dash?.topCities.map(c => c.revenue) ?? [1]), 1);
   const codPct = dash ? Math.round((dash.kpis.codOrders / Math.max(dash.kpis.totalOrders, 1)) * 100) : 0;
+
+  const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev period";
+  const salesChange = dash && compDash ? pctChange(dash.kpis.grossSales, compDash.kpis.grossSales) : undefined;
+  const ordersChange = dash && compDash ? pctChange(dash.kpis.totalOrders, compDash.kpis.totalOrders) : undefined;
+  const aovChange = dash && compDash ? pctChange(dash.kpis.aov, compDash.kpis.aov) : undefined;
+  const customersChange = dash && compDash ? pctChange(dash.kpis.newCustomers, compDash.kpis.newCustomers) : undefined;
+
+  function deltaLabel(val: number | undefined): string | undefined {
+    if (val === undefined) return undefined;
+    return `${val >= 0 ? "+" : ""}${val}% vs ${compLabel}`;
+  }
 
   return (
     <div>
@@ -89,10 +113,10 @@ export default function CommandCenterPage() {
         <>
           {/* KPI Grid */}
           <div className="grid grid-cols-4 gap-2.5 mb-4">
-            <KPICard label="Gross Sales" value={formatINR(dash.kpis.grossSales)} />
-            <KPICard label="Total Orders" value={dash.kpis.totalOrders.toString()} />
-            <KPICard label="AOV" value={formatINR(dash.kpis.aov)} />
-            <KPICard label="New Customers" value={dash.kpis.newCustomers.toString()} sub={`${dash.kpis.returningCustomers} returning`} />
+            <KPICard label="Gross Sales" value={formatINR(dash.kpis.grossSales)} change={salesChange} changeLabel={deltaLabel(salesChange)} />
+            <KPICard label="Total Orders" value={dash.kpis.totalOrders.toString()} change={ordersChange} changeLabel={deltaLabel(ordersChange)} />
+            <KPICard label="AOV" value={formatINR(dash.kpis.aov)} change={aovChange} changeLabel={deltaLabel(aovChange)} />
+            <KPICard label="New Customers" value={dash.kpis.newCustomers.toString()} sub={`${dash.kpis.returningCustomers} returning`} change={customersChange} changeLabel={deltaLabel(customersChange)} />
           </div>
 
           {/* Row 1: Chart + Forecast */}

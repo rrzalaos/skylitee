@@ -92,3 +92,33 @@ export function useDateRange() {
   if (!ctx) throw new Error("useDateRange must be used within DateRangeProvider");
   return ctx;
 }
+
+export function getComparisonRange(range: DateRange, compareWith: string): { from: string; to: string; label: string } | null {
+  const from = new Date(range.from + "T00:00:00");
+  const to = new Date(range.to + "T00:00:00");
+  const days = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const subDate = (d: Date, n: number): Date => { const r = new Date(d); r.setDate(r.getDate() - n); return r; };
+
+  switch (compareWith) {
+    case "prev_period": {
+      const compTo = subDate(from, 1);
+      const compFrom = subDate(compTo, days - 1);
+      return { from: fmt(compFrom), to: fmt(compTo), label: "prev period" };
+    }
+    case "last_week":
+      return { from: fmt(subDate(from, 7)), to: fmt(subDate(to, 7)), label: "last week" };
+    case "last_month": {
+      const cf = new Date(from); cf.setMonth(cf.getMonth() - 1);
+      const ct = new Date(to); ct.setMonth(ct.getMonth() - 1);
+      return { from: fmt(cf), to: fmt(ct), label: "last month" };
+    }
+    case "last_year": {
+      const cf = new Date(from); cf.setFullYear(cf.getFullYear() - 1);
+      const ct = new Date(to); ct.setFullYear(ct.getFullYear() - 1);
+      return { from: fmt(cf), to: fmt(ct), label: "last year" };
+    }
+    default:
+      return null;
+  }
+}
