@@ -14,7 +14,7 @@ const styles: Record<WarnType, { bg: string; border: string; text: string; icon:
 export function WarnBanner({ type = "amber", children }: { type?: WarnType; children: React.ReactNode }) {
   const s = styles[type];
   return (
-    <div className={cn("flex items-start gap-2 p-2.5 rounded-lg border text-[10px] mb-3", s.bg, s.border, s.text)}>
+    <div className={cn("flex items-start gap-2 p-2.5 rounded-lg border text-[13px] mb-3", s.bg, s.border, s.text)}>
       {s.icon}
       <span>{children}</span>
     </div>

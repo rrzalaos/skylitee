@@ -16,7 +16,7 @@ const variants: Record<BadgeVariant, string> = {
 
 export function Badge({ variant = "gray", children, className }: { variant?: BadgeVariant; children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn("inline-block text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap", variants[variant], className)}>
+    <span className={cn("inline-block text-[13px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap", variants[variant], className)}>
       {children}
     </span>
   );

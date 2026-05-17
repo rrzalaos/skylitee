@@ -52,8 +52,8 @@ const navSections = [
     label: "Google",
     items: [
       { href: "/dashboard/gads", label: "Google Ads", icon: Megaphone, badge: null, dot: "off" },
-      { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "off" },
-      { href: "/dashboard/ga4", label: "Analytics GA4", icon: LineChart, badge: null, dot: "off" },
+      { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "google_gsc" },
+      { href: "/dashboard/ga4", label: "Analytics GA4", icon: LineChart, badge: null, dot: "google_ga4" },
     ],
   },
   {
@@ -88,49 +88,68 @@ const dotStyles = {
 export function Sidebar() {
   const pathname = usePathname();
   const [shopName, setShopName] = useState<string>("My Store");
+  const [gscConnected, setGscConnected] = useState<boolean | null>(null);
+  const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/shopify/dashboard")
       .then(r => r.json())
       .then(d => { if (d.shop) setShopName(d.shop.replace(".myshopify.com", "")); })
       .catch(() => {});
+
+    fetch("/api/google/sites")
+      .then(r => r.json())
+      .then(d => {
+        setGscConnected(!!d.gscConnected);
+        setGa4Connected(!!d.ga4Connected);
+      })
+      .catch(() => {
+        setGscConnected(false);
+        setGa4Connected(false);
+      });
   }, []);
+
+  function resolveDot(dot: string | null): string | null {
+    if (dot === "google_gsc") return gscConnected == null ? null : gscConnected ? "on" : "off";
+    if (dot === "google_ga4") return ga4Connected == null ? null : ga4Connected ? "on" : "off";
+    return dot;
+  }
+
+  const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0);
 
   return (
     <aside className="w-[218px] min-w-[218px] bg-white border-r border-black/[0.09] flex flex-col shrink-0 h-screen sticky top-0">
-      {/* Logo */}
       <div className="px-3 py-3.5 border-b border-black/[0.09] flex items-center gap-2.5">
         <div className="w-7 h-7 bg-[#17a773] rounded-lg flex items-center justify-center text-white">
           <Activity size={14} />
         </div>
         <div>
-          <div className="text-[13px] font-semibold text-[#181816]">Skylitee</div>
-          <div className="text-[10px] text-[#9e9e9a] tracking-wide">Analytics Platform</div>
+          <div className="text-[16px] font-semibold text-[#181816]">Skylitee</div>
+          <div className="text-[13px] text-[#9e9e9a] tracking-wide">Analytics Platform</div>
         </div>
       </div>
 
-      {/* Brand selector */}
       <div className="mx-2 mt-2.5 bg-[#f7f7f5] rounded-lg px-2.5 py-1.5 flex items-center justify-between border border-black/[0.09] cursor-pointer hover:bg-[#f1f0ed] transition-colors">
-        <span className="text-[12px] font-semibold text-[#181816]">{shopName}</span>
+        <span className="text-[15px] font-semibold text-[#181816]">{shopName}</span>
         <ChevronDown size={10} className="text-[#9e9e9a]" />
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
         {navSections.map((section) => (
           <div key={section.label}>
-            <div className="text-[10px] font-semibold text-[#9e9e9a] px-3 pt-2 pb-1 uppercase tracking-widest">
+            <div className="text-[13px] font-semibold text-[#9e9e9a] px-3 pt-2 pb-1 uppercase tracking-widest">
               {section.label}
             </div>
             {section.items.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
+              const dot = resolveDot(item.dot);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-[12px] transition-all relative cursor-pointer",
+                    "flex items-center gap-1.5 px-3 py-1.5 text-[15px] transition-all relative cursor-pointer",
                     isActive
                       ? "bg-[#e0f5ee] text-[#0d6b4f] font-medium"
                       : "text-[#686864] hover:bg-[#f7f7f5] hover:text-[#181816]"
@@ -142,12 +161,12 @@ export function Sidebar() {
                   <Icon size={13} className="shrink-0" />
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.badge && (
-                    <span className={cn("text-[10px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color as keyof typeof badgeStyles])}>
+                    <span className={cn("text-[13px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color as keyof typeof badgeStyles])}>
                       {item.badge.text}
                     </span>
                   )}
-                  {item.dot && (
-                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotStyles[item.dot as keyof typeof dotStyles])} />
+                  {dot && (
+                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotStyles[dot as keyof typeof dotStyles])} />
                   )}
                 </Link>
               );
@@ -156,12 +175,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 py-2.5 border-t border-black/[0.09] text-[11px] text-[#9e9e9a]">
+      <div className="px-3 py-2.5 border-t border-black/[0.09] text-[14px] text-[#9e9e9a]">
         <div>Shopify live sync</div>
         <div className="flex items-center gap-1 mt-0.5 text-[#0d6b4f] font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" />
-          1 of 5 platforms live
+          {liveCount} of 5 platforms live
         </div>
       </div>
     </aside>

@@ -43,17 +43,17 @@ export default function CustomersPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Customer Intelligence</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Real customer data from Shopify</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Real customer data from Shopify</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
           <FileSpreadsheet size={12} /> CSV
         </button>
       </div>
 
       {loading ? (
-        <div className="text-[12px] text-[#686864] py-8 text-center">Loading real customer data...</div>
+        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real customer data...</div>
       ) : !data ? (
-        <div className="text-[12px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
+        <div className="text-[15px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
       ) : (
         <>
           <div className="grid grid-cols-4 gap-2 mb-3">
@@ -74,10 +74,10 @@ export default function CustomersPage() {
               {segments.map(seg => (
                 <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
                   <div className="text-2xl mb-1.5">{seg.icon}</div>
-                  <div className="text-[11px] font-semibold text-[#181816]">{seg.name}</div>
+                  <div className="text-[14px] font-semibold text-[#181816]">{seg.name}</div>
                   <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
-                  <div className="text-[10px] text-[#686864] mt-1">{seg.desc}</div>
-                  <div className={`text-[10px] font-semibold mt-1 ${seg.color}`}>
+                  <div className="text-[13px] text-[#686864] mt-1">{seg.desc}</div>
+                  <div className={`text-[13px] font-semibold mt-1 ${seg.color}`}>
                     {Math.round((seg.count / Math.max(data.kpis.totalCustomers, 1)) * 100)}% of total
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export default function CustomersPage() {
             <Card>
               <CardHeader title="Top cities by customers" />
               {data.topCities.length === 0 ? (
-                <div className="text-[12px] text-[#686864] py-4 text-center">No location data available</div>
+                <div className="text-[15px] text-[#686864] py-4 text-center">No location data available</div>
               ) : (
                 data.topCities.map((c, i) => (
                   <BarRow

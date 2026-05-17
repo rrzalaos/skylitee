@@ -6,7 +6,7 @@ export default function PlacementPage() {
     <div>
       <div className="mb-3">
         <h2 className="text-lg font-semibold">Ads Placement</h2>
-        <p className="text-[12px] text-[#686864] mt-0.5">Meta placement intelligence · placement breakdown</p>
+        <p className="text-[15px] text-[#686864] mt-0.5">Meta placement intelligence · placement breakdown</p>
       </div>
       <NotConnected
         platform="meta"

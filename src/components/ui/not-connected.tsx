@@ -25,11 +25,11 @@ export function NotConnected({
         {cfg.icon}
       </div>
       <h3 className="text-[14px] font-semibold text-[#181816] mb-1.5">{label} not connected</h3>
-      <p className="text-[12px] text-[#686864] mb-6 max-w-xs leading-relaxed px-4">
+      <p className="text-[15px] text-[#686864] mb-6 max-w-xs leading-relaxed px-4">
         {description ?? `Connect ${label} to unlock real campaign data, performance metrics, and AI-powered recommendations.`}
       </p>
       <Link href="/dashboard/connections">
-        <button className="px-5 py-2.5 bg-[#17a773] text-white rounded-lg text-[12px] font-semibold hover:bg-[#0d6b4f] transition-colors">
+        <button className="px-5 py-2.5 bg-[#17a773] text-white rounded-lg text-[15px] font-semibold hover:bg-[#0d6b4f] transition-colors">
           Go to Connections
         </button>
       </Link>

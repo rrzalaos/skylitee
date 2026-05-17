@@ -33,7 +33,7 @@ export default function AnomalyPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">Anomaly Feed</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Real-time signals from your Shopify store</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Real-time signals from your Shopify store</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="grid grid-cols-3 gap-2">
@@ -44,7 +44,7 @@ export default function AnomalyPage() {
             ].map(s => (
               <div key={s.label} className="text-center px-3 py-2 bg-white border border-black/[0.09] rounded-xl">
                 <div className={`text-xl font-bold ${s.color}`}>{loading ? "—" : s.value}</div>
-                <div className="text-[11px] text-[#686864] mt-0.5">{s.label}</div>
+                <div className="text-[14px] text-[#686864] mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
@@ -55,11 +55,11 @@ export default function AnomalyPage() {
       </div>
 
       {loading ? (
-        <div className="text-[12px] text-[#686864] py-16 text-center">Analysing your store data...</div>
+        <div className="text-[15px] text-[#686864] py-16 text-center">Analysing your store data...</div>
       ) : !data ? (
         <div className="text-center py-16">
-          <p className="text-[13px] text-[#686864] mb-3">Could not load — check Shopify connection</p>
-          <Link href="/dashboard/connections" className="text-[12px] text-[#17a773] font-medium underline">Go to Connections →</Link>
+          <p className="text-[16px] text-[#686864] mb-3">Could not load — check Shopify connection</p>
+          <Link href="/dashboard/connections" className="text-[15px] text-[#17a773] font-medium underline">Go to Connections →</Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -67,7 +67,7 @@ export default function AnomalyPage() {
             {/* Critical */}
             {data.critical.length > 0 && (
               <>
-                <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">
+                <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">
                   Critical — action needed now
                 </div>
                 {data.critical.map((a, i) => (
@@ -76,8 +76,8 @@ export default function AnomalyPage() {
                       <AlertCircle size={14} className="text-[#d94040]" />
                     </div>
                     <div>
-                      <div className="text-[13px] font-semibold text-[#181816]">{a.title}</div>
-                      <div className="text-[12px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className="text-[16px] font-semibold text-[#181816]">{a.title}</div>
+                      <div className="text-[15px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -87,7 +87,7 @@ export default function AnomalyPage() {
             {/* Warnings */}
             {data.warnings.length > 0 && (
               <>
-                <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 mt-4">
+                <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 mt-4">
                   Warnings — monitor closely
                 </div>
                 {data.warnings.map((a, i) => (
@@ -96,8 +96,8 @@ export default function AnomalyPage() {
                       <AlertTriangle size={14} className="text-[#e89820]" />
                     </div>
                     <div>
-                      <div className="text-[13px] font-semibold text-[#181816]">{a.title}</div>
-                      <div className="text-[12px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className="text-[16px] font-semibold text-[#181816]">{a.title}</div>
+                      <div className="text-[15px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -107,8 +107,8 @@ export default function AnomalyPage() {
             {totalAlerts === 0 && (
               <div className="border border-[#e0f5ee] rounded-xl p-6 text-center bg-[#f7fdf9]">
                 <CheckCircle2 size={24} className="text-[#17a773] mx-auto mb-2" />
-                <div className="text-[13px] font-semibold text-[#064d38]">All clear!</div>
-                <div className="text-[12px] text-[#686864] mt-1">No critical issues or warnings detected in your store.</div>
+                <div className="text-[16px] font-semibold text-[#064d38]">All clear!</div>
+                <div className="text-[15px] text-[#686864] mt-1">No critical issues or warnings detected in your store.</div>
               </div>
             )}
           </div>
@@ -117,7 +117,7 @@ export default function AnomalyPage() {
             {/* Positive signals */}
             {data.positive.length > 0 && (
               <>
-                <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">
+                <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3">
                   Positive signals
                 </div>
                 {data.positive.map((a, i) => (
@@ -126,8 +126,8 @@ export default function AnomalyPage() {
                       {i === 0 ? <TrendingUp size={14} className="text-[#064d38]" /> : <CheckCircle2 size={14} className="text-[#0a3d7a]" />}
                     </div>
                     <div>
-                      <div className={`text-[13px] font-semibold ${i === 0 ? "text-[#064d38]" : "text-[#0a3d7a]"}`}>{a.title}</div>
-                      <div className="text-[12px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className={`text-[16px] font-semibold ${i === 0 ? "text-[#064d38]" : "text-[#0a3d7a]"}`}>{a.title}</div>
+                      <div className="text-[15px] text-[#686864] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -144,7 +144,7 @@ export default function AnomalyPage() {
                   { label: "Repeat rate", value: `${data.summary.repeatRate}%`, warn: data.summary.repeatRate < 20 },
                   { label: "Projected monthly", value: `₹${data.summary.projectedMonthly.toLocaleString("en-IN")}` },
                 ].map(row => (
-                  <div key={row.label} className="flex items-center justify-between text-[12px]">
+                  <div key={row.label} className="flex items-center justify-between text-[15px]">
                     <span className="text-[#686864]">{row.label}</span>
                     <span className={`font-semibold ${row.warn ? "text-[#d94040]" : "text-[#181816]"}`}>{row.value}</span>
                   </div>
@@ -152,7 +152,7 @@ export default function AnomalyPage() {
               </div>
             </Card>
 
-            <div className="mt-3 text-[11px] text-[#9e9e9a] leading-relaxed bg-[#f7f7f5] rounded-xl p-3">
+            <div className="mt-3 text-[14px] text-[#9e9e9a] leading-relaxed bg-[#f7f7f5] rounded-xl p-3">
               <strong className="text-[#686864]">About anomaly detection:</strong> Signals are computed from your live Shopify data — stock levels, order patterns, COD ratio, and customer repeat behaviour. Connect Meta Ads and GA4 to unlock ROAS anomalies and traffic drop alerts.
             </div>
           </div>

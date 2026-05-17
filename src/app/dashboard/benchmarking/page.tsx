@@ -29,9 +29,9 @@ export default function BenchmarkingPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Competitor Benchmarking</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Your store vs Indian ethnic D2C category averages</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Your store vs Indian ethnic D2C category averages</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
           <FileText size={12} /> PDF
         </button>
       </div>
@@ -40,11 +40,11 @@ export default function BenchmarkingPage() {
         <Card>
           <CardHeader title="Key metric comparison" />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-collapse">
+            <table className="w-full text-[15px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.09]">
                   {["Metric", "Your store", "Category avg", "Top 10%", "Your rank"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -68,22 +68,22 @@ export default function BenchmarkingPage() {
         <Card>
           <CardHeader title="90-day improvement roadmap" />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-collapse">
+            <table className="w-full text-[15px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.09]">
                   {["Action", "Effort", "Expected impact", "P"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {roadmap.map((r, i) => (
                   <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
-                    <td className="py-1.5 px-1.5 text-[10px]">{r.action}</td>
+                    <td className="py-1.5 px-1.5 text-[13px]">{r.action}</td>
                     <td className="py-2 px-2">
                       <Badge variant={r.effort === "Low" ? "green" : r.effort === "Med" ? "amber" : "red"}>{r.effort}</Badge>
                     </td>
-                    <td className="py-1.5 px-1.5 text-[10px]">{r.impact}</td>
+                    <td className="py-1.5 px-1.5 text-[13px]">{r.impact}</td>
                     <td className="py-2 px-2"><Badge variant={r.pV}>{r.priority}</Badge></td>
                   </tr>
                 ))}

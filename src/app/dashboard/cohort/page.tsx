@@ -30,13 +30,13 @@ export default function CohortPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Cohort Analysis</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Customer retention curves by acquisition month</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Customer retention curves by acquisition month</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
             <FileSpreadsheet size={12} /> CSV
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
             <FileText size={12} /> PDF
           </button>
         </div>
@@ -45,11 +45,11 @@ export default function CohortPage() {
       <Card className="mb-2">
         <CardHeader title="Retention cohort matrix" right="% retained by month after first purchase" />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px] border-collapse min-w-[560px]">
+          <table className="w-full text-[15px] border-collapse min-w-[560px]">
             <thead>
               <tr className="border-b border-black/[0.09]">
                 {["Cohort", "Customers", "Month 0", "Month 1", "Month 2", "Month 3", "Month 4", "Month 5"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-semibold text-[#686864]">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[14px] font-semibold text-[#686864]">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -60,7 +60,7 @@ export default function CohortPage() {
                   <td className="py-1.5 px-2">{row.customers}</td>
                   {row.retention.map((val, j) => (
                     <td key={j} className="py-1 px-1">
-                      <div className={`text-center px-2 py-1 rounded text-[10px] ${retentionColor(val)}`}>
+                      <div className={`text-center px-2 py-1 rounded text-[13px] ${retentionColor(val)}`}>
                         {val !== null ? `${val}%` : "—"}
                       </div>
                     </td>

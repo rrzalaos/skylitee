@@ -12,8 +12,8 @@ export function Card({ children, className }: { children: React.ReactNode; class
 export function CardHeader({ title, right }: { title: React.ReactNode; right?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 mb-3">
-      <div className="text-[13px] font-semibold text-[#181816]">{title}</div>
-      {right && <div className="text-[11px] text-[#686864] font-normal flex items-center gap-1.5">{right}</div>}
+      <div className="text-[16px] font-semibold text-[#181816]">{title}</div>
+      {right && <div className="text-[14px] text-[#686864] font-normal flex items-center gap-1.5">{right}</div>}
     </div>
   );
 }

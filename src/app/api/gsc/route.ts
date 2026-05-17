@@ -9,7 +9,6 @@ export async function GET(req: NextRequest) {
 
   const token = await getGoogleAccessToken(refreshToken);
 
-  // List sites
   const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -22,33 +21,42 @@ export async function GET(req: NextRequest) {
   const siteUrl = savedSite && sites.find(s => s.siteUrl === savedSite)
     ? savedSite
     : sites[0].siteUrl;
-  const now = new Date();
-  const endDate = now.toISOString().split("T")[0];
-  const startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  // Aggregate totals
-  const [totalsRes, keywordsRes, pagesRes] = await Promise.all([
-    fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, rowLimit: 1 }),
-    }),
-    fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, dimensions: ["query"], rowLimit: 20, dimensionFilterGroups: [] }),
-    }),
-    fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate, dimensions: ["page"], rowLimit: 10 }),
-    }),
+  const now = new Date();
+  const defaultEnd = now.toISOString().split("T")[0];
+  const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
+  const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
+
+  const query = (extra: object) =>
+    fetch(
+      `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate, endDate, ...extra }),
+      }
+    );
+
+  const [totalsRes, keywordsRes, pagesRes, devicesRes, countriesRes, dailyRes] = await Promise.all([
+    query({ rowLimit: 1 }),
+    query({ dimensions: ["query"], rowLimit: 50 }),
+    query({ dimensions: ["page"], rowLimit: 20 }),
+    query({ dimensions: ["device"], rowLimit: 10 }),
+    query({ dimensions: ["country"], rowLimit: 15 }),
+    query({ dimensions: ["date"], rowLimit: 90 }),
   ]);
 
   interface GSCRow { keys?: string[]; clicks: number; impressions: number; ctr: number; position: number; }
-  const totals = await totalsRes.json() as { rows?: GSCRow[] };
-  const keywords = await keywordsRes.json() as { rows?: GSCRow[] };
-  const pages = await pagesRes.json() as { rows?: GSCRow[] };
+
+  const [totals, keywords, pages, devices, countries, daily] = await Promise.all([
+    totalsRes.json() as Promise<{ rows?: GSCRow[] }>,
+    keywordsRes.json() as Promise<{ rows?: GSCRow[] }>,
+    pagesRes.json() as Promise<{ rows?: GSCRow[] }>,
+    devicesRes.json() as Promise<{ rows?: GSCRow[] }>,
+    countriesRes.json() as Promise<{ rows?: GSCRow[] }>,
+    dailyRes.json() as Promise<{ rows?: GSCRow[] }>,
+  ]);
 
   const aggRow = totals.rows?.[0];
 
@@ -73,6 +81,24 @@ export async function GET(req: NextRequest) {
       clicks: r.clicks,
       impressions: r.impressions,
       ctr: +(r.ctr * 100).toFixed(1),
+      position: +r.position.toFixed(1),
+    })),
+    devices: (devices.rows ?? []).map(r => ({
+      device: r.keys?.[0] ?? "",
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: +(r.ctr * 100).toFixed(1),
+    })),
+    countries: (countries.rows ?? []).map(r => ({
+      country: r.keys?.[0] ?? "",
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: +(r.ctr * 100).toFixed(1),
+    })),
+    daily: (daily.rows ?? []).map(r => ({
+      date: r.keys?.[0] ?? "",
+      clicks: r.clicks,
+      impressions: r.impressions,
     })),
   });
 }

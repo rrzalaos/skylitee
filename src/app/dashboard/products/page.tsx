@@ -61,15 +61,15 @@ export default function ProductsPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Product Analytics</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Shopify · live inventory & sales · this month</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Shopify · live inventory & sales · this month</p>
         </div>
-        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
+        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
           <FileSpreadsheet size={12} /> CSV
         </button>
       </div>
 
       {loading ? (
-        <div className="text-[12px] text-[#686864] py-8 text-center">Loading real product data...</div>
+        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real product data...</div>
       ) : (
         <>
           <div className="grid grid-cols-4 gap-2 mb-3">
@@ -92,7 +92,7 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Revenue by product" right="This month" />
               {withSales.length === 0 ? (
-                <div className="text-[12px] text-[#686864] py-6 text-center">No sales this month yet</div>
+                <div className="text-[15px] text-[#686864] py-6 text-center">No sales this month yet</div>
               ) : (
                 <>
                   {withSales.slice(0, 8).map((p, i) => (
@@ -114,11 +114,11 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Inventory & demand forecast" right="Based on this month" />
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px] border-collapse">
+                <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["Product", "Stock", "Sold/day", "Days left", "Action"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>

@@ -102,7 +102,7 @@ export default function ChatPage() {
     <div>
       <div className="mb-3">
         <h2 className="text-lg font-semibold">AI Assistant</h2>
-        <p className="text-[12px] text-[#686864] mt-0.5">Ask anything · Shopify connected · {storeName}</p>
+        <p className="text-[15px] text-[#686864] mt-0.5">Ask anything · Shopify connected · {storeName}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -114,12 +114,12 @@ export default function ChatPage() {
               <Brain size={13} className="text-white" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-[#181816]">Skylitee AI</div>
-              <div className="text-[10px] text-[#686864]">Shopify · Anomaly detection · Real-time</div>
+              <div className="text-[14px] font-semibold text-[#181816]">Skylitee AI</div>
+              <div className="text-[13px] text-[#686864]">Shopify · Anomaly detection · Real-time</div>
             </div>
             <div className="ml-auto flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" />
-              <span className="text-[10px] text-[#0d6b4f]">Live</span>
+              <span className="text-[13px] text-[#0d6b4f]">Live</span>
             </div>
           </div>
 
@@ -127,11 +127,11 @@ export default function ChatPage() {
           <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5">
             {messages.map((msg, i) => (
               <div key={i} className={`max-w-[86%] ${msg.role === "user" ? "self-end" : "self-start"}`}>
-                <div className="text-[10px] text-[#9e9e9a] mb-1" style={{ textAlign: msg.role === "user" ? "right" : "left" }}>
+                <div className="text-[13px] text-[#9e9e9a] mb-1" style={{ textAlign: msg.role === "user" ? "right" : "left" }}>
                   {msg.role === "user" ? "You" : "Skylitee AI"}
                 </div>
                 <div
-                  className={`px-3 py-2.5 text-[11px] leading-relaxed whitespace-pre-wrap ${
+                  className={`px-3 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap ${
                     msg.role === "user"
                       ? "bg-[#17a773] text-white rounded-xl rounded-tr-sm"
                       : "bg-[#f7f7f5] text-[#181816] rounded-xl rounded-tl-sm"
@@ -144,7 +144,7 @@ export default function ChatPage() {
             ))}
             {loading && (
               <div className="self-start max-w-[86%]">
-                <div className="text-[10px] text-[#9e9e9a] mb-1">Skylitee AI</div>
+                <div className="text-[13px] text-[#9e9e9a] mb-1">Skylitee AI</div>
                 <div className="bg-[#f7f7f5] px-3 py-2.5 rounded-xl rounded-tl-sm flex gap-1 items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#17a773] animate-bounce" style={{ animationDelay: "0ms" }} />
                   <span className="w-1.5 h-1.5 rounded-full bg-[#17a773] animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -157,13 +157,13 @@ export default function ChatPage() {
 
           {/* Suggestions */}
           <div className="px-3 py-2 border-t border-black/[0.09] bg-[#f7f7f5]">
-            <div className="text-[10px] text-[#9e9e9a] mb-1.5">Try asking:</div>
+            <div className="text-[13px] text-[#9e9e9a] mb-1.5">Try asking:</div>
             <div className="flex flex-wrap gap-1.5 overflow-hidden" style={{ maxHeight: 54 }}>
               {suggestions.slice(0, 4).map((s, i) => (
                 <button
                   key={i}
                   onClick={() => sendMessage(s)}
-                  className="px-2.5 py-1 border border-black/[0.09] rounded-full text-[10px] text-[#686864] bg-white hover:bg-[#e0f5ee] hover:text-[#064d38] hover:border-[#9FE1CB] transition-colors"
+                  className="px-2.5 py-1 border border-black/[0.09] rounded-full text-[13px] text-[#686864] bg-white hover:bg-[#e0f5ee] hover:text-[#064d38] hover:border-[#9FE1CB] transition-colors"
                 >
                   {s}
                 </button>
@@ -179,13 +179,13 @@ export default function ChatPage() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && sendMessage()}
               placeholder="Ask about orders, customers, products, revenue..."
-              className="flex-1 px-2.5 py-2 bg-[#f7f7f5] border border-black/[0.09] rounded-lg text-[11px] text-[#181816] focus:outline-none focus:border-[#17a773] placeholder:text-[#9e9e9a]"
+              className="flex-1 px-2.5 py-2 bg-[#f7f7f5] border border-black/[0.09] rounded-lg text-[14px] text-[#181816] focus:outline-none focus:border-[#17a773] placeholder:text-[#9e9e9a]"
               disabled={loading}
             />
             <button
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
-              className="px-3 py-2 bg-[#17a773] text-white rounded-lg text-[11px] font-semibold disabled:opacity-50 hover:bg-[#0d6b4f] transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 bg-[#17a773] text-white rounded-lg text-[14px] font-semibold disabled:opacity-50 hover:bg-[#0d6b4f] transition-colors flex items-center gap-1.5"
             >
               <Send size={12} /> Send
             </button>
@@ -195,7 +195,7 @@ export default function ChatPage() {
         {/* Right panel */}
         <div>
           <Card className="mb-2">
-            <div className="text-[11px] font-semibold text-[#181816] mb-3">What I can analyse</div>
+            <div className="text-[14px] font-semibold text-[#181816] mb-3">What I can analyse</div>
             {[
               {
                 label: "Orders & revenue",
@@ -211,8 +211,8 @@ export default function ChatPage() {
               },
             ].map((section) => (
               <div key={section.label} className="mb-3">
-                <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1 border-b border-black/[0.09] mb-1.5">{section.label}</div>
-                <div className="text-[11px] text-[#686864] space-y-0.5">
+                <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1 border-b border-black/[0.09] mb-1.5">{section.label}</div>
+                <div className="text-[14px] text-[#686864] space-y-0.5">
                   {section.qs.map((q, i) => (
                     <div key={i} className="leading-relaxed cursor-pointer hover:text-[#0d6b4f]" onClick={() => sendMessage(q.replace(/['"]/g, ""))}>{q}</div>
                   ))}
@@ -222,17 +222,17 @@ export default function ChatPage() {
           </Card>
 
           <Card>
-            <div className="text-[11px] font-semibold text-[#181816] mb-3 flex items-center gap-1.5">
+            <div className="text-[14px] font-semibold text-[#181816] mb-3 flex items-center gap-1.5">
               <Zap size={12} className="text-[#17a773]" /> Live store signals
             </div>
             <div className="flex flex-col gap-2">
               {aiActions.length > 0 ? aiActions.map((a, i) => (
-                <div key={i} className="flex items-start gap-2 text-[11px]">
+                <div key={i} className="flex items-start gap-2 text-[14px]">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${a.color}`} />
                   <span className="flex-1 leading-relaxed">{a.text}</span>
                 </div>
               )) : (
-                <div className="text-[11px] text-[#9e9e9a]">Loading store signals...</div>
+                <div className="text-[14px] text-[#9e9e9a]">Loading store signals...</div>
               )}
             </div>
           </Card>

@@ -24,9 +24,9 @@ export default function WeeklyPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Weekly Digest</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Auto-generated · Shopify live + Meta estimated</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Auto-generated · Shopify live + Meta estimated</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
           <FileText size={12} /> PDF
         </button>
       </div>
@@ -34,8 +34,8 @@ export default function WeeklyPage() {
       <div className="grid grid-cols-2 gap-2">
         <div>
           <div className="bg-[#e0f5ee] border border-[#9FE1CB] rounded-xl px-3.5 py-3 mb-2">
-            <div className="text-[11px] font-semibold text-[#064d38] mb-1.5 flex items-center gap-1.5">✨ This week's headline</div>
-            <div className="text-[12px] font-medium text-[#0d6b4f] leading-relaxed">
+            <div className="text-[14px] font-semibold text-[#064d38] mb-1.5 flex items-center gap-1.5">✨ This week's headline</div>
+            <div className="text-[15px] font-medium text-[#0d6b4f] leading-relaxed">
               Best week of August. ROAS 1.34 on ₹63K spend. Week 3 strategy should be replicated in Week 4 immediately.
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function WeeklyPage() {
               ].map((s, i) => (
                 <div key={i} className={`text-center p-2 rounded-lg ${s.bg}`}>
                   <div className={`text-lg font-semibold ${s.color}`}>{s.value}</div>
-                  <div className="text-[12px] text-[#686864] mt-0.5">{s.label}</div>
+                  <div className="text-[15px] text-[#686864] mt-0.5">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -74,8 +74,8 @@ export default function WeeklyPage() {
                   {a.num}
                 </div>
                 <div>
-                  <div className="text-[11px] font-semibold text-[#181816]">{a.title}</div>
-                  <div className="text-[12px] text-[#686864] mt-0.5">{a.sub}</div>
+                  <div className="text-[14px] font-semibold text-[#181816]">{a.title}</div>
+                  <div className="text-[15px] text-[#686864] mt-0.5">{a.sub}</div>
                 </div>
               </div>
             ))}
@@ -86,7 +86,7 @@ export default function WeeklyPage() {
             <BarRow label="Revenue" pct={72} value="₹72,000" color="green" />
             <BarRow label="Ad Spend" pct={60} value="₹52,000" color="red" />
             <BarRow label="Orders" pct={65} value="66" color="blue" />
-            <div className="mt-2 text-[10px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
+            <div className="mt-2 text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
               + Google Ads connected: add ₹18–22K on top of forecast
             </div>
           </Card>

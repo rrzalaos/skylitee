@@ -23,9 +23,9 @@ interface InsightCardProps {
 export function InsightCard({ title, body, type = "default", action }: InsightCardProps) {
   return (
     <div className={cn("bg-[#f7f7f5] rounded-r-lg p-3 mb-2 border-l-[3px]", borderColors[type])}>
-      <div className="text-[13px] font-semibold text-[#181816]">{title}</div>
-      <div className="text-[12px] text-[#686864] mt-0.5 leading-relaxed">{body}</div>
-      {action && <div className="text-[12px] text-[#0a3d7a] font-semibold mt-1.5 cursor-pointer flex items-center gap-1">→ {action}</div>}
+      <div className="text-[16px] font-semibold text-[#181816]">{title}</div>
+      <div className="text-[15px] text-[#686864] mt-0.5 leading-relaxed">{body}</div>
+      {action && <div className="text-[15px] text-[#0a3d7a] font-semibold mt-1.5 cursor-pointer flex items-center gap-1">→ {action}</div>}
     </div>
   );
 }

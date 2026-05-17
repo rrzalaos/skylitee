@@ -72,15 +72,15 @@ export default function SalesPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">Sales Report</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Shopify · This month · Live data</p>
+          <p className="text-[15px] text-[#686864] mt-0.5">Shopify · This month · Live data</p>
         </div>
-        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4] hover:bg-[#e0f5e9] transition-colors">
+        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[15px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4] hover:bg-[#e0f5e9] transition-colors">
           <FileSpreadsheet size={13} /> Export CSV
         </button>
       </div>
 
       {loading ? (
-        <div className="text-[12px] text-[#686864] py-8 text-center">Loading real store data...</div>
+        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real store data...</div>
       ) : (
         <>
           <div className="grid grid-cols-4 gap-2.5 mb-4">
@@ -94,11 +94,11 @@ export default function SalesPage() {
             <Card>
               <CardHeader title="Channel breakdown" />
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px] border-collapse">
+                <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["Channel", "Sales", "Orders", "Status"].map(h => (
-                        <th key={h} className="text-left py-2 px-2 text-[11px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-2 px-2 text-[14px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -135,7 +135,7 @@ export default function SalesPage() {
                 ].map(s => (
                   <div key={s.label} className="text-center p-3 bg-[#f7f7f5] rounded-xl">
                     <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-                    <div className="text-[12px] text-[#686864] mt-0.5">{s.label}</div>
+                    <div className="text-[15px] text-[#686864] mt-0.5">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -156,14 +156,14 @@ export default function SalesPage() {
           <Card>
             <CardHeader title="SKU performance" right="Top by revenue · This month" />
             {products.length === 0 ? (
-              <div className="text-[12px] text-[#686864] py-6 text-center">No sales data for this month yet</div>
+              <div className="text-[15px] text-[#686864] py-6 text-center">No sales data for this month yet</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px] border-collapse">
+                <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["Product", "Orders", "Revenue", "Stock", "Action"].map(h => (
-                        <th key={h} className="text-left py-2 px-2 text-[11px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-2 px-2 text-[14px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>
