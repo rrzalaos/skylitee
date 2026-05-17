@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
 
   if (sites.length === 0) return NextResponse.json({ error: "no_sites" });
 
-  const siteUrl = sites[0].siteUrl;
+  const savedSite = req.cookies.get("google_gsc_site")?.value;
+  const siteUrl = savedSite && sites.find(s => s.siteUrl === savedSite)
+    ? savedSite
+    : sites[0].siteUrl;
   const now = new Date();
   const endDate = now.toISOString().split("T")[0];
   const startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];

@@ -22,8 +22,11 @@ export async function GET(req: NextRequest) {
   const properties = accountsData.accountSummaries?.flatMap(a => a.propertySummaries ?? []) ?? [];
   if (properties.length === 0) return NextResponse.json({ error: "no_properties" });
 
-  const propertyId = properties[0].property; // e.g. "properties/384920"
-  const propertyName = properties[0].displayName;
+  const savedProperty = req.cookies.get("google_ga4_property")?.value;
+  const selected = (savedProperty && properties.find(p => p.property === savedProperty))
+    || properties[0];
+  const propertyId = selected.property;
+  const propertyName = selected.displayName;
 
   const runReport = async (dimensions: GA4Dimension[], metrics: GA4Metric[], limit = 10) => {
     const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {

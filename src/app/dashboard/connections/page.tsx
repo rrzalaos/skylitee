@@ -4,10 +4,19 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ShoppingBag, Share2, Search, BarChart3, Megaphone, CheckCircle2, XCircle } from "lucide-react";
 
+interface GoogleSite { url: string; }
+interface GA4Property { id: string; name: string; account: string; }
+
 function ConnectionsContent() {
   const [toastMsg, setToastMsg] = useState("");
   const [shopName, setShopName] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [gscSites, setGscSites] = useState<GoogleSite[]>([]);
+  const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([]);
+  const [selectedGsc, setSelectedGsc] = useState("");
+  const [selectedGa4, setSelectedGa4] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -16,16 +25,39 @@ function ConnectionsContent() {
       .then(d => { if (d.shop) setShopName(d.shop); })
       .catch(() => {});
 
-    // Check Google connection by calling GSC
-    fetch("/api/gsc")
+    fetch("/api/google/sites")
       .then(r => r.json())
-      .then(d => { if (!d.error || d.error !== "not_connected") setGoogleConnected(true); })
+      .then(d => {
+        if (d.gscSites) {
+          setGoogleConnected(true);
+          setGscSites(d.gscSites);
+          setGa4Properties(d.ga4Properties ?? []);
+          if (d.gscSites[0]) setSelectedGsc(d.gscSites[0].url);
+          if (d.ga4Properties?.[0]) setSelectedGa4(d.ga4Properties[0].id);
+        }
+      })
       .catch(() => {});
 
-    // Show success toast if just connected
     const connected = searchParams.get("connected");
-    if (connected === "google") setToastMsg("Google (GSC + GA4) connected successfully!");
+    if (connected === "google") {
+      setShowPicker(true);
+      setToastMsg("Google connected! Now choose your site and property below.");
+    }
+
   }, [searchParams]);
+
+  const saveGoogleSelection = async () => {
+    setSaving(true);
+    await fetch("/api/google/sites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gscSite: selectedGsc, ga4Property: selectedGa4 }),
+    });
+    setSaving(false);
+    setShowPicker(false);
+    setToastMsg("Google properties saved — GSC and GA4 are now active!");
+    setTimeout(() => setToastMsg(""), 3000);
+  };
 
   const platforms = [
     {
@@ -100,6 +132,48 @@ function ConnectionsContent() {
               )}
             </div>
           ))}
+
+          {/* Google property picker */}
+          {googleConnected && (showPicker || true) && gscSites.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-black/[0.06]">
+              <div className="text-[11px] font-semibold text-[#181816] mb-2">Select your Google properties</div>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-[#686864] block mb-1">Search Console site</label>
+                  <select
+                    value={selectedGsc}
+                    onChange={e => setSelectedGsc(e.target.value)}
+                    className="w-full text-[12px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
+                  >
+                    {gscSites.map(s => (
+                      <option key={s.url} value={s.url}>{s.url}</option>
+                    ))}
+                  </select>
+                </div>
+                {ga4Properties.length > 0 && (
+                  <div>
+                    <label className="text-[10px] text-[#686864] block mb-1">GA4 property</label>
+                    <select
+                      value={selectedGa4}
+                      onChange={e => setSelectedGa4(e.target.value)}
+                      className="w-full text-[12px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
+                    >
+                      {ga4Properties.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.account})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <button
+                  onClick={saveGoogleSelection}
+                  disabled={saving}
+                  className="w-full py-2 bg-[#4285F4] text-white rounded-lg text-[11px] font-semibold hover:bg-[#3367d6] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Selection"}
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
 
         <div>
