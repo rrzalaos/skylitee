@@ -31,7 +31,7 @@ interface AnomalyData {
   summary: { projectedMonthly: number; grossSales: number; totalOrders: number; codPct: number; repeatRate: number };
 }
 interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; clicks: number; ctr: number; impressions: number; frequency: number }
-interface GscKPIs { clicks: number; impressions: number; ctr: number; position: number }
+interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPosition: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
 
 /* ─── Helpers ────────────────────────────────────────────────── */
@@ -375,7 +375,7 @@ export default function CommandCenterPage() {
                   </div>
                   <div className="text-right">
                     <div className={cn("text-[12px] font-semibold", gsc.ctr >= 1.5 ? "text-[#F97316]" : "text-[#EAB308]")}>{gsc.ctr.toFixed(1)}% CTR</div>
-                    <div className="text-[11px] text-[#A1A1AA]">pos {gsc.position.toFixed(1)}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">pos {gsc.avgPosition.toFixed(1)}</div>
                   </div>
                 </div>
               ) : (
