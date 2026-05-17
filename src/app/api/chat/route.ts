@@ -9,6 +9,7 @@ interface Customer { orders_count: number; total_spent: string; }
 
 interface MetaInsightRow {
   spend?: string; impressions?: string; clicks?: string; ctr?: string; cpc?: string;
+  cpm?: string; reach?: string; frequency?: string;
   campaign_name?: string; campaign_id?: string;
 }
 
