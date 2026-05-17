@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/utils";
+import { useDateRange } from "@/lib/date-range-context";
 import { FileSpreadsheet, ShoppingBag, Share2, Megaphone, Search } from "lucide-react";
 
 interface DashboardData {
@@ -38,19 +39,57 @@ const signalBadge: Record<string, { label: string; variant: "green" | "amber" | 
 };
 
 export default function SalesPage() {
+  const { range } = useDateRange();
   const [dash, setDash] = useState<DashboardData | null>(null);
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/shopify/dashboard").then(r => r.json()),
-      fetch("/api/shopify/products").then(r => r.json()),
-    ]).then(([d, p]) => {
-      if (d.kpis) setDash(d);
-      if (p.products) setProducts(p.products);
-    }).finally(() => setLoading(false));
-  }, []);
+  // Channel connection + data state
+  const [metaConnected, setMetaConnected] = useState(false);
+  const [metaSpend, setMetaSpend] = useState<number | null>(null);
+  const [metaRevenue, setMetaRevenue] = useState<number | null>(null);
+  const [metaOrders, setMetaOrders] = useState<number | null>(null);
+  const [gscConnected, setGscConnected] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [dashRes, productsRes, metaAccountRes, googleRes] = await Promise.all([
+        fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`),
+        fetch("/api/shopify/products"),
+        fetch("/api/meta/accounts"),
+        fetch("/api/google/sites"),
+      ]);
+
+      const [dashJson, productsJson, metaAccountJson, googleJson] = await Promise.all([
+        dashRes.json(),
+        productsRes.json(),
+        metaAccountRes.json(),
+        googleRes.json(),
+      ]);
+
+      if (dashJson.kpis) setDash(dashJson);
+      if (productsJson.products) setProducts(productsJson.products);
+
+      const metaOk = !metaAccountJson.error;
+      setMetaConnected(metaOk);
+      setGscConnected(!!googleJson.gscConnected);
+
+      if (metaOk) {
+        const metaRes = await fetch(`/api/meta?from=${range.from}&to=${range.to}`);
+        const metaJson = await metaRes.json();
+        if (!metaJson.error && metaJson.kpis) {
+          setMetaSpend(metaJson.kpis.spend);
+          setMetaRevenue(metaJson.kpis.purchaseValue);
+          setMetaOrders(metaJson.kpis.purchases);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [range.from, range.to]);
+
+  useEffect(() => { load(); }, [load]);
 
   const codPct = dash ? Math.round((dash.kpis.codOrders / Math.max(dash.kpis.totalOrders, 1)) * 100) : 0;
   const prepaidPct = 100 - codPct;
@@ -103,27 +142,74 @@ export default function SalesPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {/* Shopify — always live */}
                     <tr className="border-b border-black/[0.06] hover:bg-[#f7f7f5]">
-                      <td className="py-2 px-2 font-medium flex items-center gap-1.5"><ShoppingBag size={11} className="text-[#96BF48]" /> Shopify</td>
+                      <td className="py-2 px-2 font-medium">
+                        <div className="flex items-center gap-1.5"><ShoppingBag size={11} className="text-[#96BF48]" /> Shopify</div>
+                      </td>
                       <td className="py-2 px-2 font-semibold">{dash ? formatINR(dash.kpis.grossSales) : "—"}</td>
                       <td className="py-2 px-2">{dash?.kpis.totalOrders ?? "—"}</td>
                       <td className="py-2 px-2"><Badge variant="green">Live</Badge></td>
                     </tr>
-                    {[
-                      { label: "Meta Ads", icon: <Share2 size={11} className="text-[#1877F2]" /> },
-                      { label: "Google Ads", icon: <Megaphone size={11} className="text-[#4285F4]" /> },
-                      { label: "Search Console", icon: <Search size={11} className="text-[#4285F4]" /> },
-                    ].map(ch => (
-                      <tr key={ch.label} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
-                        <td className="py-2 px-2 font-medium flex items-center gap-1.5">{ch.icon} {ch.label}</td>
-                        <td className="py-2 px-2 text-[#9e9e9a]">—</td>
-                        <td className="py-2 px-2 text-[#9e9e9a]">—</td>
-                        <td className="py-2 px-2"><Badge variant="red">Not connected</Badge></td>
-                      </tr>
-                    ))}
+
+                    {/* Meta Ads */}
+                    <tr className="border-b border-black/[0.06] hover:bg-[#f7f7f5]">
+                      <td className="py-2 px-2 font-medium">
+                        <div className="flex items-center gap-1.5"><Share2 size={11} className="text-[#1877F2]" /> Meta Ads</div>
+                      </td>
+                      <td className="py-2 px-2">
+                        {metaConnected && metaRevenue !== null
+                          ? <span className="font-semibold">{formatINR(metaRevenue)}</span>
+                          : <span className="text-[#9e9e9a]">—</span>}
+                      </td>
+                      <td className="py-2 px-2">
+                        {metaConnected && metaOrders !== null
+                          ? metaOrders
+                          : <span className="text-[#9e9e9a]">—</span>}
+                      </td>
+                      <td className="py-2 px-2">
+                        {metaConnected
+                          ? <Badge variant="green">Connected</Badge>
+                          : <Badge variant="red">Not connected</Badge>}
+                      </td>
+                    </tr>
+
+                    {/* Google Ads */}
+                    <tr className="border-b border-black/[0.06] hover:bg-[#f7f7f5]">
+                      <td className="py-2 px-2 font-medium">
+                        <div className="flex items-center gap-1.5"><Megaphone size={11} className="text-[#4285F4]" /> Google Ads</div>
+                      </td>
+                      <td className="py-2 px-2 text-[#9e9e9a]">—</td>
+                      <td className="py-2 px-2 text-[#9e9e9a]">—</td>
+                      <td className="py-2 px-2"><Badge variant="red">Not connected</Badge></td>
+                    </tr>
+
+                    {/* Search Console */}
+                    <tr className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
+                      <td className="py-2 px-2 font-medium">
+                        <div className="flex items-center gap-1.5"><Search size={11} className="text-[#4285F4]" /> Search Console</div>
+                      </td>
+                      <td className="py-2 px-2 text-[#9e9e9a]">—</td>
+                      <td className="py-2 px-2 text-[#9e9e9a]">—</td>
+                      <td className="py-2 px-2">
+                        {gscConnected
+                          ? <Badge variant="green">Connected</Badge>
+                          : <Badge variant="red">Not connected</Badge>}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
+
+              {/* Meta spend note */}
+              {metaConnected && metaSpend !== null && metaSpend > 0 && (
+                <div className="mt-2 text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
+                  Meta ad spend this period: <span className="font-semibold text-[#181816]">{formatINR(metaSpend)}</span>
+                  {metaRevenue !== null && metaSpend > 0 && (
+                    <> · ROAS <span className="font-semibold text-[#181816]">{(metaRevenue / metaSpend).toFixed(2)}×</span></>
+                  )}
+                </div>
+              )}
             </Card>
 
             <Card>
