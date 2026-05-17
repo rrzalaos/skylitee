@@ -1,21 +1,24 @@
 "use client";
-import { useEffect } from "react";
+import Link from "next/link";
+import { AlertCircle } from "lucide-react";
 
-export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error("Dashboard error:", error); }, [error]);
-
+export default function DashboardError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="p-6 max-w-2xl">
-      <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-2xl p-5">
-        <div className="text-[13px] font-bold text-[#DC2626] mb-2">Dashboard crashed — error details:</div>
-        <pre className="text-[11px] text-[#991B1B] whitespace-pre-wrap break-all bg-white rounded-xl p-3 border border-[#FCA5A5] max-h-64 overflow-auto">
-          {error.message}
-          {"\n\n"}
-          {error.stack}
-        </pre>
-        <button onClick={reset} className="mt-3 px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold">
-          Try again
-        </button>
+    <div className="flex items-center justify-center py-24">
+      <div className="text-center">
+        <div className="w-12 h-12 bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#FCA5A5] dark:border-[#991B1B]">
+          <AlertCircle size={20} className="text-[#EF4444]" />
+        </div>
+        <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Something went wrong</div>
+        <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mb-4">The dashboard couldn&apos;t load. Try refreshing.</div>
+        <div className="flex items-center gap-2 justify-center">
+          <button onClick={reset} className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold hover:bg-[#EA580C] transition-colors">
+            Try again
+          </button>
+          <Link href="/dashboard/connections" className="px-4 py-2 border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-[13px] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+            Check connections
+          </Link>
+        </div>
       </div>
     </div>
   );
