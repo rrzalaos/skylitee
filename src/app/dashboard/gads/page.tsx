@@ -6,8 +6,8 @@ import { formatINR } from "@/lib/utils";
 import Link from "next/link";
 
 const plannedCampaigns = [
-  { name: "Search · Brand", keywords: "fabonique, fabonique.com", budget: 500, roas: "3.2+", roasV: "green" as const, priority: "P1", pV: "red" as const },
-  { name: "Search · Category", keywords: "buy embroidery dress, fabric sets", budget: 1200, roas: "2.1", roasV: "amber" as const, priority: "P1", pV: "red" as const },
+  { name: "Search · Brand", keywords: "your brand, your domain", budget: 500, roas: "3.2+", roasV: "green" as const, priority: "P1", pV: "red" as const },
+  { name: "Search · Category", keywords: "buy ethnic wear, fabric sets online", budget: 1200, roas: "2.1", roasV: "amber" as const, priority: "P1", pV: "red" as const },
   { name: "Shopping · PMax", keywords: "All products feed", budget: 1500, roas: "1.8", roasV: "amber" as const, priority: "P2", pV: "amber" as const },
   { name: "Display · Remarketing", keywords: "Shopify visitors + cart abandoners", budget: 600, roas: "2.6", roasV: "green" as const, priority: "P3", pV: "blue" as const },
 ];
@@ -27,7 +27,7 @@ export default function GAdsPage() {
         <div className="flex items-center justify-between w-full flex-wrap gap-2">
           <div>
             <div className="font-semibold text-[11px]">Google Ads not connected</div>
-            <div>Below is your AI-planned campaign structure based on GSC keyword data and Meta performance patterns.</div>
+            <div>Below is your AI-planned campaign structure based on GSC keyword data and category patterns.</div>
           </div>
           <Link href="/dashboard/connections">
             <button className="px-3 py-1.5 bg-[#d94040] text-white rounded-lg text-[11px] font-semibold whitespace-nowrap">
@@ -46,7 +46,7 @@ export default function GAdsPage() {
 
       <div className="grid grid-cols-2 gap-2">
         <Card>
-          <CardHeader title="AI campaign structure" right={<Badge variant="purple">Planned</Badge>} />
+          <CardHeader title="AI campaign structure" right={<Badge variant="purple">Planned — not live</Badge>} />
           <div className="overflow-x-auto">
             <table className="w-full text-[12px] border-collapse">
               <thead>
@@ -70,12 +70,12 @@ export default function GAdsPage() {
             </table>
           </div>
           <div className="mt-2 text-[10px] text-[#064d38] bg-[#e0f5ee] rounded-lg px-2.5 py-2">
-            Est. ₹3,800/day · ₹1,14,000/month · Revenue ₹2,05,200 · ROAS 1.80
+            Est. ₹3,800/day · ₹1,14,000/month · Revenue ₹2,05,200 · ROAS 1.80 (AI estimate, not live)
           </div>
         </Card>
 
         <Card>
-          <CardHeader title="GSC keyword opportunities" />
+          <CardHeader title="GSC keyword opportunities" right="Connect GSC for live data" />
           {gscKeywords.map((k, i) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-black/[0.06] last:border-0">
               <span className="text-[11px] text-[#181816]">{k.query}</span>
@@ -85,6 +85,9 @@ export default function GAdsPage() {
               </div>
             </div>
           ))}
+          <div className="mt-2 text-[10px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
+            Connect Search Console in Connections to see your real keyword rankings.
+          </div>
         </Card>
       </div>
     </div>

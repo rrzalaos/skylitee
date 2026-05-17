@@ -4,6 +4,7 @@ import { InsightCard } from "@/components/ui/insight-card";
 import { Badge } from "@/components/ui/badge";
 import { BarRow } from "@/components/ui/bar-row";
 import { FileText } from "lucide-react";
+import { WarnBanner } from "@/components/ui/warn-banner";
 
 const actionItems = [
   { num: 1, color: "bg-[#d94040]", title: "Connect Google Ads — est. ₹40K+ impact this month", sub: "Highest priority action in the entire dashboard" },
@@ -16,10 +17,14 @@ const actionItems = [
 export default function WeeklyPage() {
   return (
     <div>
+      <WarnBanner type="amber">
+        <span className="font-semibold">Meta Ads not connected</span> — campaign metrics (ROAS, CBO) below are sample data, not your real campaigns. Connect Meta in Settings → Connections.
+      </WarnBanner>
+
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Weekly Digest</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">Auto-generated · Week Aug 11–17, 2025</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">Auto-generated · Shopify live + Meta estimated</p>
         </div>
         <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
           <FileText size={12} /> PDF

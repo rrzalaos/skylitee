@@ -29,7 +29,7 @@ export default function BenchmarkingPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Competitor Benchmarking</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">fabonique vs Indian ethnic D2C category · Aug 2025</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">Your store vs Indian ethnic D2C category averages</p>
         </div>
         <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
           <FileText size={12} /> PDF
@@ -43,7 +43,7 @@ export default function BenchmarkingPage() {
             <table className="w-full text-[12px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.09]">
-                  {["Metric", "fabonique", "Category avg", "Top 10%", "Your rank"].map(h => (
+                  {["Metric", "Your store", "Category avg", "Top 10%", "Your rank"].map(h => (
                     <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-semibold text-[#686864]">{h}</th>
                   ))}
                 </tr>

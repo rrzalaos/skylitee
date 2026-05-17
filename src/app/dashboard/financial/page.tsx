@@ -32,10 +32,17 @@ export default function FinancialPage() {
         </div>
       </div>
 
+      <WarnBanner type="amber">
+        <div>
+          <span className="font-semibold">Meta Ads not connected — ad spend figures below are estimated, not live.</span>
+          {" "}Revenue and order data is real (Shopify). Connect Meta for an accurate P&amp;L.
+        </div>
+      </WarnBanner>
+
       <div className="grid grid-cols-4 gap-2 mb-3">
         <KPICard label="Gross Revenue" value={formatINR(financials.grossRevenue)} change={12.4} />
         <KPICard label="Gross Margin" value={`${financials.grossMargin}%`} sub="After COGS est. ₹89,519" />
-        <KPICard label="Net Contribution" value={formatINR(financials.netContribution)} changeLabel="Below break-even ROAS" change={-1} />
+        <KPICard label="Net Contribution" value={formatINR(financials.netContribution)} changeLabel="Estimated — connect Meta" change={-1} />
         <KPICard label="LTV:CAC Ratio" value={`${financials.ltvCac}×`} changeLabel="Below 3× benchmark" change={-1} />
       </div>
 

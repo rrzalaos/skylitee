@@ -7,6 +7,7 @@ import { formatINR } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { TrendingUp, RefreshCw, AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useDateRange } from "@/lib/date-range-context";
 
 interface DashData {
   shop: string;
@@ -27,16 +28,18 @@ export default function CommandCenterPage() {
   const [dash, setDash] = useState<DashData | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { range } = useDateRange();
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      fetch("/api/shopify/dashboard").then(r => r.json()),
+      fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch("/api/shopify/anomalies").then(r => r.json()),
     ]).then(([d, a]) => {
       if (!d.error) setDash(d);
       if (!a.error) setAnomalies(a);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [range.from, range.to]);
 
   const shopName = dash?.shop?.replace(".myshopify.com", "") ?? "";
   const days = dash?.period.days ?? new Date().getDate();
@@ -65,7 +68,7 @@ export default function CommandCenterPage() {
             )}
           </div>
           <p className="text-[12px] text-[#686864] mt-0.5">
-            {new Date().toLocaleString("default", { month: "long" })} 1–{days}, {new Date().getFullYear()} · Shopify live data
+            {range.label} · Shopify live data
           </p>
         </div>
         {projected > 0 && (
@@ -96,7 +99,7 @@ export default function CommandCenterPage() {
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div className="col-span-2">
               <Card>
-                <CardHeader title="Daily revenue" right={`${new Date().toLocaleString("default", { month: "short" })} ${days} days`} />
+                <CardHeader title="Daily revenue" right={`${range.label} · ${days} days`} />
                 <ResponsiveContainer width="100%" height={145}>
                   <BarChart data={dash.dailyRevenue} barSize={12}>
                     <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#9e9e9a" }} tickLine={false} axisLine={false} interval={4} />
@@ -116,7 +119,7 @@ export default function CommandCenterPage() {
             </div>
 
             <Card>
-              <CardHeader title="Month-end forecast" />
+              <CardHeader title="Period forecast" />
               <div className="bg-[#f7f7f5] rounded-xl p-3 mb-2.5">
                 <div className="text-[11px] text-[#686864] mb-1">At current pace ({days} days)</div>
                 <div className="text-2xl font-bold text-[#0d6b4f]">{formatINR(projected)}</div>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Brain, Send, Zap } from "lucide-react";
+import { Brain, Send, Zap, ShoppingCart, AlertTriangle, TrendingUp, Package, Users } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -9,36 +9,60 @@ interface Message {
 }
 
 const suggestions = [
-  "Why is my ROAS low this month?",
-  "Which campaign should I scale today?",
+  "Why is my repeat purchase rate low?",
+  "Which products should I restock first?",
   "Which customer segment to target this week?",
-  "What Google Ads keywords should I target?",
-  "How do I improve my repeat purchase rate?",
-  "What's my break-even ROAS?",
-  "Why is mobile bounce rate high?",
-  "Which city should I target with more ad spend?",
-  "What creative should I make next?",
-  "Will I hit my August revenue target?",
-];
-
-const aiActions = [
-  { color: "bg-[#d94040]", text: "Detected ROAS crash on CBO69 (−23%)", time: "2h ago" },
-  { color: "bg-[#e89820]", text: "Flagged Embroidery creative fatigue (Freq 2.8)", time: "4h ago" },
-  { color: "bg-[#3478d4]", text: "Identified festive demand signal in GSC", time: "6h ago" },
-  { color: "bg-[#d94040]", text: "Combo Fabric stockout alert raised", time: "8h ago" },
-  { color: "bg-[#17a773]", text: "Generated weekly digest with 5 action items", time: "10h ago" },
+  "How do I reduce my COD return rate?",
+  "How can I improve my repeat purchase rate?",
+  "What's my projected monthly revenue?",
+  "Which city is driving the most revenue?",
+  "What products are at risk of stockout?",
+  "How do I increase my AOV?",
+  "What should I focus on this week?",
 ];
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hi! I have full access to fabonique's Shopify orders, Meta campaigns, GSC keywords, and GA4 sessions — plus I'm watching for anomalies in real time.\n\nAsk me anything: why is ROAS low, which campaign to scale, what customers to target, or what to do this week.",
-    },
-  ]);
+  const [storeName, setStoreName] = useState("your store");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [aiActions, setAiActions] = useState<{ color: string; text: string }[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/shopify/dashboard")
+      .then(r => r.json())
+      .then(d => {
+        const name = d.shop ? d.shop.replace(".myshopify.com", "") : "your store";
+        setStoreName(name);
+
+        const connectedPlatforms = ["Shopify orders"];
+        if (typeof d.kpis !== "undefined") connectedPlatforms.push("inventory & customers");
+
+        setMessages([{
+          role: "assistant",
+          content: `Hi! I have full access to ${name}'s Shopify orders, inventory, customer data, and I'm watching for anomalies in real time.\n\nMeta Ads, Google Ads are not connected yet — connect them in Settings → Connections to unlock campaign-level analysis.\n\nAsk me anything: which products to reorder, what's driving returns, who your best customers are, or what to focus on this week.`,
+        }]);
+
+        if (d.kpis) {
+          const kpis = d.kpis;
+          const codPct = kpis.totalOrders > 0 ? Math.round((kpis.codOrders / kpis.totalOrders) * 100) : 0;
+          const actions = [];
+          if (codPct > 50) actions.push({ color: "bg-[#d94040]", text: `High COD rate: ${codPct}% of orders — consider prepaid incentive` });
+          if (kpis.totalOrders > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.totalOrders} orders processed · ₹${kpis.grossSales.toLocaleString("en-IN")} revenue` });
+          if (kpis.newCustomers > 0) actions.push({ color: "bg-[#3478d4]", text: `${kpis.newCustomers} new customers acquired this period` });
+          if (kpis.returningCustomers > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.returningCustomers} returning customers — repeat purchase detected` });
+          actions.push({ color: "bg-[#e89820]", text: "Meta & Google Ads not connected — campaign data unavailable" });
+          setAiActions(actions);
+        }
+      })
+      .catch(() => {
+        setMessages([{
+          role: "assistant",
+          content: "Hi! Connect your Shopify store in Settings → Connections to get personalised insights about your orders, customers, and products.",
+        }]);
+      });
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,7 +91,7 @@ export default function ChatPage() {
     } catch {
       setMessages([...newMessages, {
         role: "assistant",
-        content: "Sorry, I couldn't connect to the AI right now. Please add your ANTHROPIC_API_KEY to .env.local and restart the dev server.",
+        content: "Sorry, I couldn't connect to the AI right now. Please ensure your ANTHROPIC_API_KEY is set and try again.",
       }]);
     } finally {
       setLoading(false);
@@ -78,7 +102,7 @@ export default function ChatPage() {
     <div>
       <div className="mb-3">
         <h2 className="text-lg font-semibold">AI Assistant</h2>
-        <p className="text-[12px] text-[#686864] mt-0.5">Ask anything · knows all 4 platforms · fabonique</p>
+        <p className="text-[12px] text-[#686864] mt-0.5">Ask anything · Shopify connected · {storeName}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -91,7 +115,7 @@ export default function ChatPage() {
             </div>
             <div>
               <div className="text-[11px] font-semibold text-[#181816]">Skylitee AI</div>
-              <div className="text-[10px] text-[#686864]">Shopify · Meta · GSC · GA4 · Anomaly detection</div>
+              <div className="text-[10px] text-[#686864]">Shopify · Anomaly detection · Real-time</div>
             </div>
             <div className="ml-auto flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" />
@@ -103,7 +127,7 @@ export default function ChatPage() {
           <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5">
             {messages.map((msg, i) => (
               <div key={i} className={`max-w-[86%] ${msg.role === "user" ? "self-end" : "self-start"}`}>
-                <div className="text-[10px] text-[#9e9e9a] mb-1 text-right" style={{ textAlign: msg.role === "user" ? "right" : "left" }}>
+                <div className="text-[10px] text-[#9e9e9a] mb-1" style={{ textAlign: msg.role === "user" ? "right" : "left" }}>
                   {msg.role === "user" ? "You" : "Skylitee AI"}
                 </div>
                 <div
@@ -154,7 +178,7 @@ export default function ChatPage() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && sendMessage()}
-              placeholder="Ask about campaigns, customers, ROAS, products..."
+              placeholder="Ask about orders, customers, products, revenue..."
               className="flex-1 px-2.5 py-2 bg-[#f7f7f5] border border-black/[0.09] rounded-lg text-[11px] text-[#181816] focus:outline-none focus:border-[#17a773] placeholder:text-[#9e9e9a]"
               disabled={loading}
             />
@@ -173,9 +197,18 @@ export default function ChatPage() {
           <Card className="mb-2">
             <div className="text-[11px] font-semibold text-[#181816] mb-3">What I can analyse</div>
             {[
-              { label: "Campaign & creative", qs: ['"Why is CBO67 outperforming others?"', '"Which ad sets should I pause today?"', '"What creative should I make next?"', '"When is the best time to run my ads?"'] },
-              { label: "Customers & retention", qs: ['"Who are my most valuable customers?"', '"How do I win back dormant customers?"', '"Which city has the best ROAS?"', '"How can I improve repeat purchase rate?"'] },
-              { label: "Financial & forecasting", qs: ['"Will I hit my August revenue target?"', '"What\'s my break-even ROAS?"', '"How can I improve contribution margin?"', '"Which product has the best unit economics?"'] },
+              {
+                label: "Orders & revenue",
+                qs: ['"What are my best selling products?"', '"How much revenue did I make this week?"', '"What is my AOV trend?"', '"Which orders are COD vs prepaid?"'],
+              },
+              {
+                label: "Customers & retention",
+                qs: ['"Who are my most valuable customers?"', '"How many customers have returned?"', '"Which city has the most orders?"', '"How can I improve repeat purchase rate?"'],
+              },
+              {
+                label: "Inventory & operations",
+                qs: ['"Which products are at risk of stockout?"', '"What should I reorder today?"', '"How many days of stock do I have?"', '"What is my projected monthly revenue?"'],
+              },
             ].map((section) => (
               <div key={section.label} className="mb-3">
                 <div className="text-[11px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1 border-b border-black/[0.09] mb-1.5">{section.label}</div>
@@ -190,16 +223,17 @@ export default function ChatPage() {
 
           <Card>
             <div className="text-[11px] font-semibold text-[#181816] mb-3 flex items-center gap-1.5">
-              <Zap size={12} className="text-[#17a773]" /> AI actions taken today
+              <Zap size={12} className="text-[#17a773]" /> Live store signals
             </div>
             <div className="flex flex-col gap-2">
-              {aiActions.map((a, i) => (
-                <div key={i} className="flex items-center gap-2 text-[11px]">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${a.color}`} />
-                  <span className="flex-1">{a.text}</span>
-                  <span className="text-[10px] text-[#9e9e9a] shrink-0">{a.time}</span>
+              {aiActions.length > 0 ? aiActions.map((a, i) => (
+                <div key={i} className="flex items-start gap-2 text-[11px]">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${a.color}`} />
+                  <span className="flex-1 leading-relaxed">{a.text}</span>
                 </div>
-              ))}
+              )) : (
+                <div className="text-[11px] text-[#9e9e9a]">Loading store signals...</div>
+              )}
             </div>
           </Card>
         </div>

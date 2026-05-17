@@ -42,7 +42,7 @@ export default function GoalsPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Monthly Goals</h2>
-          <p className="text-[12px] text-[#686864] mt-0.5">August 2025 · 19/31 days · fabonique</p>
+          <p className="text-[12px] text-[#686864] mt-0.5">{new Date().toLocaleString("default", { month: "long", year: "numeric" })} · {new Date().getDate()}/{new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} days</p>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">

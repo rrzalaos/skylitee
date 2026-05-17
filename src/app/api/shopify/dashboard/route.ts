@@ -6,37 +6,49 @@ export async function GET(req: NextRequest) {
   const token = process.env.SHOPIFY_ACCESS_TOKEN ?? req.cookies.get("shopify_token")?.value;
   if (!shop || !token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
+  const url = new URL(req.url);
+  const fromParam = url.searchParams.get("from");
+  const toParam = url.searchParams.get("to");
+
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const periodStart = fromParam
+    ? new Date(fromParam + "T00:00:00.000Z")
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = toParam
+    ? new Date(toParam + "T23:59:59.999Z")
+    : now;
+
+  const days = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
 
   const { orders } = await shopifyFetch<{ orders: ShopifyOrder[] }>(
     shop, token,
-    `/orders.json?status=any&created_at_min=${monthStart}&limit=250&fields=id,total_price,created_at,financial_status,payment_gateway,customer,line_items,shipping_address`
+    `/orders.json?status=any&created_at_min=${periodStart.toISOString()}&created_at_max=${periodEnd.toISOString()}&limit=250&fields=id,total_price,created_at,financial_status,payment_gateway,customer,line_items,shipping_address`
   );
 
-  // KPIs
   const grossSales = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
   const totalOrders = orders.length;
   const aov = totalOrders ? grossSales / totalOrders : 0;
   const newCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) === 1).length;
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
 
-  // COD vs Prepaid
   const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
   const prepaidOrders = totalOrders - codOrders;
 
-  // Daily revenue for chart
   const dailyMap: Record<string, number> = {};
   orders.forEach(o => {
-    const d = new Date(o.created_at).getDate();
+    const d = o.created_at.substring(0, 10);
     dailyMap[d] = (dailyMap[d] || 0) + parseFloat(o.total_price);
   });
-  const dailyRevenue = Array.from({ length: now.getDate() }, (_, i) => ({
-    day: `${now.getMonth() + 1}/${i + 1}`,
-    revenue: Math.round(dailyMap[i + 1] || 0),
-  }));
 
-  // Top cities
+  const dailyRevenue: { day: string; revenue: number }[] = [];
+  const cursor = new Date(periodStart);
+  while (cursor <= periodEnd) {
+    const key = cursor.toISOString().split("T")[0];
+    const label = `${cursor.getMonth() + 1}/${cursor.getDate()}`;
+    dailyRevenue.push({ day: label, revenue: Math.round(dailyMap[key] || 0) });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
   const cityMap: Record<string, number> = {};
   orders.forEach(o => {
     const city = o.shipping_address?.city;
@@ -60,6 +72,6 @@ export async function GET(req: NextRequest) {
     },
     dailyRevenue,
     topCities,
-    period: { from: monthStart, to: now.toISOString(), days: now.getDate() },
+    period: { from: periodStart.toISOString(), to: periodEnd.toISOString(), days },
   });
 }
