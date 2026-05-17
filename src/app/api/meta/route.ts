@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+type ActionEntry = { action_type: string; value: string };
+
 interface MetaInsightRow {
   spend?: string;
   impressions?: string;
@@ -9,7 +11,11 @@ interface MetaInsightRow {
   cpm?: string;
   reach?: string;
   frequency?: string;
-  actions?: { action_type: string; value: string }[];
+  outbound_clicks?: ActionEntry[];
+  outbound_clicks_ctr?: ActionEntry[];
+  actions?: ActionEntry[];
+  action_values?: ActionEntry[];
+  video_thruplay_watched_actions?: ActionEntry[];
   date_start?: string;
   campaign_id?: string;
   campaign_name?: string;
@@ -20,6 +26,16 @@ interface MetaCampaignMeta {
   name: string;
   status: string;
   objective?: string;
+}
+
+function actVal(arr: ActionEntry[] | undefined, type: string): number {
+  return parseFloat(arr?.find(a => a.action_type === type)?.value ?? "0");
+}
+function actInt(arr: ActionEntry[] | undefined, type: string): number {
+  return Math.round(actVal(arr, type));
+}
+function sumArr(arr: ActionEntry[] | undefined): number {
+  return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
 
 export async function GET(req: NextRequest) {
@@ -33,7 +49,6 @@ export async function GET(req: NextRequest) {
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
 
-  // Get ad accounts
   const savedAccount = req.cookies.get("meta_ad_account")?.value;
   const accountsRes = await fetch(
     `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&access_token=${token}`
@@ -42,22 +57,24 @@ export async function GET(req: NextRequest) {
     data?: { id: string; name: string; currency: string }[];
     error?: { message: string };
   };
-
   if (accountsData.error) return NextResponse.json({ error: "token_expired" }, { status: 401 });
-
   const accounts = accountsData.data ?? [];
-  if (accounts.length === 0) return NextResponse.json({ error: "no_accounts" });
-
+  if (!accounts.length) return NextResponse.json({ error: "no_accounts" });
   const selected = (savedAccount && accounts.find(a => a.id === savedAccount)) || accounts[0];
   const adAccountId = selected.id;
 
-  const overviewFields = "spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,actions";
-  const campaignFields = "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm";
+  const overviewFields = [
+    "spend,impressions,clicks,ctr,cpc,cpm,reach,frequency",
+    "outbound_clicks,outbound_clicks_ctr",
+    "actions,action_values",
+    "video_thruplay_watched_actions",
+  ].join(",");
+  const campaignFields = "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values";
 
   const [overviewRes, campaignInsightsRes, dailyRes, campaignsMetaRes] = await Promise.all([
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${overviewFields}&time_range=${timeRange}&access_token=${token}`),
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${campaignFields}&time_range=${timeRange}&level=campaign&limit=20&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks&time_range=${timeRange}&time_increment=1&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks,actions,action_values&time_range=${timeRange}&time_increment=1&access_token=${token}`),
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/campaigns?fields=id,name,status,objective&limit=50&access_token=${token}`),
   ]);
 
@@ -68,29 +85,87 @@ export async function GET(req: NextRequest) {
     campaignsMetaRes.json() as Promise<{ data?: MetaCampaignMeta[] }>,
   ]);
 
-  const overview = overviewData.data?.[0];
-  const spend = parseFloat(overview?.spend ?? "0");
+  const o = overviewData.data?.[0];
+  const spend = parseFloat(o?.spend ?? "0");
+  const impressions = parseInt(o?.impressions ?? "0");
+  const clicks = parseInt(o?.clicks ?? "0");
 
-  // ROAS: look for purchase or pixel purchase action
-  const purchases = overview?.actions?.find(a => a.action_type === "purchase")?.value;
-  const pixelPurchases = overview?.actions?.find(a => a.action_type === "offsite_conversion.fb_pixel_purchase")?.value;
-  const totalPurchases = parseInt(purchases ?? pixelPurchases ?? "0");
+  const outboundClicks = actInt(o?.outbound_clicks, "outbound_click");
+  const outboundCtr = +actVal(o?.outbound_clicks_ctr, "outbound_click").toFixed(2);
+
+  const lpv = actInt(o?.actions, "landing_page_view");
+  const atc = Math.max(
+    actInt(o?.actions, "offsite_conversion.fb_pixel_add_to_cart"),
+    actInt(o?.actions, "add_to_cart"),
+    actInt(o?.actions, "onsite_conversion.add_to_cart")
+  );
+  const checkout = Math.max(
+    actInt(o?.actions, "offsite_conversion.fb_pixel_initiate_checkout"),
+    actInt(o?.actions, "initiate_checkout")
+  );
+  const purchases = Math.max(
+    actInt(o?.actions, "offsite_conversion.fb_pixel_purchase"),
+    actInt(o?.actions, "purchase")
+  );
+  const videoViews3s = actInt(o?.actions, "video_view");
+
+  const atcValue = Math.max(
+    actVal(o?.action_values, "offsite_conversion.fb_pixel_add_to_cart"),
+    actVal(o?.action_values, "add_to_cart")
+  );
+  const checkoutValue = Math.max(
+    actVal(o?.action_values, "offsite_conversion.fb_pixel_initiate_checkout"),
+    actVal(o?.action_values, "initiate_checkout")
+  );
+  const purchaseValue = Math.max(
+    actVal(o?.action_values, "offsite_conversion.fb_pixel_purchase"),
+    actVal(o?.action_values, "purchase")
+  );
+
+  const thruplay = Math.round(sumArr(o?.video_thruplay_watched_actions));
+
+  const roas = spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0;
+  const cac = purchases > 0 ? +(spend / purchases).toFixed(2) : 0;
+  const lpRatio = clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0;
+  const atcRatio = lpv > 0 ? +(atc / lpv * 100).toFixed(1) : 0;
+  const checkoutRatio = atc > 0 ? +(checkout / atc * 100).toFixed(1) : 0;
+  const purchaseRatio = checkout > 0 ? +(purchases / checkout * 100).toFixed(1) : 0;
+  const conversionRatio = clicks > 0 ? +(purchases / clicks * 100).toFixed(2) : 0;
+  const thumbStopRatio = impressions > 0 ? +(videoViews3s / impressions * 100).toFixed(1) : 0;
+  const holdRatio = videoViews3s > 0 ? +(thruplay / videoViews3s * 100).toFixed(1) : 0;
 
   const statusMap = new Map((campaignsMetaData.data ?? []).map(c => [c.id, c]));
 
   const campaigns = (campaignInsightsData.data ?? []).map(c => {
     const meta = statusMap.get(c.campaign_id ?? "");
+    const cPurchases = Math.max(
+      actInt(c?.actions, "offsite_conversion.fb_pixel_purchase"),
+      actInt(c?.actions, "purchase")
+    );
+    const cPurchaseValue = Math.max(
+      actVal(c?.action_values, "offsite_conversion.fb_pixel_purchase"),
+      actVal(c?.action_values, "purchase")
+    );
+    const cAtc = Math.max(
+      actInt(c?.actions, "offsite_conversion.fb_pixel_add_to_cart"),
+      actInt(c?.actions, "add_to_cart")
+    );
+    const cSpend = parseFloat(c.spend ?? "0");
     return {
       id: c.campaign_id ?? "",
       name: c.campaign_name ?? "",
       status: meta?.status ?? "UNKNOWN",
       objective: meta?.objective ?? "",
-      spend: +parseFloat(c.spend ?? "0").toFixed(2),
+      spend: +cSpend.toFixed(2),
       impressions: parseInt(c.impressions ?? "0"),
       clicks: parseInt(c.clicks ?? "0"),
       ctr: +parseFloat(c.ctr ?? "0").toFixed(2),
       cpc: +parseFloat(c.cpc ?? "0").toFixed(2),
       cpm: +parseFloat(c.cpm ?? "0").toFixed(2),
+      purchases: cPurchases,
+      purchaseValue: +cPurchaseValue.toFixed(2),
+      roas: cSpend > 0 ? +(cPurchaseValue / cSpend).toFixed(2) : 0,
+      atc: cAtc,
     };
   });
 
@@ -99,6 +174,14 @@ export async function GET(req: NextRequest) {
     spend: +parseFloat(d.spend ?? "0").toFixed(2),
     impressions: parseInt(d.impressions ?? "0"),
     clicks: parseInt(d.clicks ?? "0"),
+    purchases: Math.max(
+      actInt(d?.actions, "offsite_conversion.fb_pixel_purchase"),
+      actInt(d?.actions, "purchase")
+    ),
+    purchaseValue: +Math.max(
+      actVal(d?.action_values, "offsite_conversion.fb_pixel_purchase"),
+      actVal(d?.action_values, "purchase")
+    ).toFixed(2),
   }));
 
   return NextResponse.json({
@@ -108,15 +191,17 @@ export async function GET(req: NextRequest) {
     accounts: accounts.map(a => ({ id: a.id, name: a.name })),
     period: { from, to },
     kpis: {
-      spend: +spend.toFixed(2),
-      impressions: parseInt(overview?.impressions ?? "0"),
-      clicks: parseInt(overview?.clicks ?? "0"),
-      ctr: +parseFloat(overview?.ctr ?? "0").toFixed(2),
-      cpc: +parseFloat(overview?.cpc ?? "0").toFixed(2),
-      cpm: +parseFloat(overview?.cpm ?? "0").toFixed(2),
-      reach: parseInt(overview?.reach ?? "0"),
-      frequency: +parseFloat(overview?.frequency ?? "0").toFixed(2),
-      purchases: totalPurchases,
+      spend: +spend.toFixed(2), roas, cac, purchases, purchaseValue: +purchaseValue.toFixed(2),
+      impressions, reach: parseInt(o?.reach ?? "0"),
+      frequency: +parseFloat(o?.frequency ?? "0").toFixed(2),
+      cpm: +parseFloat(o?.cpm ?? "0").toFixed(2),
+      clicks, ctr: +parseFloat(o?.ctr ?? "0").toFixed(2),
+      cpc: +parseFloat(o?.cpc ?? "0").toFixed(2),
+      outboundClicks, outboundCtr,
+      lpv, lpRatio, atc, atcValue: +atcValue.toFixed(2), atcRatio,
+      checkout, checkoutValue: +checkoutValue.toFixed(2), checkoutRatio,
+      purchaseRatio, conversionRatio,
+      videoViews3s, thruplay, thumbStopRatio, holdRatio,
     },
     campaigns,
     daily,
