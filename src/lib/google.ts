@@ -2,17 +2,22 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const REDIRECT_URI = `${process.env.SHOPIFY_APP_URL}/api/auth/google/callback`;
 
-const SCOPES = [
-  "https://www.googleapis.com/auth/webmasters.readonly",
-  "https://www.googleapis.com/auth/analytics.readonly",
-].join(" ");
+const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
+const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 
-export function buildGoogleAuthUrl(state: string): string {
+export type GoogleService = "gsc" | "ga4" | "both";
+
+export function buildGoogleAuthUrl(state: string, service: GoogleService = "both"): string {
+  const scope =
+    service === "gsc" ? GSC_SCOPE :
+    service === "ga4" ? GA4_SCOPE :
+    `${GSC_SCOPE} ${GA4_SCOPE}`;
+
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: "code",
-    scope: SCOPES,
+    scope,
     access_type: "offline",
     prompt: "consent",
     state,

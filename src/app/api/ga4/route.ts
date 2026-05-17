@@ -6,7 +6,9 @@ interface GA4Dimension { name: string; }
 interface GA4Row { dimensionValues: { value: string }[]; metricValues: { value: string }[]; }
 
 export async function GET(req: NextRequest) {
-  const refreshToken = req.cookies.get("google_refresh_token")?.value;
+  const refreshToken =
+    req.cookies.get("google_ga4_token")?.value ??
+    req.cookies.get("google_refresh_token")?.value;
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const token = await getGoogleAccessToken(refreshToken);

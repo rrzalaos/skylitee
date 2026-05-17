@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
 
 export async function GET(req: NextRequest) {
-  const refreshToken = req.cookies.get("google_refresh_token")?.value;
+  const refreshToken =
+    req.cookies.get("google_gsc_token")?.value ??
+    req.cookies.get("google_refresh_token")?.value;
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const token = await getGoogleAccessToken(refreshToken);
