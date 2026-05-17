@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ShoppingBag, Share2, Search, BarChart3, Megaphone, CheckCircle2, XCircle } from "lucide-react";
 
-export default function ConnectionsPage() {
+function ConnectionsContent() {
   const [toastMsg, setToastMsg] = useState("");
   const [shopName, setShopName] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -172,5 +172,13 @@ export default function ConnectionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConnectionsPage() {
+  return (
+    <Suspense fallback={<div className="text-[12px] text-[#686864] py-8 text-center">Loading...</div>}>
+      <ConnectionsContent />
+    </Suspense>
   );
 }
