@@ -76,16 +76,19 @@ export function Topbar() {
       .then(d => { if (d.shop) setConnections(c => ({ ...c, shopify: true })); })
       .catch(() => {});
 
+    fetch("/api/meta/accounts")
+      .then(r => r.json())
+      .then(d => { setConnections(c => ({ ...c, meta: !d.error })); })
+      .catch(() => {});
+
     fetch("/api/google/sites")
       .then(r => r.json())
       .then(d => {
-        if (d.gscSites) {
-          setConnections(c => ({
-            ...c,
-            gsc: d.gscSites.length > 0,
-            ga4: (d.ga4Properties?.length ?? 0) > 0,
-          }));
-        }
+        setConnections(c => ({
+          ...c,
+          gsc: !!(d.gscConnected ?? (d.gscSites?.length > 0)),
+          ga4: !!(d.ga4Connected ?? (d.ga4Properties?.length > 0)),
+        }));
       })
       .catch(() => {});
   }, []);
