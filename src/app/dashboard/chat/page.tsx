@@ -30,38 +30,44 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/shopify/dashboard")
-      .then(r => r.json())
-      .then(d => {
-        const name = d.shop ? d.shop.replace(".myshopify.com", "") : "your store";
-        setStoreName(name);
+    Promise.all([
+      fetch("/api/shopify/dashboard").then(r => r.json()).catch(() => null),
+      fetch("/api/meta/accounts").then(r => r.json()).catch(() => null),
+    ]).then(([d, meta]) => {
+      const name = d?.shop ? d.shop.replace(".myshopify.com", "") : "your store";
+      setStoreName(name);
+      const metaConnected = meta && !meta.error;
 
-        const connectedPlatforms = ["Shopify orders"];
-        if (typeof d.kpis !== "undefined") connectedPlatforms.push("inventory & customers");
+      const platformLine = metaConnected
+        ? "I also have access to your Meta Ads data — spend, campaigns, CTR, and CPC."
+        : "Meta Ads is not connected yet — connect in Settings → Connections to unlock campaign-level analysis.";
 
-        setMessages([{
-          role: "assistant",
-          content: `Hi! I have full access to ${name}'s Shopify orders, inventory, customer data, and I'm watching for anomalies in real time.\n\nMeta Ads, Google Ads are not connected yet — connect them in Settings → Connections to unlock campaign-level analysis.\n\nAsk me anything: which products to reorder, what's driving returns, who your best customers are, or what to focus on this week.`,
-        }]);
+      setMessages([{
+        role: "assistant",
+        content: `Hi! I have full access to ${name}'s Shopify orders, inventory, customer data, and I'm watching for anomalies in real time.\n\n${platformLine}\n\nAsk me anything: which products to reorder, what's driving returns, who your best customers are, or what to focus on this week.`,
+      }]);
 
-        if (d.kpis) {
-          const kpis = d.kpis;
-          const codPct = kpis.totalOrders > 0 ? Math.round((kpis.codOrders / kpis.totalOrders) * 100) : 0;
-          const actions = [];
-          if (codPct > 50) actions.push({ color: "bg-[#d94040]", text: `High COD rate: ${codPct}% of orders — consider prepaid incentive` });
-          if (kpis.totalOrders > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.totalOrders} orders processed · ₹${kpis.grossSales.toLocaleString("en-IN")} revenue` });
-          if (kpis.newCustomers > 0) actions.push({ color: "bg-[#3478d4]", text: `${kpis.newCustomers} new customers acquired this period` });
-          if (kpis.returningCustomers > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.returningCustomers} returning customers — repeat purchase detected` });
-          actions.push({ color: "bg-[#e89820]", text: "Meta & Google Ads not connected — campaign data unavailable" });
-          setAiActions(actions);
+      if (d?.kpis) {
+        const kpis = d.kpis;
+        const codPct = kpis.totalOrders > 0 ? Math.round((kpis.codOrders / kpis.totalOrders) * 100) : 0;
+        const actions = [];
+        if (codPct > 50) actions.push({ color: "bg-[#d94040]", text: `High COD rate: ${codPct}% of orders — consider prepaid incentive` });
+        if (kpis.totalOrders > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.totalOrders} orders processed · ₹${kpis.grossSales.toLocaleString("en-IN")} revenue` });
+        if (kpis.newCustomers > 0) actions.push({ color: "bg-[#3478d4]", text: `${kpis.newCustomers} new customers acquired this period` });
+        if (kpis.returningCustomers > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.returningCustomers} returning customers — repeat purchase detected` });
+        if (metaConnected) {
+          actions.push({ color: "bg-[#1877F2]", text: "Meta Ads connected — campaign spend & CTR data available" });
+        } else {
+          actions.push({ color: "bg-[#e89820]", text: "Meta Ads not connected — campaign data unavailable" });
         }
-      })
-      .catch(() => {
-        setMessages([{
-          role: "assistant",
-          content: "Hi! Connect your Shopify store in Settings → Connections to get personalised insights about your orders, customers, and products.",
-        }]);
-      });
+        setAiActions(actions);
+      }
+    }).catch(() => {
+      setMessages([{
+        role: "assistant",
+        content: "Hi! Connect your Shopify store in Settings → Connections to get personalised insights about your orders, customers, and products.",
+      }]);
+    });
   }, []);
 
   useEffect(() => {
