@@ -6,12 +6,11 @@ import { formatINR } from "@/lib/utils";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
-  AreaChart, Area, Cell,
 } from "recharts";
 import {
-  AlertCircle, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown,
+  AlertCircle, AlertTriangle, CheckCircle2, TrendingUp,
   ShoppingCart, Share2, Search, Plug, MessageSquareText, Layout,
-  BarChart2, ArrowRight, Zap, Target, RefreshCw,
+  Zap, RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
@@ -33,7 +32,7 @@ interface AnomalyData {
 }
 interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; clicks: number; ctr: number; impressions: number; frequency: number }
 interface GscKPIs { clicks: number; impressions: number; ctr: number; position: number }
-interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgDuration: number }
+interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 function signal(type: "roas" | "ctr" | "freq" | "cod", val: number): { label: string; color: string } {
@@ -138,8 +137,8 @@ export default function CommandCenterPage() {
   const chartData = useMemo(() => {
     if (!shop) return [];
     return shop.dailyRevenue.map(d => {
-      const md = metaDaily.find(m => m.date === d.day);
-      return { day: d.day.slice(5), revenue: d.revenue, spend: md?.spend ?? 0 };
+      const md = metaDaily.find(m => m.date.slice(5).replace("-", "/") === d.day || m.date === d.day);
+      return { day: d.day, revenue: d.revenue, spend: md?.spend ?? 0 };
     });
   }, [shop, metaDaily]);
 
@@ -272,12 +271,6 @@ export default function CommandCenterPage() {
             ) : (
               <ResponsiveContainer width="100%" height={176}>
                 <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-                  <defs>
-                    <linearGradient id="revGradCmd" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#F97316" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#F97316" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
                   <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} interval={Math.floor(chartData.length / 6)} />
                   <YAxis hide />
@@ -406,7 +399,7 @@ export default function CommandCenterPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[12px] font-semibold text-[#A1A1AA]">{ga4.bounceRate.toFixed(0)}% bounce</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{Math.floor(ga4.avgDuration / 60)}m avg</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{ga4.avgSessionMin ?? "—"} avg</div>
                   </div>
                 </div>
               ) : (
