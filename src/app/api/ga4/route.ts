@@ -13,15 +13,22 @@ export async function GET(req: NextRequest) {
 
   const token = await getGoogleAccessToken(refreshToken);
 
-  // Get GA4 property ID from Admin API
-  const accountsRes = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const accountsData = await accountsRes.json() as {
-    accountSummaries?: { propertySummaries?: { property: string; displayName: string }[] }[]
-  };
+  // Get GA4 property list — paginate to handle accounts with many properties
+  const properties: { property: string; displayName: string }[] = [];
+  let pageToken: string | undefined;
+  do {
+    const url = new URL("https://analyticsadmin.googleapis.com/v1beta/accountSummaries");
+    url.searchParams.set("pageSize", "200");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json() as {
+      accountSummaries?: { propertySummaries?: { property: string; displayName: string }[] }[];
+      nextPageToken?: string;
+    };
+    properties.push(...(data.accountSummaries ?? []).flatMap(a => a.propertySummaries ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
 
-  const properties = accountsData.accountSummaries?.flatMap(a => a.propertySummaries ?? []) ?? [];
   if (properties.length === 0) return NextResponse.json({ error: "no_properties" });
 
   const savedProperty = req.cookies.get("google_ga4_property")?.value;

@@ -32,18 +32,30 @@ export async function GET(req: NextRequest) {
   if (ga4Refresh) {
     try {
       const token = await getGoogleAccessToken(ga4Refresh);
-      const res = await fetch("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json() as {
-        accountSummaries?: { displayName: string; propertySummaries?: { property: string; displayName: string }[] }[]
-      };
-      ga4Properties = (data.accountSummaries ?? [])
-        .flatMap(a => (a.propertySummaries ?? []).map(p => ({
-          id: p.property,
-          name: p.displayName,
-          account: a.displayName,
-        })));
+      // Paginate through all account summaries (default page size is 50, max 200)
+      let pageToken: string | undefined;
+      do {
+        const url = new URL("https://analyticsadmin.googleapis.com/v1beta/accountSummaries");
+        url.searchParams.set("pageSize", "200");
+        if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json() as {
+          accountSummaries?: { displayName: string; propertySummaries?: { property: string; displayName: string }[] }[];
+          nextPageToken?: string;
+        };
+
+        const page = (data.accountSummaries ?? [])
+          .flatMap(a => (a.propertySummaries ?? []).map(p => ({
+            id: p.property,
+            name: p.displayName,
+            account: a.displayName,
+          })));
+        ga4Properties.push(...page);
+        pageToken = data.nextPageToken;
+      } while (pageToken);
     } catch { /* token invalid */ }
   }
 
