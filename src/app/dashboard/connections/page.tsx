@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
-import { ShoppingBag, Share2, Search, BarChart3, Megaphone, CheckCircle2, XCircle } from "lucide-react";
+import { ShoppingBag, Share2, Search, Megaphone, CheckCircle2, XCircle } from "lucide-react";
 
 interface GoogleSite { url: string; }
 interface GA4Property { id: string; name: string; account: string; }
 
 function ConnectionsContent() {
+  const router = useRouter();
   const [toastMsg, setToastMsg] = useState("");
   const [shopName, setShopName] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -15,9 +16,8 @@ function ConnectionsContent() {
   const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([]);
   const [selectedGsc, setSelectedGsc] = useState("");
   const [selectedGa4, setSelectedGa4] = useState("");
-  const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const searchParams = useSearchParams();
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/shopify/dashboard")
@@ -32,27 +32,36 @@ function ConnectionsContent() {
           setGoogleConnected(true);
           setGscSites(d.gscSites);
           setGa4Properties(d.ga4Properties ?? []);
-          if (d.gscSites[0]) setSelectedGsc(d.gscSites[0].url);
-          if (d.ga4Properties?.[0]) setSelectedGa4(d.ga4Properties[0].id);
+          // Use saved selection if available, otherwise first item
+          setSelectedGsc(d.savedGscSite ?? d.gscSites[0]?.url ?? "");
+          setSelectedGa4(d.savedGa4Property ?? d.ga4Properties?.[0]?.id ?? "");
+          setSaved(!!d.savedGscSite);
         }
       })
       .catch(() => {});
+  }, []);
 
-    const connected = searchParams.get("connected");
-    if (connected === "google") {
-      setShowPicker(true);
-      setToastMsg("Google connected! Now choose your site and property below.");
-    }
-
-  }, [searchParams]);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(""), 3000);
+  };
 
   const disconnectGoogle = async () => {
-    if (!confirm("Disconnect Google? This will remove access to GSC and GA4 data.")) return;
+    if (!confirm("Disconnect Google? This removes GSC and GA4 data from your dashboard.")) return;
     await fetch("/api/auth/google/disconnect", { method: "POST" });
     setGoogleConnected(false);
     setGscSites([]);
     setGa4Properties([]);
+    setSaved(false);
     showToast("Google disconnected");
+  };
+
+  const disconnectShopify = async () => {
+    if (!confirm("Disconnect Shopify? The dashboard will lose access to your store data.")) return;
+    await fetch("/api/auth/shopify/disconnect", { method: "POST" });
+    setShopName(null);
+    showToast("Shopify disconnected — redirecting to install page");
+    setTimeout(() => router.push("/install"), 1500);
   };
 
   const saveGoogleSelection = async () => {
@@ -63,38 +72,50 @@ function ConnectionsContent() {
       body: JSON.stringify({ gscSite: selectedGsc, ga4Property: selectedGa4 }),
     });
     setSaving(false);
-    setShowPicker(false);
-    setToastMsg("Google properties saved — GSC and GA4 are now active!");
-    setTimeout(() => setToastMsg(""), 3000);
+    setSaved(true);
+    showToast("Google properties saved — GSC and GA4 updated!");
   };
 
   const platforms = [
     {
-      name: "Shopify Store", icon: <ShoppingBag size={17} className="text-white" />, bg: "bg-[#96BF48]",
-      status: "connected",
-      detail: shopName ? `${shopName} · Live sync` : "Connecting...",
-      href: null, disconnectFn: null,
+      name: "Shopify Store",
+      icon: <ShoppingBag size={17} className="text-white" />,
+      bg: "bg-[#96BF48]",
+      status: shopName ? "connected" : "disconnected",
+      detail: shopName ? `${shopName} · Live sync` : "Not connected",
+      href: "/install",
+      disconnectFn: shopName ? disconnectShopify : null,
     },
     {
-      name: "Google Search Console + GA4", icon: <Search size={17} className="text-white" />, bg: "bg-[#4285F4]",
+      name: "Google Search Console + GA4",
+      icon: <Search size={17} className="text-white" />,
+      bg: "bg-[#4285F4]",
       status: googleConnected ? "connected" : "disconnected",
-      detail: googleConnected ? "Connected · GSC + GA4 active" : "Not connected",
-      href: "/api/auth/google", disconnectFn: googleConnected ? disconnectGoogle : null,
+      detail: googleConnected
+        ? `Connected · ${saved ? "properties selected" : "select properties below"}`
+        : "Not connected",
+      href: "/api/auth/google",
+      disconnectFn: googleConnected ? disconnectGoogle : null,
     },
     {
-      name: "Meta Business Suite", icon: <Share2 size={17} className="text-white" />, bg: "bg-[#1877F2]",
-      status: "disconnected", detail: "Not connected", href: null, disconnectFn: null,
+      name: "Meta Business Suite",
+      icon: <Share2 size={17} className="text-white" />,
+      bg: "bg-[#1877F2]",
+      status: "disconnected",
+      detail: "Not connected",
+      href: null,
+      disconnectFn: null,
     },
     {
-      name: "Google Ads Manager", icon: <Megaphone size={17} className="text-white" />, bg: "bg-[#34A853]",
-      status: "disconnected", detail: "Not connected · Est. ₹40–60K revenue/month missed", href: null, disconnectFn: null,
+      name: "Google Ads Manager",
+      icon: <Megaphone size={17} className="text-white" />,
+      bg: "bg-[#34A853]",
+      status: "disconnected",
+      detail: "Not connected · Est. ₹40–60K revenue/month missed",
+      href: null,
+      disconnectFn: null,
     },
   ];
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(""), 3000);
-  };
 
   return (
     <div>
@@ -117,48 +138,53 @@ function ConnectionsContent() {
                   {p.status === "connected" ? "✓" : "✗"} {p.detail}
                 </div>
               </div>
-              {p.status === "connected" ? (
-                <div className="flex gap-1.5">
-                  <span className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
-                    Connected
-                  </span>
-                  {p.disconnectFn && (
-                    <button
-                      onClick={p.disconnectFn}
-                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
-                    >
-                      Disconnect
-                    </button>
-                  )}
-                </div>
-              ) : p.href ? (
-                <a
-                  href={p.href}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors whitespace-nowrap"
-                >
-                  Connect Now
-                </a>
-              ) : (
-                <button
-                  onClick={() => showToast("Coming soon")}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors"
-                >
-                  Connect Now
-                </button>
-              )}
+              <div className="flex gap-1.5 shrink-0">
+                {p.status === "connected" ? (
+                  <>
+                    <span className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
+                      Connected
+                    </span>
+                    {p.disconnectFn && (
+                      <button
+                        onClick={p.disconnectFn}
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
+                      >
+                        Disconnect
+                      </button>
+                    )}
+                  </>
+                ) : p.href ? (
+                  <a
+                    href={p.href}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors whitespace-nowrap"
+                  >
+                    Connect Now
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => showToast("Coming soon")}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors"
+                  >
+                    Connect Now
+                  </button>
+                )}
+              </div>
             </div>
           ))}
 
-          {/* Google property picker */}
-          {googleConnected && (showPicker || true) && gscSites.length > 0 && (
+          {/* Google property picker — always visible when connected */}
+          {googleConnected && gscSites.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
-              <div className="text-[11px] font-semibold text-[#181816] mb-2">Select your Google properties</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[11px] font-semibold text-[#181816]">Google property selection</div>
+                {saved && <span className="text-[10px] text-[#0d6b4f]">✓ Saved</span>}
+              </div>
               <div className="space-y-2">
                 <div>
                   <label className="text-[10px] text-[#686864] block mb-1">Search Console site</label>
                   <select
                     value={selectedGsc}
-                    onChange={e => setSelectedGsc(e.target.value)}
+                    onChange={e => { setSelectedGsc(e.target.value); setSaved(false); }}
                     className="w-full text-[12px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
                   >
                     {gscSites.map(s => (
@@ -171,21 +197,21 @@ function ConnectionsContent() {
                     <label className="text-[10px] text-[#686864] block mb-1">GA4 property</label>
                     <select
                       value={selectedGa4}
-                      onChange={e => setSelectedGa4(e.target.value)}
+                      onChange={e => { setSelectedGa4(e.target.value); setSaved(false); }}
                       className="w-full text-[12px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
                     >
                       {ga4Properties.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.account})</option>
+                        <option key={p.id} value={p.id}>{p.name} — {p.account}</option>
                       ))}
                     </select>
                   </div>
                 )}
                 <button
                   onClick={saveGoogleSelection}
-                  disabled={saving}
+                  disabled={saving || saved}
                   className="w-full py-2 bg-[#4285F4] text-white rounded-lg text-[11px] font-semibold hover:bg-[#3367d6] disabled:opacity-50 transition-colors"
                 >
-                  {saving ? "Saving..." : "Save Selection"}
+                  {saving ? "Saving..." : saved ? "✓ Saved — change dropdowns to update" : "Save Selection"}
                 </button>
               </div>
             </div>
@@ -197,8 +223,8 @@ function ConnectionsContent() {
             <CardHeader title="Sync status" />
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Shopify", status: !!shopName, detail: "Live orders, products, customers" },
-                { label: "GSC + GA4", status: googleConnected, detail: "Search & analytics data" },
+                { label: "Shopify", status: !!shopName, detail: "Orders, products, customers" },
+                { label: "GSC + GA4", status: googleConnected && saved, detail: "Search & analytics" },
                 { label: "Meta Ads", status: false, detail: "Ad campaigns & ROAS" },
                 { label: "Google Ads", status: false, detail: "Paid search data" },
               ].map((p, i) => (
@@ -222,7 +248,6 @@ function ConnectionsContent() {
                 "GA4 sessions, users, bounce rate",
                 "Traffic sources — organic, direct, social",
                 "Top pages by views and engagement",
-                "AI insights based on your actual web traffic",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-1.5">
                   <CheckCircle2 size={11} className="text-[#17a773] shrink-0 mt-0.5" />
@@ -230,27 +255,11 @@ function ConnectionsContent() {
                 </div>
               ))}
             </div>
-
-            {!googleConnected && (
-              <a
-                href="/api/auth/google"
-                className="block w-full mt-3 py-2.5 bg-[#4285F4] text-white rounded-lg text-[11px] font-semibold hover:bg-[#3367d6] transition-colors text-center"
-              >
-                Connect Google (GSC + GA4) Now
-              </a>
-            )}
-
-            {googleConnected && (
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-[#0d6b4f] font-medium">
-                <CheckCircle2 size={13} /> Google connected — GSC and GA4 data is live
-              </div>
-            )}
-
             <div className="mt-3 bg-[#fce8e8] rounded-lg p-3 text-[10px] text-[#6e1c1c] border border-[#f5a0a0]">
-              <div className="flex items-center gap-1.5 font-semibold mb-1.5">
-                <XCircle size={12} /> Google Ads not connected
+              <div className="flex items-center gap-1.5 font-semibold mb-1">
+                <XCircle size={12} /> Meta & Google Ads not connected
               </div>
-              <div>Connect Google Ads when you start running paid search campaigns to track ROAS and keyword performance.</div>
+              <div>Connect when ready to track ad spend and ROAS across channels.</div>
             </div>
           </Card>
         </div>

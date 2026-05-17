@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
       account: a.displayName,
     })));
 
-  return NextResponse.json({ gscSites, ga4Properties });
+  const savedGscSite = req.cookies.get("google_gsc_site")?.value ?? null;
+  const savedGa4Property = req.cookies.get("google_ga4_property")?.value ?? null;
+
+  return NextResponse.json({ gscSites, ga4Properties, savedGscSite, savedGa4Property });
 }
 
 export async function POST(req: NextRequest) {
