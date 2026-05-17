@@ -42,10 +42,10 @@ const navSections = [
   {
     label: "Meta Ads",
     items: [
-      { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "off" },
-      { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "off" },
-      { href: "/dashboard/creative", label: "Creative Studio", icon: Palette, badge: null, dot: "off" },
-      { href: "/dashboard/timing", label: "Time Intelligence", icon: Clock, badge: null, dot: "off" },
+      { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "meta" },
+      { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "meta" },
+      { href: "/dashboard/creative", label: "Creative Studio", icon: Palette, badge: null, dot: "meta" },
+      { href: "/dashboard/timing", label: "Time Intelligence", icon: Clock, badge: null, dot: "meta" },
     ],
   },
   {
@@ -90,6 +90,7 @@ export function Sidebar() {
   const [shopName, setShopName] = useState<string>("My Store");
   const [gscConnected, setGscConnected] = useState<boolean | null>(null);
   const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
+  const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/shopify/dashboard")
@@ -103,19 +104,22 @@ export function Sidebar() {
         setGscConnected(!!d.gscConnected);
         setGa4Connected(!!d.ga4Connected);
       })
-      .catch(() => {
-        setGscConnected(false);
-        setGa4Connected(false);
-      });
+      .catch(() => { setGscConnected(false); setGa4Connected(false); });
+
+    fetch("/api/meta/accounts")
+      .then(r => r.json())
+      .then(d => setMetaConnected(!d.error))
+      .catch(() => setMetaConnected(false));
   }, []);
 
   function resolveDot(dot: string | null): string | null {
     if (dot === "google_gsc") return gscConnected == null ? null : gscConnected ? "on" : "off";
     if (dot === "google_ga4") return ga4Connected == null ? null : ga4Connected ? "on" : "off";
+    if (dot === "meta") return metaConnected == null ? null : metaConnected ? "on" : "off";
     return dot;
   }
 
-  const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0);
+  const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0) + (metaConnected ? 1 : 0);
 
   return (
     <aside className="w-[218px] min-w-[218px] bg-white border-r border-black/[0.09] flex flex-col shrink-0 h-screen sticky top-0">

@@ -6,6 +6,7 @@ import { ShoppingBag, Share2, Search, Megaphone, CheckCircle2, XCircle, BarChart
 
 interface GoogleSite { url: string; }
 interface GA4Property { id: string; name: string; account: string; }
+interface MetaAccount { id: string; name: string; currency: string; }
 
 function ConnectionsContent() {
   const router = useRouter();
@@ -13,7 +14,7 @@ function ConnectionsContent() {
 
   const [shopName, setShopName] = useState<string | null>(null);
 
-  // GSC — independent connection (can use different Google account from GA4)
+  // GSC — independent connection
   const [gscConnected, setGscConnected] = useState(false);
   const [gscSites, setGscSites] = useState<GoogleSite[]>([]);
   const [selectedGsc, setSelectedGsc] = useState("");
@@ -24,6 +25,12 @@ function ConnectionsContent() {
   const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([]);
   const [selectedGa4, setSelectedGa4] = useState("");
   const [ga4Saved, setGa4Saved] = useState(false);
+
+  // Meta
+  const [metaConnected, setMetaConnected] = useState(false);
+  const [metaAccounts, setMetaAccounts] = useState<MetaAccount[]>([]);
+  const [selectedMeta, setSelectedMeta] = useState("");
+  const [metaSaved, setMetaSaved] = useState(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -45,6 +52,17 @@ function ConnectionsContent() {
         setSelectedGa4(d.savedGa4Property ?? d.ga4Properties?.[0]?.id ?? "");
         setGscSaved(!!d.savedGscSite);
         setGa4Saved(!!d.savedGa4Property);
+      })
+      .catch(() => {});
+
+    fetch("/api/meta/accounts")
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) return;
+        setMetaConnected(true);
+        setMetaAccounts(d.accounts ?? []);
+        setSelectedMeta(d.selectedAccountId ?? d.accounts?.[0]?.id ?? "");
+        setMetaSaved(!!d.selectedAccountId);
       })
       .catch(() => {});
   }, []);
@@ -78,6 +96,27 @@ function ConnectionsContent() {
     setGa4Properties([]);
     setGa4Saved(false);
     showToast("Google Analytics 4 disconnected");
+  };
+
+  const disconnectMeta = async () => {
+    if (!confirm("Disconnect Meta? All Meta Ads data will be removed from the dashboard.")) return;
+    await fetch("/api/auth/meta/disconnect", { method: "POST" });
+    setMetaConnected(false);
+    setMetaAccounts([]);
+    setMetaSaved(false);
+    showToast("Meta disconnected");
+  };
+
+  const saveMetaAccount = async () => {
+    setSaving(true);
+    await fetch("/api/meta/accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adAccount: selectedMeta }),
+    });
+    setSaving(false);
+    setMetaSaved(true);
+    showToast("Meta ad account saved!");
   };
 
   const saveGscSite = async () => {
@@ -140,10 +179,12 @@ function ConnectionsContent() {
       name: "Meta Business Suite",
       icon: <Share2 size={17} className="text-white" />,
       bg: "bg-[#1877F2]",
-      status: "disconnected",
-      detail: "Not connected",
-      href: null,
-      disconnectFn: null,
+      status: metaConnected ? "connected" : "disconnected",
+      detail: metaConnected
+        ? `Connected · ${metaSaved ? "ad account selected" : "select ad account below"}`
+        : "Not connected",
+      href: "/api/auth/meta",
+      disconnectFn: metaConnected ? disconnectMeta : null,
     },
     {
       name: "Google Ads Manager",
@@ -266,6 +307,34 @@ function ConnectionsContent() {
               </button>
             </div>
           )}
+
+          {/* Meta ad account picker */}
+          {metaConnected && metaAccounts.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-black/[0.06]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                  <Share2 size={11} className="text-[#1877F2]" /> Meta — select ad account
+                </div>
+                {metaSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+              </div>
+              <select
+                value={selectedMeta}
+                onChange={e => { setSelectedMeta(e.target.value); setMetaSaved(false); }}
+                className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+              >
+                {metaAccounts.map(a => (
+                  <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
+                ))}
+              </select>
+              <button
+                onClick={saveMetaAccount}
+                disabled={saving || metaSaved}
+                className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
+              >
+                {saving ? "Saving..." : metaSaved ? "✓ Saved — change dropdown to update" : "Save Ad Account"}
+              </button>
+            </div>
+          )}
         </Card>
 
         <div>
@@ -276,7 +345,7 @@ function ConnectionsContent() {
                 { label: "Shopify", status: !!shopName, detail: "Orders, products, customers" },
                 { label: "Search Console", status: gscConnected && gscSaved, detail: "Keyword rankings & clicks" },
                 { label: "Analytics GA4", status: ga4Connected && ga4Saved, detail: "Sessions, users, bounce rate" },
-                { label: "Meta Ads", status: false, detail: "Ad campaigns & ROAS" },
+                { label: "Meta Ads", status: metaConnected && metaSaved, detail: "Ad campaigns & ROAS" },
                 { label: "Google Ads", status: false, detail: "Paid search data" },
               ].map((p, i) => (
                 <div key={i} className="p-3 bg-[#f7f7f5] rounded-lg">
