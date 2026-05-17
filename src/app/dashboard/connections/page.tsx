@@ -46,6 +46,15 @@ function ConnectionsContent() {
 
   }, [searchParams]);
 
+  const disconnectGoogle = async () => {
+    if (!confirm("Disconnect Google? This will remove access to GSC and GA4 data.")) return;
+    await fetch("/api/auth/google/disconnect", { method: "POST" });
+    setGoogleConnected(false);
+    setGscSites([]);
+    setGa4Properties([]);
+    showToast("Google disconnected");
+  };
+
   const saveGoogleSelection = async () => {
     setSaving(true);
     await fetch("/api/google/sites", {
@@ -64,21 +73,21 @@ function ConnectionsContent() {
       name: "Shopify Store", icon: <ShoppingBag size={17} className="text-white" />, bg: "bg-[#96BF48]",
       status: "connected",
       detail: shopName ? `${shopName} · Live sync` : "Connecting...",
-      href: null,
+      href: null, disconnectFn: null,
     },
     {
       name: "Google Search Console + GA4", icon: <Search size={17} className="text-white" />, bg: "bg-[#4285F4]",
       status: googleConnected ? "connected" : "disconnected",
       detail: googleConnected ? "Connected · GSC + GA4 active" : "Not connected",
-      href: "/api/auth/google",
+      href: "/api/auth/google", disconnectFn: googleConnected ? disconnectGoogle : null,
     },
     {
       name: "Meta Business Suite", icon: <Share2 size={17} className="text-white" />, bg: "bg-[#1877F2]",
-      status: "disconnected", detail: "Not connected", href: null,
+      status: "disconnected", detail: "Not connected", href: null, disconnectFn: null,
     },
     {
       name: "Google Ads Manager", icon: <Megaphone size={17} className="text-white" />, bg: "bg-[#34A853]",
-      status: "disconnected", detail: "Not connected · Est. ₹40–60K revenue/month missed", href: null,
+      status: "disconnected", detail: "Not connected · Est. ₹40–60K revenue/month missed", href: null, disconnectFn: null,
     },
   ];
 
@@ -109,12 +118,19 @@ function ConnectionsContent() {
                 </div>
               </div>
               {p.status === "connected" ? (
-                <button
-                  onClick={() => showToast(`${p.name} is connected`)}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]"
-                >
-                  Connected
-                </button>
+                <div className="flex gap-1.5">
+                  <span className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
+                    Connected
+                  </span>
+                  {p.disconnectFn && (
+                    <button
+                      onClick={p.disconnectFn}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  )}
+                </div>
               ) : p.href ? (
                 <a
                   href={p.href}
