@@ -43,13 +43,13 @@ const statusBadge = (s: string) => {
   return "bg-[#f7f7f5] text-[#686864]";
 };
 
-function bench(value: number, avg: number, good: number, higherIsBetter = true): { change: number; label: string } {
+function bench(value: number, avg: number, good: number, higherIsBetter = true): { change: number; changeLabel: string } {
   const isGood = higherIsBetter ? value >= good : value <= good;
   const isAvg = higherIsBetter ? value >= avg : value <= avg;
-  const avgLabel = higherIsBetter ? `Avg: ${avg}` : `Avg: ${avg}`;
-  if (isGood) return { change: 1, label: `Above avg · ${avgLabel}` };
-  if (isAvg) return { change: 1, label: `At avg · ${avgLabel}` };
-  return { change: -1, label: `Below avg · ${avgLabel}` };
+  const avgLabel = `Avg: ${avg}`;
+  if (isGood) return { change: 1, changeLabel: `Above avg · ${avgLabel}` };
+  if (isAvg) return { change: 1, changeLabel: `At avg · ${avgLabel}` };
+  return { change: -1, changeLabel: `Below avg · ${avgLabel}` };
 }
 
 function FunnelStep({ label, count, value, ratio, ratioLabel, cur }: {
