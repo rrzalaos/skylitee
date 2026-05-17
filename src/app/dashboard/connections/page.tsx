@@ -1,33 +1,43 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ShoppingBag, Share2, Search, BarChart3, Megaphone, CheckCircle2, XCircle } from "lucide-react";
 
-const platforms = [
-  {
-    name: "Shopify Store", icon: <ShoppingBag size={17} className="text-white" />, bg: "bg-[#96BF48]",
-    status: "connected", detail: "fabonique.myshopify.com · Live sync", sync: "Live",
-  },
-  {
-    name: "Meta Business Suite", icon: <Share2 size={17} className="text-white" />, bg: "bg-[#1877F2]",
-    status: "connected", detail: "Ad Account #3829 · 3 min sync", sync: "3 min",
-  },
-  {
-    name: "Google Search Console", icon: <Search size={17} className="text-white" />, bg: "bg-[#4285F4]",
-    status: "connected", detail: "fabonique.com · Daily sync", sync: "Daily",
-  },
-  {
-    name: "Google Analytics 4", icon: <BarChart3 size={17} className="text-white" />, bg: "bg-[#E37400]",
-    status: "connected", detail: "GA4 Property 384920 · Hourly", sync: "Hourly",
-  },
-  {
-    name: "Google Ads Manager", icon: <Megaphone size={17} className="text-white" />, bg: "bg-[#4285F4]",
-    status: "disconnected", detail: "Not connected · Est. ₹40–60K revenue/month missed", sync: "—",
-  },
-];
-
 export default function ConnectionsPage() {
   const [toastMsg, setToastMsg] = useState("");
+  const [shopName, setShopName] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/shopify/dashboard")
+      .then(r => r.json())
+      .then(d => { if (d.shop) setShopName(d.shop); })
+      .catch(() => {});
+  }, []);
+
+  const platforms = [
+    {
+      name: "Shopify Store", icon: <ShoppingBag size={17} className="text-white" />, bg: "bg-[#96BF48]",
+      status: "connected",
+      detail: shopName ? `${shopName} · Live sync` : "Connecting...",
+      sync: "Live",
+    },
+    {
+      name: "Meta Business Suite", icon: <Share2 size={17} className="text-white" />, bg: "bg-[#1877F2]",
+      status: "disconnected", detail: "Not connected", sync: "—",
+    },
+    {
+      name: "Google Search Console", icon: <Search size={17} className="text-white" />, bg: "bg-[#4285F4]",
+      status: "disconnected", detail: "Not connected", sync: "—",
+    },
+    {
+      name: "Google Analytics 4", icon: <BarChart3 size={17} className="text-white" />, bg: "bg-[#E37400]",
+      status: "disconnected", detail: "Not connected", sync: "—",
+    },
+    {
+      name: "Google Ads Manager", icon: <Megaphone size={17} className="text-white" />, bg: "bg-[#4285F4]",
+      status: "disconnected", detail: "Not connected · Est. ₹40–60K revenue/month missed", sync: "—",
+    },
+  ];
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -56,7 +66,7 @@ export default function ConnectionsPage() {
                 </div>
               </div>
               <button
-                onClick={() => showToast(p.status === "connected" ? `${p.name} is already connected` : "Opening OAuth flow...")}
+                onClick={() => showToast(p.status === "connected" ? `${p.name} is connected` : "Coming soon — integration in progress")}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap ${
                   p.status === "connected"
                     ? "bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]"
@@ -110,7 +120,7 @@ export default function ConnectionsPage() {
             </div>
 
             <button
-              onClick={() => showToast("Opening Google Ads OAuth flow...")}
+              onClick={() => showToast("Coming soon — Google Ads integration in progress")}
               className="w-full mt-3 py-2.5 bg-[#17a773] text-white rounded-lg text-[11px] font-semibold hover:bg-[#0d6b4f] transition-colors"
             >
               Connect Google Ads Now

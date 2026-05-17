@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Radar, Brain, MessageSquareText,
@@ -41,18 +42,18 @@ const navSections = [
   {
     label: "Meta Ads",
     items: [
-      { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "on" },
-      { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "on" },
-      { href: "/dashboard/creative", label: "Creative Studio", icon: Palette, badge: null, dot: "on" },
-      { href: "/dashboard/timing", label: "Time Intelligence", icon: Clock, badge: null, dot: "on" },
+      { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "off" },
+      { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "off" },
+      { href: "/dashboard/creative", label: "Creative Studio", icon: Palette, badge: null, dot: "off" },
+      { href: "/dashboard/timing", label: "Time Intelligence", icon: Clock, badge: null, dot: "off" },
     ],
   },
   {
     label: "Google",
     items: [
       { href: "/dashboard/gads", label: "Google Ads", icon: Megaphone, badge: null, dot: "off" },
-      { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "on" },
-      { href: "/dashboard/ga4", label: "Analytics GA4", icon: LineChart, badge: null, dot: "on" },
+      { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "off" },
+      { href: "/dashboard/ga4", label: "Analytics GA4", icon: LineChart, badge: null, dot: "off" },
     ],
   },
   {
@@ -86,6 +87,14 @@ const dotStyles = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [shopName, setShopName] = useState<string>("My Store");
+
+  useEffect(() => {
+    fetch("/api/shopify/dashboard")
+      .then(r => r.json())
+      .then(d => { if (d.shop) setShopName(d.shop.replace(".myshopify.com", "")); })
+      .catch(() => {});
+  }, []);
 
   return (
     <aside className="w-[218px] min-w-[218px] bg-white border-r border-black/[0.09] flex flex-col shrink-0 h-screen sticky top-0">
@@ -102,7 +111,7 @@ export function Sidebar() {
 
       {/* Brand selector */}
       <div className="mx-2 mt-2.5 bg-[#f7f7f5] rounded-lg px-2.5 py-1.5 flex items-center justify-between border border-black/[0.09] cursor-pointer hover:bg-[#f1f0ed] transition-colors">
-        <span className="text-[12px] font-semibold text-[#181816]">fabonique</span>
+        <span className="text-[12px] font-semibold text-[#181816]">{shopName}</span>
         <ChevronDown size={10} className="text-[#9e9e9a]" />
       </div>
 
@@ -149,10 +158,10 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-2.5 border-t border-black/[0.09] text-[11px] text-[#9e9e9a]">
-        <div>Synced 3 min ago</div>
+        <div>Shopify live sync</div>
         <div className="flex items-center gap-1 mt-0.5 text-[#0d6b4f] font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-[#17a773]" />
-          4 of 5 platforms live
+          1 of 5 platforms live
         </div>
       </div>
     </aside>
