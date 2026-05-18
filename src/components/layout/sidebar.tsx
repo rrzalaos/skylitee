@@ -12,7 +12,7 @@ import {
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, Activity, ChevronDown, UserCircle,
-  HelpCircle, X, ShieldCheck,
+  HelpCircle, X, ShieldCheck, CreditCard,
 } from "lucide-react";
 
 interface NavItem {
@@ -84,6 +84,7 @@ const navSections: NavSection[] = [
     tooltip: "Connect your Shopify, Meta, and Google accounts. Manage your profile and team access.",
     items: [
       { href: "/dashboard/connections", label: "Connections", icon: Plug, badge: null, dot: null },
+      { href: "/dashboard/pricing", label: "Plan & Billing", icon: CreditCard, badge: null, dot: null },
       { href: "/dashboard/profile", label: "Profile & Account", icon: UserCircle, badge: null, dot: null },
       { href: "/dashboard/admin", label: "Admin Panel", icon: ShieldCheck, badge: null, dot: null },
     ],

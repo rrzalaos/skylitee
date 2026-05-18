@@ -20,6 +20,24 @@ export async function shopifyFetch<T = unknown>(
   return res.json();
 }
 
+export async function shopifyPost<T = unknown>(
+  shop: string,
+  accessToken: string,
+  path: string,
+  body: unknown
+): Promise<T> {
+  const res = await fetch(shopifyApiUrl(shop, path), {
+    method: "POST",
+    headers: {
+      "X-Shopify-Access-Token": accessToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Shopify API ${res.status}: ${path}`);
+  return res.json();
+}
+
 export function buildAuthUrl(shop: string, state: string): string {
   const appUrl = process.env.SHOPIFY_APP_URL!;
   const params = new URLSearchParams({
