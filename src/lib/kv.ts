@@ -38,4 +38,18 @@ export const shopKv = {
   getMetaAccount: (shop: string) => kvGet<string>(`shop:${shop}:meta_ad_account`),
   setMetaAccount: (shop: string, v: string) => kvSet(`shop:${shop}:meta_ad_account`, v),
   delMetaAccount: (shop: string) => kvDel(`shop:${shop}:meta_ad_account`),
+
+  // Wipe all data for a shop (used on uninstall / shop/redact webhook)
+  async delAllShopData(shop: string): Promise<void> {
+    const keys = [
+      `shop:${shop}:shopify_token`,
+      `shop:${shop}:gsc_token`,
+      `shop:${shop}:gsc_site`,
+      `shop:${shop}:ga4_token`,
+      `shop:${shop}:ga4_property`,
+      `shop:${shop}:meta_token`,
+      `shop:${shop}:meta_ad_account`,
+    ];
+    await Promise.allSettled(keys.map(k => kvDel(k)));
+  },
 };
