@@ -1,60 +1,34 @@
-export type PlanId = "free" | "growth" | "scale";
+export type PlanId = "growth";
 
 export interface Plan {
   id: PlanId;
   name: string;
-  price: number;        // USD per month
+  price: number;
   trialDays: number;
   features: string[];
-  highlight?: boolean;
 }
 
 export const PLANS: Plan[] = [
   {
-    id: "free",
-    name: "Free",
-    price: 0,
-    trialDays: 0,
-    features: [
-      "Shopify sales dashboard",
-      "Monthly goals tracker",
-      "Basic product analytics",
-      "Customer overview",
-      "7-day data history",
-    ],
-  },
-  {
     id: "growth",
-    name: "Growth",
+    name: "Skylitee Pro",
     price: 29,
     trialDays: 14,
-    highlight: true,
     features: [
-      "Everything in Free",
-      "Meta Ads analytics",
-      "Google GSC + GA4",
-      "AI Insights & Assistant",
+      "Shopify sales, orders & revenue dashboard",
+      "Meta Ads — ROAS, CAC, CTR, spend & creatives",
+      "Google Search Console & Analytics 4",
+      "AI Insights & Chat assistant",
       "Cohort retention analysis",
-      "Full attribution",
-      "Financial P&L",
-      "90-day data history",
-    ],
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    price: 79,
-    trialDays: 14,
-    features: [
-      "Everything in Growth",
-      "Unlimited data history",
-      "Weekly email digest",
-      "Priority support",
-      "Early access to new features",
+      "Financial P&L calculator",
+      "Goals tracker with live pace",
+      "Geo, customer segments & anomaly alerts",
+      "Attribution dashboard",
+      "Weekly performance digest",
     ],
   },
 ];
 
 export function getPlanById(id: string): Plan {
-  return PLANS.find(p => p.id === id) ?? PLANS[0];
+  return PLANS[0];
 }
