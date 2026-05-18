@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
 
-interface GA4Metric { name: string; }
-interface GA4Dimension { name: string; }
-interface GA4Row { dimensionValues: { value: string }[]; metricValues: { value: string }[]; }
+interface GA4Metric { name: string }
+interface GA4Dimension { name: string }
+interface GA4Row { dimensionValues: { value: string }[]; metricValues: { value: string }[] }
 
 export async function GET(req: NextRequest) {
   const refreshToken =
@@ -48,47 +48,76 @@ export async function GET(req: NextRequest) {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ dateRanges, dimensions, metrics, limit }),
     });
-    return res.json() as Promise<{ rows?: GA4Row[] }>;
+    const json = await res.json() as { rows?: GA4Row[]; error?: unknown };
+    return json;
   };
 
-  const [overviewData, channelData, pageData, deviceData, countryData, dailyData, landingData] = await Promise.all([
+  const [
+    overviewData, channelData, pageData, deviceData, countryData,
+    dailyData, landingData, ecomData, itemData, newReturningData, cityData, regionData,
+  ] = await Promise.allSettled([
     runReport([], [
-      { name: "sessions" },
-      { name: "activeUsers" },
-      { name: "screenPageViews" },
-      { name: "bounceRate" },
-      { name: "averageSessionDuration" },
-      { name: "newUsers" },
+      { name: "sessions" }, { name: "activeUsers" }, { name: "screenPageViews" },
+      { name: "bounceRate" }, { name: "averageSessionDuration" }, { name: "newUsers" },
     ], 1),
     runReport([{ name: "sessionDefaultChannelGroup" }], [
-      { name: "sessions" },
-      { name: "activeUsers" },
+      { name: "sessions" }, { name: "activeUsers" },
+      { name: "ecommercePurchases" }, { name: "purchaseRevenue" },
     ], 10),
     runReport([{ name: "pagePath" }], [
-      { name: "screenPageViews" },
-      { name: "sessions" },
-      { name: "bounceRate" },
+      { name: "screenPageViews" }, { name: "sessions" }, { name: "bounceRate" },
     ], 20),
     runReport([{ name: "deviceCategory" }], [
-      { name: "sessions" },
-      { name: "activeUsers" },
+      { name: "sessions" }, { name: "activeUsers" },
     ], 5),
     runReport([{ name: "country" }], [
-      { name: "sessions" },
-      { name: "activeUsers" },
+      { name: "sessions" }, { name: "activeUsers" },
     ], 15),
     runReport([{ name: "date" }], [
-      { name: "sessions" },
-      { name: "activeUsers" },
+      { name: "sessions" }, { name: "activeUsers" },
     ], 90),
     runReport([{ name: "landingPage" }], [
-      { name: "sessions" },
-      { name: "bounceRate" },
-      { name: "newUsers" },
+      { name: "sessions" }, { name: "bounceRate" }, { name: "newUsers" },
     ], 10),
+    // Ecommerce aggregate
+    runReport([], [
+      { name: "itemsViewed" }, { name: "itemsAddedToCart" },
+      { name: "itemsCheckedOut" }, { name: "itemsPurchased" },
+      { name: "ecommercePurchases" }, { name: "purchaseRevenue" },
+    ], 1),
+    // Item-level ecommerce
+    runReport([{ name: "itemName" }], [
+      { name: "itemsViewed" }, { name: "itemsAddedToCart" },
+      { name: "itemsCheckedOut" }, { name: "itemsPurchased" }, { name: "itemRevenue" },
+    ], 20),
+    // New vs Returning
+    runReport([{ name: "newVsReturning" }], [
+      { name: "sessions" }, { name: "activeUsers" },
+      { name: "ecommercePurchases" }, { name: "purchaseRevenue" },
+    ], 5),
+    // Cities
+    runReport([{ name: "city" }], [{ name: "sessions" }, { name: "activeUsers" }], 10),
+    // Regions (states)
+    runReport([{ name: "region" }], [{ name: "sessions" }, { name: "activeUsers" }], 10),
   ]);
 
-  const ovRow = overviewData.rows?.[0];
+  const safe = <T>(r: PromiseSettledResult<T>): T | null =>
+    r.status === "fulfilled" ? r.value : null;
+
+  const overview = safe(overviewData);
+  const channels = safe(channelData);
+  const pages = safe(pageData);
+  const devices = safe(deviceData);
+  const countries = safe(countryData);
+  const daily = safe(dailyData);
+  const landing = safe(landingData);
+  const ecom = safe(ecomData);
+  const items = safe(itemData);
+  const newRet = safe(newReturningData);
+  const cities = safe(cityData);
+  const regions = safe(regionData);
+
+  const ovRow = overview?.rows?.[0];
   const sessions = ovRow ? parseInt(ovRow.metricValues[0].value) : 0;
   const users = ovRow ? parseInt(ovRow.metricValues[1].value) : 0;
   const pageviews = ovRow ? parseInt(ovRow.metricValues[2].value) : 0;
@@ -97,41 +126,83 @@ export async function GET(req: NextRequest) {
   const avgSessionMin = `${Math.floor(avgSessionSec / 60)}m ${avgSessionSec % 60}s`;
   const newUsers = ovRow ? parseInt(ovRow.metricValues[5].value) : 0;
 
+  // Ecommerce funnel
+  const eRow = ecom?.rows?.[0];
+  const ecommerce = eRow ? {
+    itemsViewed: parseInt(eRow.metricValues[0].value),
+    itemsAddedToCart: parseInt(eRow.metricValues[1].value),
+    itemsCheckedOut: parseInt(eRow.metricValues[2].value),
+    itemsPurchased: parseInt(eRow.metricValues[3].value),
+    purchases: parseInt(eRow.metricValues[4].value),
+    revenue: parseFloat(eRow.metricValues[5].value),
+    atcRate: eRow ? +(parseInt(eRow.metricValues[1].value) / Math.max(parseInt(eRow.metricValues[0].value), 1) * 100).toFixed(1) : 0,
+    checkoutRate: eRow ? +(parseInt(eRow.metricValues[2].value) / Math.max(parseInt(eRow.metricValues[1].value), 1) * 100).toFixed(1) : 0,
+    purchaseRate: eRow ? +(parseInt(eRow.metricValues[3].value) / Math.max(parseInt(eRow.metricValues[2].value), 1) * 100).toFixed(1) : 0,
+  } : null;
+
   return NextResponse.json({
     property: propertyName,
     period: { startDate, endDate },
     kpis: { sessions, users, pageviews, bounceRate, avgSessionMin, newUsers },
-    channels: (channelData.rows ?? []).map(r => ({
+    channels: (channels?.rows ?? []).map(r => ({
       channel: r.dimensionValues[0].value,
       sessions: parseInt(r.metricValues[0].value),
       users: parseInt(r.metricValues[1].value),
+      purchases: parseInt(r.metricValues[2].value),
+      revenue: parseFloat(r.metricValues[3].value),
     })),
-    pages: (pageData.rows ?? []).map(r => ({
+    pages: (pages?.rows ?? []).map(r => ({
       page: r.dimensionValues[0].value,
       views: parseInt(r.metricValues[0].value),
       sessions: parseInt(r.metricValues[1].value),
       bounceRate: +(parseFloat(r.metricValues[2].value) * 100).toFixed(1),
     })),
-    devices: (deviceData.rows ?? []).map(r => ({
+    devices: (devices?.rows ?? []).map(r => ({
       device: r.dimensionValues[0].value,
       sessions: parseInt(r.metricValues[0].value),
       users: parseInt(r.metricValues[1].value),
     })),
-    countries: (countryData.rows ?? []).map(r => ({
+    countries: (countries?.rows ?? []).map(r => ({
       country: r.dimensionValues[0].value,
       sessions: parseInt(r.metricValues[0].value),
       users: parseInt(r.metricValues[1].value),
     })),
-    daily: (dailyData.rows ?? []).map(r => ({
+    daily: (daily?.rows ?? []).map(r => ({
       date: r.dimensionValues[0].value,
       sessions: parseInt(r.metricValues[0].value),
       users: parseInt(r.metricValues[1].value),
     })),
-    landingPages: (landingData.rows ?? []).map(r => ({
+    landingPages: (landing?.rows ?? []).map(r => ({
       page: r.dimensionValues[0].value,
       sessions: parseInt(r.metricValues[0].value),
       bounceRate: +(parseFloat(r.metricValues[1].value) * 100).toFixed(1),
       newUsers: parseInt(r.metricValues[2].value),
+    })),
+    ecommerce,
+    items: (items?.rows ?? []).map(r => ({
+      name: r.dimensionValues[0].value,
+      viewed: parseInt(r.metricValues[0].value),
+      addedToCart: parseInt(r.metricValues[1].value),
+      checkedOut: parseInt(r.metricValues[2].value),
+      purchased: parseInt(r.metricValues[3].value),
+      revenue: parseFloat(r.metricValues[4].value),
+    })),
+    newVsReturning: (newRet?.rows ?? []).map(r => ({
+      type: r.dimensionValues[0].value,
+      sessions: parseInt(r.metricValues[0].value),
+      users: parseInt(r.metricValues[1].value),
+      purchases: parseInt(r.metricValues[2].value),
+      revenue: parseFloat(r.metricValues[3].value),
+    })),
+    cities: (cities?.rows ?? []).filter(r => r.dimensionValues[0].value !== "(not set)").map(r => ({
+      city: r.dimensionValues[0].value,
+      sessions: parseInt(r.metricValues[0].value),
+      users: parseInt(r.metricValues[1].value),
+    })),
+    regions: (regions?.rows ?? []).filter(r => r.dimensionValues[0].value !== "(not set)").map(r => ({
+      region: r.dimensionValues[0].value,
+      sessions: parseInt(r.metricValues[0].value),
+      users: parseInt(r.metricValues[1].value),
     })),
   });
 }
