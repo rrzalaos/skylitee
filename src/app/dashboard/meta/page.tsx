@@ -2,11 +2,11 @@
 import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowRight, Brain, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Share2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useDateRange } from "@/lib/date-range-context";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
+  AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
@@ -73,23 +73,94 @@ function FunnelStep({ label, count, value, ratio, ratioLabel, cur }: {
   );
 }
 
-function AiInsightCard({ text }: { text: string }) {
-  const type = text.startsWith("STRENGTH") ? "strength" : text.startsWith("ISSUE") ? "issue" : text.startsWith("OPPORTUNITY") ? "opp" : "risk";
-  const styles = {
-    strength: { border: "border-l-[#F97316]", bg: "bg-[#FFF7ED] dark:bg-[#2A1A0E]", label: "text-[#EA580C] dark:text-[#FB923C]" },
-    issue: { border: "border-l-[#EF4444]", bg: "bg-[#FEF2F2] dark:bg-[#2D0A0A]", label: "text-[#DC2626] dark:text-[#FCA5A5]" },
-    opp: { border: "border-l-[#3B82F6]", bg: "bg-[#EFF6FF] dark:bg-[#0D1E3D]", label: "text-[#1E40AF] dark:text-[#93C5FD]" },
-    risk: { border: "border-l-[#EAB308]", bg: "bg-[#FFFBEB] dark:bg-[#2D1C00]", label: "text-[#92400E] dark:text-[#FCD34D]" },
-  };
-  const labels = { strength: "Strength", issue: "Issue", opp: "Opportunity", risk: "Risk" };
-  const s = styles[type];
-  const body = text.replace(/^(STRENGTH|ISSUE|OPPORTUNITY|RISK):\s*/i, "");
+type DiagSource = "meta" | "website" | "overall";
+type DiagSeverity = "issue" | "strength" | "risk" | "warning";
+interface DiagInsight { source: DiagSource; severity: DiagSeverity; title: string; body: string }
+
+const sourceLabel: Record<DiagSource, string> = { meta: "Meta Ad", website: "Website / Shopify", overall: "Overall" };
+const sourceStyle: Record<DiagSource, string> = {
+  meta: "bg-[#EFF6FF] text-[#1877F2] dark:bg-[#0D1E3D] dark:text-[#93C5FD]",
+  website: "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]",
+  overall: "bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1E1240] dark:text-[#C4B5FD]",
+};
+const severityStyle: Record<DiagSeverity, { border: string; bg: string; label: string; labelText: string }> = {
+  issue:    { border: "border-l-[#EF4444]", bg: "bg-[#FEF2F2] dark:bg-[#2D0A0A]", label: "ISSUE",    labelText: "text-[#DC2626] dark:text-[#FCA5A5]" },
+  strength: { border: "border-l-[#22C55E]", bg: "bg-[#F0FDF4] dark:bg-[#052E16]", label: "GOOD",     labelText: "text-[#15803D] dark:text-[#86EFAC]" },
+  risk:     { border: "border-l-[#EAB308]", bg: "bg-[#FFFBEB] dark:bg-[#2D1C00]", label: "RISK",     labelText: "text-[#92400E] dark:text-[#FCD34D]" },
+  warning:  { border: "border-l-[#F97316]", bg: "bg-[#FFF7ED] dark:bg-[#2A1A0E]", label: "WATCH",    labelText: "text-[#EA580C] dark:text-[#FB923C]" },
+};
+
+function DiagCard({ insight }: { insight: DiagInsight }) {
+  const s = severityStyle[insight.severity];
   return (
     <div className={cn("border-l-[3px] rounded-r-xl p-3", s.border, s.bg)}>
-      <div className={cn("text-[11px] font-bold uppercase tracking-wider mb-1", s.label)}>{labels[type]}</div>
-      <div className="text-[13px] text-[#18181B] dark:text-[#F4F4F5] leading-relaxed">{body}</div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className={cn("text-[10px] font-black uppercase tracking-wider", s.labelText)}>{s.label}</span>
+        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide", sourceStyle[insight.source])}>
+          {sourceLabel[insight.source]}
+        </span>
+      </div>
+      <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-0.5">{insight.title}</div>
+      <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{insight.body}</div>
     </div>
   );
+}
+
+function buildDiagnosis(k: MetaKPIs): DiagInsight[] {
+  const out: DiagInsight[] = [];
+
+  // ── ROAS ────────────────────────────────────────────────────────────────
+  if (k.roas >= 3.0) {
+    out.push({ source: "overall", severity: "strength", title: `ROAS ${k.roas}x — profitable spend`, body: "Above the 3x good threshold. Increase daily budget 20–30% incrementally and duplicate winning ad sets into lookalike audiences to scale without hurting ROAS." });
+  } else if (k.roas < 2.0) {
+    out.push({ source: "overall", severity: "risk", title: `ROAS ${k.roas}x — below the 2x minimum`, body: "You're not recovering ad spend. Pause the lowest-ROAS campaigns first, then fix the weakest funnel stage below. Don't increase budget until ROAS crosses 2x." });
+  }
+
+  // ── META SIDE: CTR ───────────────────────────────────────────────────────
+  if (k.ctr < 0.9) {
+    out.push({ source: "meta", severity: "issue", title: `CTR ${k.ctr}% — ad is not compelling enough`, body: "Below the 0.9% industry avg. People are seeing your ad but not clicking. Test 2–3 new ad copy angles: different hook, stronger headline, new offer framing (discount, bundle, free shipping). Also try a new creative format (video vs. image)." });
+  } else if (k.ctr >= 1.5) {
+    out.push({ source: "meta", severity: "strength", title: `CTR ${k.ctr}% — strong ad engagement`, body: "Above the 1.5% good threshold. Your ad creative is working. Focus budget on the campaigns driving this CTR and keep this creative active." });
+  }
+
+  // ── META SIDE: Frequency / Fatigue ──────────────────────────────────────
+  if (k.frequency > 5) {
+    out.push({ source: "meta", severity: "risk", title: `Frequency ${k.frequency}x — severe ad fatigue`, body: "Your audience has seen this ad too many times. Launch at least 2–3 fresh creatives immediately: new hook, UGC/testimonial format, or a different offer angle. Expand targeting to new audiences or lookalikes." });
+  } else if (k.frequency > 3) {
+    out.push({ source: "meta", severity: "warning", title: `Frequency ${k.frequency}x — creative fatigue building`, body: "Approaching the fatigue zone (>5x). Refresh creatives soon — try different visual styles, add a new ad angle, or introduce a seasonal/limited offer to re-engage the audience." });
+  }
+
+  // ── META SIDE: Video ────────────────────────────────────────────────────
+  if (k.videoViews3s > 0 && k.thumbStopRatio < 25) {
+    out.push({ source: "meta", severity: "issue", title: `Thumb Stop ${k.thumbStopRatio}% — weak opening hook`, body: "Below the 25% avg — people scroll past your video. The first 1–2 seconds must be more attention-grabbing: bold text overlay, show the product immediately, start with a surprising visual or a strong problem statement." });
+  }
+  if (k.videoViews3s > 0 && k.holdRatio < 15) {
+    out.push({ source: "meta", severity: "issue", title: `Hold Ratio ${k.holdRatio}% — video losing viewers too fast`, body: "Below the 15% avg. You stop the scroll but lose them quickly. Keep the video tight: get to the key benefit in under 5 seconds, remove long intros, add subtitles, and show product proof earlier." });
+  }
+
+  // ── WEBSITE SIDE: LP Ratio (Click → LPV) ────────────────────────────────
+  if (k.lpRatio < 65) {
+    out.push({ source: "website", severity: "issue", title: `LP Ratio ${k.lpRatio}% — clicks not reaching your landing page`, body: "Below the 65% avg. Most people click your ad but never see your page. This is usually a page load speed issue (target <3s) or a mismatch — what your ad promises vs. what loads. Check: page speed, headline matches ad copy, no popup blocking content on arrival." });
+  }
+
+  // ── WEBSITE SIDE: ATC Ratio (LPV → ATC) ─────────────────────────────────
+  if (k.atcRatio < 7) {
+    out.push({ source: "website", severity: "issue", title: `ATC Ratio ${k.atcRatio}% — product page not converting`, body: "Below the 7% avg. Visitors land but don't add to cart — this is a Shopify/PDP issue, not an ad issue. Fix: add customer reviews with photos, make the offer crystal clear (price, what's included), create urgency (low stock, limited offer), and ensure the ATC button is visible without scrolling." });
+  } else if (k.atcRatio >= 12) {
+    out.push({ source: "website", severity: "strength", title: `ATC Ratio ${k.atcRatio}% — product page converting well`, body: "Above the 12% good threshold. Your PDP is doing its job. Protect these elements: the offer clarity, social proof, and page layout. Reapply the same structure to any new product pages." });
+  }
+
+  // ── WEBSITE SIDE: Checkout Ratio (ATC → Checkout) ───────────────────────
+  if (k.checkoutRatio < 50) {
+    out.push({ source: "website", severity: "issue", title: `Checkout Ratio ${k.checkoutRatio}% — high cart abandonment`, body: "Below the 50% avg. Customers add to cart but abandon before checkout. Fix: show shipping cost + ETA upfront (surprise fees are #1 reason for cart drop), add trust badges (secure payment, easy returns), offer COD prominently. Set up a cart abandonment WhatsApp/email sequence within 1 hour." });
+  }
+
+  // ── WEBSITE SIDE: Purchase Ratio (Checkout → Purchase) ──────────────────
+  if (k.purchaseRatio < 40) {
+    out.push({ source: "website", severity: "issue", title: `Purchase Ratio ${k.purchaseRatio}% — drop-off at payment`, body: "Below the 40% avg. Customers reach checkout but don't pay. Fix: show all payment options clearly (UPI, COD, card, EMI), display delivery date on checkout page, add trust signals (Razorpay/Stripe badge, 'easy returns' note), and eliminate shipping fee surprises." });
+  }
+
+  return out;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -107,44 +178,18 @@ export default function MetaPage() {
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
-  const [aiInsights, setAiInsights] = useState<string[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setData(null);
-    setAiInsights([]);
     fetch(`/api/meta?from=${range.from}&to=${range.to}`)
       .then(r => r.json())
       .then(d => {
         if (d.error === "not_connected" || d.error === "token_expired") { setNotConnected(true); return; }
-        if (!d.error) {
-          setData(d);
-          loadAiInsights(d);
-        }
+        if (!d.error) setData(d);
       })
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
-
-  function loadAiInsights(d: MetaData) {
-    setAiLoading(true);
-    fetch("/api/meta/ai-insights", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kpis: d.kpis, currency: d.currency, period: d.period }),
-    })
-      .then(r => r.json())
-      .then(r => {
-        if (r.insights) {
-          const lines = (r.insights as string)
-            .split("\n")
-            .map((l: string) => l.trim())
-            .filter((l: string) => l.match(/^(STRENGTH|ISSUE|OPPORTUNITY|RISK):/i));
-          setAiInsights(lines);
-        }
-      })
-      .finally(() => setAiLoading(false));
-  }
 
   if (loading) return <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading Meta Ads data…</div>;
 
@@ -343,22 +388,19 @@ export default function MetaPage() {
             </Card>
           )}
 
-          {/* AI Insights */}
-          <Card>
-            <CardHeader
-              title={<span className="flex items-center gap-1.5"><Brain size={14} className="text-[#F97316]" /> AI Analysis vs Benchmarks</span>}
-              right={aiLoading ? <Loader2 size={13} className="animate-spin text-[#A1A1AA]" /> : "Claude · D2C benchmarks"}
-            />
-            {aiLoading ? (
-              <div className="text-[13px] text-[#A1A1AA] py-4 text-center">Generating insights…</div>
-            ) : aiInsights.length > 0 ? (
-              <div className="space-y-2">
-                {aiInsights.map((ins, i) => <AiInsightCard key={i} text={ins} />)}
-              </div>
-            ) : (
-              <div className="text-[13px] text-[#A1A1AA] text-center py-4">Could not load AI analysis.</div>
-            )}
-          </Card>
+          {/* Funnel Diagnosis */}
+          {(() => {
+            const diag = buildDiagnosis(k);
+            if (diag.length === 0) return null;
+            return (
+              <Card>
+                <CardHeader title="Funnel Diagnosis" right="vs D2C industry benchmarks" />
+                <div className="space-y-2">
+                  {diag.map((ins, i) => <DiagCard key={i} insight={ins} />)}
+                </div>
+              </Card>
+            );
+          })()}
         </div>
       )}
 
