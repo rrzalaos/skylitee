@@ -14,6 +14,7 @@ import {
   Plug, Activity, ChevronDown, UserCircle,
   HelpCircle, X, ShieldCheck, CreditCard,
 } from "lucide-react";
+import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
 interface NavItem {
   href: string; label: string; icon: React.ElementType;
@@ -156,11 +157,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <aside className="w-[218px] min-w-[218px] bg-white dark:bg-[#111111] border-r border-black/[0.06] dark:border-white/[0.06] flex flex-col h-full">
       {/* Logo */}
       <div className="px-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2.5">
-        <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center text-white shrink-0">
-          <Activity size={14} />
-        </div>
+        <SkyLiteeLogo size={28} />
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Skylitee</div>
+          <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Sky Litee</div>
           <div className="text-[11px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
         </div>
         <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] shrink-0">

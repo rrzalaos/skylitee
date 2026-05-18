@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
 const links = [
   { label: "Home", href: "/" },
@@ -25,11 +26,9 @@ export default function Navbar() {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-black/[0.06]" : "bg-transparent"}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center shadow-[0_0_12px_rgba(249,115,22,0.4)]">
-            <span className="text-white font-black text-[16px]">S</span>
-          </div>
-          <span className={`font-black text-[20px] transition-colors ${scrolled ? "text-[#18181B]" : "text-white"}`}>Skylitee</span>
+        <Link href="/" className="flex items-center gap-2">
+          <SkyLiteeLogo size={34} />
+          <span className={`font-black text-[20px] transition-colors ${scrolled ? "text-[#18181B]" : "text-white"}`}>Sky Litee</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-7">

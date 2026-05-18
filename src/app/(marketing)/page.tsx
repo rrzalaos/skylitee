@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check, Zap, ShoppingBag, Target, Search, TrendingUp, ArrowRight } from "lucide-react";
+import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
 export const metadata = { title: "Skylitee — One Dashboard. All Your Brand Data." };
 
@@ -19,9 +20,7 @@ function DashboardMockup() {
       </div>
       <div className="bg-[#111113] flex" style={{ minHeight: 300 }}>
         <div className="w-11 bg-[#1C1C1E] border-r border-white/[0.05] flex flex-col items-center py-4 gap-3 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-[#F97316] flex items-center justify-center shadow-[0_0_12px_rgba(249,115,22,0.5)]">
-            <span className="text-white font-black text-[10px]">S</span>
-          </div>
+          <SkyLiteeLogo size={28} />
           {[
             { bg: "#F9731615", border: "#F9731640" },
             { bg: "#3B82F615", border: "#3B82F640" },

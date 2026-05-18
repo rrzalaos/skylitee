@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
 const pages = [
   { label: "Home", href: "/" },
@@ -39,11 +40,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div className="col-span-2 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center shadow-[0_0_12px_rgba(249,115,22,0.4)]">
-                <span className="text-white font-black text-[15px]">S</span>
-              </div>
-              <span className="font-black text-[20px] text-white">Skylitee</span>
+            <div className="flex items-center gap-2 mb-4">
+              <SkyLiteeLogo size={34} />
+              <span className="font-black text-[20px] text-white">Sky Litee</span>
             </div>
             <p className="text-[15px] text-[#71717A] leading-relaxed mb-4">
               One dashboard for Shopify, Meta Ads, Google GSC and GA4. Built for Indian D2C brands.
