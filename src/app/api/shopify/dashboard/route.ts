@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const { orders } = await shopifyFetch<{ orders: ShopifyOrder[] }>(
     shop, token,
-    `/orders.json?status=any&created_at_min=${periodStart.toISOString()}&created_at_max=${periodEnd.toISOString()}&limit=250&fields=id,total_price,created_at,financial_status,payment_gateway,customer,line_items,shipping_address`
+    `/orders.json?status=any&created_at_min=${periodStart.toISOString()}&created_at_max=${periodEnd.toISOString()}&limit=250&fields=id,total_price,subtotal_price,total_discounts,created_at,financial_status,payment_gateway,customer,line_items,shipping_address`
   );
 
   const grossSales = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
 
   const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
   const prepaidOrders = totalOrders - codOrders;
+
+  const totalDiscounts = orders.reduce((s, o) => s + parseFloat(o.total_discounts ?? "0"), 0);
+  const refundedOrders = orders.filter(o => o.financial_status === "refunded" || o.financial_status === "partially_refunded");
+  const refundedRevenue = refundedOrders.reduce((s, o) => s + parseFloat(o.total_price), 0);
 
   const dailyMap: Record<string, number> = {};
   orders.forEach(o => {
@@ -69,6 +73,8 @@ export async function GET(req: NextRequest) {
       returningCustomers,
       codOrders,
       prepaidOrders,
+      totalDiscounts: Math.round(totalDiscounts),
+      refundedRevenue: Math.round(refundedRevenue),
     },
     dailyRevenue,
     topCities,

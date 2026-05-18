@@ -51,6 +51,7 @@ export interface ShopifyOrder {
   id: number;
   total_price: string;
   subtotal_price: string;
+  total_discounts: string;
   created_at: string;
   financial_status: string;
   fulfillment_status: string | null;
