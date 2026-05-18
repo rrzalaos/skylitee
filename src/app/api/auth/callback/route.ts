@@ -15,13 +15,16 @@ export async function GET(req: NextRequest) {
 
   try {
     const accessToken = await exchangeCodeForToken(shop, code);
-    // Store token in KV (multi-tenant) — cookie only holds shop identity
     await shopKv.setToken(shop, accessToken);
 
-    const res = NextResponse.redirect(new URL("/dashboard", req.url));
+    // New installs (no plan yet) go to pricing; returning merchants go to dashboard
+    const existingPlan = await shopKv.getPlan(shop);
+    const destination = existingPlan ? "/dashboard" : "/dashboard/pricing";
+
+    const res = NextResponse.redirect(new URL(destination, req.url));
     const cookieOpts = { httpOnly: true, maxAge: 60 * 60 * 24 * 30, sameSite: "lax" as const };
     res.cookies.set("shopify_shop", shop, cookieOpts);
-    res.cookies.delete("shopify_token"); // no longer stored in cookie
+    res.cookies.delete("shopify_token");
     res.cookies.delete("shopify_state");
     return res;
   } catch {
