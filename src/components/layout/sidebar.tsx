@@ -12,7 +12,7 @@ import {
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, Activity, ChevronDown, UserCircle,
-  HelpCircle, X,
+  HelpCircle, X, ShieldCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -85,6 +85,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/dashboard/connections", label: "Connections", icon: Plug, badge: null, dot: null },
       { href: "/dashboard/profile", label: "Profile & Account", icon: UserCircle, badge: null, dot: null },
+      { href: "/dashboard/admin", label: "Admin Panel", icon: ShieldCheck, badge: null, dot: null },
     ],
   },
 ];
