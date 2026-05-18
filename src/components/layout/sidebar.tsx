@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   LayoutDashboard, Radar, Brain, MessageSquareText,
   ShoppingCart, Target, Package,
@@ -10,12 +11,20 @@ import {
   Share2, Layout, Palette, Clock,
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
-  Plug, Activity, ChevronDown, UserCircle
+  Plug, Activity, ChevronDown, UserCircle,
+  HelpCircle, X,
 } from "lucide-react";
 
-const navSections = [
+interface NavItem {
+  href: string; label: string; icon: React.ElementType;
+  badge: { text: string; color: string } | null; dot: string | null;
+}
+interface NavSection { label: string; tooltip: string; items: NavItem[]; }
+
+const navSections: NavSection[] = [
   {
     label: "Overview",
+    tooltip: "Your daily command center — real-time alerts, AI-generated insights, and an AI assistant to answer brand questions.",
     items: [
       { href: "/dashboard", label: "Command Center", icon: LayoutDashboard, badge: null, dot: null },
       { href: "/dashboard/anomaly", label: "Anomaly Feed", icon: Radar, badge: { text: "5", color: "red" }, dot: null },
@@ -25,6 +34,7 @@ const navSections = [
   },
   {
     label: "Shopify",
+    tooltip: "Live data from your Shopify store — orders, revenue, monthly goals, and which products are performing.",
     items: [
       { href: "/dashboard/sales", label: "Sales Report", icon: ShoppingCart, badge: null, dot: "on" },
       { href: "/dashboard/goals", label: "Monthly Goals", icon: Target, badge: null, dot: "on" },
@@ -33,6 +43,7 @@ const navSections = [
   },
   {
     label: "Customers",
+    tooltip: "Who your customers are, how often they come back (cohort retention), and which cities/states drive the most sales.",
     items: [
       { href: "/dashboard/customers", label: "Customer Intel", icon: Users, badge: null, dot: "on" },
       { href: "/dashboard/cohort", label: "Cohort Analysis", icon: BarChart2, badge: null, dot: "on" },
@@ -41,6 +52,7 @@ const navSections = [
   },
   {
     label: "Meta Ads",
+    tooltip: "Facebook & Instagram ad data — ROAS, CTR, ad spend, creative performance, and funnel diagnostics.",
     items: [
       { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "meta" },
       { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "meta" },
@@ -50,6 +62,7 @@ const navSections = [
   },
   {
     label: "Google",
+    tooltip: "Google Search Console (SEO, keywords, sitemaps) and GA4 (website traffic, ecommerce, user behavior).",
     items: [
       { href: "/dashboard/gads", label: "Google Ads", icon: Megaphone, badge: null, dot: "off" },
       { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "google_gsc" },
@@ -58,6 +71,7 @@ const navSections = [
   },
   {
     label: "Analytics",
+    tooltip: "Cross-platform analysis — where revenue comes from (attribution), Profit & Loss, industry benchmarks, and weekly summaries.",
     items: [
       { href: "/dashboard/attribution", label: "Attribution", icon: GitMerge, badge: null, dot: null },
       { href: "/dashboard/financial", label: "Financial P&L", icon: Receipt, badge: null, dot: null },
@@ -67,6 +81,7 @@ const navSections = [
   },
   {
     label: "Settings",
+    tooltip: "Connect your Shopify, Meta, and Google accounts. Manage your profile and team access.",
     items: [
       { href: "/dashboard/connections", label: "Connections", icon: Plug, badge: null, dot: null },
       { href: "/dashboard/profile", label: "Profile & Account", icon: UserCircle, badge: null, dot: null },
@@ -74,45 +89,57 @@ const navSections = [
   },
 ];
 
+function getActiveSectionLabel(pathname: string): string {
+  for (const s of navSections) {
+    if (s.items.some(item => pathname === item.href)) return s.label;
+  }
+  return "Overview";
+}
+
 const badgeStyles: Record<string, string> = {
   red: "bg-[#FEF2F2] text-[#991B1B] dark:bg-[#2D0A0A] dark:text-[#FCA5A5]",
   amber: "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]",
   orange: "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]",
-  green: "bg-[#F0FDF4] text-[#166534] dark:bg-[#052E16] dark:text-[#4ADE80]",
 };
+const dotStyles = { on: "bg-[#22C55E]", off: "bg-[#EF4444]", warn: "bg-[#EAB308]" };
 
-const dotStyles = {
-  on: "bg-[#22C55E]",
-  off: "bg-[#EF4444]",
-  warn: "bg-[#EAB308]",
-};
+export interface SidebarProps { open: boolean; onClose: () => void; }
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [shopName, setShopName] = useState<string>("My Store");
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set([getActiveSectionLabel(pathname)])
+  );
+  const [shopName, setShopName] = useState("My Store");
   const [gscConnected, setGscConnected] = useState<boolean | null>(null);
   const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const active = getActiveSectionLabel(pathname);
+    setOpenSections(prev => prev.has(active) ? prev : new Set([...prev, active]));
+  }, [pathname]);
 
   useEffect(() => {
     fetch("/api/shopify/dashboard")
       .then(r => r.json())
       .then(d => { if (d.shop) setShopName(d.shop.replace(".myshopify.com", "")); })
       .catch(() => {});
-
     fetch("/api/google/sites")
       .then(r => r.json())
-      .then(d => {
-        setGscConnected(!!d.gscConnected);
-        setGa4Connected(!!d.ga4Connected);
-      })
+      .then(d => { setGscConnected(!!d.gscConnected); setGa4Connected(!!d.ga4Connected); })
       .catch(() => { setGscConnected(false); setGa4Connected(false); });
-
     fetch("/api/meta/accounts")
       .then(r => r.json())
       .then(d => setMetaConnected(!d.error))
       .catch(() => setMetaConnected(false));
   }, []);
+
+  const toggle = (label: string) => setOpenSections(prev => {
+    const next = new Set(prev);
+    next.has(label) ? next.delete(label) : next.add(label);
+    return next;
+  });
 
   function resolveDot(dot: string | null): string | null {
     if (dot === "google_gsc") return gscConnected == null ? null : gscConnected ? "on" : "off";
@@ -123,17 +150,20 @@ export function Sidebar() {
 
   const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0) + (metaConnected ? 1 : 0);
 
-  return (
-    <aside className="w-[218px] min-w-[218px] bg-white dark:bg-[#111111] border-r border-black/[0.06] dark:border-white/[0.06] flex flex-col shrink-0 h-screen sticky top-0">
+  const inner = (
+    <aside className="w-[218px] min-w-[218px] bg-white dark:bg-[#111111] border-r border-black/[0.06] dark:border-white/[0.06] flex flex-col h-full">
       {/* Logo */}
       <div className="px-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2.5">
-        <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center text-white">
+        <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center text-white shrink-0">
           <Activity size={14} />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Skylitee</div>
           <div className="text-[11px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
         </div>
+        <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] shrink-0">
+          <X size={16} className="text-[#71717A]" />
+        </button>
       </div>
 
       {/* Store switcher */}
@@ -144,44 +174,69 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {navSections.map((section) => (
-          <div key={section.label}>
-            <div className="text-[10px] font-bold text-[#A1A1AA] dark:text-[#525252] px-3 pt-3 pb-1 uppercase tracking-[0.1em]">
-              {section.label}
-            </div>
-            {section.items.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              const dot = resolveDot(item.dot);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
+        {navSections.map((section) => {
+          const isOpen = openSections.has(section.label);
+          return (
+            <div key={section.label}>
+              {/* Section header */}
+              <button
+                onClick={() => toggle(section.label)}
+                className="w-full flex items-center justify-between px-3 pt-3 pb-1 group"
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em] group-hover:text-[#71717A] dark:group-hover:text-[#71717A] transition-colors">
+                    {section.label}
+                  </span>
+                  <Tooltip content={section.tooltip} side="right" maxWidth={220}>
+                    <HelpCircle size={9} className="text-[#D4D4D4] dark:text-[#404040] group-hover:text-[#A1A1AA] transition-colors" />
+                  </Tooltip>
+                </div>
+                <ChevronDown
+                  size={10}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 text-[13px] transition-all relative cursor-pointer mx-1 rounded-lg",
-                    isActive
-                      ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] font-semibold"
-                      : "text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
+                    "text-[#C4C4C4] dark:text-[#404040] transition-transform duration-200 shrink-0",
+                    isOpen ? "rotate-0" : "-rotate-90"
                   )}
-                >
-                  {isActive && (
-                    <span className="absolute left-0 top-1 bottom-1 w-[3px] bg-[#F97316] rounded-r-full" />
-                  )}
-                  <Icon size={13} className="shrink-0" />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.badge && (
-                    <span className={cn("text-[11px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color])}>
-                      {item.badge.text}
-                    </span>
-                  )}
-                  {dot && (
-                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotStyles[dot as keyof typeof dotStyles])} />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+                />
+              </button>
+
+              {/* Items */}
+              <div className={cn(
+                "overflow-hidden transition-all duration-200 ease-in-out",
+                isOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  const dot = resolveDot(item.dot);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 text-[13px] transition-all relative cursor-pointer mx-1 rounded-lg",
+                        isActive
+                          ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] font-semibold"
+                          : "text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
+                      )}
+                    >
+                      {isActive && <span className="absolute left-0 top-1 bottom-1 w-[3px] bg-[#F97316] rounded-r-full" />}
+                      <Icon size={13} className="shrink-0" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className={cn("text-[11px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color])}>
+                          {item.badge.text}
+                        </span>
+                      )}
+                      {dot && <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotStyles[dot as keyof typeof dotStyles])} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       {/* Footer */}
@@ -193,5 +248,24 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop — sticky */}
+      <div className="hidden md:block h-screen sticky top-0 shrink-0">
+        {inner}
+      </div>
+
+      {/* Mobile — slide-in drawer */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+          <div className="relative z-10 h-full overflow-y-auto shadow-2xl">
+            {inner}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

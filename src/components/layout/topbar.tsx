@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon } from "lucide-react";
+import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useDateRange, DatePreset } from "@/lib/date-range-context";
 import { useTheme } from "@/lib/theme-context";
@@ -49,7 +49,7 @@ const compareOptions = [
   { id: "goal", label: "vs Goal" },
 ];
 
-export function Topbar() {
+export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
@@ -122,8 +122,15 @@ export function Topbar() {
 
   return (
     <>
-      <header className="bg-white dark:bg-[#111111] border-b border-black/[0.06] dark:border-white/[0.06] px-4 h-12 flex items-center gap-2 sticky top-0 z-20">
-        <h1 className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] flex-1 uppercase tracking-wider">{title}</h1>
+      <header className="bg-white dark:bg-[#111111] border-b border-black/[0.06] dark:border-white/[0.06] px-3 md:px-4 h-12 flex items-center gap-2 sticky top-0 z-20">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors shrink-0"
+        >
+          <Menu size={14} />
+        </button>
+        <h1 className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] flex-1 uppercase tracking-wider truncate">{title}</h1>
 
         {/* Date picker */}
         <div className="relative" ref={datePickerRef}>
@@ -180,33 +187,35 @@ export function Topbar() {
           )}
         </div>
 
-        {/* Compare */}
+        {/* Compare — hidden on mobile */}
         <select
           value={compareWith}
           onChange={e => setCompareWith(e.target.value)}
-          className="text-[13px] px-2.5 py-1.5 border border-black/[0.08] dark:border-white/[0.08] rounded-lg bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]"
+          className="hidden sm:block text-[13px] px-2.5 py-1.5 border border-black/[0.08] dark:border-white/[0.08] rounded-lg bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]"
         >
           {compareOptions.map(o => (
             <option key={o.id} value={o.id}>{o.label}</option>
           ))}
         </select>
 
-        {/* Platform pills */}
-        {platforms.map((p) => (
-          <div
-            key={p.label}
-            onClick={() => !p.connected && router.push("/dashboard/connections")}
-            title={p.connected ? `${p.label} connected` : `${p.label} not connected — click to connect`}
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-              p.connected
-                ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
-                : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-[#FCA5A5] dark:border-[#991B1B] text-[#991B1B] dark:text-[#FCA5A5] cursor-pointer hover:bg-[#FEE2E2] dark:hover:bg-[#3D0F0F]"
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${p.connected ? "bg-[#22C55E]" : "bg-[#EF4444]"}`} />
-            {p.label}
-          </div>
-        ))}
+        {/* Platform pills — hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-1.5">
+          {platforms.map((p) => (
+            <div
+              key={p.label}
+              onClick={() => !p.connected && router.push("/dashboard/connections")}
+              title={p.connected ? `${p.label} connected` : `${p.label} not connected — click to connect`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                p.connected
+                  ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
+                  : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-[#FCA5A5] dark:border-[#991B1B] text-[#991B1B] dark:text-[#FCA5A5] cursor-pointer hover:bg-[#FEE2E2] dark:hover:bg-[#3D0F0F]"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${p.connected ? "bg-[#22C55E]" : "bg-[#EF4444]"}`} />
+              {p.label}
+            </div>
+          ))}
+        </div>
 
         {/* Theme toggle */}
         <button
