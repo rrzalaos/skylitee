@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { shopKv } from "@/lib/kv";
 import { getShopFromRequest } from "@/lib/session";
 
-const APP_URL = "https://skylitee.vercel.app";
+const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");

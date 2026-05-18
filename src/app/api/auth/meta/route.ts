@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const APP_URL = "https://skylitee.vercel.app";
+const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
 export async function GET() {
   const appId = process.env.META_APP_ID;
