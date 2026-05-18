@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shopifyFetch } from "@/lib/shopify";
+import { getShopifySession } from "@/lib/session";
 
 interface LineItem { product_id: number; title: string; quantity: number; price: string; sku?: string }
 interface Order {
@@ -16,9 +17,9 @@ function isCod(o: Order) {
 }
 
 export async function GET(req: NextRequest) {
-  const shop = process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value;
-  const token = process.env.SHOPIFY_ACCESS_TOKEN ?? req.cookies.get("shopify_token")?.value;
-  if (!shop || !token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const session = await getShopifySession(req);
+  if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const { shop, token } = session;
 
   const url = new URL(req.url);
   const now = new Date();

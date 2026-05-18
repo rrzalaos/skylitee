@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getMetaToken, getMetaAdAccount, getShopFromRequest } from "@/lib/session";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -56,7 +57,8 @@ function computeSignal(score: number, roas: number, freq: number, spend: number)
 }
 
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get("meta_token")?.value;
+  const shop = getShopFromRequest(req) ?? "unknown";
+  const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const now = new Date();
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
 
-  const savedAccount = req.cookies.get("meta_ad_account")?.value;
+  const savedAccount = await getMetaAdAccount(req, shop);
   const accountsRes = await fetch(
     `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&access_token=${token}`
   );

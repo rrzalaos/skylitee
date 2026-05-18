@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shopifyApiUrl } from "@/lib/shopify";
+import { getShopifySession } from "@/lib/session";
 
 type RawOrder = {
   id: number;
@@ -48,9 +49,9 @@ function addMonths(key: string, offset: number): string {
 }
 
 export async function GET(req: NextRequest) {
-  const shop = process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value;
-  const token = process.env.SHOPIFY_ACCESS_TOKEN ?? req.cookies.get("shopify_token")?.value;
-  if (!shop || !token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const session = await getShopifySession(req);
+  if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const { shop, token } = session;
 
   const rawOrders = await fetchAllOrders(shop, token);
 

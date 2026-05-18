@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
+import { getGscRefreshToken, getGa4RefreshToken, getShopFromRequest, getGscSite, getGa4Property } from "@/lib/session";
+import { shopKv } from "@/lib/kv";
 
 export async function GET(req: NextRequest) {
-  // Service-specific tokens take priority; fall back to the combined legacy token
-  const gscRefresh =
-    req.cookies.get("google_gsc_token")?.value ??
-    req.cookies.get("google_refresh_token")?.value ?? null;
-
-  const ga4Refresh =
-    req.cookies.get("google_ga4_token")?.value ??
-    req.cookies.get("google_refresh_token")?.value ?? null;
+  const shop = getShopFromRequest(req) ?? "unknown";
+  const gscRefresh = await getGscRefreshToken(req, shop);
+  const ga4Refresh = await getGa4RefreshToken(req, shop);
 
   if (!gscRefresh && !ga4Refresh) {
     return NextResponse.json({ error: "not_connected" }, { status: 401 });
@@ -59,8 +56,8 @@ export async function GET(req: NextRequest) {
     } catch { /* token invalid */ }
   }
 
-  const savedGscSite = req.cookies.get("google_gsc_site")?.value ?? null;
-  const savedGa4Property = req.cookies.get("google_ga4_property")?.value ?? null;
+  const savedGscSite = await getGscSite(req, shop);
+  const savedGa4Property = await getGa4Property(req, shop);
 
   return NextResponse.json({
     gscConnected: !!gscRefresh,
@@ -73,16 +70,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const anyToken =
-    req.cookies.get("google_gsc_token")?.value ??
-    req.cookies.get("google_ga4_token")?.value ??
-    req.cookies.get("google_refresh_token")?.value;
-  if (!anyToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const shop = getShopFromRequest(req) ?? "unknown";
+  const gscRefresh = await getGscRefreshToken(req, shop);
+  const ga4Refresh = await getGa4RefreshToken(req, shop);
+  if (!gscRefresh && !ga4Refresh) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const { gscSite, ga4Property } = await req.json() as { gscSite?: string; ga4Property?: string };
   const res = NextResponse.json({ ok: true });
   const opts = { httpOnly: true, maxAge: 60 * 60 * 24 * 30, sameSite: "lax" as const };
-  if (gscSite) res.cookies.set("google_gsc_site", gscSite, opts);
-  if (ga4Property) res.cookies.set("google_ga4_property", ga4Property, opts);
+  if (gscSite) {
+    await shopKv.setGscSite(shop, gscSite);
+    res.cookies.set("google_gsc_site", gscSite, opts);
+  }
+  if (ga4Property) {
+    await shopKv.setGa4Property(shop, ga4Property);
+    res.cookies.set("google_ga4_property", ga4Property, opts);
+  }
   return res;
 }
