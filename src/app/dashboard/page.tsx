@@ -195,8 +195,8 @@ export default function CommandCenterPage() {
           <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
         </div>
 
-        {/* Platform status pills */}
-        <div className="flex items-center gap-1.5">
+        {/* Platform status pills — hide on mobile */}
+        <div className="hidden sm:flex items-center gap-1.5">
           {platforms.map(p => (
             <div key={p.label} className={cn(
               "flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border",
@@ -212,7 +212,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* ── KPI Row: 6 cross-channel cards ── */}
-      <div className="grid grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <KPICard
           label="Monthly Sales"
           value={shop ? formatINR(shop.kpis.grossSales) : "—"}
@@ -252,10 +252,10 @@ export default function CommandCenterPage() {
       </div>
 
       {/* ── Main: Revenue chart + Channel panel ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         {/* Combined revenue + spend chart */}
-        <div className="col-span-2">
+        <div className="col-span-1 lg:col-span-2">
           <Card className="h-full">
             <CardHeader
               title="Revenue vs Ad Spend"
@@ -411,7 +411,7 @@ export default function CommandCenterPage() {
       </div>
 
       {/* ── Bottom row: Alerts + Insights + Quick Actions ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         {/* Alerts & Signals */}
         <Card>
