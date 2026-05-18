@@ -206,13 +206,13 @@ export default function GoalsPage() {
       {/* Last month suggestion banner */}
       {!loadingLast && lastMonth && (
         <div className="bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#FED7AA] dark:border-[#7C2D12] rounded-2xl p-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Lightbulb size={13} className="text-[#F97316]" />
                 <span className="text-[12px] font-bold text-[#EA580C] uppercase tracking-[0.1em]">{lmMonthName} Actuals — use as baseline</span>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 {[
                   { label: "Gross Sales", value: formatINR(lastMonth.grossSales) },
                   { label: "Total Orders", value: lastMonth.totalOrders.toString() },
@@ -227,7 +227,7 @@ export default function GoalsPage() {
                 ))}
               </div>
             </div>
-            <div className="flex gap-1.5 shrink-0">
+            <div className="flex flex-wrap gap-1.5 shrink-0">
               {[
                 { label: "Match", mult: 1.0 },
                 { label: "+10%", mult: 1.1 },
@@ -245,7 +245,7 @@ export default function GoalsPage() {
       )}
 
       {/* Goal config + Pace tracker */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
         {/* Goal Configuration */}
         <Card>
@@ -363,7 +363,7 @@ export default function GoalsPage() {
               )}
 
               {/* Current actuals grid */}
-              <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-3 gap-2">
+              <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { label: "Gross Sales", value: formatINR(current.grossSales) },
                   { label: "Orders", value: current.totalOrders.toString() },

@@ -192,13 +192,13 @@ export default function ProfilePage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
+      <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
         {tabs.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px transition-colors",
+                "flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
                 tab === t.key
                   ? "border-[#F97316] text-[#F97316]"
                   : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -239,7 +239,7 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader title="Personal Information" />
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <Field label="Full name" value={data.fullName} onChange={set("fullName")} placeholder="Rishi Zala" />
               <Field label="Username" value={data.username} onChange={set("username")} placeholder="rishi_z" />
               <Field label="Email address" type="email" value={data.email} onChange={set("email")} placeholder="you@yourbrand.com" />
@@ -264,7 +264,7 @@ export default function ProfilePage() {
             <div className="text-[12px] text-[#71717A] mb-3">
               Password management is available once account-based authentication is enabled. Your dashboard currently uses Shopify&apos;s secure token — no separate password is needed yet.
             </div>
-            <div className="grid grid-cols-3 gap-3 opacity-50 pointer-events-none">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-50 pointer-events-none">
               {["Current password", "New password", "Confirm new password"].map((label, i) => (
                 <div key={i}>
                   <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">{label}</label>
@@ -301,7 +301,7 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader title="Brand Identity" />
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <Field label="Brand name" value={data.brandName} onChange={set("brandName")} placeholder="Rrahi Print Shop" />
               <Field label="Tagline / slogan" value={data.tagline} onChange={set("tagline")} placeholder="Print your story" />
               <Select
@@ -343,7 +343,7 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader title="Target Audience" right="Helps AI benchmark against your niche" />
-            <div className="grid grid-cols-3 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
               <Select
                 label="Target gender"
                 value={data.targetGender} onChange={set("targetGender")}
@@ -382,7 +382,7 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader title="Business & Contact Details" />
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <Field label="Website URL" value={data.website} onChange={set("website")} placeholder="https://yourbrand.com" />
               <Field label="Instagram handle" value={data.instagram} onChange={set("instagram")} placeholder="@yourbrand" />
               <Field label="Facebook page URL" value={data.facebook} onChange={set("facebook")} placeholder="facebook.com/yourbrand" />
@@ -404,7 +404,7 @@ export default function ProfilePage() {
             <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full mb-3 overflow-hidden">
               <div className="h-full bg-[#F97316] rounded-full transition-all" style={{ width: `${completion}%` }} />
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {REQUIRED_FIELDS.map(k => {
                 const filled = data[k] && (data[k] as string).trim().length > 0;
                 const labels: Record<string, string> = {
@@ -466,7 +466,7 @@ export default function ProfilePage() {
           {/* Role definitions */}
           <Card>
             <CardHeader title="Access Levels" right="How roles work" />
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               {ROLES.map(r => {
                 const Icon = r.icon;
                 return (

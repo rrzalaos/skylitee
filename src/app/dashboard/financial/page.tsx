@@ -272,7 +272,7 @@ export default function FinancialPage() {
           <div className="text-[12px] text-[#A1A1AA] mb-4">
             We have your sales, ad spend, and orders from Shopify/Meta. Tell us your costs — we&apos;ll calculate the real profit.
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InputField
               label="Product cost per order (₹)"
               hint="What you paid to make or buy the products in each order — raw material, printing, packaging"
@@ -339,7 +339,7 @@ export default function FinancialPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* ── P&L Statement ────────────────────────────────── */}
         <Card>
           <CardHeader title="P&L Statement" right={`${range.from} → ${range.to}`} />
@@ -430,7 +430,7 @@ export default function FinancialPage() {
         {/* ── Right panel ──────────────────────────────────── */}
         <div className="space-y-3">
           {/* Summary cards */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
             {[
               {
                 label: "Profit margin",
@@ -524,7 +524,7 @@ export default function FinancialPage() {
           {(meta || shopify) && (
             <Card>
               <CardHeader title="Per-order economics" />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { label: "Avg order value", value: aov > 0 ? formatINR(aov) : "—" },
                   { label: "Product cost", value: saved.cogsPerOrder > 0 ? formatINR(saved.cogsPerOrder) : "—" },

@@ -109,7 +109,7 @@ export default function GSCPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-2.5 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
         <KPICard label="Total Clicks" value={data.kpis.clicks.toLocaleString("en-IN")} />
         <KPICard
           label="Impressions"
@@ -131,7 +131,7 @@ export default function GSCPage() {
 
       {/* Achievements + Health */}
       {data.achievements.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
           {good.length > 0 && (
             <Card>
               <div className="flex items-center gap-1.5 mb-2">
@@ -181,11 +181,11 @@ export default function GSCPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
+      <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={cn(
-              "px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors",
+              "px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key
                 ? "border-[#4285F4] text-[#4285F4]"
                 : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -436,7 +436,7 @@ export default function GSCPage() {
                       {sm.isPending ? "Pending" : hasIssues ? "Has Issues" : "OK"}
                     </span>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <div className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 text-center">
                       <div className="text-[11px] text-[#A1A1AA] mb-1">Submitted</div>
                       <div className="text-[22px] font-black dark:text-[#F4F4F5]">{sm.submitted.toLocaleString()}</div>

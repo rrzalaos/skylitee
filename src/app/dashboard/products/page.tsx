@@ -72,7 +72,7 @@ export default function ProductsPage() {
         <div className="text-[15px] text-[#686864] py-8 text-center">Loading real product data...</div>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             <KPICard label="Total Products" value={products.length.toString()} sub={`${withSales.length} with sales this month`} />
             <KPICard
               label="Best Seller"
@@ -88,7 +88,7 @@ export default function ProductsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
             <Card>
               <CardHeader title="Revenue by product" right="This month" />
               {withSales.length === 0 ? (

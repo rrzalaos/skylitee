@@ -105,7 +105,7 @@ export default function SalesPage() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         <KPICard label="Gross Sales" value={formatINR(sales.kpis.grossSales)} />
         <KPICard label="Total Orders" value={sales.kpis.totalOrders.toString()} />
         <KPICard label="Avg Order Value" value={formatINR(sales.kpis.aov)} />
@@ -117,14 +117,14 @@ export default function SalesPage() {
       </div>
 
       {/* Channel Attribution + COD/Prepaid */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         {/* Channel Attribution */}
-        <Card className="col-span-2">
+        <Card className="col-span-1 lg:col-span-2">
           <CardHeader title="Channel Attribution" right={<span className="text-[11px] text-[#A1A1AA]">Meta + Organic = Shopify total</span>} />
 
           {/* Channel mini-cards */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
             {channels.map(ch => (
               <div key={ch.label} className={cn("rounded-2xl p-3 border border-black/[0.04] dark:border-white/[0.04]", ch.bg)}>
                 <div className="flex items-center gap-1.5 mb-2">
@@ -226,7 +226,7 @@ export default function SalesPage() {
       </div>
 
       {/* Top 5 by Qty + Top 5 by Revenue */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
           <CardHeader title="Top 5 Products by Qty" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Package size={11} /> Units sold</span>} />
           <table className="w-full text-[12px]">
@@ -283,7 +283,7 @@ export default function SalesPage() {
       </div>
 
       {/* Funnel + Geography */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
         {/* Conversion Funnel */}
         <Card>
@@ -306,7 +306,7 @@ export default function SalesPage() {
             ))}
           </div>
           {metaConnected && meta && (
-            <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-4 gap-1.5">
+            <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
                 { label: "CAC", value: formatINR(meta.cac) },
                 { label: "CTR", value: `${meta.ctr}%` },
@@ -321,7 +321,7 @@ export default function SalesPage() {
             </div>
           )}
           {ga4Connected && ga4 && (
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
+            <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-3">
               {[
                 { label: "Users", value: ga4.users.toLocaleString("en-IN") },
                 { label: "Bounce", value: `${ga4.bounceRate.toFixed(0)}%` },

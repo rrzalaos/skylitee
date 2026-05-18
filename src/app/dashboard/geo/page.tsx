@@ -53,7 +53,7 @@ export default function GeoPage() {
         <div className="text-[15px] text-[#686864] py-8 text-center">No geo data available yet — orders need shipping addresses to show city data.</div>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             <KPICard label="Top city" value={topCity?.city ?? "—"} sub={topCity ? formatINR(topCity.revenue) : ""} />
             <KPICard label="Cities with orders" value={revenueByCity.length.toString()} sub="Unique delivery cities" />
             <KPICard
@@ -64,7 +64,7 @@ export default function GeoPage() {
             <KPICard label="Total customers tracked" value={customersByCity.reduce((s, c) => s + c.count, 0).toString()} sub="With location data" />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Card>
               <CardHeader title="City performance" right="By revenue · This month" />
               <div className="overflow-x-auto">

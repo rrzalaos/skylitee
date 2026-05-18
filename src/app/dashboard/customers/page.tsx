@@ -56,7 +56,7 @@ export default function CustomersPage() {
         <div className="text-[15px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-2 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             <KPICard label="Total Customers" value={data.kpis.totalCustomers.toLocaleString()} />
             <KPICard label="Avg LTV" value={formatINR(data.kpis.avgLTV)} sub="Revenue per customer" />
             <KPICard
@@ -70,7 +70,7 @@ export default function CustomersPage() {
 
           <Card className="mb-2">
             <CardHeader title="Customer Segments" right={`${data.kpis.totalCustomers.toLocaleString()} total customers`} />
-            <div className="grid grid-cols-3 gap-3 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
               {segments.map(seg => (
                 <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
                   <div className="text-2xl mb-1.5">{seg.icon}</div>
@@ -85,7 +85,7 @@ export default function CustomersPage() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Card>
               <CardHeader title="AI actions" />
               {data.kpis.repeat > 0 && (

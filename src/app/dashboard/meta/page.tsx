@@ -237,10 +237,10 @@ export default function MetaPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-0 border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
+      <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn("px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors",
+            className={cn("px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key
                 ? "border-[#F97316] text-[#F97316]"
                 : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -253,7 +253,7 @@ export default function MetaPage() {
       {tab === "overview" && (
         <div className="space-y-4">
           {/* Core KPIs */}
-          <div className="grid grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <KPICard label="Total Spend" value={fmtC(k.spend)} />
             <KPICard label="ROAS" value={`${k.roas}x`} {...bench(k.roas, 2.0, 3.0)} />
             <KPICard label="CAC" value={fmtC(k.cac)} sub="Cost per order" />
@@ -264,7 +264,7 @@ export default function MetaPage() {
           {/* Reach & Delivery */}
           <div>
             <SectionLabel>Reach &amp; Delivery</SectionLabel>
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               <KPICard label="Impressions" value={k.impressions >= 1000 ? `${(k.impressions / 1000).toFixed(1)}K` : fmt(k.impressions)} />
               <KPICard label="Reach" value={k.reach >= 1000 ? `${(k.reach / 1000).toFixed(1)}K` : fmt(k.reach)} />
               <KPICard label="Frequency" value={`${k.frequency}x`}
@@ -277,7 +277,7 @@ export default function MetaPage() {
           {/* Click Performance */}
           <div>
             <SectionLabel>Click Performance</SectionLabel>
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               <KPICard label="Clicks" value={fmt(k.clicks)} />
               <KPICard label="CTR" value={`${k.ctr}%`} {...bench(k.ctr, 0.9, 1.5)} />
               <KPICard label="CPC" value={fmtC(k.cpc)} />
@@ -323,7 +323,7 @@ export default function MetaPage() {
             </div>
 
             {/* Ratio summary bar */}
-            <div className="grid grid-cols-4 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
               {[
                 { label: "LP Ratio", value: `${k.lpRatio}%`, avg: "Avg: 65%", good: k.lpRatio >= 65 },
                 { label: "ATC Ratio", value: `${k.atcRatio}%`, avg: "Avg: 7%", good: k.atcRatio >= 7 },
@@ -343,7 +343,7 @@ export default function MetaPage() {
           {hasVideo && (
             <div>
               <SectionLabel>Video Performance</SectionLabel>
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 <KPICard label="Thumb Stop Ratio" value={`${k.thumbStopRatio}%`}
                   {...bench(k.thumbStopRatio, 25, 30)}
                   changeLabel={k.thumbStopRatio >= 30 ? "Strong hook" : k.thumbStopRatio >= 20 ? "Near avg · Avg: 25%" : "Weak hook · Avg: 25%"} />

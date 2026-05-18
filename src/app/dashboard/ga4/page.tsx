@@ -121,7 +121,7 @@ export default function GA4Page() {
       </div>
 
       {/* Top KPIs */}
-      <div className="grid grid-cols-6 gap-2 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
         <KPICard label="Sessions" value={data.kpis.sessions.toLocaleString("en-IN")} />
         <KPICard label="Users" value={data.kpis.users.toLocaleString("en-IN")} />
         <KPICard label="New Users" value={data.kpis.newUsers.toLocaleString("en-IN")} sub={`${data.kpis.users > 0 ? Math.round(data.kpis.newUsers / data.kpis.users * 100) : 0}% of users`} />
@@ -132,7 +132,7 @@ export default function GA4Page() {
 
       {/* Top channel highlight */}
       {topChannel && (
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
           <div className="col-span-1 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-2xl p-3.5">
             <div className="text-[11px] font-bold text-[#15803D] dark:text-[#86EFAC] uppercase tracking-wider mb-1">Top Traffic Channel</div>
             <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{topChannel.channel}</div>
@@ -154,11 +154,11 @@ export default function GA4Page() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
+      <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={cn(
-              "px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors",
+              "px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key
                 ? "border-[#4285F4] text-[#4285F4]"
                 : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -266,7 +266,7 @@ export default function GA4Page() {
           {data.newVsReturning.length > 0 && (
             <Card>
               <CardHeader title="New vs Returning Users" right="Behaviour and purchase comparison" />
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 {[newRow, retRow].filter(Boolean).map((row, i) => row && (
                   <div key={i} className={cn(
                     "rounded-xl p-4 border",
@@ -331,7 +331,7 @@ export default function GA4Page() {
                   </div>
                   <FunnelStep label="Purchased" count={data.ecommerce.itemsPurchased} rate={data.ecommerce.purchaseRate} rateLabel="Pur" />
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
                   {[
                     { label: "Orders", value: data.ecommerce.purchases.toLocaleString("en-IN"), sub: "Transactions" },
                     { label: "Revenue", value: formatINR(Math.round(data.ecommerce.revenue)), sub: "Total purchase value" },
@@ -386,7 +386,7 @@ export default function GA4Page() {
       {/* ── AUDIENCE ── */}
       {tab === "audience" && (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* New vs returning breakdown */}
             {data.newVsReturning.length > 0 && (
               <Card>
@@ -472,7 +472,7 @@ export default function GA4Page() {
 
       {/* ── GEO ── */}
       {tab === "geo" && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card>
             <CardHeader title="Top Cities" right="By sessions" />
             {data.cities.length === 0 ? (
