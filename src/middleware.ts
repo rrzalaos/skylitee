@@ -8,10 +8,9 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get("shopify_token")?.value;
   const shop = req.cookies.get("shopify_shop")?.value;
 
-  if (pathname.startsWith("/dashboard") && (!token || !shop)) {
+  if (pathname.startsWith("/dashboard") && !shop) {
     return NextResponse.redirect(new URL("/install", req.url));
   }
 
