@@ -92,8 +92,7 @@ function Avatar({ photoUrl, name, size = 64 }: { photoUrl: string; name: string;
     <img src={photoUrl} alt={name} style={{ width: size, height: size }} className="rounded-full object-cover border-2 border-[#F97316]/30" />
   ) : (
     <div style={{ width: size, height: size }}
-      className="rounded-full bg-gradient-to-br from-[#F97316] to-[#EA580C] flex items-center justify-center text-white font-black"
-      style2={{ fontSize: size * 0.35 }}>
+      className="rounded-full bg-gradient-to-br from-[#F97316] to-[#EA580C] flex items-center justify-center text-white font-black">
       <span style={{ fontSize: size * 0.35 }}>{initials}</span>
     </div>
   );
@@ -140,7 +139,6 @@ export default function ProfilePage() {
   const [data, setData] = useState<ProfileData>(EMPTY);
   const [tab, setTab] = useState<Tab>("profile");
   const [saved, setSaved] = useState(false);
-  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
 
   useEffect(() => {
     try {
