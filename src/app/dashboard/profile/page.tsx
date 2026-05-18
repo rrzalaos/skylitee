@@ -4,8 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   User, Building2, Users, CheckCircle2, Lock,
-  Mail, Phone, MapPin, Globe, Instagram, Camera,
-  Shield, Eye, Edit3, Crown, ChevronRight, Info,
+  Camera, Shield, Eye, Edit3, Crown, ChevronRight, Info,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
