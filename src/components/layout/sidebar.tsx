@@ -10,7 +10,7 @@ import {
   Share2, Layout, Palette, Clock,
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
-  Plug, Activity, ChevronDown
+  Plug, Activity, ChevronDown, UserCircle
 } from "lucide-react";
 
 const navSections = [
@@ -69,6 +69,7 @@ const navSections = [
     label: "Settings",
     items: [
       { href: "/dashboard/connections", label: "Connections", icon: Plug, badge: null, dot: null },
+      { href: "/dashboard/profile", label: "Profile & Account", icon: UserCircle, badge: null, dot: null },
     ],
   },
 ];
