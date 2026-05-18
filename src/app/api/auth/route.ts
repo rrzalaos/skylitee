@@ -3,7 +3,11 @@ import { buildAuthUrl } from "@/lib/shopify";
 import crypto from "crypto";
 
 export async function GET(req: NextRequest) {
-  const shop = req.nextUrl.searchParams.get("shop") ?? "rrahi-print-shop.myshopify.com";
+  const shop = req.nextUrl.searchParams.get("shop");
+  if (!shop) {
+    return NextResponse.redirect(new URL("/install", req.url));
+  }
+
   const state = crypto.randomBytes(16).toString("hex");
   const authUrl = buildAuthUrl(shop, state);
 
