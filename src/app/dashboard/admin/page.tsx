@@ -64,11 +64,11 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
             <ShieldCheck size={18} className="text-white" />
           </div>
           <div>
-            <div className="text-[16px] font-bold dark:text-[#F4F4F5]">Admin Panel</div>
-            <div className="text-[12px] text-[#A1A1AA]">Skylitee · Owner access only</div>
+            <div className="text-[20px] font-bold dark:text-[#F4F4F5]">Admin Panel</div>
+            <div className="text-[20px] text-[#A1A1AA]">Skylitee · Owner access only</div>
           </div>
         </div>
-        <label className="text-[12px] font-semibold dark:text-[#F4F4F5] block mb-1">Admin Password</label>
+        <label className="text-[20px] font-semibold dark:text-[#F4F4F5] block mb-1">Admin Password</label>
         <div className="relative mb-3">
           <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
           <input
@@ -77,7 +77,7 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
             onKeyDown={e => e.key === "Enter" && onLogin()}
             placeholder="Enter admin password"
             className={cn(
-              "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border rounded-xl pl-9 pr-10 py-2.5 text-[13px] dark:text-[#F4F4F5] outline-none transition-all",
+              "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border rounded-xl pl-9 pr-10 py-2.5 text-[17px] dark:text-[#F4F4F5] outline-none transition-all",
               error ? "border-[#EF4444] ring-1 ring-[#EF4444]/30" : "border-black/[0.06] dark:border-white/[0.06] focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30"
             )}
           />
@@ -85,12 +85,12 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
             {show ? <EyeOff size={13} /> : <Eye size={13} />}
           </button>
         </div>
-        {error && <div className="text-[11px] text-[#EF4444] mb-2">Incorrect password.</div>}
+        {error && <div className="text-[15px] text-[#EF4444] mb-2">Incorrect password.</div>}
         <button onClick={onLogin}
-          className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl py-2.5 text-[13px] font-bold transition-colors">
+          className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl py-2.5 text-[17px] font-bold transition-colors">
           Enter Admin Panel
         </button>
-        <div className="mt-4 text-center text-[11px] text-[#A1A1AA]">Authorised access only. All actions are logged.</div>
+        <div className="mt-4 text-center text-[15px] text-[#A1A1AA]">Authorised access only. All actions are logged.</div>
       </div>
     </div>
   );
@@ -244,16 +244,16 @@ export default function AdminPage() {
           </div>
           <div>
             <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Admin Panel</h2>
-            <p className="text-[11px] text-[#A1A1AA]">Skylitee platform management · Owner only · Live data</p>
+            <p className="text-[15px] text-[#A1A1AA]">Skylitee platform management · Owner only · Live data</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={loadUsers} disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors disabled:opacity-50">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[20px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors disabled:opacity-50">
             <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
           <button onClick={lockAdmin}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[20px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
             <Lock size={11} /> Lock
           </button>
         </div>
@@ -268,9 +268,9 @@ export default function AdminPage() {
           { label: "Meta Connected",    value: metaCount,     sub: `GA4: ${ga4Count}`,   color: "text-[#1877F2]"  },
         ].map(k => (
           <Card key={k.label}>
-            <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{k.label}</div>
-            <div className={cn("text-[26px] font-black mt-1", k.color)}>{k.value}</div>
-            <div className="text-[11px] text-[#A1A1AA] mt-0.5">{k.sub}</div>
+            <div className="text-[15px] font-bold text-[#A1A1AA] uppercase tracking-wide">{k.label}</div>
+            <div className={cn("text-[30px] font-black mt-1", k.color)}>{k.value}</div>
+            <div className="text-[15px] text-[#A1A1AA] mt-0.5">{k.sub}</div>
           </Card>
         ))}
       </div>
@@ -282,7 +282,7 @@ export default function AdminPage() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors",
+                "flex items-center gap-1.5 px-4 py-2.5 text-[17px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors",
                 tab === t.key
                   ? "border-[#F97316] text-[#F97316]"
                   : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -309,8 +309,8 @@ export default function AdminPage() {
                 return (
                   <div key={p.label}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
-                      <span className="text-[12px] font-bold" style={{ color: p.color }}>{p.count} / {users.length}</span>
+                      <span className="text-[17px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
+                      <span className="text-[20px] font-bold" style={{ color: p.color }}>{p.count} / {users.length}</span>
                     </div>
                     <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
@@ -325,11 +325,11 @@ export default function AdminPage() {
           <Card>
             <CardHeader title="Recent Registrations" right="Last 10 stores" />
             <div className="overflow-x-auto mt-2">
-              <table className="w-full text-[13px] min-w-[600px]">
+              <table className="w-full text-[17px] min-w-[600px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["User", "Brand", "Shopify Store", "Platforms", "Registered", "Status"].map(h => (
-                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left text-[14px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -337,21 +337,21 @@ export default function AdminPage() {
                   {users.slice(0, 10).map(u => (
                     <tr key={u.email} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                       <td className="py-3 pr-4">
-                        <div className="font-semibold dark:text-[#F4F4F5] text-[13px]">{u.name}</div>
-                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">{u.email}</div>
+                        <div className="font-semibold dark:text-[#F4F4F5] text-[17px]">{u.name}</div>
+                        <div className="text-[15px] text-[#A1A1AA] truncate max-w-[160px]">{u.email}</div>
                       </td>
-                      <td className="py-3 pr-4 text-[12px] dark:text-[#F4F4F5]">
+                      <td className="py-3 pr-4 text-[20px] dark:text-[#F4F4F5]">
                         {u.profile?.brandName || <span className="text-[#A1A1AA] italic">not set</span>}
                       </td>
-                      <td className="py-3 pr-4 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                      <td className="py-3 pr-4 text-[20px] text-[#71717A] dark:text-[#A1A1AA]">
                         {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
                       </td>
                       <td className="py-3 pr-4"><PlatformDots c={u.connections} /></td>
-                      <td className="py-3 pr-4 text-[12px] text-[#A1A1AA] whitespace-nowrap">
+                      <td className="py-3 pr-4 text-[20px] text-[#A1A1AA] whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
                       </td>
                       <td className="py-3">
-                        <span className={cn("text-[11px] font-bold flex items-center gap-1",
+                        <span className={cn("text-[15px] font-bold flex items-center gap-1",
                           u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
                           <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
                             u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
@@ -376,10 +376,10 @@ export default function AdminPage() {
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search by name, email, brand, store…"
-                className="w-full bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl pl-8 pr-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+                className="w-full bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl pl-8 pr-3 py-2 text-[17px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
             </div>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
+              className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[17px] dark:text-[#F4F4F5] outline-none appearance-none">
               <option value="all">All status</option>
               <option value="active">Active</option>
               <option value="disabled">Suspended</option>
@@ -388,11 +388,11 @@ export default function AdminPage() {
 
           <Card>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] min-w-[900px]">
+              <table className="w-full text-[17px] min-w-[900px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["User / Email", "Brand", "Phone", "Shopify Store", "Platforms", "This Month", "Status", "Access", "Login As"].map(h => (
-                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-3 whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left text-[14px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -407,41 +407,41 @@ export default function AdminPage() {
                       )}>
                         <td className="py-3 pr-3">
                           <div className="font-semibold dark:text-[#F4F4F5] leading-tight">{u.name}</div>
-                          <div className="text-[11px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
+                          <div className="text-[15px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
                         </td>
-                        <td className="py-3 pr-3 text-[12px] dark:text-[#F4F4F5]">
+                        <td className="py-3 pr-3 text-[20px] dark:text-[#F4F4F5]">
                           {u.profile?.brandName || <span className="text-[#A1A1AA] italic">—</span>}
                         </td>
-                        <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        <td className="py-3 pr-3 text-[20px] text-[#71717A] dark:text-[#A1A1AA]">
                           {u.profile?.phone || "—"}
                         </td>
-                        <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        <td className="py-3 pr-3 text-[20px] text-[#71717A] dark:text-[#A1A1AA]">
                           {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
                         </td>
                         <td className="py-3 pr-3"><PlatformDots c={u.connections} /></td>
                         {/* Monthly stats */}
                         <td className="py-3 pr-3">
                           {!u.connections.shopify ? (
-                            <span className="text-[11px] text-[#A1A1AA] italic">No Shopify</span>
+                            <span className="text-[15px] text-[#A1A1AA] italic">No Shopify</span>
                           ) : stats?.loading ? (
-                            <span className="text-[11px] text-[#A1A1AA]">Loading…</span>
+                            <span className="text-[15px] text-[#A1A1AA]">Loading…</span>
                           ) : stats?.error ? (
-                            <span className="text-[11px] text-[#EF4444]">Error</span>
+                            <span className="text-[15px] text-[#EF4444]">Error</span>
                           ) : stats ? (
                             <div>
-                              <div className="flex items-center gap-1 text-[12px] font-bold text-[#22C55E]">
+                              <div className="flex items-center gap-1 text-[20px] font-bold text-[#22C55E]">
                                 <TrendingUp size={10} />
                                 {formatINR(stats.revenue)}
                               </div>
-                              <div className="text-[11px] text-[#A1A1AA]">{stats.orders} orders · AOV {formatINR(stats.aov)}</div>
-                              {stats.codPct > 0 && <div className="text-[11px] text-[#EAB308]">COD {stats.codPct}%</div>}
+                              <div className="text-[15px] text-[#A1A1AA]">{stats.orders} orders · AOV {formatINR(stats.aov)}</div>
+                              {stats.codPct > 0 && <div className="text-[15px] text-[#EAB308]">COD {stats.codPct}%</div>}
                             </div>
                           ) : (
-                            <span className="text-[11px] text-[#A1A1AA]">—</span>
+                            <span className="text-[15px] text-[#A1A1AA]">—</span>
                           )}
                         </td>
                         <td className="py-3 pr-3">
-                          <span className={cn("text-[11px] font-bold flex items-center gap-1 whitespace-nowrap",
+                          <span className={cn("text-[15px] font-bold flex items-center gap-1 whitespace-nowrap",
                             u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
                             <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
                               u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
@@ -453,7 +453,7 @@ export default function AdminPage() {
                             onClick={() => toggleDisabled(u.email, u.disabled)}
                             title={u.disabled ? "Restore access" : "Suspend access"}
                             className={cn(
-                              "flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors",
+                              "flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold transition-colors",
                               u.disabled
                                 ? "bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7]"
                                 : "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
@@ -467,7 +467,7 @@ export default function AdminPage() {
                             onClick={() => loginAs(u.email)}
                             disabled={u.disabled || loginAsLoading === u.email}
                             title={`Login as ${u.name}`}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#EFF6FF] text-[#1D4ED8] dark:bg-[#1E3A5F] hover:bg-[#DBEAFE] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold bg-[#EFF6FF] text-[#1D4ED8] dark:bg-[#1E3A5F] hover:bg-[#DBEAFE] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                             {loginAsLoading === u.email
                               ? <RefreshCw size={10} className="animate-spin" />
                               : <LogIn size={10} />}
@@ -478,7 +478,7 @@ export default function AdminPage() {
                     );
                   })}
                   {filteredUsers.length === 0 && (
-                    <tr><td colSpan={9} className="py-10 text-center text-[13px] text-[#A1A1AA]">
+                    <tr><td colSpan={9} className="py-10 text-center text-[17px] text-[#A1A1AA]">
                       {loading ? "Loading…" : "No users found"}
                     </td></tr>
                   )}
@@ -505,9 +505,9 @@ export default function AdminPage() {
                 const pct = users.length ? Math.round((p.count / users.length) * 100) : 0;
                 return (
                   <div key={p.label} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-4 text-center">
-                    <div className="text-[28px] font-black" style={{ color: p.color }}>{pct}%</div>
-                    <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{p.count} of {users.length} stores</div>
+                    <div className="text-[32px] font-black" style={{ color: p.color }}>{pct}%</div>
+                    <div className="text-[17px] font-semibold dark:text-[#F4F4F5]">{p.label}</div>
+                    <div className="text-[15px] text-[#A1A1AA]">{p.count} of {users.length} stores</div>
                   </div>
                 );
               })}
@@ -518,11 +518,11 @@ export default function AdminPage() {
           <Card>
             <CardHeader title="All Stores — Full Details" right="Newest first" />
             <div className="overflow-x-auto mt-2">
-              <table className="w-full text-[12px] min-w-[700px]">
+              <table className="w-full text-[20px] min-w-[700px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["#", "Name", "Email", "Brand", "Phone", "City", "Shopify Store", "Connections", "Joined"].map(h => (
-                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-3 whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left text-[14px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -553,7 +553,7 @@ export default function AdminPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-4 right-4 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] px-3.5 py-2 rounded-xl text-[13px] font-semibold z-50 shadow-xl">
+        <div className="fixed bottom-4 right-4 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] px-3.5 py-2 rounded-xl text-[17px] font-semibold z-50 shadow-xl">
           ✓ {toast}
         </div>
       )}

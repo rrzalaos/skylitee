@@ -10,10 +10,8 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface ProfileData {
-  // Personal
   fullName: string; username: string; email: string; mobile: string;
   city: string; bio: string; photoUrl: string;
-  // Brand
   brandName: string; brandLogoUrl: string; tagline: string;
   productCategory: string; businessType: string;
   targetGender: string; targetAgeRange: string;
@@ -33,8 +31,6 @@ const EMPTY: ProfileData = {
 
 const STORAGE_KEY = "skylitee-profile";
 
-// ── Completion calc ──────────────────────────────────────────────────────────
-
 const REQUIRED_FIELDS: (keyof ProfileData)[] = [
   "fullName", "email", "mobile", "city", "photoUrl",
   "brandName", "productCategory", "businessType",
@@ -46,20 +42,23 @@ function calcCompletion(d: ProfileData) {
   return Math.round((filled / REQUIRED_FIELDS.length) * 100);
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function Field({ label, hint, value, onChange, type = "text", placeholder = "" }: {
-  label: string; hint?: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string;
+function Field({ label, hint, value, onChange, type = "text", placeholder = "", readOnly = false }: {
+  label: string; hint?: string; value: string; onChange?: (v: string) => void;
+  type?: string; placeholder?: string; readOnly?: boolean;
 }) {
   return (
     <div>
       <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">{label}</label>
       {hint && <div className="text-[11px] text-[#A1A1AA] mb-1">{hint}</div>}
       <input
-        type={type} value={value} onChange={e => onChange(e.target.value)}
+        type={type} value={value}
+        onChange={e => onChange?.(e.target.value)}
+        readOnly={readOnly}
         placeholder={placeholder}
-        className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all"
+        className={cn(
+          "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none transition-all",
+          readOnly ? "cursor-not-allowed text-[#A1A1AA]" : "focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30"
+        )}
       />
     </div>
   );
@@ -97,60 +96,189 @@ function Avatar({ photoUrl, name, size = 64 }: { photoUrl: string; name: string;
   );
 }
 
-// ── Role definitions ─────────────────────────────────────────────────────────
-
 const ROLES = [
   {
-    role: "Owner",
-    icon: Crown,
-    color: "text-[#F97316]",
-    bg: "bg-[#FFF7ED] dark:bg-[#2A1A0E]",
+    role: "Owner", icon: Crown, color: "text-[#F97316]", bg: "bg-[#FFF7ED] dark:bg-[#2A1A0E]",
     permissions: ["Full access to all data", "Manage connections", "Invite/remove team members", "Billing & settings"],
   },
   {
-    role: "Admin",
-    icon: Shield,
-    color: "text-[#3B82F6]",
-    bg: "bg-[#EFF6FF] dark:bg-[#0D1E3D]",
+    role: "Admin", icon: Shield, color: "text-[#3B82F6]", bg: "bg-[#EFF6FF] dark:bg-[#0D1E3D]",
     permissions: ["All data access", "Manage connections", "Cannot change billing", "Cannot remove owner"],
   },
   {
-    role: "Marketing",
-    icon: Edit3,
-    color: "text-[#8B5CF6]",
-    bg: "bg-[#F5F3FF] dark:bg-[#1E1240]",
+    role: "Marketing", icon: Edit3, color: "text-[#8B5CF6]", bg: "bg-[#F5F3FF] dark:bg-[#1E1240]",
     permissions: ["Meta, GA4, GSC data", "Can view all reports", "Cannot change connections", "No billing access"],
   },
   {
-    role: "View Only",
-    icon: Eye,
-    color: "text-[#71717A]",
-    bg: "bg-[#F5F5F4] dark:bg-[#1C1C1C]",
+    role: "View Only", icon: Eye, color: "text-[#71717A]", bg: "bg-[#F5F5F4] dark:bg-[#1C1C1C]",
     permissions: ["Read-only dashboard", "No data export", "No settings access", "No connection changes"],
   },
 ];
 
 type Tab = "profile" | "brand" | "team";
 
+// ── Admin profile view ───────────────────────────────────────────────────────
+
+function AdminProfile() {
+  const [name, setName]       = useState("");
+  const [email, setEmail]     = useState("");
+  const [mobile, setMobile]   = useState("");
+  const [saved, setSaved]     = useState(false);
+
+  const [currentPw, setCurrentPw]   = useState("");
+  const [newPw, setNewPw]           = useState("");
+  const [confirmPw, setConfirmPw]   = useState("");
+  const [pwError, setPwError]       = useState("");
+  const [pwSuccess, setPwSuccess]   = useState(false);
+  const [pwLoading, setPwLoading]   = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => { setName(d.name || ""); setEmail(d.email || ""); })
+      .catch(() => {});
+
+    fetch("/api/profile")
+      .then(r => r.json())
+      .then(d => { if (d.profile?.phone) setMobile(d.profile.phone); })
+      .catch(() => {});
+  }, []);
+
+  const saveProfile = async () => {
+    await Promise.allSettled([
+      fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      }),
+      fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: mobile }),
+      }),
+    ]);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const changePassword = async () => {
+    setPwError("");
+    if (!currentPw || !newPw || !confirmPw) { setPwError("All fields are required."); return; }
+    if (newPw !== confirmPw) { setPwError("New passwords do not match."); return; }
+    if (newPw.length < 8) { setPwError("Password must be at least 8 characters."); return; }
+
+    setPwLoading(true);
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+    });
+    const json = await res.json() as { ok?: boolean; error?: string };
+    setPwLoading(false);
+
+    if (res.ok && json.ok) {
+      setPwSuccess(true);
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      setTimeout(() => setPwSuccess(false), 3500);
+    } else {
+      setPwError(json.error || "Failed to change password.");
+    }
+  };
+
+  const inputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
+  const labelCls = "text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5";
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <div>
+        <h2 className="text-lg font-bold dark:text-[#F4F4F5]">My Profile</h2>
+        <p className="text-[13px] text-[#A1A1AA] mt-0.5">Admin account settings</p>
+      </div>
+
+      <Card>
+        <CardHeader title="Account Details" />
+        <div className="space-y-3 mt-2">
+          <div>
+            <label className={labelCls}>Full name</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Email address</label>
+            <input value={email} readOnly className={cn(inputCls, "cursor-not-allowed text-[#A1A1AA]")} />
+          </div>
+          <div>
+            <label className={labelCls}>Mobile number</label>
+            <input value={mobile} onChange={e => setMobile(e.target.value)} type="tel" placeholder="+91 98765 43210" className={inputCls} />
+          </div>
+        </div>
+        <div className="flex justify-end mt-4">
+          <button onClick={saveProfile}
+            className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+            {saved ? "✓ Saved!" : "Save"}
+          </button>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title={<span className="flex items-center gap-1.5"><Lock size={13} className="text-[#A1A1AA]" /> Change Password</span>} />
+        <div className="space-y-3 mt-2">
+          <div>
+            <label className={labelCls}>Current password</label>
+            <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)}
+              placeholder="••••••••" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>New password</label>
+            <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
+              placeholder="••••••••" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Confirm new password</label>
+            <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && changePassword()}
+              placeholder="••••••••" className={inputCls} />
+          </div>
+          {pwError && <div className="text-[12px] text-[#EF4444]">{pwError}</div>}
+          {pwSuccess && <div className="text-[12px] text-[#22C55E] font-semibold">✓ Password changed successfully!</div>}
+        </div>
+        <div className="flex justify-end mt-4">
+          <button onClick={changePassword} disabled={pwLoading}
+            className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[13px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
+            {pwLoading ? "Saving…" : "Change Password"}
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const [data, setData] = useState<ProfileData>(EMPTY);
-  const [tab, setTab] = useState<Tab>("profile");
-  const [saved, setSaved] = useState(false);
+  const [isAdmin, setIsAdmin]   = useState<boolean | null>(null);
+  const [data, setData]         = useState<ProfileData>(EMPTY);
+  const [tab, setTab]           = useState<Tab>("profile");
+  const [saved, setSaved]       = useState(false);
 
   useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => setIsAdmin(!!d.isAdmin))
+      .catch(() => setIsAdmin(false));
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setData({ ...EMPTY, ...JSON.parse(raw) });
     } catch { /* ignore */ }
-  }, []);
+  }, [isAdmin]);
 
   const set = (k: keyof ProfileData) => (v: string) => setData(d => ({ ...d, [k]: v }));
 
   const saveProfile = async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // Also persist key fields to KV so admin can see them
     try {
       await fetch("/api/profile", {
         method: "POST",
@@ -160,7 +288,7 @@ export default function ProfilePage() {
           niche:        data.productCategory,
           businessType: data.businessType,
           phone:        data.mobile,
-          country:      "",  // not a profile field yet — city used instead
+          country:      "",
           city:         data.city,
         }),
       });
@@ -169,12 +297,15 @@ export default function ProfilePage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
+  if (isAdmin === null) return <div className="text-[13px] text-[#A1A1AA] p-4">Loading…</div>;
+  if (isAdmin) return <AdminProfile />;
+
   const completion = calcCompletion(data);
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: "profile", label: "My Account", icon: User },
-    { key: "brand", label: "Brand Details", icon: Building2 },
-    { key: "team", label: "Team & Access", icon: Users },
+    { key: "profile", label: "My Account",    icon: User      },
+    { key: "brand",   label: "Brand Details", icon: Building2 },
+    { key: "team",    label: "Team & Access", icon: Users     },
   ];
 
   return (
@@ -185,7 +316,6 @@ export default function ProfilePage() {
           <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Profile & Account</h2>
           <p className="text-[13px] text-[#A1A1AA] mt-0.5">Your account details, brand info, and team access</p>
         </div>
-        {/* Completion */}
         <div className="flex items-center gap-2 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-3 py-2">
           <div className="w-20 h-1.5 bg-[#E5E5E5] dark:bg-[#262626] rounded-full overflow-hidden">
             <div className="h-full bg-[#F97316] rounded-full transition-all" style={{ width: `${completion}%` }} />
@@ -195,7 +325,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Completion nudge */}
       {completion < 80 && (
         <div className="flex items-start gap-2 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/20 rounded-xl p-3 mb-4">
           <Info size={13} className="text-[#F97316] shrink-0 mt-0.5" />
@@ -227,7 +356,6 @@ export default function ProfilePage() {
       {/* ── PROFILE TAB ─────────────────────────────────────────────── */}
       {tab === "profile" && (
         <div className="space-y-4">
-          {/* Photo + name row */}
           <Card>
             <div className="flex items-start gap-4">
               <div className="relative">
@@ -243,12 +371,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="mt-3">
-              <Field
-                label="Profile photo URL"
-                hint="Paste a link to your photo (e.g. from Google Photos, LinkedIn, etc.)"
-                value={data.photoUrl} onChange={set("photoUrl")}
-                placeholder="https://..."
-              />
+              <Field label="Profile photo URL" hint="Paste a link to your photo" value={data.photoUrl} onChange={set("photoUrl")} placeholder="https://..." />
             </div>
           </Card>
 
@@ -277,7 +400,7 @@ export default function ProfilePage() {
               right={<span className="text-[11px] bg-[#F5F5F4] dark:bg-[#1C1C1C] px-2 py-0.5 rounded-full text-[#A1A1AA]">Auth required</span>}
             />
             <div className="text-[12px] text-[#71717A] mb-3">
-              Password management is available once account-based authentication is enabled. Your dashboard currently uses Shopify&apos;s secure token — no separate password is needed yet.
+              Password management is available once account-based authentication is enabled.
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-50 pointer-events-none">
               {["Current password", "New password", "Confirm new password"].map((label, i) => (
@@ -287,10 +410,6 @@ export default function ProfilePage() {
                     className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] rounded-xl px-3 py-2 text-[13px] placeholder-[#A1A1AA]" />
                 </div>
               ))}
-            </div>
-            <div className="mt-3 text-[11px] text-[#A1A1AA] flex items-center gap-1.5">
-              <Info size={11} />
-              Forgot password &amp; reset will be available with the login system — coming soon.
             </div>
           </Card>
 
@@ -310,7 +429,7 @@ export default function ProfilePage() {
             <Info size={13} className="text-[#3B82F6] shrink-0 mt-0.5" />
             <div className="text-[12px] text-[#1E40AF] dark:text-[#93C5FD]">
               <span className="font-bold">These details power your AI recommendations.</span>
-              {" "}When we know your product category, audience, and revenue scale — the AI gives you industry-specific benchmarks instead of generic advice. Fill as much as you can.
+              {" "}When we know your product category, audience, and revenue scale — the AI gives you industry-specific benchmarks.
             </div>
           </div>
 
@@ -319,10 +438,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <Field label="Brand name" value={data.brandName} onChange={set("brandName")} placeholder="Rrahi Print Shop" />
               <Field label="Tagline / slogan" value={data.tagline} onChange={set("tagline")} placeholder="Print your story" />
-              <Select
-                label="Main product category"
-                hint="What do you primarily sell?"
-                value={data.productCategory} onChange={set("productCategory")}
+              <Select label="Main product category" hint="What do you primarily sell?" value={data.productCategory} onChange={set("productCategory")}
                 options={[
                   { value: "print_on_demand", label: "Print-on-Demand (T-shirts, Hoodies, etc.)" },
                   { value: "apparel", label: "Apparel & Fashion" },
@@ -336,9 +452,7 @@ export default function ProfilePage() {
                   { value: "other", label: "Other" },
                 ]}
               />
-              <Select
-                label="Business type"
-                value={data.businessType} onChange={set("businessType")}
+              <Select label="Business type" value={data.businessType} onChange={set("businessType")}
                 options={[
                   { value: "d2c", label: "D2C Brand (own brand, own products)" },
                   { value: "agency", label: "Agency / Freelancer (managing client brands)" },
@@ -347,48 +461,30 @@ export default function ProfilePage() {
                   { value: "other", label: "Other" },
                 ]}
               />
-              <Field
-                label="Brand logo URL"
-                hint="Link to your brand logo image"
-                value={data.brandLogoUrl} onChange={set("brandLogoUrl")}
-                placeholder="https://..."
-              />
+              <Field label="Brand logo URL" hint="Link to your brand logo image" value={data.brandLogoUrl} onChange={set("brandLogoUrl")} placeholder="https://..." />
             </div>
           </Card>
 
           <Card>
             <CardHeader title="Target Audience" right="Helps AI benchmark against your niche" />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-              <Select
-                label="Target gender"
-                value={data.targetGender} onChange={set("targetGender")}
+              <Select label="Target gender" value={data.targetGender} onChange={set("targetGender")}
                 options={[
-                  { value: "men", label: "Men" },
-                  { value: "women", label: "Women" },
-                  { value: "both", label: "Both / Unisex" },
-                  { value: "kids", label: "Kids" },
+                  { value: "men", label: "Men" }, { value: "women", label: "Women" },
+                  { value: "both", label: "Both / Unisex" }, { value: "kids", label: "Kids" },
                 ]}
               />
-              <Select
-                label="Primary age group"
-                value={data.targetAgeRange} onChange={set("targetAgeRange")}
+              <Select label="Primary age group" value={data.targetAgeRange} onChange={set("targetAgeRange")}
                 options={[
-                  { value: "13_17", label: "13–17 (Teens)" },
-                  { value: "18_24", label: "18–24 (Young adults)" },
-                  { value: "25_34", label: "25–34 (Millennials)" },
-                  { value: "35_44", label: "35–44" },
+                  { value: "13_17", label: "13–17 (Teens)" }, { value: "18_24", label: "18–24 (Young adults)" },
+                  { value: "25_34", label: "25–34 (Millennials)" }, { value: "35_44", label: "35–44" },
                   { value: "45_plus", label: "45+ (Older adults)" },
                 ]}
               />
-              <Select
-                label="Monthly revenue range"
-                hint="Helps benchmark your scale"
-                value={data.monthlyRevenueRange} onChange={set("monthlyRevenueRange")}
+              <Select label="Monthly revenue range" hint="Helps benchmark your scale" value={data.monthlyRevenueRange} onChange={set("monthlyRevenueRange")}
                 options={[
-                  { value: "lt_1l", label: "Below ₹1 Lakh" },
-                  { value: "1l_5l", label: "₹1L – ₹5L" },
-                  { value: "5l_20l", label: "₹5L – ₹20L" },
-                  { value: "20l_50l", label: "₹20L – ₹50L" },
+                  { value: "lt_1l", label: "Below ₹1 Lakh" }, { value: "1l_5l", label: "₹1L – ₹5L" },
+                  { value: "5l_20l", label: "₹5L – ₹20L" }, { value: "20l_50l", label: "₹20L – ₹50L" },
                   { value: "50l_plus", label: "Above ₹50L" },
                 ]}
               />
@@ -413,7 +509,6 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          {/* What's filled */}
           <Card>
             <CardHeader title="Profile completeness" right={`${completion}% done`} />
             <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full mb-3 overflow-hidden">
@@ -450,7 +545,6 @@ export default function ProfilePage() {
       {/* ── TEAM TAB ────────────────────────────────────────────────── */}
       {tab === "team" && (
         <div className="space-y-4">
-          {/* Current user */}
           <Card>
             <CardHeader title="Team Members" right="1 member" />
             <div className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
@@ -468,7 +562,7 @@ export default function ProfilePage() {
             <div className="pt-3">
               <div className="flex items-center gap-2 text-[12px] text-[#A1A1AA] mb-3">
                 <Info size={12} />
-                Multi-user login and invite system is on our roadmap. Once enabled, you can invite team members by email and set their access level.
+                Multi-user login and invite system is on our roadmap.
               </div>
               <button disabled
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#A1A1AA] text-[13px] font-semibold cursor-not-allowed w-full justify-center border border-dashed border-[#D4D4D4] dark:border-[#333]">
@@ -478,7 +572,6 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          {/* Role definitions */}
           <Card>
             <CardHeader title="Access Levels" right="How roles work" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
@@ -503,7 +596,6 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          {/* What team access unlocks */}
           <Card>
             <CardHeader title="Why add team members?" />
             <div className="space-y-2 mt-1">
