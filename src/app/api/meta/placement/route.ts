@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMetaToken, getMetaAdAccount, getShopFromRequest } from "@/lib/session";
+import { resolveMetaAccount } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -76,17 +77,8 @@ export async function GET(req: NextRequest) {
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
 
   const savedAccount = await getMetaAdAccount(req, shop);
-  const accountsRes = await fetch(
-    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&access_token=${token}`
-  );
-  const accountsData = await accountsRes.json() as {
-    data?: { id: string; name: string; currency: string }[];
-    error?: { message: string };
-  };
-  if (accountsData.error) return NextResponse.json({ error: "token_expired" }, { status: 401 });
-  const accounts = accountsData.data ?? [];
-  if (!accounts.length) return NextResponse.json({ error: "no_accounts" });
-  const selected = (savedAccount && accounts.find(a => a.id === savedAccount)) || accounts[0];
+  const selected = await resolveMetaAccount(savedAccount, token);
+  if (!selected) return NextResponse.json({ error: "no_accounts" });
 
   const fields = "spend,impressions,clicks,ctr,cpc,cpm,reach,actions,action_values";
   const res = await fetch(
