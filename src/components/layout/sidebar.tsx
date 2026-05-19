@@ -11,8 +11,9 @@ import {
   Share2, Layout, Palette, Clock,
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
-  Plug, Activity, ChevronDown, UserCircle,
-  HelpCircle, X, ShieldCheck, CreditCard,
+  Plug, ChevronDown, UserCircle,
+  X, ShieldCheck, CreditCard,
+  FileText, TrendingUp, BarChart3, Globe, DollarSign, Sparkles, HelpCircle,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
@@ -78,6 +79,18 @@ const navSections: NavSection[] = [
       { href: "/dashboard/financial", label: "Financial P&L", icon: Receipt, badge: null, dot: null },
       { href: "/dashboard/benchmarking", label: "Benchmarking", icon: Trophy, badge: null, dot: null },
       { href: "/dashboard/weekly", label: "Weekly Digest", icon: CalendarDays, badge: null, dot: null },
+    ],
+  },
+  {
+    label: "Reports",
+    tooltip: "Full business reports — SEO, Performance Marketing, Meta Ads, Traffic, Financial P&L, and AI-generated insights on what's working.",
+    items: [
+      { href: "/dashboard/reports/seo", label: "SEO Report", icon: FileText, badge: null, dot: "google_gsc" },
+      { href: "/dashboard/reports/performance", label: "Performance Marketing", icon: TrendingUp, badge: null, dot: null },
+      { href: "/dashboard/reports/meta", label: "Meta Ads Report", icon: BarChart3, badge: null, dot: "meta" },
+      { href: "/dashboard/reports/traffic", label: "Traffic Report", icon: Globe, badge: null, dot: "google_ga4" },
+      { href: "/dashboard/reports/financial", label: "Financial P&L", icon: DollarSign, badge: null, dot: null },
+      { href: "/dashboard/reports/insights", label: "AI Insights", icon: Sparkles, badge: { text: "AI", color: "orange" }, dot: null },
     ],
   },
   {
