@@ -1,152 +1,85 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
-  Users, BarChart2, CreditCard, LayoutDashboard,
-  Search, Plus, Edit2, Trash2, LogIn, UserX, UserCheck,
-  ShieldCheck, Eye, EyeOff, X, Lock, CheckCircle2,
+  Users, BarChart2, LayoutDashboard,
+  Search, UserX, UserCheck, ShieldCheck,
+  Eye, EyeOff, Lock, RefreshCw,
 } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
-  CartesianGrid, Tooltip as RTooltip,
-} from "recharts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AdminUser {
-  id: string; name: string; email: string;
-  brand: string; niche: string;
-  city: string; state: string;
-  plan: "free" | "pro" | "agency";
-  status: "active" | "inactive";
-  joinedAt: string; lastActiveAt: string;
-  shopifyStore: string;
-  monthlySales: number[];
-  totalRevenue: number; totalOrders: number;
-}
-
-interface AdminPlan {
-  id: string; name: string; price: number; color: string;
-  features: string[];
+  name: string;
+  email: string;
+  shops: string[];
+  createdAt: string;
+  disabled: boolean;
+  profile: {
+    brandName: string; niche: string; businessType: string;
+    phone: string; country: string; city: string;
+  } | null;
+  connections: { shopify: boolean; meta: boolean; ga4: boolean; gsc: boolean };
+  plan: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const MONTHS = ["Dec", "Jan", "Feb", "Mar", "Apr", "May"];
 const ADMIN_PIN = "skylitee2026";
-const STORAGE_KEY = "skylitee-admin-data";
 
-const SEED_USERS: AdminUser[] = [
-  {
-    id: "u001", name: "Rishi Zala", email: "rrzala@yellowsky.in",
-    brand: "Rrahi Print Shop", niche: "Print-on-Demand",
-    city: "Ahmedabad", state: "Gujarat", plan: "pro", status: "active",
-    joinedAt: "2024-11-01", lastActiveAt: "2026-05-18",
-    shopifyStore: "rrahi-print-shop.myshopify.com",
-    monthlySales: [18500, 24200, 31000, 27800, 35400, 42100],
-    totalRevenue: 179000, totalOrders: 89,
-  },
-  {
-    id: "u002", name: "Priya Sharma", email: "priya@kraftkart.in",
-    brand: "KraftKart", niche: "Apparel & Fashion",
-    city: "Mumbai", state: "Maharashtra", plan: "pro", status: "active",
-    joinedAt: "2025-01-15", lastActiveAt: "2026-05-17",
-    shopifyStore: "kraftkart.myshopify.com",
-    monthlySales: [45000, 52000, 61000, 55000, 68000, 73000],
-    totalRevenue: 354000, totalOrders: 234,
-  },
-  {
-    id: "u003", name: "Arjun Mehta", email: "arjun@luminora.co",
-    brand: "Luminora", niche: "Beauty & Skincare",
-    city: "Bangalore", state: "Karnataka", plan: "agency", status: "active",
-    joinedAt: "2024-12-20", lastActiveAt: "2026-05-16",
-    shopifyStore: "luminora.myshopify.com",
-    monthlySales: [82000, 94000, 110000, 98000, 125000, 138000],
-    totalRevenue: 647000, totalOrders: 412,
-  },
-  {
-    id: "u004", name: "Kavya Nair", email: "kavya@homebliss.in",
-    brand: "HomeBliss", niche: "Home Decor",
-    city: "Kochi", state: "Kerala", plan: "free", status: "active",
-    joinedAt: "2026-02-10", lastActiveAt: "2026-05-10",
-    shopifyStore: "homebliss.myshopify.com",
-    monthlySales: [0, 0, 8500, 12000, 15000, 18000],
-    totalRevenue: 53500, totalOrders: 47,
-  },
-  {
-    id: "u005", name: "Rahul Gupta", email: "rahul@streetwearco.in",
-    brand: "StreetWear Co", niche: "Apparel & Fashion",
-    city: "Delhi", state: "Delhi", plan: "pro", status: "active",
-    joinedAt: "2025-03-05", lastActiveAt: "2026-05-15",
-    shopifyStore: "streetwearco.myshopify.com",
-    monthlySales: [0, 32000, 38000, 35000, 41000, 47000],
-    totalRevenue: 193000, totalOrders: 156,
-  },
-  {
-    id: "u006", name: "Sneha Iyer", email: "sneha@handcraftedelite.in",
-    brand: "Handcrafted Elite", niche: "Jewellery",
-    city: "Chennai", state: "Tamil Nadu", plan: "pro", status: "inactive",
-    joinedAt: "2025-02-20", lastActiveAt: "2026-03-15",
-    shopifyStore: "handcraftedelite.myshopify.com",
-    monthlySales: [28000, 31000, 0, 0, 0, 0],
-    totalRevenue: 59000, totalOrders: 38,
-  },
-  {
-    id: "u007", name: "Vikram Singh", email: "vikram@gourmetbox.in",
-    brand: "GourmetBox", niche: "Food & Beverage",
-    city: "Pune", state: "Maharashtra", plan: "agency", status: "active",
-    joinedAt: "2024-10-01", lastActiveAt: "2026-05-18",
-    shopifyStore: "gourmetbox.myshopify.com",
-    monthlySales: [95000, 108000, 122000, 115000, 134000, 148000],
-    totalRevenue: 722000, totalOrders: 534,
-  },
-  {
-    id: "u008", name: "Aisha Khan", email: "aisha@zestgadgets.in",
-    brand: "Zest Gadgets", niche: "Electronics",
-    city: "Hyderabad", state: "Telangana", plan: "free", status: "active",
-    joinedAt: "2026-04-01", lastActiveAt: "2026-05-14",
-    shopifyStore: "zestgadgets.myshopify.com",
-    monthlySales: [0, 0, 0, 0, 21000, 28000],
-    totalRevenue: 49000, totalOrders: 31,
-  },
-];
+const NICHE_LABELS: Record<string, string> = {
+  print_on_demand: "Print-on-Demand",
+  apparel:         "Apparel & Fashion",
+  accessories:     "Accessories",
+  jewellery:       "Jewellery",
+  beauty:          "Beauty & Skincare",
+  home_decor:      "Home Decor",
+  electronics:     "Electronics",
+  food_bev:        "Food & Beverage",
+  stationery:      "Stationery",
+  other:           "Other",
+};
 
-const DEFAULT_PLANS: AdminPlan[] = [
-  {
-    id: "free", name: "Free", price: 0, color: "#A1A1AA",
-    features: ["1 platform connect", "30-day data only", "Basic Shopify reports", "No AI insights", "No CSV export"],
-  },
-  {
-    id: "pro", name: "Pro", price: 2999, color: "#F97316",
-    features: ["All platforms (Shopify + Meta + Google)", "Full data history", "AI insights & funnel diagnosis", "CSV export", "Goal tracking & P&L"],
-  },
-  {
-    id: "agency", name: "Agency", price: 7999, color: "#8B5CF6",
-    features: ["Everything in Pro", "Unlimited brand profiles", "Team access (coming soon)", "Priority support", "White-label (coming soon)"],
-  },
-];
+const BTYPE_LABELS: Record<string, string> = {
+  d2c:         "D2C",
+  agency:      "Agency",
+  dropshipping:"Dropshipping",
+  reseller:    "Reseller",
+  other:       "Other",
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function fmt(n: number) {
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-  return `₹${n}`;
-}
 
 function daysSince(d: string) {
   return Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
 }
 
-function PlanBadge({ plan }: { plan: AdminUser["plan"] }) {
+function PlanBadge({ plan }: { plan: string }) {
   return (
     <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold",
       plan === "agency" ? "bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1E1240] dark:text-[#A78BFA]" :
-      plan === "pro" ? "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]" :
-      "bg-[#F5F5F4] text-[#71717A] dark:bg-[#1C1C1C]"
-    )}>{plan}</span>
+      plan === "pro"    ? "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]" :
+                          "bg-[#F5F5F4] text-[#71717A] dark:bg-[#1C1C1C] dark:text-[#A1A1AA]"
+    )}>{plan ?? "free"}</span>
+  );
+}
+
+function PlatformDots({ c }: { c: AdminUser["connections"] }) {
+  const dots = [
+    { key: "shopify", label: "Shopify", color: "#96BF48",    on: c.shopify },
+    { key: "meta",    label: "Meta",    color: "#1877F2",    on: c.meta    },
+    { key: "ga4",     label: "GA4",     color: "#E37400",    on: c.ga4     },
+    { key: "gsc",     label: "GSC",     color: "#34A853",    on: c.gsc     },
+  ];
+  return (
+    <div className="flex items-center gap-1">
+      {dots.map(d => (
+        <span key={d.key} title={`${d.label}: ${d.on ? "connected" : "not connected"}`}
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: d.on ? d.color : "#D4D4D4" }} />
+      ))}
+    </div>
   );
 }
 
@@ -196,126 +129,53 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
   );
 }
 
-// ── User Modal ─────────────────────────────────────────────────────────────────
-
-function UserModal({ user, onSave, onClose }: {
-  user: AdminUser | null; onSave: (u: AdminUser) => void; onClose: () => void;
-}) {
-  const blank: AdminUser = {
-    id: `u${Date.now()}`, name: "", email: "", brand: "", niche: "Print-on-Demand",
-    city: "", state: "", plan: "free", status: "active",
-    joinedAt: new Date().toISOString().split("T")[0],
-    lastActiveAt: new Date().toISOString().split("T")[0],
-    shopifyStore: "", monthlySales: [0, 0, 0, 0, 0, 0],
-    totalRevenue: 0, totalOrders: 0,
-  };
-  const [form, setForm] = useState<AdminUser>(user ?? blank);
-  const set = (k: keyof AdminUser, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-lg border border-black/[0.06] dark:border-white/[0.06] max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-[#171717] px-5 py-4 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
-          <div className="text-[15px] font-bold dark:text-[#F4F4F5]">{user ? "Edit User" : "Add New User"}</div>
-          <button onClick={onClose}><X size={16} className="text-[#A1A1AA]" /></button>
-        </div>
-        <div className="p-5 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {([["Full name", "name"], ["Email", "email"], ["Brand name", "brand"], ["Shopify store", "shopifyStore"], ["City", "city"], ["State", "state"]] as [string, keyof AdminUser][]).map(([label, key]) => (
-              <div key={key}>
-                <label className="text-[11px] font-semibold text-[#A1A1AA] block mb-0.5 uppercase tracking-wide">{label}</label>
-                <input value={String(form[key])} onChange={e => set(key, e.target.value)}
-                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              ["Niche", "niche", ["Print-on-Demand","Apparel & Fashion","Beauty & Skincare","Home Decor","Jewellery","Food & Beverage","Electronics","Stationery","Other"]],
-              ["Plan", "plan", ["free","pro","agency"]],
-              ["Status", "status", ["active","inactive"]],
-            ].map(([label, key, opts]) => (
-              <div key={key as string}>
-                <label className="text-[11px] font-semibold text-[#A1A1AA] block mb-0.5 uppercase tracking-wide">{label as string}</label>
-                <select value={String(form[key as keyof AdminUser])} onChange={e => set(key as keyof AdminUser, e.target.value)}
-                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] appearance-none">
-                  {(opts as string[]).map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button onClick={onClose} className="px-4 py-2 rounded-xl text-[13px] text-[#71717A] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">Cancel</button>
-            <button onClick={() => onSave(form)} className="px-5 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl text-[13px] font-bold transition-colors">Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
-type AdminTab = "overview" | "users" | "analytics" | "plans";
+type AdminTab = "overview" | "users" | "analytics";
 
 export default function AdminPage() {
-  const router = useRouter();
-  const [authed, setAuthed] = useState(false);
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState(false);
-  const [tab, setTab] = useState<AdminTab>("overview");
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [plans] = useState<AdminPlan[]>(DEFAULT_PLANS);
-  const [search, setSearch] = useState("");
-  const [filterPlan, setFilterPlan] = useState("all");
+  const [authed, setAuthed]       = useState(false);
+  const [pin, setPin]             = useState("");
+  const [pinError, setPinError]   = useState(false);
+  const [tab, setTab]             = useState<AdminTab>("overview");
+  const [users, setUsers]         = useState<AdminUser[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [search, setSearch]       = useState("");
+  const [filterNiche, setFilterNiche] = useState("all");
+  const [filterPlan, setFilterPlan]   = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [showModal, setShowModal] = useState(false);
-  const [editUser, setEditUser] = useState<AdminUser | null>(null);
-  const [toast, setToast] = useState("");
-
-  useEffect(() => {
-    if (sessionStorage.getItem("skylitee-admin-auth") === "1") setAuthed(true);
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
-      setUsers(p.users ?? SEED_USERS);
-    } else {
-      setUsers(SEED_USERS);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ users: SEED_USERS }));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (users.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify({ users }));
-  }, [users]);
+  const [toast, setToast]         = useState("");
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/users");
+      if (res.ok) {
+        const data = await res.json() as { users: AdminUser[] };
+        setUsers(data.users ?? []);
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("skylitee-admin-auth") === "1") {
+      setAuthed(true);
+      loadUsers();
+    }
+  }, [loadUsers]);
+
   const doLogin = () => {
-    if (pin === ADMIN_PIN) { sessionStorage.setItem("skylitee-admin-auth", "1"); setAuthed(true); }
-    else { setPinError(true); setTimeout(() => setPinError(false), 2000); }
-  };
-
-  const saveUser = (u: AdminUser) => {
-    setUsers(prev => prev.find(x => x.id === u.id) ? prev.map(x => x.id === u.id ? u : x) : [...prev, u]);
-    setShowModal(false); setEditUser(null);
-    showToast("User saved.");
-  };
-
-  const deleteUser = (id: string) => {
-    if (!confirm("Delete this user permanently?")) return;
-    setUsers(prev => prev.filter(u => u.id !== id));
-    showToast("User deleted.");
-  };
-
-  const toggleStatus = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === "active" ? "inactive" : "active" } : u));
-    showToast("Status updated.");
-  };
-
-  const loginAs = (u: AdminUser) => {
-    localStorage.setItem("skylitee-impersonate", JSON.stringify({ id: u.id, name: u.name, brand: u.brand }));
-    router.push("/dashboard");
+    if (pin === ADMIN_PIN) {
+      sessionStorage.setItem("skylitee-admin-auth", "1");
+      setAuthed(true);
+      loadUsers();
+    } else {
+      setPinError(true);
+      setTimeout(() => setPinError(false), 2000);
+    }
   };
 
   const lockAdmin = () => {
@@ -323,49 +183,61 @@ export default function AdminPage() {
     setAuthed(false);
   };
 
+  const toggleDisabled = async (email: string, currentlyDisabled: boolean) => {
+    const action = currentlyDisabled ? "enable" : "disable";
+    const res = await fetch("/api/admin/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, action }),
+    });
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.email === email ? { ...u, disabled: !currentlyDisabled } : u));
+      showToast(`User ${action}d.`);
+    }
+  };
+
   if (!authed) return <PasswordGate pin={pin} setPin={setPin} onLogin={doLogin} error={pinError} />;
 
   // ── Computed ──
-  const totalRevenue = users.reduce((s, u) => s + u.totalRevenue, 0);
-  const totalOrders = users.reduce((s, u) => s + u.totalOrders, 0);
-  const activeUsers = users.filter(u => u.status === "active").length;
+  const activeUsers  = users.filter(u => !u.disabled).length;
+  const shopifyCount = users.filter(u => u.connections.shopify).length;
+  const metaCount    = users.filter(u => u.connections.meta).length;
+  const ga4Count     = users.filter(u => u.connections.ga4).length;
 
-  const monthlyTotals = MONTHS.map((month, i) => ({
-    month,
-    revenue: users.reduce((s, u) => s + (u.monthlySales[i] ?? 0), 0),
-  }));
+  const allNiches = Array.from(new Set(
+    users.map(u => u.profile?.niche ?? "").filter(Boolean)
+  )).sort();
 
   const filteredUsers = users.filter(u => {
     const q = search.toLowerCase();
-    return (!search || u.name.toLowerCase().includes(q) || u.brand.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
-      && (filterPlan === "all" || u.plan === filterPlan)
-      && (filterStatus === "all" || u.status === filterStatus);
+    const matchQ = !search
+      || u.name.toLowerCase().includes(q)
+      || u.email.toLowerCase().includes(q)
+      || (u.profile?.brandName ?? "").toLowerCase().includes(q)
+      || (u.shops[0] ?? "").toLowerCase().includes(q);
+    const matchNiche  = filterNiche  === "all" || u.profile?.niche === filterNiche;
+    const matchPlan   = filterPlan   === "all" || u.plan === filterPlan;
+    const matchStatus = filterStatus === "all"
+      || (filterStatus === "active"   && !u.disabled)
+      || (filterStatus === "disabled" &&  u.disabled);
+    return matchQ && matchNiche && matchPlan && matchStatus;
   });
 
-  const cityMap: Record<string, { revenue: number; users: number }> = {};
+  // Niche breakdown
+  const nicheMap: Record<string, number> = {};
   users.forEach(u => {
-    if (!cityMap[u.city]) cityMap[u.city] = { revenue: 0, users: 0 };
-    cityMap[u.city].revenue += u.totalRevenue;
-    cityMap[u.city].users += 1;
+    const n = u.profile?.niche ?? "not_set";
+    nicheMap[n] = (nicheMap[n] ?? 0) + 1;
   });
-  const cityData = Object.entries(cityMap).sort((a, b) => b[1].revenue - a[1].revenue);
 
-  const nicheMap: Record<string, { revenue: number; users: number }> = {};
-  users.forEach(u => {
-    if (!nicheMap[u.niche]) nicheMap[u.niche] = { revenue: 0, users: 0 };
-    nicheMap[u.niche].revenue += u.totalRevenue;
-    nicheMap[u.niche].users += 1;
-  });
-  const nicheData = Object.entries(nicheMap).sort((a, b) => b[1].revenue - a[1].revenue);
-
-  const planCounts = { free: 0, pro: 0, agency: 0 };
-  users.forEach(u => planCounts[u.plan]++);
+  // Plan breakdown
+  const planMap: Record<string, number> = { free: 0, pro: 0, agency: 0 };
+  users.forEach(u => { planMap[u.plan] = (planMap[u.plan] ?? 0) + 1; });
 
   const tabs: { key: AdminTab; label: string; icon: React.ElementType }[] = [
-    { key: "overview", label: "Overview", icon: LayoutDashboard },
-    { key: "users", label: `Users (${users.length})`, icon: Users },
-    { key: "analytics", label: "Analytics", icon: BarChart2 },
-    { key: "plans", label: "Plans", icon: CreditCard },
+    { key: "overview",  label: "Overview",            icon: LayoutDashboard },
+    { key: "users",     label: `Users (${users.length})`, icon: Users       },
+    { key: "analytics", label: "Analytics",           icon: BarChart2       },
   ];
 
   return (
@@ -379,26 +251,32 @@ export default function AdminPage() {
           </div>
           <div>
             <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Admin Panel</h2>
-            <p className="text-[11px] text-[#A1A1AA]">Skylitee platform management · Owner only</p>
+            <p className="text-[11px] text-[#A1A1AA]">Skylitee platform management · Owner only · Live data</p>
           </div>
         </div>
-        <button onClick={lockAdmin}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
-          <Lock size={11} /> Lock Admin
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={loadUsers} disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors disabled:opacity-50">
+            <RefreshCw size={11} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+          <button onClick={lockAdmin}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+            <Lock size={11} /> Lock
+          </button>
+        </div>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Users", value: users.length, sub: `${activeUsers} active`, color: "text-[#F97316]" },
-          { label: "Active Users", value: activeUsers, sub: `${users.length - activeUsers} inactive`, color: "text-[#22C55E]" },
-          { label: "Platform Revenue", value: fmt(totalRevenue), sub: "all brands combined", color: "text-[#F97316]" },
-          { label: "Total Orders", value: totalOrders.toLocaleString("en-IN"), sub: "across all brands", color: "dark:text-[#F4F4F5]" },
+          { label: "Total Registered",  value: users.length,  sub: "all time",          color: "text-[#F97316]"  },
+          { label: "Active Stores",     value: activeUsers,   sub: `${users.length - activeUsers} suspended`, color: "text-[#22C55E]" },
+          { label: "Shopify Connected", value: shopifyCount,  sub: `${users.length - shopifyCount} not connected`, color: "text-[#96BF48]" },
+          { label: "Meta Connected",    value: metaCount,     sub: `GA4: ${ga4Count}`,   color: "text-[#1877F2]"  },
         ].map(k => (
           <Card key={k.label}>
             <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{k.label}</div>
-            <div className={cn("text-[24px] font-black mt-1", k.color)}>{k.value}</div>
+            <div className={cn("text-[26px] font-black mt-1", k.color)}>{k.value}</div>
             <div className="text-[11px] text-[#A1A1AA] mt-0.5">{k.sub}</div>
           </Card>
         ))}
@@ -412,7 +290,9 @@ export default function AdminPage() {
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors",
-                tab === t.key ? "border-[#F97316] text-[#F97316]" : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
+                tab === t.key
+                  ? "border-[#F97316] text-[#F97316]"
+                  : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
               )}>
               <Icon size={13} />{t.label}
             </button>
@@ -423,35 +303,52 @@ export default function AdminPage() {
       {/* ── OVERVIEW ── */}
       {tab === "overview" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Card className="lg:col-span-2">
-              <CardHeader title="Platform Revenue — Dec 2025 to May 2026" right="All brands combined" />
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={monthlyTotals} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
-                  <YAxis hide />
-                  <RTooltip contentStyle={{ fontSize: 12, borderRadius: 12, border: "1px solid #E5E5E5" }}
-                    formatter={(v) => [fmt(Number(v)), "Revenue"]} />
-                  <Bar dataKey="revenue" fill="#F97316" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Platform connections */}
+            <Card>
+              <CardHeader title="Platform Connections" right={`${users.length} stores total`} />
+              <div className="space-y-3 mt-3">
+                {[
+                  { label: "Shopify",  count: shopifyCount,                                    color: "#96BF48" },
+                  { label: "Meta Ads", count: metaCount,                                       color: "#1877F2" },
+                  { label: "GA4",      count: ga4Count,                                        color: "#E37400" },
+                  { label: "GSC",      count: users.filter(u => u.connections.gsc).length,    color: "#34A853" },
+                ].map(p => {
+                  const pct = users.length ? Math.round((p.count / users.length) * 100) : 0;
+                  return (
+                    <div key={p.label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
+                        <span className="text-[12px] font-bold" style={{ color: p.color }}>{p.count} / {users.length}</span>
+                      </div>
+                      <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
 
+            {/* Plan distribution */}
             <Card>
               <CardHeader title="Plan Distribution" />
-              <div className="space-y-3 mt-2">
-                {plans.map(p => {
-                  const count = planCounts[p.id as keyof typeof planCounts] ?? 0;
+              <div className="space-y-3 mt-3">
+                {[
+                  { id: "free",   label: "Free",   price: "Free",          color: "#A1A1AA" },
+                  { id: "pro",    label: "Pro",    price: "₹2,999/mo",     color: "#F97316" },
+                  { id: "agency", label: "Agency", price: "₹7,999/mo",     color: "#8B5CF6" },
+                ].map(p => {
+                  const count = planMap[p.id] ?? 0;
                   const pct = users.length ? Math.round((count / users.length) * 100) : 0;
                   return (
                     <div key={p.id}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.name}</span>
-                        <span className="text-[11px] text-[#A1A1AA]">{count} users · {p.price ? `₹${p.price.toLocaleString("en-IN")}/mo` : "Free"}</span>
+                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
+                        <span className="text-[11px] text-[#A1A1AA]">{count} stores · {p.price}</span>
                       </div>
                       <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: p.color }} />
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
                       </div>
                     </div>
                   );
@@ -460,34 +357,41 @@ export default function AdminPage() {
             </Card>
           </div>
 
-          {/* Top 5 brands */}
+          {/* Recent registrations */}
           <Card>
-            <CardHeader title="Top 5 Brands by Revenue" right="All time" />
+            <CardHeader title="Recent Registrations" right="Last 10 stores" />
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-[13px] min-w-[600px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["#", "Brand", "Owner", "Niche", "City", "Plan", "Revenue", "Orders", "Status"].map(h => (
+                    {["User", "Brand / Niche", "Shopify Store", "Platforms", "Plan", "Registered", "Status"].map(h => (
                       <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {[...users].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5).map((u, i) => (
-                    <tr key={u.id} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
-                      <td className="py-2.5 pr-4 text-[#A1A1AA] font-bold text-[12px]">#{i + 1}</td>
-                      <td className="py-2.5 pr-4 font-semibold dark:text-[#F4F4F5]">{u.brand}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA]">{u.name}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{u.niche}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA]">{u.city}</td>
-                      <td className="py-2.5 pr-4"><PlanBadge plan={u.plan} /></td>
-                      <td className="py-2.5 pr-4 font-bold text-[#F97316]">{fmt(u.totalRevenue)}</td>
-                      <td className="py-2.5 pr-4 dark:text-[#F4F4F5]">{u.totalOrders}</td>
-                      <td className="py-2.5">
-                        <span className={cn("flex items-center gap-1 text-[11px] font-semibold",
-                          u.status === "active" ? "text-[#22C55E]" : "text-[#EF4444]")}>
-                          <span className={cn("w-1.5 h-1.5 rounded-full", u.status === "active" ? "bg-[#22C55E]" : "bg-[#EF4444]")} />
-                          {u.status}
+                  {users.slice(0, 10).map(u => (
+                    <tr key={u.email} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                      <td className="py-3 pr-4">
+                        <div className="font-semibold dark:text-[#F4F4F5] text-[13px]">{u.name}</div>
+                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">{u.email}</div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="text-[13px] dark:text-[#F4F4F5]">{u.profile?.brandName || <span className="text-[#A1A1AA] italic">not set</span>}</div>
+                        <div className="text-[11px] text-[#A1A1AA]">{NICHE_LABELS[u.profile?.niche ?? ""] || "—"}</div>
+                      </td>
+                      <td className="py-3 pr-4 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
+                      </td>
+                      <td className="py-3 pr-4"><PlatformDots c={u.connections} /></td>
+                      <td className="py-3 pr-4"><PlanBadge plan={u.plan} /></td>
+                      <td className="py-3 pr-4 text-[12px] text-[#A1A1AA] whitespace-nowrap">{daysSince(u.createdAt)}d ago</td>
+                      <td className="py-3">
+                        <span className={cn("text-[11px] font-bold flex items-center gap-1",
+                          u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
+                            u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
+                          {u.disabled ? "suspended" : "active"}
                         </span>
                       </td>
                     </tr>
@@ -506,79 +410,99 @@ export default function AdminPage() {
             <div className="relative flex-1">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
               <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search by name, brand, or email…"
+                placeholder="Search by name, email, brand, store…"
                 className="w-full bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl pl-8 pr-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
             </div>
+            <select value={filterNiche} onChange={e => setFilterNiche(e.target.value)}
+              className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
+              <option value="all">All niches</option>
+              {allNiches.map(n => <option key={n} value={n}>{NICHE_LABELS[n] ?? n}</option>)}
+            </select>
             <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)}
               className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
-              <option value="all">All plans</option><option value="free">Free</option>
-              <option value="pro">Pro</option><option value="agency">Agency</option>
+              <option value="all">All plans</option>
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+              <option value="agency">Agency</option>
             </select>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
-              <option value="all">All status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+              <option value="all">All status</option>
+              <option value="active">Active</option>
+              <option value="disabled">Suspended</option>
             </select>
-            <button onClick={() => { setEditUser(null); setShowModal(true); }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white rounded-xl text-[13px] font-bold transition-colors whitespace-nowrap">
-              <Plus size={13} /> Add User
-            </button>
           </div>
 
           <Card>
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] min-w-[750px]">
+              <table className="w-full text-[13px] min-w-[900px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["Brand / Owner", "Niche", "Location", "Plan", "Revenue", "Orders", "Last Active", "Status", "Actions"].map(h => (
-                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-4 whitespace-nowrap">{h}</th>
+                    {["User / Email", "Brand", "Niche", "Phone", "Location", "Shopify Store", "Platforms", "Plan", "Joined", "Status", "Access"].map(h => (
+                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map(u => (
-                    <tr key={u.id} className={cn("border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#FAFAF9] dark:hover:bg-[#1C1C1C] transition-colors", u.status === "inactive" && "opacity-60")}>
-                      <td className="py-3 pr-4">
-                        <div className="font-semibold dark:text-[#F4F4F5] leading-tight">{u.brand}</div>
-                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">{u.name} · {u.email}</div>
+                    <tr key={u.email} className={cn(
+                      "border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#FAFAF9] dark:hover:bg-[#1C1C1C] transition-colors",
+                      u.disabled && "opacity-60"
+                    )}>
+                      <td className="py-3 pr-3">
+                        <div className="font-semibold dark:text-[#F4F4F5] leading-tight">{u.name}</div>
+                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
                       </td>
-                      <td className="py-3 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap text-[12px]">{u.niche}</td>
-                      <td className="py-3 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap text-[12px]">{u.city}, {u.state}</td>
-                      <td className="py-3 pr-4"><PlanBadge plan={u.plan} /></td>
-                      <td className="py-3 pr-4 font-bold text-[#F97316]">{fmt(u.totalRevenue)}</td>
-                      <td className="py-3 pr-4 dark:text-[#F4F4F5]">{u.totalOrders}</td>
-                      <td className="py-3 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap text-[12px]">{daysSince(u.lastActiveAt)}d ago</td>
-                      <td className="py-3 pr-4">
-                        <button onClick={() => toggleStatus(u.id)}
-                          title={u.status === "active" ? "Click to deactivate" : "Click to activate"}
-                          className={cn("flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full cursor-pointer transition-colors",
-                            u.status === "active"
-                              ? "bg-[#F0FDF4] text-[#22C55E] dark:bg-[#052E16] hover:bg-[#DCFCE7]"
-                              : "bg-[#FEF2F2] text-[#EF4444] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
-                          )}>
-                          {u.status === "active" ? <UserCheck size={10} /> : <UserX size={10} />}
-                          {u.status}
-                        </button>
+                      <td className="py-3 pr-3 text-[12px] dark:text-[#F4F4F5]">
+                        {u.profile?.brandName || <span className="text-[#A1A1AA] italic">—</span>}
+                        {u.profile?.businessType && (
+                          <div className="text-[11px] text-[#A1A1AA]">{BTYPE_LABELS[u.profile.businessType] ?? u.profile.businessType}</div>
+                        )}
+                      </td>
+                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">
+                        {NICHE_LABELS[u.profile?.niche ?? ""] || <span className="italic">—</span>}
+                      </td>
+                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        {u.profile?.phone || "—"}
+                      </td>
+                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        {u.profile?.city || "—"}
+                      </td>
+                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                        {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
+                      </td>
+                      <td className="py-3 pr-3"><PlatformDots c={u.connections} /></td>
+                      <td className="py-3 pr-3"><PlanBadge plan={u.plan} /></td>
+                      <td className="py-3 pr-3 text-[12px] text-[#A1A1AA] whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
+                      </td>
+                      <td className="py-3 pr-3">
+                        <span className={cn("text-[11px] font-bold flex items-center gap-1 whitespace-nowrap",
+                          u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
+                            u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
+                          {u.disabled ? "suspended" : "active"}
+                        </span>
                       </td>
                       <td className="py-3">
-                        <div className="flex items-center gap-0.5">
-                          <button onClick={() => { setEditUser(u); setShowModal(true); }} title="Edit user"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#71717A] hover:bg-[#F5F5F4] dark:hover:bg-[#262626] transition-colors">
-                            <Edit2 size={11} />
-                          </button>
-                          <button onClick={() => loginAs(u)} title="Login as this user (impersonate)"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#3B82F6] hover:bg-[#EFF6FF] dark:hover:bg-[#0D1E3D] transition-colors">
-                            <LogIn size={11} />
-                          </button>
-                          <button onClick={() => deleteUser(u.id)} title="Delete user"
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#EF4444] hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] transition-colors">
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => toggleDisabled(u.email, u.disabled)}
+                          title={u.disabled ? "Restore access" : "Suspend access"}
+                          className={cn(
+                            "flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors",
+                            u.disabled
+                              ? "bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7]"
+                              : "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
+                          )}>
+                          {u.disabled ? <><UserCheck size={10} /> Restore</> : <><UserX size={10} /> Suspend</>}
+                        </button>
                       </td>
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && (
-                    <tr><td colSpan={9} className="py-8 text-center text-[13px] text-[#A1A1AA]">No users found</td></tr>
+                    <tr><td colSpan={11} className="py-10 text-center text-[13px] text-[#A1A1AA]">
+                      {loading ? "Loading…" : "No users found"}
+                    </td></tr>
                   )}
                 </tbody>
               </table>
@@ -590,65 +514,21 @@ export default function AdminPage() {
       {/* ── ANALYTICS ── */}
       {tab === "analytics" && (
         <div className="space-y-4">
-          {/* Monthly per brand */}
+          {/* Niche breakdown */}
           <Card>
-            <CardHeader title="Monthly Revenue per Brand" right="Dec 2025 – May 2026" />
-            <div className="overflow-x-auto mt-2">
-              <table className="w-full text-[13px] min-w-[620px]">
-                <thead>
-                  <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    <th className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4">Brand</th>
-                    {MONTHS.map(m => (
-                      <th key={m} className="text-right text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-3 whitespace-nowrap">{m}</th>
-                    ))}
-                    <th className="text-right text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...users].sort((a, b) => b.totalRevenue - a.totalRevenue).map(u => (
-                    <tr key={u.id} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
-                      <td className="py-2.5 pr-4">
-                        <div className="font-semibold dark:text-[#F4F4F5]">{u.brand}</div>
-                        <div className="text-[11px] text-[#A1A1AA]">{u.niche}</div>
-                      </td>
-                      {u.monthlySales.map((v, i) => (
-                        <td key={i} className={cn("py-2.5 pr-3 text-right text-[12px]", v > 0 ? "dark:text-[#F4F4F5]" : "text-[#D4D4D4] dark:text-[#404040]")}>
-                          {v > 0 ? fmt(v) : "—"}
-                        </td>
-                      ))}
-                      <td className="py-2.5 text-right font-bold text-[#F97316]">{fmt(u.totalRevenue)}</td>
-                    </tr>
-                  ))}
-                  <tr className="border-t-2 border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAF9] dark:bg-[#1C1C1C]">
-                    <td className="py-2.5 pr-4 font-bold dark:text-[#F4F4F5]">Platform Total</td>
-                    {monthlyTotals.map((m, i) => (
-                      <td key={i} className="py-2.5 pr-3 text-right font-bold dark:text-[#F4F4F5]">{fmt(m.revenue)}</td>
-                    ))}
-                    <td className="py-2.5 text-right font-bold text-[#F97316]">{fmt(totalRevenue)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          {/* City + Niche breakdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader title="Revenue by City" />
-              <div className="space-y-2 mt-2">
-                {cityData.map(([city, d]) => {
-                  const pct = Math.round((d.revenue / totalRevenue) * 100);
+            <CardHeader title="Stores by Industry / Niche" right={`${users.length} total`} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-3">
+              {Object.entries(nicheMap)
+                .sort((a, b) => b[1] - a[1])
+                .map(([niche, count]) => {
+                  const pct = users.length ? Math.round((count / users.length) * 100) : 0;
                   return (
-                    <div key={city}>
+                    <div key={niche}>
                       <div className="flex items-center justify-between mb-0.5">
-                        <div>
-                          <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{city}</span>
-                          <span className="text-[11px] text-[#A1A1AA] ml-2">{d.users} brand{d.users > 1 ? "s" : ""}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[13px] font-bold text-[#F97316]">{fmt(d.revenue)}</span>
-                          <span className="text-[11px] text-[#A1A1AA] ml-1">{pct}%</span>
-                        </div>
+                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">
+                          {niche === "not_set" ? <span className="italic text-[#A1A1AA]">Not set</span> : (NICHE_LABELS[niche] ?? niche)}
+                        </span>
+                        <span className="text-[12px] font-bold text-[#F97316]">{count} · {pct}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
                         <div className="h-full bg-[#F97316] rounded-full" style={{ width: `${pct}%` }} />
@@ -656,62 +536,62 @@ export default function AdminPage() {
                     </div>
                   );
                 })}
-              </div>
-            </Card>
+            </div>
+          </Card>
 
-            <Card>
-              <CardHeader title="Revenue by Brand Niche" />
-              <div className="space-y-2 mt-2">
-                {nicheData.map(([niche, d]) => {
-                  const pct = Math.round((d.revenue / totalRevenue) * 100);
-                  return (
-                    <div key={niche}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div>
-                          <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{niche}</span>
-                          <span className="text-[11px] text-[#A1A1AA] ml-2">{d.users} brand{d.users > 1 ? "s" : ""}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[13px] font-bold text-[#F97316]">{fmt(d.revenue)}</span>
-                          <span className="text-[11px] text-[#A1A1AA] ml-1">{pct}%</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-1.5 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-
-          {/* Full user-wise table */}
+          {/* Platform adoption */}
           <Card>
-            <CardHeader title="User-wise Performance" right="Sorted by revenue" />
-            <div className="overflow-x-auto mt-1">
-              <table className="w-full text-[13px] min-w-[700px]">
+            <CardHeader title="Platform Adoption Rate" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
+              {[
+                { label: "Shopify",  count: shopifyCount,                                 color: "#96BF48" },
+                { label: "Meta Ads", count: metaCount,                                    color: "#1877F2" },
+                { label: "GA4",      count: ga4Count,                                     color: "#E37400" },
+                { label: "GSC",      count: users.filter(u => u.connections.gsc).length, color: "#34A853" },
+              ].map(p => {
+                const pct = users.length ? Math.round((p.count / users.length) * 100) : 0;
+                return (
+                  <div key={p.label} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-4 text-center">
+                    <div className="text-[28px] font-black" style={{ color: p.color }}>{pct}%</div>
+                    <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">{p.count} of {users.length} stores</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Full user list with details */}
+          <Card>
+            <CardHeader title="All Stores — Full Details" right="Newest first" />
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-[12px] min-w-[700px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["#", "Brand", "Owner", "Niche", "City", "Plan", "Total Revenue", "Orders", "Avg Order", "Status"].map(h => (
-                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">{h}</th>
+                    {["#", "Name", "Email", "Brand", "Niche", "Business Type", "Phone", "City", "Shopify Store", "Plan", "Connections", "Registered"].map(h => (
+                      <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {[...users].sort((a, b) => b.totalRevenue - a.totalRevenue).map((u, i) => (
-                    <tr key={u.id} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
-                      <td className="py-2.5 pr-4 text-[#A1A1AA] font-bold">{i + 1}</td>
-                      <td className="py-2.5 pr-4 font-semibold dark:text-[#F4F4F5]">{u.brand}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA]">{u.name}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{u.niche}</td>
-                      <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA]">{u.city}</td>
-                      <td className="py-2.5 pr-4"><PlanBadge plan={u.plan} /></td>
-                      <td className="py-2.5 pr-4 font-bold text-[#F97316]">{fmt(u.totalRevenue)}</td>
-                      <td className="py-2.5 pr-4 dark:text-[#F4F4F5]">{u.totalOrders}</td>
-                      <td className="py-2.5 pr-4 dark:text-[#F4F4F5]">{u.totalOrders ? fmt(Math.round(u.totalRevenue / u.totalOrders)) : "—"}</td>
-                      <td className="py-2.5">
-                        <span className={cn("text-[11px] font-bold", u.status === "active" ? "text-[#22C55E]" : "text-[#EF4444]")}>{u.status}</span>
+                  {users.map((u, i) => (
+                    <tr key={u.email} className={cn(
+                      "border-b border-black/[0.04] dark:border-white/[0.04] last:border-0",
+                      u.disabled && "opacity-50"
+                    )}>
+                      <td className="py-2.5 pr-3 text-[#A1A1AA] font-bold">{i + 1}</td>
+                      <td className="py-2.5 pr-3 font-semibold dark:text-[#F4F4F5]">{u.name}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA] max-w-[160px] truncate">{u.email}</td>
+                      <td className="py-2.5 pr-3 dark:text-[#F4F4F5]">{u.profile?.brandName || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{NICHE_LABELS[u.profile?.niche ?? ""] || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{BTYPE_LABELS[u.profile?.businessType ?? ""] || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.phone || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.city || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.shops[0]?.replace(".myshopify.com", "") || "—"}</td>
+                      <td className="py-2.5 pr-3"><PlanBadge plan={u.plan} /></td>
+                      <td className="py-2.5 pr-3"><PlatformDots c={u.connections} /></td>
+                      <td className="py-2.5 pr-3 text-[#A1A1AA] whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
                       </td>
                     </tr>
                   ))}
@@ -721,69 +601,6 @@ export default function AdminPage() {
           </Card>
         </div>
       )}
-
-      {/* ── PLANS ── */}
-      {tab === "plans" && (
-        <div className="space-y-4">
-          <div className="bg-[#EFF6FF] dark:bg-[#0D1E3D] border border-[#93C5FD]/30 rounded-xl p-3 text-[12px] text-[#1E40AF] dark:text-[#93C5FD]">
-            <span className="font-bold">Plan management.</span> Full enforcement requires the billing system. Currently all connected users access all features regardless of plan tier.
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {plans.map(p => {
-              const count = planCounts[p.id as keyof typeof planCounts] ?? 0;
-              const pct = users.length ? Math.round((count / users.length) * 100) : 0;
-              return (
-                <Card key={p.id}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="text-[17px] font-black" style={{ color: p.color }}>{p.name}</div>
-                      <div className="text-[12px] text-[#A1A1AA]">{count} user{count !== 1 ? "s" : ""} · {pct}% share</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[18px] font-black dark:text-[#F4F4F5]">
-                        {p.price === 0 ? "Free" : `₹${p.price.toLocaleString("en-IN")}`}
-                      </div>
-                      {p.price > 0 && <div className="text-[11px] text-[#A1A1AA]">per month</div>}
-                    </div>
-                  </div>
-                  <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full mb-3 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
-                  </div>
-                  <ul className="space-y-1.5">
-                    {p.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-1.5 text-[12px] text-[#52525B] dark:text-[#A1A1AA]">
-                        <CheckCircle2 size={12} className="shrink-0 mt-0.5" style={{ color: p.color }} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              );
-            })}
-          </div>
-
-          <Card>
-            <CardHeader title="Revenue contribution per plan" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-              {plans.map(p => {
-                const planUsers = users.filter(u => u.plan === p.id);
-                const rev = planUsers.reduce((s, u) => s + u.totalRevenue, 0);
-                const ord = planUsers.reduce((s, u) => s + u.totalOrders, 0);
-                return (
-                  <div key={p.id} className="rounded-xl p-4 border border-black/[0.06] dark:border-white/[0.06]">
-                    <div className="text-[12px] font-bold mb-1" style={{ color: p.color }}>{p.name}</div>
-                    <div className="text-[22px] font-black dark:text-[#F4F4F5]">{fmt(rev)}</div>
-                    <div className="text-[11px] text-[#A1A1AA] mt-0.5">{ord} orders · {planUsers.length} brands</div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {showModal && <UserModal user={editUser} onSave={saveUser} onClose={() => { setShowModal(false); setEditUser(null); }} />}
 
       {toast && (
         <div className="fixed bottom-4 right-4 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] px-3.5 py-2 rounded-xl text-[13px] font-semibold z-50 shadow-xl">

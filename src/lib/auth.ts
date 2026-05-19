@@ -9,6 +9,7 @@ export interface UserRecord {
   passwordHash: string;
   shops: string[];
   createdAt: string;
+  disabled?: boolean;
 }
 
 export interface SessionRecord {

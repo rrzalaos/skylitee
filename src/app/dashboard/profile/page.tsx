@@ -148,8 +148,23 @@ export default function ProfilePage() {
 
   const set = (k: keyof ProfileData) => (v: string) => setData(d => ({ ...d, [k]: v }));
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // Also persist key fields to KV so admin can see them
+    try {
+      await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brandName:    data.brandName,
+          niche:        data.productCategory,
+          businessType: data.businessType,
+          phone:        data.mobile,
+          country:      "",  // not a profile field yet — city used instead
+          city:         data.city,
+        }),
+      });
+    } catch { /* non-blocking */ }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };

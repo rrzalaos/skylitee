@@ -12,6 +12,9 @@ export async function POST(req: NextRequest) {
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
+  if (user.disabled) {
+    return NextResponse.json({ error: "Your account has been suspended. Contact support." }, { status: 403 });
+  }
 
   const activeShop = user.shops[0] ?? "";
   const token = await createSession(user.email, activeShop);
