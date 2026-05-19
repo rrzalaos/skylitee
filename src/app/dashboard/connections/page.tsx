@@ -31,6 +31,7 @@ function ConnectionsContent() {
   const [metaAccounts, setMetaAccounts] = useState<MetaAccount[]>([]);
   const [selectedMeta, setSelectedMeta] = useState("");
   const [metaSaved, setMetaSaved] = useState(false);
+  const [metaUserName, setMetaUserName] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
 
@@ -60,6 +61,7 @@ function ConnectionsContent() {
       .then(d => {
         if (d.error) return;
         setMetaConnected(true);
+        setMetaUserName(d.connectedUserName ?? null);
         setMetaAccounts(d.accounts ?? []);
         setSelectedMeta(d.selectedAccountId ?? d.accounts?.[0]?.id ?? "");
         setMetaSaved(!!d.selectedAccountId);
@@ -181,7 +183,7 @@ function ConnectionsContent() {
       bg: "bg-[#1877F2]",
       status: metaConnected ? "connected" : "disconnected",
       detail: metaConnected
-        ? `Connected · ${metaSaved ? "ad account selected" : "select ad account below"}`
+        ? `${metaUserName ? `${metaUserName} · ` : ""}${metaSaved ? "ad account selected" : metaAccounts.length === 0 ? "no ad accounts found" : "select ad account below"}`
         : "Not connected",
       href: "/api/auth/meta",
       disconnectFn: metaConnected ? disconnectMeta : null,
@@ -309,7 +311,7 @@ function ConnectionsContent() {
           )}
 
           {/* Meta ad account picker */}
-          {metaConnected && metaAccounts.length > 0 && (
+          {metaConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -317,22 +319,30 @@ function ConnectionsContent() {
                 </div>
                 {metaSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
-              <select
-                value={selectedMeta}
-                onChange={e => { setSelectedMeta(e.target.value); setMetaSaved(false); }}
-                className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
-              >
-                {metaAccounts.map(a => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
-                ))}
-              </select>
-              <button
-                onClick={saveMetaAccount}
-                disabled={saving || metaSaved}
-                className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
-              >
-                {saving ? "Saving..." : metaSaved ? "✓ Saved — change dropdown to update" : "Save Ad Account"}
-              </button>
+              {metaAccounts.length === 0 ? (
+                <div className="text-[13px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
+                  No ad accounts found under this Meta account. Make sure you are an admin of a Meta Business ad account.
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={selectedMeta}
+                    onChange={e => { setSelectedMeta(e.target.value); setMetaSaved(false); }}
+                    className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                  >
+                    {metaAccounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} — {a.id} ({a.currency})</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={saveMetaAccount}
+                    disabled={saving || metaSaved}
+                    className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? "Saving..." : metaSaved ? "✓ Saved — change dropdown to update" : "Save Ad Account"}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </Card>

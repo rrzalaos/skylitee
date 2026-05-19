@@ -7,10 +7,12 @@ export async function GET(req: NextRequest) {
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
-  const res = await fetch(
-    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency,account_status&access_token=${token}`
-  );
-  const data = await res.json() as {
+  const [meRes, adsRes] = await Promise.all([
+    fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency,account_status&access_token=${token}`),
+  ]);
+  const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string } };
+  const data = await adsRes.json() as {
     data?: { id: string; name: string; currency: string; account_status: number }[];
     error?: { message: string };
   };
@@ -23,6 +25,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     connected: true,
+    connectedUserName: meData.name ?? null,
+    connectedUserId: meData.id ?? null,
     accounts: accounts.map(a => ({ id: a.id, name: a.name, currency: a.currency })),
     selectedAccountId: selected?.id ?? null,
     selectedAccountName: selected?.name ?? null,
