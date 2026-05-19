@@ -5,6 +5,8 @@ import { NotConnected } from "@/components/ui/not-connected";
 import { useDateRange } from "@/lib/date-range-context";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import { cn } from "@/lib/utils";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface Placement {
   platform: string;
@@ -78,6 +80,34 @@ export default function PlacementPage() {
   const fmt = (n: number) => n.toLocaleString("en-IN");
   const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
+  function buildSections() {
+    if (!data) return [];
+    return [
+      {
+        title: "Placement Performance",
+        headers: ["Placement", "Platform", "Spend", "Spend %", "ROAS", "Orders", "Revenue", "ATC", "LP Views", "LP%", "Clicks", "CTR", "CPC", "CPM", "Reach"],
+        rows: data.placements.map(p => [
+          p.label, p.group, fmtC(p.spend),
+          `${(data.totalSpend > 0 ? p.spend / data.totalSpend * 100 : 0).toFixed(1)}%`,
+          p.roas > 0 ? `${p.roas}x` : "—",
+          p.purchases, fmtC(p.purchaseValue), p.atc, fmt(p.lpv),
+          `${p.lpRatio}%`, fmt(p.clicks), `${p.ctr}%`, fmtC(p.cpc), fmtC(p.cpm), fmt(p.reach),
+        ]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { if (data) exportToCSV(`skylitee-placement-${data.period.from}`, buildSections()); }
+  async function handleExportPDF() {
+    if (!data) return;
+    await exportToPDF(
+      `skylitee-placement-${data.period.from}`,
+      "Ads Placement Report",
+      `${data.adAccountName} · ${data.period.from} → ${data.period.to}`,
+      buildSections()
+    );
+  }
+
   const sorted = [...data.placements].sort((a, b) => (b[sortBy] as number) - (a[sortBy] as number));
 
   const groups = ["Facebook", "Instagram", "Audience Network", "Messenger"];
@@ -112,6 +142,7 @@ export default function PlacementPage() {
             {data.adAccountName} · {data.period.from} → {data.period.to} · {data.placements.length} placements
           </p>
         </div>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
 
       {/* Platform group summary */}

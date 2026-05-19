@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { BarRow } from "@/components/ui/bar-row";
-import { FileSpreadsheet, BarChart3, ArrowRight } from "lucide-react";
+import { BarChart3, ArrowRight } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 import Link from "next/link";
 import { useDateRange } from "@/lib/date-range-context";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -108,6 +110,86 @@ export default function GA4Page() {
   const newRow = data.newVsReturning.find(r => r.type === "new");
   const retRow = data.newVsReturning.find(r => r.type === "returning");
 
+  function buildSections() {
+    if (!data) return [];
+    const ec = data.ecommerce;
+    return [
+      {
+        title: "GA4 KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Sessions", data.kpis.sessions.toLocaleString("en-IN")],
+          ["Users", data.kpis.users.toLocaleString("en-IN")],
+          ["Pageviews", data.kpis.pageviews.toLocaleString("en-IN")],
+          ["Bounce Rate", `${data.kpis.bounceRate.toFixed(1)}%`],
+          ["Avg Session Duration", data.kpis.avgSessionMin],
+          ["New Users", data.kpis.newUsers.toLocaleString("en-IN")],
+          ["Returning Users", returningUsers.toLocaleString("en-IN")],
+          ["Total Purchases", totalPurchases],
+          ["Total Revenue", formatINR(totalRevenue)],
+        ],
+      },
+      {
+        title: "Traffic Channels",
+        headers: ["Channel", "Sessions", "Users", "Purchases", "Revenue"],
+        rows: data.channels.map(c => [c.channel, c.sessions, c.users, c.purchases, formatINR(c.revenue)]),
+      },
+      ...(ec ? [{
+        title: "Ecommerce Funnel",
+        headers: ["Stage", "Count", "Rate"],
+        rows: [
+          ["Items Viewed", ec.itemsViewed, "—"],
+          ["Added to Cart", ec.itemsAddedToCart, `${ec.atcRate}%`],
+          ["Checked Out", ec.itemsCheckedOut, `${ec.checkoutRate}%`],
+          ["Purchased", ec.itemsPurchased, `${ec.purchaseRate}%`],
+          ["Purchases (transactions)", ec.purchases, "—"],
+          ["Revenue", formatINR(ec.revenue), "—"],
+        ],
+      }] : []),
+      {
+        title: "Top Pages",
+        headers: ["Page", "Views", "Sessions", "Bounce Rate"],
+        rows: data.pages.map(p => [p.page, p.views, p.sessions, `${p.bounceRate.toFixed(1)}%`]),
+      },
+      {
+        title: "Devices",
+        headers: ["Device", "Sessions", "Users"],
+        rows: (data.devices ?? []).map(d => [d.device, d.sessions, d.users]),
+      },
+      {
+        title: "Countries",
+        headers: ["Country", "Sessions", "Users"],
+        rows: (data.countries ?? []).map(c => [c.country, c.sessions, c.users]),
+      },
+      {
+        title: "Cities",
+        headers: ["City", "Sessions", "Users"],
+        rows: (data.cities ?? []).map(c => [c.city, c.sessions, c.users]),
+      },
+      {
+        title: "Landing Pages",
+        headers: ["Page", "Sessions", "Bounce Rate", "New Users"],
+        rows: (data.landingPages ?? []).map(p => [p.page, p.sessions, `${p.bounceRate.toFixed(1)}%`, p.newUsers]),
+      },
+      {
+        title: "Daily Trend",
+        headers: ["Date", "Sessions", "Users"],
+        rows: (data.daily ?? []).map(d => [d.date, d.sessions, d.users]),
+      },
+    ].filter(s => s.rows.length > 0);
+  }
+
+  function handleExportCSV() { exportToCSV(`skylitee-ga4-${range.from}`, buildSections()); }
+  async function handleExportPDF() {
+    if (!data) return;
+    await exportToPDF(
+      `skylitee-ga4-${range.from}`,
+      "Google Analytics 4 Report",
+      `${data.property} · ${data.period.startDate} → ${data.period.endDate}`,
+      buildSections()
+    );
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
@@ -115,9 +197,7 @@ export default function GA4Page() {
           <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Google Analytics 4</h2>
           <p className="text-[13px] text-[#A1A1AA] mt-0.5">{data.property} · {data.period.startDate} → {data.period.endDate}</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium border border-[#22C55E]/40 text-[#15803D] dark:text-[#86EFAC] bg-[#F0FDF4] dark:bg-[#052E16]">
-          <FileSpreadsheet size={12} /> CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
 
       {/* Top KPIs */}

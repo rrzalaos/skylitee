@@ -4,7 +4,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
 import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
-import { FileSpreadsheet, FileText } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface CohortRow {
   month: string;
@@ -55,6 +56,43 @@ export default function CohortPage() {
 
   const ins = data?.insights;
 
+  function buildSections() {
+    if (!data) return [];
+    const maxMonths = Math.max(...data.matrix.map(r => r.retention.length), 0);
+    const monthHeaders = Array.from({ length: maxMonths }, (_, i) => `Month ${i}`);
+    return [
+      {
+        title: "Cohort Summary",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Total Customers", ins?.totalCustomers ?? 0],
+          ["Avg Order Value", ins?.avgOrderValue ? formatINR(ins.avgOrderValue) : "—"],
+          ["Best Month-1 Cohort", ins?.bestMonth1 ? `${ins.bestMonth1.month} (${ins.bestMonth1.val}%)` : "—"],
+          ["Avg Month-2 Retention", ins?.avgMonth2 !== null && ins?.avgMonth2 !== undefined ? `${ins.avgMonth2}%` : "—"],
+        ],
+      },
+      {
+        title: "Retention Matrix (% returning customers per month)",
+        headers: ["Cohort Month", "Customers", ...monthHeaders],
+        rows: data.matrix.map(row => [
+          row.month,
+          row.customers,
+          ...row.retention.map(v => v !== null ? `${v}%` : "—"),
+        ]),
+      },
+      {
+        title: "Revenue by Cohort Month",
+        headers: ["Month", "Revenue", "% of Total"],
+        rows: data.revenueByMonth.map(r => [r.month, formatINR(r.revenue), `${r.pct}%`]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV("skylitee-cohort", buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF("skylitee-cohort", "Cohort Analysis", "Customer retention curves by acquisition month · Shopify", buildSections());
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
@@ -64,14 +102,7 @@ export default function CohortPage() {
             Customer retention curves by acquisition month — real Shopify data
           </p>
         </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-            <FileSpreadsheet size={12} /> CSV
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#c0392b] text-[#c0392b] bg-[#fdf3f3]">
-            <FileText size={12} /> PDF
-          </button>
-        </div>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
       </div>
 
       {loading ? (

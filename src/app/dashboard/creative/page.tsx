@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useDateRange } from "@/lib/date-range-context";
 import { formatINR, formatNumber } from "@/lib/utils";
 import { Image as ImageIcon, Video, LayoutGrid, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface AdCreative {
   id: string;
@@ -180,12 +182,60 @@ export default function CreativePage() {
   const avgScore = ads.length ? Math.round(ads.reduce((s, a) => s + a.score, 0) / ads.length) : 0;
   const fatigueCount = ads.filter(a => a.frequency >= 2.5).length;
   const currency = data?.currency ?? "INR";
+  const fmtC = (n: number) => `${currency === "INR" ? "₹" : "$"}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const fmtN = (n: number) => n.toLocaleString("en-IN");
+
+  function buildSections() {
+    if (!ads.length) return [];
+    return [
+      {
+        title: "Creative Summary",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Total Creatives", ads.length],
+          ["Top ROAS", topRoas > 0 ? `${topRoas}x` : "—"],
+          ["Avg Creative Score", `${avgScore}/100`],
+          ["Fatigue Risk (Freq ≥ 2.5)", fatigueCount],
+          ["Scale Signals", ads.filter(a => a.signal === "scale").length],
+          ["Pause Signals", ads.filter(a => a.signal === "pause").length],
+        ],
+      },
+      {
+        title: "All Ad Creatives",
+        headers: ["Ad Name", "Status", "Type", "Score", "Signal", "Spend", "Impressions", "Clicks", "CTR", "CPC", "CPM", "Freq", "Purchases", "Revenue", "ROAS", "CAC", "ATC", "3s Views", "Thruplay", "Thumb Stop%", "Hold%"],
+        rows: ads.map(a => [
+          a.name, a.status, a.objectType ?? "Image",
+          `${a.score}/100`, SIGNAL_STYLES[a.signal]?.label ?? a.signal,
+          fmtC(a.spend), fmtN(a.impressions), fmtN(a.clicks),
+          `${a.ctr}%`, fmtC(a.cpc), fmtC(a.cpm),
+          a.frequency.toFixed(2), a.purchases, fmtC(a.purchaseValue),
+          a.roas > 0 ? `${a.roas}x` : "—", a.cac > 0 ? fmtC(a.cac) : "—",
+          a.atc, fmtN(a.videoViews3s), fmtN(a.thruplay),
+          a.thumbStopRatio > 0 ? `${a.thumbStopRatio}%` : "—",
+          a.holdRatio > 0 ? `${a.holdRatio}%` : "—",
+        ]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV(`skylitee-creatives-${range.from}`, buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF(
+      `skylitee-creatives-${range.from}`,
+      "Meta Ad Creatives Report",
+      `${data?.adAccountName ?? "Meta Ads"} · ${range.from} → ${range.to}`,
+      buildSections()
+    );
+  }
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold">Creative Studio</h2>
-        <p className="text-[15px] text-[#686864] mt-0.5">AI creative scoring · fatigue detection · performance ranking</p>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold">Creative Studio</h2>
+          <p className="text-[15px] text-[#686864] mt-0.5">AI creative scoring · fatigue detection · performance ranking</p>
+        </div>
+        {ads.length > 0 && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}
       </div>
 
       {checking ? (

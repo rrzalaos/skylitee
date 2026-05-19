@@ -8,6 +8,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import { Clock, TrendingUp, Calendar, Zap } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface HourRow {
   hour: number;
@@ -132,6 +134,50 @@ export default function TimingPage() {
       })()
     : "—";
 
+  function buildSections() {
+    if (!data) return [];
+    return [
+      {
+        title: "Timing Summary",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Peak Hour", peakHourLabel],
+          ["Peak Hour Purchases", data.peaks.hourPurchases],
+          ["Best Day", data.peaks.day],
+          ["Best Day ROAS", `${data.peaks.dayRoas}x`],
+          ["Total Spend", fmt(data.totalSpend)],
+        ],
+      },
+      {
+        title: "Hourly Breakdown",
+        headers: ["Hour", "Spend", "Impressions", "Clicks", "Purchases", "Revenue", "ROAS", "CTR"],
+        rows: data.hourly.map(h => [
+          h.label, fmt(h.spend), h.impressions.toLocaleString("en-IN"),
+          h.clicks, h.purchases, fmt(h.purchaseValue),
+          h.roas > 0 ? `${h.roas}x` : "—", `${h.ctr.toFixed(2)}%`,
+        ]),
+      },
+      {
+        title: "Day of Week Breakdown",
+        headers: ["Day", "Days Sampled", "Total Spend", "Spend / Day", "Purchases", "Revenue", "ROAS"],
+        rows: data.dayOfWeek.map(d => [
+          d.label, d.days, fmt(d.spend), fmt(d.spendPerDay),
+          d.purchases, fmt(d.purchaseValue), d.roas > 0 ? `${d.roas}x` : "—",
+        ]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV(`skylitee-timing-${range.from}`, buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF(
+      `skylitee-timing-${range.from}`,
+      "Ad Timing Analysis",
+      `${data?.adAccountName ?? "Meta Ads"} · ${range.from} → ${range.to}`,
+      buildSections()
+    );
+  }
+
   // Top 5 hours by purchases for insight cards
   const top5Hours = data
     ? [...data.hourly].sort((a, b) => b.purchases - a.purchases).slice(0, 5).filter(h => h.purchases > 0)
@@ -147,9 +193,12 @@ export default function TimingPage() {
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold">Time Intelligence</h2>
-        <p className="text-[15px] text-[#686864] mt-0.5">Best hours &amp; days to run ads · based on your conversion data</p>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold">Time Intelligence</h2>
+          <p className="text-[15px] text-[#686864] mt-0.5">Best hours &amp; days to run ads · based on your conversion data</p>
+        </div>
+        {data && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}
       </div>
 
       {checking ? (

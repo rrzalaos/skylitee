@@ -6,7 +6,8 @@ import { InsightCard } from "@/components/ui/insight-card";
 import { Badge } from "@/components/ui/badge";
 import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
-import { FileSpreadsheet } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface ProductRow {
   id: number;
@@ -45,15 +46,35 @@ export default function ProductsPage() {
   const withSales = products.filter(p => p.total > 0);
   const maxRev = Math.max(...products.map(p => p.revenue), 1);
 
-  function downloadCSV() {
-    const rows = [
-      ["Product", "Orders", "Revenue", "Stock", "Price", "Signal"],
-      ...products.map(p => [p.name, p.total, formatINR(p.revenue), p.stock, formatINR(p.price), p.signal]),
+  function buildSections() {
+    const sigLabel = (s: string) => signalConfig[s]?.label ?? s;
+    return [
+      {
+        title: "Product Summary",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Total Products", products.length],
+          ["Products with Sales", withSales.length],
+          ["Low Stock (≤10 units)", lowStock.length],
+          ["Best Seller", topProduct?.name ?? "—"],
+        ],
+      },
+      {
+        title: "All Products",
+        headers: ["#", "Product", "Orders This Month", "Revenue", "Stock", "Price", "Signal"],
+        rows: products.map((p, i) => [i + 1, p.name, p.total, formatINR(p.revenue), p.stock, formatINR(p.price), sigLabel(p.signal)]),
+      },
+      {
+        title: "Low Stock Alert (≤ 10 units)",
+        headers: ["Product", "Stock Remaining", "Orders", "Revenue"],
+        rows: lowStock.map(p => [p.name, p.stock, p.total, formatINR(p.revenue)]),
+      },
     ];
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "products.csv"; a.click();
+  }
+
+  function handleExportCSV() { exportToCSV("skylitee-products", buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF("skylitee-products", "Product Analytics", `This month · ${days} days · Shopify live data`, buildSections());
   }
 
   return (
@@ -63,9 +84,7 @@ export default function ProductsPage() {
           <h2 className="text-lg font-semibold">Product Analytics</h2>
           <p className="text-[15px] text-[#686864] mt-0.5">Shopify · live inventory & sales · this month</p>
         </div>
-        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-          <FileSpreadsheet size={12} /> CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={products.length === 0} />
       </div>
 
       {loading ? (

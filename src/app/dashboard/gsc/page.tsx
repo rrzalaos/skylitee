@@ -4,7 +4,9 @@ import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarRow } from "@/components/ui/bar-row";
-import { FileSpreadsheet, Search, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Map } from "lucide-react";
+import { Search, TrendingUp, CheckCircle2, AlertTriangle, XCircle, Map } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 import Link from "next/link";
 import { useDateRange } from "@/lib/date-range-context";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -96,6 +98,60 @@ export default function GSCPage() {
   const warns = data.achievements.filter(a => a.type === "warn");
   const bad = data.achievements.filter(a => a.type === "bad");
 
+  function buildSections() {
+    if (!data) return [];
+    return [
+      {
+        title: "GSC KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Total Clicks", data.kpis.clicks],
+          ["Total Impressions", data.kpis.impressions],
+          ["CTR", `${data.kpis.ctr}%`],
+          ["Avg Position", data.kpis.avgPosition.toFixed(1)],
+          ["Site", data.site],
+          ["Period", `${data.period.startDate} → ${data.period.endDate}`],
+        ],
+      },
+      {
+        title: "Top Keywords",
+        headers: ["Keyword", "Clicks", "Impressions", "CTR", "Avg Position"],
+        rows: data.keywords.map(k => [k.query, k.clicks, k.impressions, `${k.ctr}%`, k.position.toFixed(1)]),
+      },
+      {
+        title: "Top Pages",
+        headers: ["Page URL", "Clicks", "Impressions", "CTR", "Avg Position"],
+        rows: data.pages.map(p => [shortUrl(p.page), p.clicks, p.impressions, `${p.ctr}%`, p.position.toFixed(1)]),
+      },
+      {
+        title: "Devices",
+        headers: ["Device", "Clicks", "Impressions", "CTR"],
+        rows: data.devices.map(d => [d.device, d.clicks, d.impressions, `${d.ctr}%`]),
+      },
+      {
+        title: "Countries",
+        headers: ["Country", "Clicks", "Impressions", "CTR"],
+        rows: data.countries.map(c => [c.country, c.clicks, c.impressions, `${c.ctr}%`]),
+      },
+      {
+        title: "Daily Trend",
+        headers: ["Date", "Clicks", "Impressions"],
+        rows: (data.daily ?? []).map(d => [d.date, d.clicks, d.impressions]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV(`skylitee-gsc-${range.from}`, buildSections()); }
+  async function handleExportPDF() {
+    if (!data) return;
+    await exportToPDF(
+      `skylitee-gsc-${range.from}`,
+      "Google Search Console Report",
+      `${data.site} · ${data.period.startDate} → ${data.period.endDate}`,
+      buildSections()
+    );
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
@@ -103,9 +159,7 @@ export default function GSCPage() {
           <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Google Search Console</h2>
           <p className="text-[13px] text-[#A1A1AA] mt-0.5">{data.site} · {data.period.startDate} → {data.period.endDate}</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium border border-[#22C55E]/40 text-[#15803D] dark:text-[#86EFAC] bg-[#F0FDF4] dark:bg-[#052E16]">
-          <FileSpreadsheet size={12} /> CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
 
       {/* KPI Cards */}

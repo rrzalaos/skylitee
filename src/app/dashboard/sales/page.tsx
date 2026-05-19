@@ -5,8 +5,10 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { formatINR } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useDateRange } from "@/lib/date-range-context";
-import { ShoppingCart, Share2, Megaphone, TrendingUp, Package, MapPin, FileDown } from "lucide-react";
+import { ShoppingCart, Share2, Megaphone, TrendingUp, Package, MapPin } from "lucide-react";
 import Link from "next/link";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF, ExportSection } from "@/lib/export";
 
 /* ─── Types ───────────────────────────────────────────────────── */
 interface SalesData {
@@ -59,12 +61,101 @@ export default function SalesPage() {
   const abandonedCart = Math.max(0, atc - purchases);
   const fp = (n: number, d: number) => d ? Math.round((n / d) * 100) : 0;
 
-  function downloadCSV() {
-    if (!sales) return;
-    const rows = [["Product", "Qty Sold", "Revenue"], ...sales.allBySku.map(p => [p.name, p.qty, p.revenue])];
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `sales-${range.from}.csv`; a.click();
+  function buildSections(): ExportSection[] {
+    if (!sales) return [];
+    const sections: ExportSection[] = [
+      {
+        title: "KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Gross Sales", formatINR(sales.kpis.grossSales)],
+          ["Total Orders", sales.kpis.totalOrders],
+          ["Avg Order Value", formatINR(sales.kpis.aov)],
+          ["New Customers", sales.kpis.newCustomers],
+          ["Returning Customers", sales.kpis.returningCustomers],
+          ["Prepaid Orders", sales.kpis.prepaidOrders],
+          ["COD Orders", sales.kpis.codOrders],
+          ["Avg Items / Order", sales.kpis.avgItemsPerOrder],
+          ...(meta ? [
+            ["Meta Spend", formatINR(meta.spend)] as [string, string],
+            ["ROAS", `${meta.roas}x`] as [string, string],
+            ["CAC", formatINR(meta.cac)] as [string, string],
+            ["Meta Purchases", meta.purchases] as [string, number],
+            ["Meta Revenue", formatINR(meta.purchaseValue)] as [string, string],
+            ["CTR", `${meta.ctr}%`] as [string, string],
+          ] : []),
+        ],
+      },
+      {
+        title: "Channel Attribution",
+        headers: ["Channel", "Orders", "Revenue", "Ad Spend", "ROAS", "CTR"],
+        rows: [
+          ["Shopify Total", sales.kpis.totalOrders, formatINR(sales.kpis.grossSales), "—", "—", "—"],
+          ["Meta Ads", metaConnected ? metaOrders : "—", metaConnected ? formatINR(metaRevenue) : "—", metaConnected && meta ? formatINR(meta.spend) : "—", metaConnected && meta ? `${meta.roas}x` : "—", metaConnected && meta ? `${meta.ctr}%` : "—"],
+          ["Organic / Direct", organicOrders, formatINR(organicRevenue), "—", "—", "—"],
+        ],
+      },
+      {
+        title: "Payment Split",
+        headers: ["Type", "Orders", "Percentage"],
+        rows: [
+          ["Prepaid", sales.kpis.prepaidOrders, `${prepaidPct}%`],
+          ["COD", sales.kpis.codOrders, `${codPct}%`],
+        ],
+      },
+      {
+        title: "Conversion Funnel",
+        headers: ["Stage", "Count", "Source", "% of Sessions"],
+        rows: funnel.map(f => [f.label, f.value, f.source, `${f.barPct}%`]),
+      },
+      {
+        title: "Top Products by Qty",
+        headers: ["#", "Product", "Qty Sold", "Revenue"],
+        rows: sales.topByQty.map((p, i) => [i + 1, p.name, p.qty, formatINR(p.revenue)]),
+      },
+      {
+        title: "Top Products by Revenue",
+        headers: ["#", "Product", "Revenue", "Qty Sold"],
+        rows: sales.topByRevenue.map((p, i) => [i + 1, p.name, formatINR(p.revenue), p.qty]),
+      },
+      {
+        title: "All SKUs Performance",
+        headers: ["#", "Product", "Qty Sold", "Revenue", "% of Sales"],
+        rows: sales.allBySku.map((p, i) => {
+          const pct = sales.kpis.grossSales ? +(p.revenue / sales.kpis.grossSales * 100).toFixed(1) : 0;
+          return [i + 1, p.name, p.qty, formatINR(p.revenue), `${pct}%`];
+        }),
+      },
+      {
+        title: "Recent Orders",
+        headers: ["Order", "Date", "Amount", "Payment", "City", "Status"],
+        rows: sales.recentOrders.map(o => [o.name, o.date, formatINR(o.total), o.isCod ? "COD" : "Prepaid", o.city || "—", o.status]),
+      },
+      {
+        title: "Top Cities by Revenue",
+        headers: ["#", "City", "Orders", "Revenue"],
+        rows: sales.topCities.map((c, i) => [i + 1, c.city, c.orders, formatINR(c.revenue)]),
+      },
+      {
+        title: "Top States by Orders",
+        headers: ["State", "Orders", "Revenue"],
+        rows: sales.topStates.map(s => [s.state, s.orders, formatINR(s.revenue)]),
+      },
+    ];
+    return sections.filter(s => s.rows.length > 0);
+  }
+
+  function handleExportCSV() {
+    exportToCSV(`skylitee-sales-${range.from}`, buildSections());
+  }
+
+  async function handleExportPDF() {
+    await exportToPDF(
+      `skylitee-sales-${range.from}`,
+      "Sales Report",
+      `${range.label} · ${sales?.period.days ?? 0} days · rrahi-print-shop`,
+      buildSections()
+    );
   }
 
   if (loading) return <div className="flex items-center justify-center py-24 text-[13px] text-[#A1A1AA]">Loading sales data…</div>;
@@ -99,9 +190,7 @@ export default function SalesPage() {
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sales Report</h2>
           <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {sales.period.days} days · Live</p>
         </div>
-        <button onClick={downloadCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#171717] border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:border-[#F97316] hover:text-[#F97316] transition-all">
-          <FileDown size={12} /> Export CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
 
       {/* KPI row */}

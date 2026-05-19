@@ -4,6 +4,8 @@ import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Share2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 import { useDateRange } from "@/lib/date-range-context";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -245,6 +247,74 @@ export default function MetaPage() {
 
   const hasVideo = k.videoViews3s > 0 || k.thruplay > 0;
 
+  function buildSections() {
+    if (!data) return [];
+    const objLabel = (raw: string) => OBJ_META[normalizeObj(raw)]?.label ?? raw;
+    return [
+      {
+        title: "Meta Ads KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Spend", fmtC(k.spend)],
+          ["ROAS", `${k.roas}x`],
+          ["CAC (Cost per acquisition)", fmtC(k.cac)],
+          ["Purchases", k.purchases],
+          ["Purchase Value", fmtC(k.purchaseValue)],
+          ["Impressions", fmt(k.impressions)],
+          ["Reach", fmt(k.reach)],
+          ["Frequency", k.frequency.toFixed(2)],
+          ["CPM", fmtC(k.cpm)],
+          ["Clicks", fmt(k.clicks)],
+          ["CTR", `${k.ctr}%`],
+          ["CPC", fmtC(k.cpc)],
+          ["Outbound Clicks", fmt(k.outboundClicks)],
+          ["Outbound CTR", `${k.outboundCtr}%`],
+          ["Landing Page Views", fmt(k.lpv)],
+          ["LP View Ratio", `${k.lpRatio}%`],
+          ["Add to Cart", fmt(k.atc)],
+          ["ATC Value", fmtC(k.atcValue)],
+          ["ATC Ratio", `${k.atcRatio}%`],
+          ["Checkout Started", fmt(k.checkout)],
+          ["Checkout Value", fmtC(k.checkoutValue)],
+          ["Checkout Ratio", `${k.checkoutRatio}%`],
+          ["Purchase Ratio", `${k.purchaseRatio}%`],
+          ["Conversion Ratio", `${k.conversionRatio}%`],
+          ...(hasVideo ? [
+            ["Video Views (3s)", fmt(k.videoViews3s)] as [string, string],
+            ["Thruplay", fmt(k.thruplay)] as [string, string],
+            ["Thumb Stop Ratio", `${k.thumbStopRatio}%`] as [string, string],
+            ["Hold Ratio", `${k.holdRatio}%`] as [string, string],
+          ] : []),
+        ],
+      },
+      {
+        title: "Campaigns",
+        headers: ["Campaign", "Status", "Objective", "Spend", "Impressions", "Clicks", "CTR", "CPC", "Orders", "Revenue", "ROAS"],
+        rows: data.campaigns.map(c => [
+          c.name, c.status, objLabel(c.objective),
+          fmtC(c.spend), fmt(c.impressions), fmt(c.clicks),
+          `${c.ctr}%`, fmtC(c.cpc), c.purchases, fmtC(c.purchaseValue), `${c.roas}x`,
+        ]),
+      },
+      {
+        title: "Daily Trend",
+        headers: ["Date", "Spend", "Impressions", "Clicks", "Purchases", "Revenue"],
+        rows: data.daily.map(d => [d.date, fmtC(d.spend), fmt(d.impressions), fmt(d.clicks), d.purchases, fmtC(d.purchaseValue)]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV(`skylitee-meta-${range.from}`, buildSections()); }
+  async function handleExportPDF() {
+    if (!data) return;
+    await exportToPDF(
+      `skylitee-meta-${range.from}`,
+      "Meta Ads Report",
+      `${data.adAccountName} · ${data.period.from} → ${data.period.to}`,
+      buildSections()
+    );
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between mb-3">
@@ -254,9 +324,11 @@ export default function MetaPage() {
             {data.adAccountName} · {data.period.from} → {data.period.to}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-          <span className="text-[12px] text-[#EA580C] dark:text-[#FB923C] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-1 rounded-full">Live</span>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-[12px] text-[#EA580C] dark:text-[#FB923C] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" /> Live
+          </span>
+          <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
         </div>
       </div>
 

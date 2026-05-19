@@ -5,7 +5,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
 import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
-import { FileSpreadsheet } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface CityRevenue { city: string; revenue: number; }
 interface CityCustomers { city: string; count: number; pct: number; }
@@ -29,6 +30,37 @@ export default function GeoPage() {
   const totalRevenue = revenueByCity.reduce((s, c) => s + c.revenue, 0);
   const maxRev = Math.max(...revenueByCity.map(c => c.revenue), 1);
 
+  function buildSections() {
+    const mergedData = revenueByCity.map(r => {
+      const cd = customersByCity.find(c => c.city.toLowerCase() === r.city.toLowerCase());
+      const share = Math.round((r.revenue / Math.max(totalRevenue, 1)) * 100);
+      return { city: r.city, revenue: r.revenue, customers: cd?.count ?? 0, share };
+    });
+    return [
+      {
+        title: "Geo KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Top City", topCity?.city ?? "—"],
+          ["Top City Revenue", topCity ? formatINR(topCity.revenue) : "—"],
+          ["Cities with Orders", revenueByCity.length],
+          ["Total Revenue", formatINR(totalRevenue)],
+          ["Total Customers Tracked", customersByCity.reduce((s, c) => s + c.count, 0)],
+        ],
+      },
+      {
+        title: "City Performance",
+        headers: ["#", "City", "Revenue", "Revenue Share", "Customers"],
+        rows: mergedData.map((g, i) => [i + 1, g.city, formatINR(g.revenue), `${g.share}%`, g.customers > 0 ? g.customers : "—"]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV("skylitee-geo", buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF("skylitee-geo", "Geo Performance", "City-level revenue & customer data · Shopify · This month", buildSections());
+  }
+
   // Merge city data
   const merged = revenueByCity.map(r => {
     const custData = customersByCity.find(c => c.city.toLowerCase() === r.city.toLowerCase());
@@ -42,9 +74,7 @@ export default function GeoPage() {
           <h2 className="text-lg font-semibold">Geo Performance</h2>
           <p className="text-[15px] text-[#686864] mt-0.5">City-level revenue & customer data from Shopify · This month</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-          <FileSpreadsheet size={12} /> CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={revenueByCity.length === 0} />
       </div>
 
       {loading ? (

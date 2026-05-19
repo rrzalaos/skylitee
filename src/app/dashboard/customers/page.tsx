@@ -5,7 +5,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
 import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
-import { FileSpreadsheet } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToCSV, exportToPDF } from "@/lib/export";
 
 interface CustomerData {
   kpis: {
@@ -32,6 +33,43 @@ export default function CustomersPage() {
   const repeatRate = data ? Math.round((data.kpis.repeat / Math.max(data.kpis.totalCustomers, 1)) * 100) : 0;
   const maxCity = data ? Math.max(...data.topCities.map(c => c.count), 1) : 1;
 
+  function buildSections() {
+    if (!data) return [];
+    return [
+      {
+        title: "Customer KPIs",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Total Customers", data.kpis.totalCustomers],
+          ["Avg LTV (Revenue per customer)", formatINR(data.kpis.avgLTV)],
+          ["Repeat Rate", `${repeatRate}%`],
+          ["Repeat Buyers", data.kpis.repeat],
+          ["One-time Buyers", data.kpis.oneTime],
+          ["New This Month", data.kpis.newThisMonth],
+        ],
+      },
+      {
+        title: "Customer Segments",
+        headers: ["Segment", "Count", "% of Total"],
+        rows: [
+          ["Repeat Buyers", data.kpis.repeat, `${Math.round((data.kpis.repeat / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
+          ["One-time Buyers", data.kpis.oneTime, `${Math.round((data.kpis.oneTime / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
+          ["New This Month", data.kpis.newThisMonth, `${Math.round((data.kpis.newThisMonth / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
+        ],
+      },
+      {
+        title: "Top Cities by Customers",
+        headers: ["#", "City", "Customers", "% of Total"],
+        rows: data.topCities.map((c, i) => [i + 1, c.city, c.count, `${c.pct}%`]),
+      },
+    ];
+  }
+
+  function handleExportCSV() { exportToCSV("skylitee-customers", buildSections()); }
+  async function handleExportPDF() {
+    await exportToPDF("skylitee-customers", "Customer Intelligence", "Shopify live data · All time", buildSections());
+  }
+
   const segments = data ? [
     { name: "Repeat buyers", icon: "🏆", count: data.kpis.repeat, color: "text-[#0d6b4f]", border: "border-[#e0f5ee]", desc: "Ordered more than once" },
     { name: "One-time", icon: "🛍️", count: data.kpis.oneTime, color: "text-[#5c3608]", border: "border-[#faecd7]", desc: "Only one order so far" },
@@ -45,9 +83,7 @@ export default function CustomersPage() {
           <h2 className="text-lg font-semibold">Customer Intelligence</h2>
           <p className="text-[15px] text-[#686864] mt-0.5">Real customer data from Shopify</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-medium border border-[#1a7a3a] text-[#1a7a3a] bg-[#f0faf4]">
-          <FileSpreadsheet size={12} /> CSV
-        </button>
+        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
       </div>
 
       {loading ? (
