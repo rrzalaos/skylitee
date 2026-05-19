@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, createUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth";
+import { getUser, createUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { name, email, password } = await req.json();
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
   const user = await createUser(name, email, password);
   const token = await createSession(user.email, "");
 
-  const res = NextResponse.json({ ok: true });
+  const isAdmin = user.email === ADMIN_EMAIL;
+  const res = NextResponse.json({ ok: true, isAdmin });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     maxAge: SESSION_MAX_AGE,

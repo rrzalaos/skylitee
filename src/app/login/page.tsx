@@ -31,7 +31,9 @@ export default function LoginPage() {
       return;
     }
 
-    if (data.hasShop) {
+    if (data.isAdmin) {
+      router.push("/admin");
+    } else if (data.hasShop) {
       router.push("/dashboard");
     } else {
       router.push("/connect");

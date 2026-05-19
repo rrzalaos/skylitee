@@ -32,7 +32,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/connect");
+    router.push(data.isAdmin ? "/admin" : "/connect");
   };
 
   return (
