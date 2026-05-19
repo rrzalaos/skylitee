@@ -36,6 +36,29 @@ interface MetaData {
 }
 
 type Tab = "overview" | "campaigns";
+type ObjFilter = "ALL" | "SALES" | "TRAFFIC" | "AWARENESS" | "ENGAGEMENT" | "LEADS" | "APP" | "OTHER";
+
+function normalizeObj(raw: string): ObjFilter {
+  const r = (raw ?? "").toUpperCase();
+  if (r.includes("SALES") || r.includes("CONVERSIONS")) return "SALES";
+  if (r.includes("TRAFFIC") || r.includes("LINK_CLICKS")) return "TRAFFIC";
+  if (r.includes("AWARENESS") || r.includes("REACH") || r.includes("BRAND")) return "AWARENESS";
+  if (r.includes("ENGAGEMENT")) return "ENGAGEMENT";
+  if (r.includes("LEAD")) return "LEADS";
+  if (r.includes("APP")) return "APP";
+  return "OTHER";
+}
+
+const OBJ_META: Record<ObjFilter, { label: string; chip: string; badge: string }> = {
+  ALL:         { label: "All",         chip: "bg-[#F5F5F4] text-[#52525B] border-[#E5E5E5]",         badge: "bg-[#F5F5F4] text-[#52525B]" },
+  SALES:       { label: "Sales",       chip: "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]",         badge: "bg-[#FFF7ED] text-[#EA580C]" },
+  TRAFFIC:     { label: "Traffic",     chip: "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]",         badge: "bg-[#EFF6FF] text-[#1D4ED8]" },
+  AWARENESS:   { label: "Awareness",   chip: "bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]",         badge: "bg-[#F5F3FF] text-[#7C3AED]" },
+  ENGAGEMENT:  { label: "Engagement",  chip: "bg-[#FDF2F8] text-[#BE185D] border-[#FBCFE8]",         badge: "bg-[#FDF2F8] text-[#BE185D]" },
+  LEADS:       { label: "Leads",       chip: "bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]",         badge: "bg-[#F0FDF4] text-[#15803D]" },
+  APP:         { label: "App",         chip: "bg-[#F0FDFA] text-[#0F766E] border-[#99F6E4]",         badge: "bg-[#F0FDFA] text-[#0F766E]" },
+  OTHER:       { label: "Other",       chip: "bg-[#F5F5F4] text-[#71717A] border-[#E5E5E5]",         badge: "bg-[#F5F5F4] text-[#71717A]" },
+};
 
 const statusBadge = (s: string) => {
   if (s === "ACTIVE") return "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]";
@@ -178,6 +201,7 @@ export default function MetaPage() {
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
+  const [objFilter, setObjFilter] = useState<ObjFilter>("ALL");
 
   useEffect(() => {
     setLoading(true);
@@ -404,53 +428,149 @@ export default function MetaPage() {
         </div>
       )}
 
-      {tab === "campaigns" && (
-        <Card>
-          <CardHeader title={`All Campaigns (${data.campaigns.length})`} right="From Meta Ads Manager" />
-          {data.campaigns.length === 0 ? (
-            <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No campaign data for this period</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[13px] border-collapse">
-                <thead>
-                  <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["Campaign", "Status", "Spend", "ROAS", "Orders", "Revenue", "ATC", "Impressions", "Clicks", "CTR", "CPC", "CPM"].map(h => (
-                      <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.campaigns.map((c, i) => (
-                    <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
-                      <td className="py-2.5 px-2 max-w-[160px] truncate font-semibold text-[#18181B] dark:text-[#F4F4F5]">{c.name}</td>
-                      <td className="py-2.5 px-2">
-                        <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
-                      </td>
-                      <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{cur}{c.spend.toLocaleString("en-IN")}</td>
-                      <td className="py-2.5 px-2 whitespace-nowrap">
-                        <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
-                          {c.roas > 0 ? `${c.roas}x` : "—"}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{c.purchases > 0 ? c.purchases : "—"}</td>
-                      <td className="py-2.5 px-2 whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{c.purchaseValue > 0 ? `${cur}${c.purchaseValue.toLocaleString("en-IN")}` : "—"}</td>
-                      <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{c.atc > 0 ? c.atc : "—"}</td>
-                      <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{c.impressions.toLocaleString("en-IN")}</td>
-                      <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</td>
-                      <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</td>
-                      <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</td>
-                      <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpm}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {tab === "campaigns" && (() => {
+        // Build objective counts
+        const objCounts = new Map<ObjFilter, number>();
+        data.campaigns.forEach(c => {
+          const o = normalizeObj(c.objective);
+          objCounts.set(o, (objCounts.get(o) ?? 0) + 1);
+        });
+        const activeFilters: ObjFilter[] = ["ALL", ...Array.from(objCounts.keys()).sort()];
+        const filtered = objFilter === "ALL" ? data.campaigns : data.campaigns.filter(c => normalizeObj(c.objective) === objFilter);
+
+        // Column definitions per objective
+        type CampaignRow = (typeof data.campaigns)[0];
+        type Col = { label: string; render: (c: CampaignRow) => React.ReactNode };
+        const salesCols: Col[] = [
+          { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
+          { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "—"}</span> },
+          { label: "Revenue",  render: c => <span className="whitespace-nowrap">{c.purchaseValue > 0 ? `${cur}${c.purchaseValue.toLocaleString("en-IN")}` : "—"}</span> },
+          { label: "ATC",      render: c => <span>{c.atc > 0 ? c.atc : "—"}</span> },
+          { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
+          { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
+        ];
+        const trafficCols: Col[] = [
+          { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "Clicks",   render: c => <span>{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "CTR",      render: c => <span className={cn("font-bold", c.ctr >= 1.5 ? "text-[#F97316]" : c.ctr >= 0.9 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.ctr}%</span> },
+          { label: "CPC",      render: c => <span className="whitespace-nowrap font-semibold">{cur}{c.cpc}</span> },
+          { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
+          { label: "CPM",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpm}</span> },
+        ];
+        const awareCols: Col[] = [
+          { label: "Spend",       render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "Impressions", render: c => <span className="font-bold">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
+          { label: "CPM",         render: c => <span className="whitespace-nowrap font-semibold">{cur}{c.cpm}</span> },
+          { label: "Clicks",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "CTR",         render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
+        ];
+        const defaultCols: Col[] = [
+          { label: "Spend",       render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "Impressions", render: c => <span>{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
+          { label: "Clicks",      render: c => <span>{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "CTR",         render: c => <span>{c.ctr}%</span> },
+          { label: "CPC",         render: c => <span className="whitespace-nowrap">{cur}{c.cpc}</span> },
+        ];
+        const allCols: Col[] = [
+          { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
+          { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "—"}</span> },
+          { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
+          { label: "Clicks",   render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
+          { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
+        ];
+
+        const cols =
+          objFilter === "SALES"     ? salesCols :
+          objFilter === "TRAFFIC"   ? trafficCols :
+          objFilter === "AWARENESS" ? awareCols :
+          objFilter === "ALL"       ? allCols :
+          defaultCols;
+
+        return (
+          <Card>
+            <CardHeader title={`Campaigns (${data.campaigns.length})`} right="From Meta Ads Manager" />
+
+            {/* Objective filter chips */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {activeFilters.map(f => {
+                const m = OBJ_META[f];
+                const count = f === "ALL" ? data.campaigns.length : (objCounts.get(f) ?? 0);
+                const isActive = objFilter === f;
+                return (
+                  <button key={f} onClick={() => setObjFilter(f)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
+                      isActive
+                        ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
+                        : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10"
+                    )}>
+                    {m.label} <span className="font-normal opacity-70">{count}</span>
+                  </button>
+                );
+              })}
             </div>
-          )}
-          <div className="mt-3 text-[12px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
-            {data.adAccountName} · Live from Meta Ads Manager
-          </div>
-        </Card>
-      )}
+
+            {/* KPI hint for selected objective */}
+            {objFilter !== "ALL" && (
+              <div className="mb-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
+                {objFilter === "SALES"     && "Showing: Spend · ROAS · Orders · Revenue · ATC · CTR · CPC"}
+                {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · CTR · CPC · Impressions · CPM"}
+                {objFilter === "AWARENESS" && "Showing: Spend · Impressions · CPM · Clicks · CTR"}
+                {objFilter === "ENGAGEMENT"&& "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+                {objFilter === "LEADS"     && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+                {objFilter === "APP"       && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+              </div>
+            )}
+
+            {filtered.length === 0 ? (
+              <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No {OBJ_META[objFilter].label.toLowerCase()} campaigns in this period</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Campaign</th>
+                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Objective</th>
+                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Status</th>
+                      {cols.map(col => (
+                        <th key={col.label} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{col.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((c, i) => {
+                      const obj = normalizeObj(c.objective);
+                      const objM = OBJ_META[obj];
+                      return (
+                        <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+                          <td className="py-2.5 px-2 max-w-[180px]">
+                            <div className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{c.name}</div>
+                          </td>
+                          <td className="py-2.5 px-2">
+                            <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap", objM.badge)}>{objM.label}</span>
+                          </td>
+                          <td className="py-2.5 px-2">
+                            <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
+                          </td>
+                          {cols.map(col => (
+                            <td key={col.label} className="py-2.5 px-2">{col.render(c)}</td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="mt-3 text-[12px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
+              {data.adAccountName} · Live from Meta Ads Manager
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   );
 }
