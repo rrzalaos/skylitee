@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE } from "@/lib/auth";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // If env-var token is set, always allow dashboard access (direct token mode)
+  // Env-var direct token mode (local dev override)
   if (process.env.SHOPIFY_ACCESS_TOKEN && process.env.SHOPIFY_STORE) {
     return NextResponse.next();
   }
 
-  const shop = req.cookies.get("shopify_shop")?.value;
+  const session = req.cookies.get(SESSION_COOKIE)?.value;
 
-  if (pathname.startsWith("/dashboard") && !shop) {
-    return NextResponse.redirect(new URL("/install", req.url));
+  if (pathname.startsWith("/dashboard") && !session) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -114,6 +114,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     () => new Set([getActiveSectionLabel(pathname)])
   );
   const [shopName, setShopName] = useState("My Store");
+  const [allShops, setAllShops] = useState<string[]>([]);
+  const [showShopMenu, setShowShopMenu] = useState(false);
+  const shopMenuRef = useRef<HTMLDivElement>(null);
   const [gscConnected, setGscConnected] = useState<boolean | null>(null);
   const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
@@ -128,6 +131,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       .then(r => r.json())
       .then(d => { if (d.shop) setShopName(d.shop.replace(".myshopify.com", "")); })
       .catch(() => {});
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => { if (d.shops) setAllShops(d.shops); })
+      .catch(() => {});
     fetch("/api/google/sites")
       .then(r => r.json())
       .then(d => { setGscConnected(!!d.gscConnected); setGa4Connected(!!d.ga4Connected); })
@@ -136,6 +143,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       .then(r => r.json())
       .then(d => setMetaConnected(!d.error))
       .catch(() => setMetaConnected(false));
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
+        setShowShopMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const toggle = (label: string) => setOpenSections(prev => {
@@ -168,9 +185,54 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       </div>
 
       {/* Store switcher */}
-      <div className="mx-2 mt-2.5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-black/[0.06] dark:border-white/[0.06] cursor-pointer hover:bg-[#EBEBEB] dark:hover:bg-[#262626] transition-colors">
-        <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
-        <ChevronDown size={10} className="text-[#A1A1AA] shrink-0" />
+      <div className="mx-2 mt-2.5 relative" ref={shopMenuRef}>
+        <button
+          onClick={() => setShowShopMenu(v => !v)}
+          className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#EBEBEB] dark:hover:bg-[#262626] transition-colors"
+        >
+          <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
+          <ChevronDown size={10} className={cn("text-[#A1A1AA] shrink-0 transition-transform", showShopMenu ? "rotate-180" : "")} />
+        </button>
+        {showShopMenu && allShops.length > 1 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5">
+            {allShops.map(s => (
+              <button
+                key={s}
+                onClick={async () => {
+                  await fetch("/api/auth/switch-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop: s }) });
+                  setShowShopMenu(false);
+                  window.location.reload();
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2 text-[13px] transition-colors",
+                  s.replace(".myshopify.com","") === shopName
+                    ? "font-semibold text-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]"
+                    : "text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626]"
+                )}
+              >
+                {s.replace(".myshopify.com", "")}
+              </button>
+            ))}
+            <div className="border-t border-black/[0.06] dark:border-white/[0.06] mt-1 pt-1">
+              <button
+                onClick={() => { setShowShopMenu(false); window.location.href = "/connect"; }}
+                className="w-full text-left px-3 py-2 text-[13px] text-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-colors"
+              >
+                + Add another store
+              </button>
+            </div>
+          </div>
+        )}
+        {showShopMenu && allShops.length <= 1 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5">
+            <button
+              onClick={() => { setShowShopMenu(false); window.location.href = "/connect"; }}
+              className="w-full text-left px-3 py-2 text-[13px] text-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-colors"
+            >
+              + Add another store
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Nav */}

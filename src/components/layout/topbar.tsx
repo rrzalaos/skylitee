@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu } from "lucide-react";
+import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu, LogOut, User } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useDateRange, DatePreset } from "@/lib/date-range-context";
 import { useTheme } from "@/lib/theme-context";
@@ -56,6 +56,9 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const title = titles[pathname] || "Skylitee";
   const [toast, setToast] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userName, setUserName] = useState("S");
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false });
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -67,10 +70,25 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
         setShowDatePicker(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => { if (d.name) setUserName(d.name[0].toUpperCase()); })
+      .catch(() => {});
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
 
   useEffect(() => {
     fetch("/api/shopify/dashboard")
@@ -240,9 +258,31 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#EF4444] rounded-full" />
         </button>
 
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-[#F97316] flex items-center justify-center text-[13px] font-bold text-white cursor-pointer">
-          S
+        {/* Avatar + user menu */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setShowUserMenu(v => !v)}
+            className="w-8 h-8 rounded-full bg-[#F97316] flex items-center justify-center text-[13px] font-bold text-white hover:bg-[#EA580C] transition-colors"
+          >
+            {userName}
+          </button>
+          {showUserMenu && (
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5 min-w-[160px]">
+              <button
+                onClick={() => { setShowUserMenu(false); router.push("/dashboard/profile"); }}
+                className="w-full text-left px-3.5 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626] flex items-center gap-2 transition-colors"
+              >
+                <User size={13} className="text-[#71717A]" /> My Profile
+              </button>
+              <div className="border-t border-black/[0.06] dark:border-white/[0.06] my-1" />
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3.5 py-2 text-[13px] text-[#EF4444] hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] flex items-center gap-2 transition-colors"
+              >
+                <LogOut size={13} /> Logout
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
