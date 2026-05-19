@@ -182,7 +182,6 @@ export async function GET(req: NextRequest) {
     adAccountId: selected.id,
     adAccountName: selected.name,
     currency: selected.currency,
-    accounts: accounts.map(a => ({ id: a.id, name: a.name })),
     period: { from, to },
     kpis: {
       spend: +spend.toFixed(2), roas, cac, purchases, purchaseValue: +purchaseValue.toFixed(2),
