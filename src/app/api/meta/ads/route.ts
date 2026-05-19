@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
+  const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
 
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = await resolveMetaAccount(savedAccount, token);
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
   ].join(",");
 
   const [insightsRes, adsRes] = await Promise.all([
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=50&sort=spend_descending&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=50&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
     fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bthumbnail_url,object_type,image_url%7D&limit=100&access_token=${token}`),
   ]);
 

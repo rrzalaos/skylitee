@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
+  const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
 
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = await resolveMetaAccount(savedAccount, token);
@@ -66,9 +67,9 @@ export async function GET(req: NextRequest) {
   const campaignFields = "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values";
 
   const [overviewRes, campaignInsightsRes, dailyRes, campaignsMetaRes] = await Promise.all([
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${overviewFields}&time_range=${timeRange}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${campaignFields}&time_range=${timeRange}&level=campaign&limit=20&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks,actions,action_values&time_range=${timeRange}&time_increment=1&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${overviewFields}&time_range=${timeRange}&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${campaignFields}&time_range=${timeRange}&level=campaign&limit=20&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks,actions,action_values&time_range=${timeRange}&time_increment=1&action_attribution_windows=${attrWindows}&access_token=${token}`),
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/campaigns?fields=id,name,status,objective&limit=50&access_token=${token}`),
   ]);
 

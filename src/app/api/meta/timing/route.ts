@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
+  const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
 
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = await resolveMetaAccount(savedAccount, token);
@@ -50,8 +51,8 @@ export async function GET(req: NextRequest) {
   const fields = "spend,impressions,clicks,actions,action_values";
 
   const [hourlyRes, dailyRes] = await Promise.all([
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&breakdowns=hourly_stats_aggregated_by_advertiser_time_zone&time_range=${timeRange}&limit=50&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&time_increment=1&time_range=${timeRange}&limit=100&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&breakdowns=hourly_stats_aggregated_by_advertiser_time_zone&time_range=${timeRange}&limit=50&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&time_increment=1&time_range=${timeRange}&limit=100&action_attribution_windows=${attrWindows}&access_token=${token}`),
   ]);
 
   const [hourlyData, dailyData] = await Promise.all([

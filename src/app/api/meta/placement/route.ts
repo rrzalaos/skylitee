@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
+  const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
 
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = await resolveMetaAccount(savedAccount, token);
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
 
   const fields = "spend,impressions,clicks,ctr,cpc,cpm,reach,actions,action_values";
   const res = await fetch(
-    `https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&breakdowns=publisher_platform,platform_position&time_range=${timeRange}&limit=50&access_token=${token}`
+    `https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${fields}&breakdowns=publisher_platform,platform_position&time_range=${timeRange}&limit=50&action_attribution_windows=${attrWindows}&access_token=${token}`
   );
   const data = await res.json() as { data?: PlacementRow[]; error?: { message: string } };
   if (data.error) return NextResponse.json({ error: data.error.message }, { status: 400 });
