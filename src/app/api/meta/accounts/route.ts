@@ -7,19 +7,26 @@ export async function GET(req: NextRequest) {
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
-  const [meRes, adsRes] = await Promise.all([
-    fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency,account_status&access_token=${token}`),
-  ]);
+  const meRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`);
   const meData = await meRes.json() as { id?: string; name?: string; error?: { message: string } };
-  const data = await adsRes.json() as {
-    data?: { id: string; name: string; currency: string; account_status: number }[];
-    error?: { message: string };
-  };
 
-  if (data.error) return NextResponse.json({ error: "token_expired" }, { status: 401 });
+  // Paginate through all ad accounts (default limit is 25, users may have 100+)
+  type AdAccount = { id: string; name: string; currency: string; account_status: number };
+  const accounts: AdAccount[] = [];
+  let nextUrl: string | null =
+    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency,account_status&limit=200&access_token=${token}`;
 
-  const accounts = data.data ?? [];
+  while (nextUrl) {
+    const res = await fetch(nextUrl);
+    const data = await res.json() as {
+      data?: AdAccount[];
+      paging?: { next?: string };
+      error?: { message: string };
+    };
+    if (data.error) return NextResponse.json({ error: "token_expired" }, { status: 401 });
+    accounts.push(...(data.data ?? []));
+    nextUrl = data.paging?.next ?? null;
+  }
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = (savedAccount && accounts.find(a => a.id === savedAccount)) || accounts[0];
 
