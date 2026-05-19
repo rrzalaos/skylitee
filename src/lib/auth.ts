@@ -7,13 +7,13 @@ export interface UserRecord {
   name: string;
   email: string;
   passwordHash: string;
-  shops: string[]; // myshopify.com domains
+  shops: string[];
   createdAt: string;
 }
 
 export interface SessionRecord {
   email: string;
-  activeShop: string; // currently selected shop domain
+  activeShop: string;
   createdAt: string;
 }
 
@@ -61,7 +61,17 @@ export async function createUser(name: string, email: string, password: string):
     createdAt: new Date().toISOString(),
   };
   await kvSet(`user:${user.email}`, user);
+  // Add to global users index for admin listing
+  try { await kv.sadd("users:index", user.email); } catch { /* KV not configured */ }
   return user;
+}
+
+export async function updateUser(user: UserRecord): Promise<void> {
+  await kvSet(`user:${user.email}`, user);
+}
+
+export async function getAllUserEmails(): Promise<string[]> {
+  try { return (await kv.smembers("users:index")) as string[]; } catch { return []; }
 }
 
 export async function addShopToUser(email: string, shop: string): Promise<void> {
@@ -106,7 +116,26 @@ export async function deleteSession(token: string): Promise<void> {
   await kvDel(`session:${token}`);
 }
 
+// ── Password reset helpers ────────────────────────────────────────────────────
+
+const RESET_TTL = 60 * 60; // 1 hour
+
+export async function createResetToken(email: string): Promise<string> {
+  const token = crypto.randomBytes(32).toString("hex");
+  await kvSet(`reset:${token}`, email.toLowerCase(), RESET_TTL);
+  return token;
+}
+
+export async function getResetTokenEmail(token: string): Promise<string | null> {
+  return kvGet<string>(`reset:${token}`);
+}
+
+export async function deleteResetToken(token: string): Promise<void> {
+  await kvDel(`reset:${token}`);
+}
+
 // ── Cookie helpers ────────────────────────────────────────────────────────────
 
 export const SESSION_COOKIE = "skylitee_session";
 export const SESSION_MAX_AGE = SESSION_TTL;
+export const ADMIN_EMAIL = "rrzala@yellowsky.in";
