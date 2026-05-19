@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { formatINR } from "@/lib/utils";
 import { Card, CardHeader } from "@/components/ui/card";
 import {
   Users, BarChart2, LayoutDashboard,
   Search, UserX, UserCheck, ShieldCheck,
-  Eye, EyeOff, Lock, RefreshCw,
+  Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -16,61 +17,29 @@ interface AdminUser {
   shops: string[];
   createdAt: string;
   disabled: boolean;
-  profile: {
-    brandName: string; niche: string; businessType: string;
-    phone: string; country: string; city: string;
-  } | null;
+  profile: { brandName: string; niche: string; businessType: string; phone: string; country: string; city: string } | null;
   connections: { shopify: boolean; meta: boolean; ga4: boolean; gsc: boolean };
   plan: string;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+interface StoreStats {
+  revenue: number;
+  orders: number;
+  aov: number;
+  codPct: number;
+  hasMetaToken: boolean;
+  loading: boolean;
+  error: boolean;
+}
 
 const ADMIN_PIN = "skylitee2026";
 
-const NICHE_LABELS: Record<string, string> = {
-  print_on_demand: "Print-on-Demand",
-  apparel:         "Apparel & Fashion",
-  accessories:     "Accessories",
-  jewellery:       "Jewellery",
-  beauty:          "Beauty & Skincare",
-  home_decor:      "Home Decor",
-  electronics:     "Electronics",
-  food_bev:        "Food & Beverage",
-  stationery:      "Stationery",
-  other:           "Other",
-};
-
-const BTYPE_LABELS: Record<string, string> = {
-  d2c:         "D2C",
-  agency:      "Agency",
-  dropshipping:"Dropshipping",
-  reseller:    "Reseller",
-  other:       "Other",
-};
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function daysSince(d: string) {
-  return Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-}
-
-function PlanBadge({ plan }: { plan: string }) {
-  return (
-    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold",
-      plan === "agency" ? "bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#1E1240] dark:text-[#A78BFA]" :
-      plan === "pro"    ? "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]" :
-                          "bg-[#F5F5F4] text-[#71717A] dark:bg-[#1C1C1C] dark:text-[#A1A1AA]"
-    )}>{plan ?? "free"}</span>
-  );
-}
-
 function PlatformDots({ c }: { c: AdminUser["connections"] }) {
   const dots = [
-    { key: "shopify", label: "Shopify", color: "#96BF48",    on: c.shopify },
-    { key: "meta",    label: "Meta",    color: "#1877F2",    on: c.meta    },
-    { key: "ga4",     label: "GA4",     color: "#E37400",    on: c.ga4     },
-    { key: "gsc",     label: "GSC",     color: "#34A853",    on: c.gsc     },
+    { key: "shopify", label: "Shopify", color: "#96BF48", on: c.shopify },
+    { key: "meta",    label: "Meta",    color: "#1877F2", on: c.meta    },
+    { key: "ga4",     label: "GA4",     color: "#E37400", on: c.ga4     },
+    { key: "gsc",     label: "GSC",     color: "#34A853", on: c.gsc     },
   ];
   return (
     <div className="flex items-center gap-1">
@@ -82,8 +51,6 @@ function PlatformDots({ c }: { c: AdminUser["connections"] }) {
     </div>
   );
 }
-
-// ── Password Gate ──────────────────────────────────────────────────────────────
 
 function PasswordGate({ pin, setPin, onLogin, error }: {
   pin: string; setPin: (v: string) => void; onLogin: () => void; error: boolean;
@@ -129,8 +96,6 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
 type AdminTab = "overview" | "users" | "analytics";
 
 export default function AdminPage() {
@@ -141,10 +106,10 @@ export default function AdminPage() {
   const [users, setUsers]         = useState<AdminUser[]>([]);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState("");
-  const [filterNiche, setFilterNiche] = useState("all");
-  const [filterPlan, setFilterPlan]   = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [toast, setToast]         = useState("");
+  const [loginAsLoading, setLoginAsLoading] = useState<string | null>(null);
+  const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -160,12 +125,37 @@ export default function AdminPage() {
     setLoading(false);
   }, []);
 
+  // Load store stats for all Shopify-connected stores
+  const loadStoreStats = useCallback(async (userList: AdminUser[]) => {
+    const shopifyUsers = userList.filter(u => u.connections.shopify && u.shops[0]);
+    for (const u of shopifyUsers) {
+      const shop = u.shops[0];
+      setStoreStats(prev => ({ ...prev, [shop]: { revenue: 0, orders: 0, aov: 0, codPct: 0, hasMetaToken: false, loading: true, error: false } }));
+      fetch(`/api/admin/store-stats?shop=${encodeURIComponent(shop)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.error) {
+            setStoreStats(prev => ({ ...prev, [shop]: { ...prev[shop], loading: false, error: true } }));
+          } else {
+            setStoreStats(prev => ({ ...prev, [shop]: { revenue: d.revenue, orders: d.orders, aov: d.aov, codPct: d.codPct, hasMetaToken: d.hasMetaToken, loading: false, error: false } }));
+          }
+        })
+        .catch(() => setStoreStats(prev => ({ ...prev, [shop]: { ...prev[shop], loading: false, error: true } })));
+    }
+  }, []);
+
   useEffect(() => {
     if (sessionStorage.getItem("skylitee-admin-auth") === "1") {
       setAuthed(true);
-      loadUsers();
+      loadUsers().then(() => {});
     }
   }, [loadUsers]);
+
+  useEffect(() => {
+    if (users.length > 0 && tab === "users") {
+      loadStoreStats(users);
+    }
+  }, [users, tab, loadStoreStats]);
 
   const doLogin = () => {
     if (pin === ADMIN_PIN) {
@@ -196,17 +186,33 @@ export default function AdminPage() {
     }
   };
 
+  const loginAs = async (email: string) => {
+    setLoginAsLoading(email);
+    try {
+      const res = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        showToast(`Logging in as ${email}…`);
+        setTimeout(() => { window.location.href = "/dashboard"; }, 600);
+      } else {
+        showToast("Could not impersonate user.");
+        setLoginAsLoading(null);
+      }
+    } catch {
+      showToast("Network error.");
+      setLoginAsLoading(null);
+    }
+  };
+
   if (!authed) return <PasswordGate pin={pin} setPin={setPin} onLogin={doLogin} error={pinError} />;
 
-  // ── Computed ──
   const activeUsers  = users.filter(u => !u.disabled).length;
   const shopifyCount = users.filter(u => u.connections.shopify).length;
   const metaCount    = users.filter(u => u.connections.meta).length;
   const ga4Count     = users.filter(u => u.connections.ga4).length;
-
-  const allNiches = Array.from(new Set(
-    users.map(u => u.profile?.niche ?? "").filter(Boolean)
-  )).sort();
 
   const filteredUsers = users.filter(u => {
     const q = search.toLowerCase();
@@ -215,24 +221,11 @@ export default function AdminPage() {
       || u.email.toLowerCase().includes(q)
       || (u.profile?.brandName ?? "").toLowerCase().includes(q)
       || (u.shops[0] ?? "").toLowerCase().includes(q);
-    const matchNiche  = filterNiche  === "all" || u.profile?.niche === filterNiche;
-    const matchPlan   = filterPlan   === "all" || u.plan === filterPlan;
     const matchStatus = filterStatus === "all"
       || (filterStatus === "active"   && !u.disabled)
       || (filterStatus === "disabled" &&  u.disabled);
-    return matchQ && matchNiche && matchPlan && matchStatus;
+    return matchQ && matchStatus;
   });
-
-  // Niche breakdown
-  const nicheMap: Record<string, number> = {};
-  users.forEach(u => {
-    const n = u.profile?.niche ?? "not_set";
-    nicheMap[n] = (nicheMap[n] ?? 0) + 1;
-  });
-
-  // Plan breakdown
-  const planMap: Record<string, number> = { free: 0, pro: 0, agency: 0 };
-  users.forEach(u => { planMap[u.plan] = (planMap[u.plan] ?? 0) + 1; });
 
   const tabs: { key: AdminTab; label: string; icon: React.ElementType }[] = [
     { key: "overview",  label: "Overview",            icon: LayoutDashboard },
@@ -303,59 +296,30 @@ export default function AdminPage() {
       {/* ── OVERVIEW ── */}
       {tab === "overview" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Platform connections */}
-            <Card>
-              <CardHeader title="Platform Connections" right={`${users.length} stores total`} />
-              <div className="space-y-3 mt-3">
-                {[
-                  { label: "Shopify",  count: shopifyCount,                                    color: "#96BF48" },
-                  { label: "Meta Ads", count: metaCount,                                       color: "#1877F2" },
-                  { label: "GA4",      count: ga4Count,                                        color: "#E37400" },
-                  { label: "GSC",      count: users.filter(u => u.connections.gsc).length,    color: "#34A853" },
-                ].map(p => {
-                  const pct = users.length ? Math.round((p.count / users.length) * 100) : 0;
-                  return (
-                    <div key={p.label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
-                        <span className="text-[12px] font-bold" style={{ color: p.color }}>{p.count} / {users.length}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
-                      </div>
+          <Card>
+            <CardHeader title="Platform Connections" right={`${users.length} stores total`} />
+            <div className="space-y-3 mt-3">
+              {[
+                { label: "Shopify",  count: shopifyCount,                              color: "#96BF48" },
+                { label: "Meta Ads", count: metaCount,                                 color: "#1877F2" },
+                { label: "GA4",      count: ga4Count,                                  color: "#E37400" },
+                { label: "GSC",      count: users.filter(u => u.connections.gsc).length, color: "#34A853" },
+              ].map(p => {
+                const pct = users.length ? Math.round((p.count / users.length) * 100) : 0;
+                return (
+                  <div key={p.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
+                      <span className="text-[12px] font-bold" style={{ color: p.color }}>{p.count} / {users.length}</span>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-
-            {/* Plan distribution */}
-            <Card>
-              <CardHeader title="Plan Distribution" />
-              <div className="space-y-3 mt-3">
-                {[
-                  { id: "free",   label: "Free",   price: "Free",          color: "#A1A1AA" },
-                  { id: "pro",    label: "Pro",    price: "₹2,999/mo",     color: "#F97316" },
-                  { id: "agency", label: "Agency", price: "₹7,999/mo",     color: "#8B5CF6" },
-                ].map(p => {
-                  const count = planMap[p.id] ?? 0;
-                  const pct = users.length ? Math.round((count / users.length) * 100) : 0;
-                  return (
-                    <div key={p.id}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">{p.label}</span>
-                        <span className="text-[11px] text-[#A1A1AA]">{count} stores · {p.price}</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
-                      </div>
+                    <div className="w-full h-2 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: p.color }} />
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
 
           {/* Recent registrations */}
           <Card>
@@ -364,7 +328,7 @@ export default function AdminPage() {
               <table className="w-full text-[13px] min-w-[600px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["User", "Brand / Niche", "Shopify Store", "Platforms", "Plan", "Registered", "Status"].map(h => (
+                    {["User", "Brand", "Shopify Store", "Platforms", "Registered", "Status"].map(h => (
                       <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-4 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -376,16 +340,16 @@ export default function AdminPage() {
                         <div className="font-semibold dark:text-[#F4F4F5] text-[13px]">{u.name}</div>
                         <div className="text-[11px] text-[#A1A1AA] truncate max-w-[160px]">{u.email}</div>
                       </td>
-                      <td className="py-3 pr-4">
-                        <div className="text-[13px] dark:text-[#F4F4F5]">{u.profile?.brandName || <span className="text-[#A1A1AA] italic">not set</span>}</div>
-                        <div className="text-[11px] text-[#A1A1AA]">{NICHE_LABELS[u.profile?.niche ?? ""] || "—"}</div>
+                      <td className="py-3 pr-4 text-[12px] dark:text-[#F4F4F5]">
+                        {u.profile?.brandName || <span className="text-[#A1A1AA] italic">not set</span>}
                       </td>
                       <td className="py-3 pr-4 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
                         {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
                       </td>
                       <td className="py-3 pr-4"><PlatformDots c={u.connections} /></td>
-                      <td className="py-3 pr-4"><PlanBadge plan={u.plan} /></td>
-                      <td className="py-3 pr-4 text-[12px] text-[#A1A1AA] whitespace-nowrap">{daysSince(u.createdAt)}d ago</td>
+                      <td className="py-3 pr-4 text-[12px] text-[#A1A1AA] whitespace-nowrap">
+                        {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
+                      </td>
                       <td className="py-3">
                         <span className={cn("text-[11px] font-bold flex items-center gap-1",
                           u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
@@ -406,6 +370,7 @@ export default function AdminPage() {
       {/* ── USERS ── */}
       {tab === "users" && (
         <div className="space-y-3">
+          {/* Filters — only search + status */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
@@ -413,18 +378,6 @@ export default function AdminPage() {
                 placeholder="Search by name, email, brand, store…"
                 className="w-full bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl pl-8 pr-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
             </div>
-            <select value={filterNiche} onChange={e => setFilterNiche(e.target.value)}
-              className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
-              <option value="all">All niches</option>
-              {allNiches.map(n => <option key={n} value={n}>{NICHE_LABELS[n] ?? n}</option>)}
-            </select>
-            <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)}
-              className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
-              <option value="all">All plans</option>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="agency">Agency</option>
-            </select>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none appearance-none">
               <option value="all">All status</option>
@@ -438,69 +391,94 @@ export default function AdminPage() {
               <table className="w-full text-[13px] min-w-[900px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["User / Email", "Brand", "Niche", "Phone", "Location", "Shopify Store", "Platforms", "Plan", "Joined", "Status", "Access"].map(h => (
+                    {["User / Email", "Brand", "Phone", "Shopify Store", "Platforms", "This Month", "Status", "Access", "Login As"].map(h => (
                       <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map(u => (
-                    <tr key={u.email} className={cn(
-                      "border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#FAFAF9] dark:hover:bg-[#1C1C1C] transition-colors",
-                      u.disabled && "opacity-60"
-                    )}>
-                      <td className="py-3 pr-3">
-                        <div className="font-semibold dark:text-[#F4F4F5] leading-tight">{u.name}</div>
-                        <div className="text-[11px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
-                      </td>
-                      <td className="py-3 pr-3 text-[12px] dark:text-[#F4F4F5]">
-                        {u.profile?.brandName || <span className="text-[#A1A1AA] italic">—</span>}
-                        {u.profile?.businessType && (
-                          <div className="text-[11px] text-[#A1A1AA]">{BTYPE_LABELS[u.profile.businessType] ?? u.profile.businessType}</div>
-                        )}
-                      </td>
-                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">
-                        {NICHE_LABELS[u.profile?.niche ?? ""] || <span className="italic">—</span>}
-                      </td>
-                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
-                        {u.profile?.phone || "—"}
-                      </td>
-                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
-                        {u.profile?.city || "—"}
-                      </td>
-                      <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
-                        {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
-                      </td>
-                      <td className="py-3 pr-3"><PlatformDots c={u.connections} /></td>
-                      <td className="py-3 pr-3"><PlanBadge plan={u.plan} /></td>
-                      <td className="py-3 pr-3 text-[12px] text-[#A1A1AA] whitespace-nowrap">
-                        {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
-                      </td>
-                      <td className="py-3 pr-3">
-                        <span className={cn("text-[11px] font-bold flex items-center gap-1 whitespace-nowrap",
-                          u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
-                          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
-                            u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
-                          {u.disabled ? "suspended" : "active"}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <button
-                          onClick={() => toggleDisabled(u.email, u.disabled)}
-                          title={u.disabled ? "Restore access" : "Suspend access"}
-                          className={cn(
-                            "flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors",
-                            u.disabled
-                              ? "bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7]"
-                              : "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
-                          )}>
-                          {u.disabled ? <><UserCheck size={10} /> Restore</> : <><UserX size={10} /> Suspend</>}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredUsers.map(u => {
+                    const shop = u.shops[0] ?? "";
+                    const stats = shop ? storeStats[shop] : null;
+                    return (
+                      <tr key={u.email} className={cn(
+                        "border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#FAFAF9] dark:hover:bg-[#1C1C1C] transition-colors",
+                        u.disabled && "opacity-60"
+                      )}>
+                        <td className="py-3 pr-3">
+                          <div className="font-semibold dark:text-[#F4F4F5] leading-tight">{u.name}</div>
+                          <div className="text-[11px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
+                        </td>
+                        <td className="py-3 pr-3 text-[12px] dark:text-[#F4F4F5]">
+                          {u.profile?.brandName || <span className="text-[#A1A1AA] italic">—</span>}
+                        </td>
+                        <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                          {u.profile?.phone || "—"}
+                        </td>
+                        <td className="py-3 pr-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA]">
+                          {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
+                        </td>
+                        <td className="py-3 pr-3"><PlatformDots c={u.connections} /></td>
+                        {/* Monthly stats */}
+                        <td className="py-3 pr-3">
+                          {!u.connections.shopify ? (
+                            <span className="text-[11px] text-[#A1A1AA] italic">No Shopify</span>
+                          ) : stats?.loading ? (
+                            <span className="text-[11px] text-[#A1A1AA]">Loading…</span>
+                          ) : stats?.error ? (
+                            <span className="text-[11px] text-[#EF4444]">Error</span>
+                          ) : stats ? (
+                            <div>
+                              <div className="flex items-center gap-1 text-[12px] font-bold text-[#22C55E]">
+                                <TrendingUp size={10} />
+                                {formatINR(stats.revenue)}
+                              </div>
+                              <div className="text-[11px] text-[#A1A1AA]">{stats.orders} orders · AOV {formatINR(stats.aov)}</div>
+                              {stats.codPct > 0 && <div className="text-[11px] text-[#EAB308]">COD {stats.codPct}%</div>}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-[#A1A1AA]">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-3">
+                          <span className={cn("text-[11px] font-bold flex items-center gap-1 whitespace-nowrap",
+                            u.disabled ? "text-[#EF4444]" : "text-[#22C55E]")}>
+                            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
+                              u.disabled ? "bg-[#EF4444]" : "bg-[#22C55E]")} />
+                            {u.disabled ? "suspended" : "active"}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-3">
+                          <button
+                            onClick={() => toggleDisabled(u.email, u.disabled)}
+                            title={u.disabled ? "Restore access" : "Suspend access"}
+                            className={cn(
+                              "flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-colors",
+                              u.disabled
+                                ? "bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7]"
+                                : "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
+                            )}>
+                            {u.disabled ? <><UserCheck size={10} /> Restore</> : <><UserX size={10} /> Suspend</>}
+                          </button>
+                        </td>
+                        {/* Login As */}
+                        <td className="py-3">
+                          <button
+                            onClick={() => loginAs(u.email)}
+                            disabled={u.disabled || loginAsLoading === u.email}
+                            title={`Login as ${u.name}`}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#EFF6FF] text-[#1D4ED8] dark:bg-[#1E3A5F] hover:bg-[#DBEAFE] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            {loginAsLoading === u.email
+                              ? <RefreshCw size={10} className="animate-spin" />
+                              : <LogIn size={10} />}
+                            Login
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {filteredUsers.length === 0 && (
-                    <tr><td colSpan={11} className="py-10 text-center text-[13px] text-[#A1A1AA]">
+                    <tr><td colSpan={9} className="py-10 text-center text-[13px] text-[#A1A1AA]">
                       {loading ? "Loading…" : "No users found"}
                     </td></tr>
                   )}
@@ -514,31 +492,6 @@ export default function AdminPage() {
       {/* ── ANALYTICS ── */}
       {tab === "analytics" && (
         <div className="space-y-4">
-          {/* Niche breakdown */}
-          <Card>
-            <CardHeader title="Stores by Industry / Niche" right={`${users.length} total`} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-3">
-              {Object.entries(nicheMap)
-                .sort((a, b) => b[1] - a[1])
-                .map(([niche, count]) => {
-                  const pct = users.length ? Math.round((count / users.length) * 100) : 0;
-                  return (
-                    <div key={niche}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[13px] font-semibold dark:text-[#F4F4F5]">
-                          {niche === "not_set" ? <span className="italic text-[#A1A1AA]">Not set</span> : (NICHE_LABELS[niche] ?? niche)}
-                        </span>
-                        <span className="text-[12px] font-bold text-[#F97316]">{count} · {pct}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-[#F5F5F4] dark:bg-[#262626] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#F97316] rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </Card>
-
           {/* Platform adoption */}
           <Card>
             <CardHeader title="Platform Adoption Rate" />
@@ -561,14 +514,14 @@ export default function AdminPage() {
             </div>
           </Card>
 
-          {/* Full user list with details */}
+          {/* Full user list */}
           <Card>
             <CardHeader title="All Stores — Full Details" right="Newest first" />
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-[12px] min-w-[700px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["#", "Name", "Email", "Brand", "Niche", "Business Type", "Phone", "City", "Shopify Store", "Plan", "Connections", "Registered"].map(h => (
+                    {["#", "Name", "Email", "Brand", "Phone", "City", "Shopify Store", "Connections", "Joined"].map(h => (
                       <th key={h} className="text-left text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -583,12 +536,9 @@ export default function AdminPage() {
                       <td className="py-2.5 pr-3 font-semibold dark:text-[#F4F4F5]">{u.name}</td>
                       <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA] max-w-[160px] truncate">{u.email}</td>
                       <td className="py-2.5 pr-3 dark:text-[#F4F4F5]">{u.profile?.brandName || "—"}</td>
-                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{NICHE_LABELS[u.profile?.niche ?? ""] || "—"}</td>
-                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{BTYPE_LABELS[u.profile?.businessType ?? ""] || "—"}</td>
                       <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.phone || "—"}</td>
                       <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.city || "—"}</td>
                       <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.shops[0]?.replace(".myshopify.com", "") || "—"}</td>
-                      <td className="py-2.5 pr-3"><PlanBadge plan={u.plan} /></td>
                       <td className="py-2.5 pr-3"><PlatformDots c={u.connections} /></td>
                       <td className="py-2.5 pr-3 text-[#A1A1AA] whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
