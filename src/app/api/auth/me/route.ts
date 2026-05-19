@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, getUser, SESSION_COOKIE } from "@/lib/auth";
+import { getSession, getUser, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -16,5 +16,6 @@ export async function GET(req: NextRequest) {
     email: user.email,
     shops: user.shops,
     activeShop: session.activeShop,
+    isAdmin: user.email === ADMIN_EMAIL,
   });
 }

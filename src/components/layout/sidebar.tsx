@@ -120,6 +120,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const [gscConnected, setGscConnected] = useState<boolean | null>(null);
   const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const active = getActiveSectionLabel(pathname);
@@ -133,7 +134,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       .catch(() => {});
     fetch("/api/auth/me")
       .then(r => r.json())
-      .then(d => { if (d.shops) setAllShops(d.shops); })
+      .then(d => { if (d.shops) setAllShops(d.shops); if (d.isAdmin) setIsAdmin(true); })
       .catch(() => {});
     fetch("/api/google/sites")
       .then(r => r.json())
@@ -268,7 +269,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 "overflow-hidden transition-all duration-200 ease-in-out",
                 isOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
               )}>
-                {section.items.map((item) => {
+                {section.items.filter(item => item.href !== "/dashboard/admin" || isAdmin).map((item) => {
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
                   const dot = resolveDot(item.dot);
