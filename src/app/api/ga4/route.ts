@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGa4RefreshToken, getGa4Property, getShopFromRequest } from "@/lib/session";
+import { getGa4RefreshToken, getGa4Property, getAuthorizedShop } from "@/lib/session";
 
 interface GA4Metric { name: string }
 interface GA4Dimension { name: string }
 interface GA4Row { dimensionValues: { value: string }[]; metricValues: { value: string }[] }
 
 export async function GET(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const refreshToken = await getGa4RefreshToken(req, shop);
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 

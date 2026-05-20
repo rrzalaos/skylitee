@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGscRefreshToken, getGa4RefreshToken, getShopFromRequest, getGscSite, getGa4Property } from "@/lib/session";
+import { getGscRefreshToken, getGa4RefreshToken, getAuthorizedShop, getGscSite, getGa4Property } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 
 export async function GET(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const gscRefresh = await getGscRefreshToken(req, shop);
   const ga4Refresh = await getGa4RefreshToken(req, shop);
 
@@ -70,7 +71,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const gscRefresh = await getGscRefreshToken(req, shop);
   const ga4Refresh = await getGa4RefreshToken(req, shop);
   if (!gscRefresh && !ga4Refresh) return NextResponse.json({ error: "not_connected" }, { status: 401 });

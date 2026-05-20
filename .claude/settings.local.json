@@ -12,7 +12,15 @@
       "WebFetch(domain:skylitee.io)",
       "Bash(Remove-Item \"c:\\\\Users\\\\rishi\\\\OneDrive\\\\Desktop\\\\ClaudeWork\\\\brandplus\\\\src\\\\app\\\\page.tsx\" -Force)",
       "Bash(Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue)",
-      "WebFetch(domain:www.orangesky.app)"
+      "WebFetch(domain:www.orangesky.app)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\rishi\\\\OneDrive\\\\Desktop\\\\ClaudeWork\\\\brandplus\\\\src\\\\app\\\\api\\\\profile\")",
+      "Bash(Out-Null)",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\rishi\\\\OneDrive\\\\Desktop\\\\ClaudeWork\\\\brandplus\\\\src\\\\app\\\\api\\\\profile\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\rishi\\\\OneDrive\\\\Desktop\\\\ClaudeWork\\\\brandplus\\\\src\\\\app\\\\api\\\\admin\\\\user\")",
+      "Bash(gh run *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\rishi\\\\OneDrive\\\\Desktop\\\\ClaudeWork\\\\brandplus\\\\src\\\\app\\\\api\\\\team\")",
+      "Bash(Write-Output \"done\")"
     ]
   }
 }

@@ -1,19 +1,34 @@
 import { NextRequest } from "next/server";
 import { shopKv } from "./kv";
+import { getSession, getUser, SESSION_COOKIE } from "./auth";
 
 export function getShopFromRequest(req: NextRequest): string | null {
   return process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value ?? null;
 }
 
+// Verified version — confirms the session user actually owns this shop.
+// Use this in every data API route instead of getShopFromRequest.
+export async function getAuthorizedShop(req: NextRequest): Promise<string | null> {
+  if (process.env.SHOPIFY_STORE) return process.env.SHOPIFY_STORE;
+  const shop = req.cookies.get("shopify_shop")?.value;
+  if (!shop) return null;
+  const sessionToken = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!sessionToken) return null;
+  const session = await getSession(sessionToken);
+  if (!session) return null;
+  const user = await getUser(session.email);
+  if (!user?.shops.includes(shop)) return null;
+  return shop;
+}
+
 export async function getShopifySession(
   req: NextRequest
 ): Promise<{ shop: string; token: string } | null> {
-  const shop = getShopFromRequest(req);
+  const shop = await getAuthorizedShop(req);
   if (!shop) return null;
   const token =
     (await shopKv.getToken(shop)) ??
     process.env.SHOPIFY_ACCESS_TOKEN ??
-    req.cookies.get("shopify_token")?.value ??
     null;
   if (!token) return null;
   return { shop, token };

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetaToken, getMetaAdAccount, getShopFromRequest } from "@/lib/session";
+import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
 import { resolveMetaAccount } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
@@ -32,7 +32,8 @@ function actVal(arr: ActionEntry[] | undefined, type: string): number {
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export async function GET(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 

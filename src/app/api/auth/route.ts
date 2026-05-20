@@ -13,6 +13,5 @@ export async function GET(req: NextRequest) {
 
   const res = NextResponse.redirect(authUrl);
   res.cookies.set("shopify_state", state, { httpOnly: true, maxAge: 600, sameSite: "lax" });
-  res.cookies.set("shopify_shop", shop, { httpOnly: true, maxAge: 600, sameSite: "lax" });
   return res;
 }

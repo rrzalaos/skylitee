@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetaToken, getMetaAdAccount, getShopFromRequest } from "@/lib/session";
+import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 
 export async function GET(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
@@ -41,7 +42,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, addShopToUser, removeShopFromUser, SESSION_COOKIE } from "@/lib/auth";
 import { shopKv, teamKv, TeamMember } from "@/lib/kv";
-import { getShopFromRequest } from "@/lib/session";
+import { getAuthorizedShop } from "@/lib/session";
 
 const VALID_ROLES = ["admin", "marketing", "view_only"];
 
@@ -10,8 +10,10 @@ async function getSessionAndShop(req: NextRequest) {
   if (!token) return null;
   const session = await getSession(token);
   if (!session) return null;
-  const shop = getShopFromRequest(req);
+  const shop = req.cookies.get("shopify_shop")?.value ?? process.env.SHOPIFY_STORE ?? null;
   if (!shop) return null;
+  const user = await getUser(session.email);
+  if (!user?.shops.includes(shop) && !process.env.SHOPIFY_STORE) return null;
   return { session, shop };
 }
 

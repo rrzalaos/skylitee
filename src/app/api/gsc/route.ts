@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGscRefreshToken, getGscSite, getShopFromRequest } from "@/lib/session";
+import { getGscRefreshToken, getGscSite, getAuthorizedShop } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
   const refreshToken = await getGscRefreshToken(req, shop);
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
