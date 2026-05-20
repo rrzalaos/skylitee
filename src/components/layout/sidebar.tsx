@@ -12,7 +12,7 @@ import {
   Search, LineChart, Megaphone,
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, ChevronDown, UserCircle,
-  X, ShieldCheck, CreditCard,
+  X, ShieldCheck, CreditCard, Plus,
   FileText, TrendingUp, BarChart3, Globe, DollarSign, Sparkles, HelpCircle,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
@@ -199,54 +199,55 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       </div>
 
       {/* Store switcher — hidden for admin */}
-      <div className={cn("mx-2 mt-2.5 relative", isAdmin && "hidden")} ref={shopMenuRef}>
-        <button
-          onClick={() => setShowShopMenu(v => !v)}
-          className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-black/[0.06] dark:border-white/[0.06] hover:bg-[#EBEBEB] dark:hover:bg-[#262626] transition-colors"
-        >
-          <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
-          <ChevronDown size={10} className={cn("text-[#A1A1AA] shrink-0 transition-transform", showShopMenu ? "rotate-180" : "")} />
-        </button>
-        {showShopMenu && allShops.length > 1 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5">
-            {allShops.map(s => (
-              <button
-                key={s}
-                onClick={async () => {
-                  await fetch("/api/auth/switch-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop: s }) });
-                  setShowShopMenu(false);
-                  window.location.reload();
-                }}
-                className={cn(
-                  "w-full text-left px-3 py-2 text-[13px] transition-colors",
-                  s.replace(".myshopify.com","") === shopName
-                    ? "font-semibold text-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]"
-                    : "text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626]"
-                )}
-              >
-                {s.replace(".myshopify.com", "")}
-              </button>
-            ))}
-            <div className="border-t border-black/[0.06] dark:border-white/[0.06] mt-1 pt-1">
-              <button
-                onClick={() => { setShowShopMenu(false); window.location.href = "/connect"; }}
-                className="w-full text-left px-3 py-2 text-[13px] text-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-colors"
-              >
-                + Add another store
-              </button>
-            </div>
-          </div>
-        )}
-        {showShopMenu && allShops.length <= 1 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5">
+      <div className={cn("mx-2 mt-2.5", isAdmin && "hidden")}>
+        <div className="flex items-center gap-1.5" ref={shopMenuRef}>
+          {/* Store name / switcher */}
+          <div className="flex-1 relative">
             <button
-              onClick={() => { setShowShopMenu(false); window.location.href = "/connect"; }}
-              className="w-full text-left px-3 py-2 text-[13px] text-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-colors"
+              onClick={() => allShops.length > 1 && setShowShopMenu(v => !v)}
+              className={cn(
+                "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-2.5 py-1.5 flex items-center justify-between border border-black/[0.06] dark:border-white/[0.06] transition-colors",
+                allShops.length > 1 ? "hover:bg-[#EBEBEB] dark:hover:bg-[#262626] cursor-pointer" : "cursor-default"
+              )}
             >
-              + Add another store
+              <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
+              {allShops.length > 1 && (
+                <ChevronDown size={10} className={cn("text-[#A1A1AA] shrink-0 transition-transform", showShopMenu ? "rotate-180" : "")} />
+              )}
             </button>
+            {showShopMenu && allShops.length > 1 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5">
+                {allShops.map(s => (
+                  <button
+                    key={s}
+                    onClick={async () => {
+                      await fetch("/api/auth/switch-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop: s }) });
+                      setShowShopMenu(false);
+                      window.location.reload();
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-[13px] transition-colors",
+                      s.replace(".myshopify.com", "") === shopName
+                        ? "font-semibold text-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]"
+                        : "text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626]"
+                    )}
+                  >
+                    {s.replace(".myshopify.com", "")}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Always-visible Add Store button */}
+          <button
+            onClick={() => { window.location.href = "/connect"; }}
+            title="Add another store"
+            className="flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] text-[#A1A1AA] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] hover:border-[#F97316]/30 hover:text-[#F97316] transition-colors"
+          >
+            <Plus size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Nav */}
