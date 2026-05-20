@@ -153,7 +153,7 @@ export default function SalesPage() {
     await exportToPDF(
       `skylitee-sales-${range.from}`,
       "Sales Report",
-      `${range.label} · ${sales?.period.days ?? 0} days · rrahi-print-shop`,
+      `${range.label} · ${sales?.period.days ?? 0} days`,
       buildSections()
     );
   }

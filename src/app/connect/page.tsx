@@ -73,7 +73,15 @@ export default function ConnectPage() {
             </button>
           </form>
 
-          <div className="mt-5 pt-4 border-t border-white/[0.06]">
+          <button
+            type="button"
+            onClick={() => window.location.href = "/dashboard"}
+            className="w-full py-2 text-[13px] text-white/30 hover:text-white/50 transition-colors text-center mt-3"
+          >
+            Skip for now — explore dashboard →
+          </button>
+
+          <div className="mt-3 pt-4 border-t border-white/[0.06]">
             <p className="text-[12px] text-white/30 text-center">
               Read-only access. Your data is private and never shared.
             </p>

@@ -7,7 +7,7 @@ import { Suspense } from "react";
 function InstallForm() {
   const searchParams = useSearchParams();
   const hasError = searchParams.get("error");
-  const [shop, setShop] = useState("rrahi-print-shop.myshopify.com");
+  const [shop, setShop] = useState("");
 
   const handleConnect = () => {
     const cleanShop = shop.replace("https://", "").replace(/\/$/, "");
@@ -62,6 +62,13 @@ function InstallForm() {
             className="w-full py-3 bg-[#17a773] text-white rounded-xl text-[16px] font-semibold flex items-center justify-center gap-2 hover:bg-[#0d6b4f] transition-colors"
           >
             <ShoppingBag size={15} /> Connect Shopify Store <ArrowRight size={15} />
+          </button>
+
+          <button
+            onClick={() => window.location.href = "/dashboard"}
+            className="w-full py-2.5 text-[14px] text-[#9e9e9a] hover:text-[#686864] transition-colors text-center mt-1"
+          >
+            Skip for now — explore dashboard →
           </button>
 
           {/* What we access */}

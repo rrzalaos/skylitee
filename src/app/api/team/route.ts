@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, addShopToUser, removeShopFromUser, SESSION_COOKIE } from "@/lib/auth";
-import { shopKv, teamKv, TeamMember } from "@/lib/kv";
+import { shopKv, inviteKv, TeamMember } from "@/lib/kv";
 import { getAuthorizedShop } from "@/lib/session";
 
 const VALID_ROLES = ["admin", "marketing", "view_only"];
@@ -50,17 +50,11 @@ export async function POST(req: NextRequest) {
   members.push(newMember);
   await shopKv.setTeam(ctx.shop, members);
 
-  // If they already have a Skylitee account, grant access immediately
-  const existingUser = await getUser(normalizedEmail);
-  if (existingUser) {
-    await addShopToUser(normalizedEmail, ctx.shop);
-  } else {
-    // Store pending invite — claimed automatically when they sign up or log in
-    const pending = await teamKv.getPending(normalizedEmail) ?? [];
-    if (!pending.some(p => p.shop === ctx.shop)) {
-      pending.push({ shop: ctx.shop, role });
-      await teamKv.setPending(normalizedEmail, pending);
-    }
+  // Create an invite notification — member must explicitly accept before getting access
+  const invites = await inviteKv.getInvites(normalizedEmail) ?? [];
+  if (!invites.some(i => i.shop === ctx.shop)) {
+    invites.push({ shop: ctx.shop, role, addedAt: new Date().toISOString(), inviterEmail: ctx.session.email });
+    await inviteKv.setInvites(normalizedEmail, invites);
   }
 
   return NextResponse.json({ ok: true, member: newMember });
@@ -80,14 +74,9 @@ export async function DELETE(req: NextRequest) {
   // Revoke shop access from their account
   await removeShopFromUser(normalizedEmail, ctx.shop);
 
-  // Clean pending invite if it exists
-  const pending = await teamKv.getPending(normalizedEmail) ?? [];
-  const updatedPending = pending.filter(p => p.shop !== ctx.shop);
-  if (updatedPending.length === 0) {
-    await teamKv.delPending(normalizedEmail);
-  } else {
-    await teamKv.setPending(normalizedEmail, updatedPending);
-  }
+  // Clean invite notification if still pending
+  const invites = await inviteKv.getInvites(normalizedEmail) ?? [];
+  await inviteKv.setInvites(normalizedEmail, invites.filter(i => i.shop !== ctx.shop));
 
   return NextResponse.json({ ok: true });
 }

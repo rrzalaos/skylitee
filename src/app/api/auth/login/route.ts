@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, verifyPassword, addShopToUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
-import { teamKv } from "@/lib/kv";
+import { getUser, verifyPassword, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
@@ -15,16 +14,6 @@ export async function POST(req: NextRequest) {
   }
   if (user.disabled) {
     return NextResponse.json({ error: "Your account has been suspended. Contact support." }, { status: 403 });
-  }
-
-  // Claim any pending team invites added while they were not yet signed up
-  const pending = await teamKv.getPending(user.email);
-  if (pending?.length) {
-    await Promise.allSettled(pending.map(p => addShopToUser(user.email, p.shop)));
-    await teamKv.delPending(user.email);
-    // Reload updated user shops
-    const updated = await getUser(user.email);
-    if (updated) user.shops = updated.shops;
   }
 
   const activeShop = user.shops[0] ?? "";

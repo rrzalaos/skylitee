@@ -473,8 +473,8 @@ export default function ProfilePage() {
           <Card>
             <CardHeader title="Personal Information" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <Field label="Full name" value={data.fullName} onChange={set("fullName")} placeholder="Rishi Zala" />
-              <Field label="Username" value={data.username} onChange={set("username")} placeholder="rishi_z" />
+              <Field label="Full name" value={data.fullName} onChange={set("fullName")} placeholder="John Doe" />
+              <Field label="Username" value={data.username} onChange={set("username")} placeholder="john_doe" />
               <Field label="Email address" type="email" value={data.email} onChange={set("email")} placeholder="you@yourbrand.com" />
               <Field label="Mobile number" type="tel" value={data.mobile} onChange={set("mobile")} placeholder="+91 98765 43210" />
               <Field label="City" value={data.city} onChange={set("city")} placeholder="Ahmedabad" />
@@ -539,7 +539,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader title="Brand Identity" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <Field label="Brand name" value={data.brandName} onChange={set("brandName")} placeholder="Rrahi Print Shop" />
+              <Field label="Brand name" value={data.brandName} onChange={set("brandName")} placeholder="Acme Apparel" />
               <Field label="Tagline / slogan" value={data.tagline} onChange={set("tagline")} placeholder="Print your story" />
               <Select label="Main product category" hint="What do you primarily sell?" value={data.productCategory} onChange={set("productCategory")}
                 options={[

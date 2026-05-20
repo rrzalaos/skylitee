@@ -73,9 +73,15 @@ export interface TeamMember {
   addedAt: string;
 }
 
-// Pending team invites — keyed by invitee email, claimed on signup/login
-export const teamKv = {
-  getPending: (email: string) => kvGet<Array<{ shop: string; role: string }>>(`team:pending:${email.toLowerCase()}`),
-  setPending: (email: string, v: Array<{ shop: string; role: string }>) => kvSet(`team:pending:${email.toLowerCase()}`, v),
-  delPending: (email: string) => kvDel(`team:pending:${email.toLowerCase()}`),
+export interface InviteRecord {
+  shop: string;
+  role: string;
+  addedAt: string;
+  inviterEmail: string;
+}
+
+// Pending store invitations — shown in dashboard bell, user must explicitly accept
+export const inviteKv = {
+  getInvites: (email: string) => kvGet<InviteRecord[]>(`user:${email.toLowerCase()}:invites`),
+  setInvites: (email: string, v: InviteRecord[]) => kvSet(`user:${email.toLowerCase()}:invites`, v),
 };

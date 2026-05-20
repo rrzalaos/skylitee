@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, createUser, addShopToUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
-import { teamKv } from "@/lib/kv";
+import { getUser, createUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { name, email, password } = await req.json();
@@ -18,16 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await createUser(name, email, password);
-
-  // Claim any pending team invites for this email
-  const pending = await teamKv.getPending(user.email);
-  if (pending?.length) {
-    await Promise.allSettled(pending.map(p => addShopToUser(user.email, p.shop)));
-    await teamKv.delPending(user.email);
-  }
-
-  const firstShop = pending?.[0]?.shop ?? "";
-  const token = await createSession(user.email, firstShop);
+  const token = await createSession(user.email, "");
 
   const isAdmin = user.email === ADMIN_EMAIL;
   const res = NextResponse.json({ ok: true, isAdmin });

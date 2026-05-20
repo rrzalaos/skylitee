@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu, LogOut, User, ShieldCheck } from "lucide-react";
+import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu, LogOut, User, ShieldCheck, Store } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useDateRange, DatePreset } from "@/lib/date-range-context";
 import { useTheme } from "@/lib/theme-context";
@@ -59,26 +59,50 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   const [toast, setToast] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showBell, setShowBell] = useState(false);
   const [userName, setUserName] = useState("S");
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLDivElement>(null);
   const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false });
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const [invites, setInvites] = useState<Array<{ shop: string; role: string; addedAt: string; inviterEmail: string }>>([]);
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null);
   const { range, setPreset, setCustomRange, compareWith, setCompareWith } = useDateRange();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
-        setShowDatePicker(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setShowUserMenu(false);
-      }
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) setShowDatePicker(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setShowUserMenu(false);
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) setShowBell(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    fetch("/api/invites")
+      .then(r => r.json())
+      .then(d => setInvites(d.invites ?? []))
+      .catch(() => {});
+  }, [isAdmin]);
+
+  const handleInvite = async (shop: string, action: "accept" | "decline") => {
+    setInviteLoading(shop);
+    await fetch("/api/invites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shop, action }),
+    });
+    setInvites(prev => prev.filter(i => i.shop !== shop));
+    setInviteLoading(null);
+    if (action === "accept") {
+      showToast(`Store added! Reloading…`);
+      setTimeout(() => window.location.reload(), 1200);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -277,10 +301,67 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
 
         {/* Bell — hidden for admin */}
         {!isAdmin && (
-          <button className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors relative">
-            <Bell size={14} />
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#EF4444] rounded-full" />
-          </button>
+          <div className="relative" ref={bellRef}>
+            <button
+              onClick={() => setShowBell(v => !v)}
+              className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors relative"
+            >
+              <Bell size={14} />
+              {invites.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-[#EF4444] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5">
+                  {invites.length}
+                </span>
+              )}
+            </button>
+            {showBell && (
+              <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 w-[300px]">
+                <div className="px-3.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Store Invitations</span>
+                  {invites.length > 0 && <span className="ml-1.5 text-[11px] bg-[#FEF2F2] text-[#EF4444] px-1.5 py-0.5 rounded-full font-semibold">{invites.length} pending</span>}
+                </div>
+                {invites.length === 0 ? (
+                  <div className="px-3.5 py-4 text-[12px] text-[#A1A1AA] text-center">No pending invitations</div>
+                ) : (
+                  <div className="py-1.5 max-h-[320px] overflow-y-auto">
+                    {invites.map(inv => (
+                      <div key={inv.shop} className="px-3.5 py-3 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="w-7 h-7 bg-[#F5F5F4] dark:bg-[#262626] rounded-lg flex items-center justify-center shrink-0">
+                            <Store size={13} className="text-[#F97316]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">
+                              {inv.shop.replace(".myshopify.com", "")}
+                            </div>
+                            <div className="text-[11px] text-[#A1A1AA]">
+                              Role: <span className="font-semibold capitalize">{inv.role.replace("_", " ")}</span>
+                              {" · "}{inv.inviterEmail}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleInvite(inv.shop, "accept")}
+                            disabled={inviteLoading === inv.shop}
+                            className="flex-1 py-1.5 bg-[#F97316] text-white rounded-lg text-[12px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50"
+                          >
+                            {inviteLoading === inv.shop ? "…" : "Accept"}
+                          </button>
+                          <button
+                            onClick={() => handleInvite(inv.shop, "decline")}
+                            disabled={inviteLoading === inv.shop}
+                            className="flex-1 py-1.5 border border-black/[0.08] dark:border-white/[0.08] text-[#71717A] dark:text-[#A1A1AA] rounded-lg text-[12px] font-semibold hover:bg-[#F5F5F4] dark:hover:bg-[#262626] transition-colors disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Avatar + user menu */}
