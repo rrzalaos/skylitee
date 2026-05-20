@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGscRefreshToken, getShopFromRequest } from "@/lib/session";
+import { getGscRefreshToken, getGscSite, getShopFromRequest } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const shop = getShopFromRequest(req) ?? "unknown";
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const sites = sitesData.siteEntry ?? [];
   if (sites.length === 0) return NextResponse.json({ error: "no_sites" });
 
-  const savedSite = req.cookies.get("google_gsc_site")?.value;
+  const savedSite = await getGscSite(req, shop);
   const siteUrl = savedSite && sites.find(s => s.siteUrl === savedSite)
     ? savedSite
     : sites[0].siteUrl;

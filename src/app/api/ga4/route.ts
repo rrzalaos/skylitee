@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGa4RefreshToken, getShopFromRequest } from "@/lib/session";
+import { getGa4RefreshToken, getGa4Property, getShopFromRequest } from "@/lib/session";
 
 interface GA4Metric { name: string }
 interface GA4Dimension { name: string }
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   if (properties.length === 0) return NextResponse.json({ error: "no_properties" });
 
-  const savedProperty = req.cookies.get("google_ga4_property")?.value;
+  const savedProperty = await getGa4Property(req, shop);
   const selected = (savedProperty && properties.find(p => p.property === savedProperty)) || properties[0];
   const propertyId = selected.property;
   const propertyName = selected.displayName;
