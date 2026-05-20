@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, verifyPassword, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
+import { activityKv } from "@/lib/kv";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
@@ -18,6 +19,13 @@ export async function POST(req: NextRequest) {
 
   const activeShop = user.shops[0] ?? "";
   const token = await createSession(user.email, activeShop);
+
+  // Fire-and-forget login log
+  activityKv.logUser(user.email, {
+    type: "login",
+    userEmail: user.email,
+    detail: "Logged in",
+  }).catch(() => {});
 
   const isAdmin = user.email === ADMIN_EMAIL;
   const res = NextResponse.json({ ok: true, hasShop: user.shops.length > 0, isAdmin });

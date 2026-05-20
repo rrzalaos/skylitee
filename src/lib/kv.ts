@@ -71,6 +71,7 @@ export interface TeamMember {
   email: string;
   role: "admin" | "marketing" | "view_only";
   addedAt: string;
+  status?: "pending" | "active"; // pending = invite sent, active = accepted
 }
 
 export interface InviteRecord {
@@ -80,8 +81,57 @@ export interface InviteRecord {
   inviterEmail: string;
 }
 
+export interface NotificationRecord {
+  id: string;
+  type: "invite_accepted" | "invite_declined" | "member_removed";
+  message: string;
+  meta: { userEmail?: string; shop?: string; role?: string };
+  read: boolean;
+  createdAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  type: string;
+  userEmail: string;
+  detail: string;
+  createdAt: string;
+}
+
 // Pending store invitations — shown in dashboard bell, user must explicitly accept
 export const inviteKv = {
   getInvites: (email: string) => kvGet<InviteRecord[]>(`user:${email.toLowerCase()}:invites`),
   setInvites: (email: string, v: InviteRecord[]) => kvSet(`user:${email.toLowerCase()}:invites`, v),
+};
+
+// Owner notifications (invite accepted/declined, member removed)
+export const notificationKv = {
+  get: (email: string) => kvGet<NotificationRecord[]>(`user:${email.toLowerCase()}:notifications`),
+  set: (email: string, v: NotificationRecord[]) => kvSet(`user:${email.toLowerCase()}:notifications`, v),
+  async push(email: string, notif: Omit<NotificationRecord, "id" | "read" | "createdAt">): Promise<void> {
+    const all = (await kvGet<NotificationRecord[]>(`user:${email.toLowerCase()}:notifications`)) ?? [];
+    all.unshift({
+      ...notif,
+      id: `n_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+    await kvSet(`user:${email.toLowerCase()}:notifications`, all.slice(0, 50));
+  },
+};
+
+// Activity logs — per-shop (team/invite events) and per-user (logins)
+export const activityKv = {
+  getShop: (shop: string) => kvGet<ActivityLog[]>(`shop:${shop}:activity`),
+  getUser: (email: string) => kvGet<ActivityLog[]>(`user:${email.toLowerCase()}:activity`),
+  async logShop(shop: string, entry: Omit<ActivityLog, "id" | "createdAt">): Promise<void> {
+    const all = (await kvGet<ActivityLog[]>(`shop:${shop}:activity`)) ?? [];
+    all.unshift({ ...entry, id: `l_${Date.now()}`, createdAt: new Date().toISOString() });
+    await kvSet(`shop:${shop}:activity`, all.slice(0, 100));
+  },
+  async logUser(email: string, entry: Omit<ActivityLog, "id" | "createdAt">): Promise<void> {
+    const all = (await kvGet<ActivityLog[]>(`user:${email.toLowerCase()}:activity`)) ?? [];
+    all.unshift({ ...entry, id: `l_${Date.now()}`, createdAt: new Date().toISOString() });
+    await kvSet(`user:${email.toLowerCase()}:activity`, all.slice(0, 100));
+  },
 };

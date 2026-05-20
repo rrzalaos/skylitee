@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, addShopToUser, removeShopFromUser, SESSION_COOKIE } from "@/lib/auth";
-import { shopKv, inviteKv, TeamMember } from "@/lib/kv";
+import { shopKv, inviteKv, notificationKv, activityKv, TeamMember } from "@/lib/kv";
 import { getAuthorizedShop } from "@/lib/session";
 
 const VALID_ROLES = ["admin", "marketing", "view_only"];
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     email: normalizedEmail,
     role: role as TeamMember["role"],
     addedAt: new Date().toISOString(),
+    status: "pending",
   };
   members.push(newMember);
   await shopKv.setTeam(ctx.shop, members);
@@ -56,6 +57,12 @@ export async function POST(req: NextRequest) {
     invites.push({ shop: ctx.shop, role, addedAt: new Date().toISOString(), inviterEmail: ctx.session.email });
     await inviteKv.setInvites(normalizedEmail, invites);
   }
+
+  await activityKv.logShop(ctx.shop, {
+    type: "member_invited",
+    userEmail: ctx.session.email,
+    detail: `Invited ${normalizedEmail} as ${role.replace("_", " ")}`,
+  });
 
   return NextResponse.json({ ok: true, member: newMember });
 }
@@ -77,6 +84,12 @@ export async function DELETE(req: NextRequest) {
   // Clean invite notification if still pending
   const invites = await inviteKv.getInvites(normalizedEmail) ?? [];
   await inviteKv.setInvites(normalizedEmail, invites.filter(i => i.shop !== ctx.shop));
+
+  await activityKv.logShop(ctx.shop, {
+    type: "member_removed",
+    userEmail: ctx.session.email,
+    detail: `Removed ${normalizedEmail} from team`,
+  });
 
   return NextResponse.json({ ok: true });
 }

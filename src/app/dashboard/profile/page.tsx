@@ -4,7 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   User, Building2, Users, CheckCircle2, Lock,
-  Camera, Shield, Eye, Edit3, Crown, ChevronRight, Info,
+  Camera, Shield, Eye, Edit3, Crown, ChevronRight, Info, Activity, Clock,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -115,9 +115,10 @@ const ROLES = [
   },
 ];
 
-type Tab = "profile" | "brand" | "team";
+type Tab = "profile" | "brand" | "team" | "logs";
 
-interface TeamMember { email: string; role: string; addedAt: string; }
+interface TeamMember { email: string; role: string; addedAt: string; status?: "pending" | "active"; }
+interface ActivityLog { id: string; type: string; userEmail: string; detail: string; createdAt: string; }
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
@@ -281,6 +282,8 @@ export default function ProfilePage() {
   const [addRole, setAddRole]           = useState("marketing");
   const [addError, setAddError]         = useState("");
   const [addLoading, setAddLoading]     = useState(false);
+  const [logs, setLogs]                 = useState<ActivityLog[]>([]);
+  const [logsLoading, setLogsLoading]   = useState(false);
 
   const [currentPw, setCurrentPw]   = useState("");
   const [newPw, setNewPw]           = useState("");
@@ -332,6 +335,16 @@ export default function ProfilePage() {
       .then(d => setTeamMembers(d.members ?? []))
       .catch(() => {})
       .finally(() => setTeamLoading(false));
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab !== "logs") return;
+    setLogsLoading(true);
+    fetch("/api/activity")
+      .then(r => r.json())
+      .then(d => setLogs(d.logs ?? []))
+      .catch(() => {})
+      .finally(() => setLogsLoading(false));
   }, [tab]);
 
   const addMember = async () => {
@@ -401,6 +414,7 @@ export default function ProfilePage() {
     { key: "profile", label: "My Account",    icon: User      },
     { key: "brand",   label: "Brand Details", icon: Building2 },
     { key: "team",    label: "Team & Access", icon: Users     },
+    { key: "logs",    label: "Activity Logs", icon: Activity  },
   ];
 
   return (
@@ -678,6 +692,15 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {(m.status ?? "active") === "pending" ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D] px-2 py-0.5 rounded-full">
+                      <Clock size={9} /> Pending
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[10px] font-bold bg-[#F0FDF4] dark:bg-[#052E16] text-[#166534] dark:text-[#4ADE80] px-2 py-0.5 rounded-full">
+                      <CheckCircle2 size={9} /> Active
+                    </span>
+                  )}
                   <span className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full", ROLE_COLORS[m.role] ?? ROLE_COLORS.view_only)}>
                     {ROLE_LABELS[m.role] ?? m.role}
                   </span>
@@ -715,7 +738,7 @@ export default function ProfilePage() {
               {addError && <div className="text-[12px] text-[#EF4444] mt-2">{addError}</div>}
               <div className="text-[11px] text-[#A1A1AA] mt-2 flex items-start gap-1.5">
                 <Info size={11} className="shrink-0 mt-0.5" />
-                If they already have a Skylitee account, they get access immediately. If not, they get access when they sign up with this email.
+                They will receive a notification and must accept before getting store access. Status shows Pending until accepted.
               </div>
             </div>
           </Card>
@@ -758,6 +781,69 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── LOGS TAB ────────────────────────────────────────────────── */}
+      {tab === "logs" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader title="Activity Log" right={<span className="text-[11px] text-[#A1A1AA]">{logs.length} events</span>} />
+
+            {logsLoading ? (
+              <div className="py-6 text-center text-[12px] text-[#A1A1AA]">Loading…</div>
+            ) : logs.length === 0 ? (
+              <div className="py-8 text-center">
+                <Activity size={24} className="text-[#E5E5E5] dark:text-[#333] mx-auto mb-2" />
+                <div className="text-[13px] text-[#A1A1AA]">No activity recorded yet</div>
+                <div className="text-[11px] text-[#C4C4C0] mt-0.5">Logins, team changes and invite actions appear here</div>
+              </div>
+            ) : (
+              <div className="mt-2">
+                {logs.map(log => {
+                  const dot: Record<string, string> = {
+                    login: "bg-[#3B82F6]",
+                    invite_accepted: "bg-[#22C55E]",
+                    invite_declined: "bg-[#EF4444]",
+                    member_invited: "bg-[#F97316]",
+                    member_removed: "bg-[#EF4444]",
+                  };
+                  const label: Record<string, string> = {
+                    login: "Login",
+                    invite_accepted: "Accepted",
+                    invite_declined: "Declined",
+                    member_invited: "Invited",
+                    member_removed: "Removed",
+                  };
+                  return (
+                    <div key={log.id} className="flex items-start gap-3 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot[log.type] ?? "bg-[#A1A1AA]"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            log.type === "login" ? "bg-[#EFF6FF] dark:bg-[#0D1E3D] text-[#3B82F6]" :
+                            log.type === "invite_accepted" ? "bg-[#F0FDF4] dark:bg-[#052E16] text-[#22C55E]" :
+                            log.type === "invite_declined" || log.type === "member_removed" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A] text-[#EF4444]" :
+                            "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#F97316]"
+                          }`}>
+                            {label[log.type] ?? log.type}
+                          </span>
+                          <span className="text-[12px] text-[#18181B] dark:text-[#F4F4F5] font-medium truncate">{log.detail}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-[11px] text-[#A1A1AA]">{log.userEmail}</span>
+                          <span className="text-[#E5E5E5] dark:text-[#333]">·</span>
+                          <span className="text-[11px] text-[#A1A1AA]">
+                            {new Date(log.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
       )}

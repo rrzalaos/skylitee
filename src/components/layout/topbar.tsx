@@ -69,6 +69,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   const datePickerRef = useRef<HTMLDivElement>(null);
   const [invites, setInvites] = useState<Array<{ shop: string; role: string; addedAt: string; inviterEmail: string }>>([]);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Array<{ id: string; type: string; message: string; read: boolean; createdAt: string }>>([]);
   const { range, setPreset, setCustomRange, compareWith, setCompareWith } = useDateRange();
 
   useEffect(() => {
@@ -86,6 +87,10 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
     fetch("/api/invites")
       .then(r => r.json())
       .then(d => setInvites(d.invites ?? []))
+      .catch(() => {});
+    fetch("/api/notifications")
+      .then(r => r.json())
+      .then(d => setNotifications(d.notifications ?? []))
       .catch(() => {});
   }, [isAdmin]);
 
@@ -303,62 +308,103 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
         {!isAdmin && (
           <div className="relative" ref={bellRef}>
             <button
-              onClick={() => setShowBell(v => !v)}
+              onClick={() => {
+                setShowBell(v => !v);
+                // Mark notifications read when opening
+                if (!showBell && notifications.some(n => !n.read)) {
+                  fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
+                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                }
+              }}
               className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors relative"
             >
               <Bell size={14} />
-              {invites.length > 0 && (
+              {(invites.length + notifications.filter(n => !n.read).length) > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-[#EF4444] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5">
-                  {invites.length}
+                  {invites.length + notifications.filter(n => !n.read).length}
                 </span>
               )}
             </button>
             {showBell && (
-              <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 w-[300px]">
-                <div className="px-3.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
-                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Store Invitations</span>
-                  {invites.length > 0 && <span className="ml-1.5 text-[11px] bg-[#FEF2F2] text-[#EF4444] px-1.5 py-0.5 rounded-full font-semibold">{invites.length} pending</span>}
+              <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 w-[320px]">
+                <div className="px-3.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
+                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Notifications</span>
+                  {(invites.length + notifications.length) === 0
+                    ? <span className="text-[11px] text-[#A1A1AA]">All caught up</span>
+                    : <span className="text-[11px] text-[#A1A1AA]">{invites.length + notifications.length} items</span>}
                 </div>
-                {invites.length === 0 ? (
-                  <div className="px-3.5 py-4 text-[12px] text-[#A1A1AA] text-center">No pending invitations</div>
-                ) : (
-                  <div className="py-1.5 max-h-[320px] overflow-y-auto">
-                    {invites.map(inv => (
-                      <div key={inv.shop} className="px-3.5 py-3 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="w-7 h-7 bg-[#F5F5F4] dark:bg-[#262626] rounded-lg flex items-center justify-center shrink-0">
-                            <Store size={13} className="text-[#F97316]" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">
-                              {inv.shop.replace(".myshopify.com", "")}
-                            </div>
-                            <div className="text-[11px] text-[#A1A1AA]">
-                              Role: <span className="font-semibold capitalize">{inv.role.replace("_", " ")}</span>
-                              {" · "}{inv.inviterEmail}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleInvite(inv.shop, "accept")}
-                            disabled={inviteLoading === inv.shop}
-                            className="flex-1 py-1.5 bg-[#F97316] text-white rounded-lg text-[12px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50"
-                          >
-                            {inviteLoading === inv.shop ? "…" : "Accept"}
-                          </button>
-                          <button
-                            onClick={() => handleInvite(inv.shop, "decline")}
-                            disabled={inviteLoading === inv.shop}
-                            className="flex-1 py-1.5 border border-black/[0.08] dark:border-white/[0.08] text-[#71717A] dark:text-[#A1A1AA] rounded-lg text-[12px] font-semibold hover:bg-[#F5F5F4] dark:hover:bg-[#262626] transition-colors disabled:opacity-50"
-                          >
-                            Decline
-                          </button>
-                        </div>
+
+                <div className="max-h-[380px] overflow-y-auto">
+                  {/* ── Pending invitations ── */}
+                  {invites.length > 0 && (
+                    <>
+                      <div className="px-3.5 pt-2.5 pb-1">
+                        <span className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wider">Store Invitations</span>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      {invites.map(inv => (
+                        <div key={inv.shop} className="px-3.5 py-3 border-b border-black/[0.04] dark:border-white/[0.04]">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-lg flex items-center justify-center shrink-0">
+                              <Store size={13} className="text-[#F97316]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">
+                                {inv.shop.replace(".myshopify.com", "")}
+                              </div>
+                              <div className="text-[11px] text-[#A1A1AA]">
+                                <span className="capitalize">{inv.role.replace("_", " ")}</span>{" · "}by {inv.inviterEmail}
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-bold bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D] px-1.5 py-0.5 rounded-full uppercase">Pending</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleInvite(inv.shop, "accept")}
+                              disabled={inviteLoading === inv.shop}
+                              className="flex-1 py-1.5 bg-[#F97316] text-white rounded-lg text-[12px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50"
+                            >
+                              {inviteLoading === inv.shop ? "…" : "Accept"}
+                            </button>
+                            <button
+                              onClick={() => handleInvite(inv.shop, "decline")}
+                              disabled={inviteLoading === inv.shop}
+                              className="flex-1 py-1.5 border border-black/[0.08] dark:border-white/[0.08] text-[#71717A] dark:text-[#A1A1AA] rounded-lg text-[12px] font-semibold hover:bg-[#F5F5F4] dark:hover:bg-[#262626] transition-colors disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* ── Owner notifications (accept/decline history) ── */}
+                  {notifications.length > 0 && (
+                    <>
+                      <div className="px-3.5 pt-2.5 pb-1">
+                        <span className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wider">Activity</span>
+                      </div>
+                      {notifications.map(notif => (
+                        <div key={notif.id} className={`px-3.5 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 flex items-start gap-2.5 ${!notif.read ? "bg-[#FFFBEB] dark:bg-[#1A1400]" : ""}`}>
+                          <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                            notif.type === "invite_accepted" ? "bg-[#22C55E]" :
+                            notif.type === "invite_declined" ? "bg-[#EF4444]" : "bg-[#A1A1AA]"
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[12px] text-[#18181B] dark:text-[#F4F4F5] leading-snug">{notif.message}</div>
+                            <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+                              {new Date(notif.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {invites.length === 0 && notifications.length === 0 && (
+                    <div className="px-3.5 py-6 text-[12px] text-[#A1A1AA] text-center">No notifications yet</div>
+                  )}
+                </div>
               </div>
             )}
           </div>
