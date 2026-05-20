@@ -260,6 +260,37 @@ export default function ProfilePage() {
   const [tab, setTab]           = useState<Tab>("profile");
   const [saved, setSaved]       = useState(false);
 
+  const [currentPw, setCurrentPw]   = useState("");
+  const [newPw, setNewPw]           = useState("");
+  const [confirmPw, setConfirmPw]   = useState("");
+  const [pwError, setPwError]       = useState("");
+  const [pwSuccess, setPwSuccess]   = useState(false);
+  const [pwLoading, setPwLoading]   = useState(false);
+
+  const changePassword = async () => {
+    setPwError("");
+    if (!currentPw || !newPw || !confirmPw) { setPwError("All fields are required."); return; }
+    if (newPw !== confirmPw) { setPwError("New passwords do not match."); return; }
+    if (newPw.length < 8) { setPwError("Password must be at least 8 characters."); return; }
+    setPwLoading(true);
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+    });
+    const json = await res.json() as { ok?: boolean; error?: string };
+    setPwLoading(false);
+    if (res.ok && json.ok) {
+      setPwSuccess(true);
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+      setTimeout(() => setPwSuccess(false), 3500);
+    } else {
+      setPwError(json.error || "Failed to change password.");
+    }
+  };
+
+  const pwInputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then(r => r.json())
@@ -395,21 +426,29 @@ export default function ProfilePage() {
           </Card>
 
           <Card>
-            <CardHeader
-              title={<span className="flex items-center gap-1.5"><Lock size={13} className="text-[#A1A1AA]" /> Password & Security</span>}
-              right={<span className="text-[11px] bg-[#F5F5F4] dark:bg-[#1C1C1C] px-2 py-0.5 rounded-full text-[#A1A1AA]">Auth required</span>}
-            />
-            <div className="text-[12px] text-[#71717A] mb-3">
-              Password management is available once account-based authentication is enabled.
+            <CardHeader title={<span className="flex items-center gap-1.5"><Lock size={13} className="text-[#A1A1AA]" /> Password & Security</span>} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+              <div>
+                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Current password</label>
+                <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="••••••••" className={pwInputCls} />
+              </div>
+              <div>
+                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">New password</label>
+                <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="••••••••" className={pwInputCls} />
+              </div>
+              <div>
+                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Confirm new password</label>
+                <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && changePassword()} placeholder="••••••••" className={pwInputCls} />
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 opacity-50 pointer-events-none">
-              {["Current password", "New password", "Confirm new password"].map((label, i) => (
-                <div key={i}>
-                  <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">{label}</label>
-                  <input type="password" disabled placeholder="••••••••"
-                    className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] rounded-xl px-3 py-2 text-[13px] placeholder-[#A1A1AA]" />
-                </div>
-              ))}
+            {pwError && <div className="text-[12px] text-[#EF4444] mt-2">{pwError}</div>}
+            {pwSuccess && <div className="text-[12px] text-[#22C55E] font-semibold mt-2">✓ Password changed successfully!</div>}
+            <div className="flex justify-end mt-4">
+              <button onClick={changePassword} disabled={pwLoading}
+                className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[13px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
+                {pwLoading ? "Saving…" : "Change Password"}
+              </button>
             </div>
           </Card>
 
