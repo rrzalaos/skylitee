@@ -4,8 +4,8 @@ import { kv } from "@vercel/kv";
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
 }
-async function kvSet(key: string, value: string): Promise<void> {
-  try { await kv.set(key, value); } catch { /* KV not configured */ }
+async function kvSet(key: string, value: unknown): Promise<void> {
+  try { await kv.set(key, value as Parameters<typeof kv.set>[1]); } catch { /* KV not configured */ }
 }
 async function kvDel(key: string): Promise<void> {
   try { await kv.del(key); } catch { /* KV not configured */ }
@@ -45,6 +45,10 @@ export const shopKv = {
   getChargeId:  (shop: string) => kvGet<string>(`shop:${shop}:charge_id`),
   setChargeId:  (shop: string, v: string) => kvSet(`shop:${shop}:charge_id`, v),
 
+  // Team members per shop
+  getTeam: (shop: string) => kvGet<TeamMember[]>(`shop:${shop}:team`),
+  setTeam: (shop: string, v: TeamMember[]) => kvSet(`shop:${shop}:team`, v),
+
   // Wipe all data for a shop (used on uninstall / shop/redact webhook)
   async delAllShopData(shop: string): Promise<void> {
     const keys = [
@@ -57,7 +61,21 @@ export const shopKv = {
       `shop:${shop}:meta_ad_account`,
       `shop:${shop}:plan`,
       `shop:${shop}:charge_id`,
+      `shop:${shop}:team`,
     ];
     await Promise.allSettled(keys.map(k => kvDel(k)));
   },
+};
+
+export interface TeamMember {
+  email: string;
+  role: "admin" | "marketing" | "view_only";
+  addedAt: string;
+}
+
+// Pending team invites — keyed by invitee email, claimed on signup/login
+export const teamKv = {
+  getPending: (email: string) => kvGet<Array<{ shop: string; role: string }>>(`team:pending:${email.toLowerCase()}`),
+  setPending: (email: string, v: Array<{ shop: string; role: string }>) => kvSet(`team:pending:${email.toLowerCase()}`, v),
+  delPending: (email: string) => kvDel(`team:pending:${email.toLowerCase()}`),
 };

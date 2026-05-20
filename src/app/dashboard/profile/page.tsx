@@ -117,6 +117,19 @@ const ROLES = [
 
 type Tab = "profile" | "brand" | "team";
 
+interface TeamMember { email: string; role: string; addedAt: string; }
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  marketing: "Marketing",
+  view_only: "View Only",
+};
+const ROLE_COLORS: Record<string, string> = {
+  admin: "text-[#3B82F6] bg-[#EFF6FF] dark:bg-[#0D1E3D]",
+  marketing: "text-[#8B5CF6] bg-[#F5F3FF] dark:bg-[#1E1240]",
+  view_only: "text-[#71717A] bg-[#F5F5F4] dark:bg-[#1C1C1C]",
+};
+
 // ── Admin profile view ───────────────────────────────────────────────────────
 
 function AdminProfile() {
@@ -260,6 +273,15 @@ export default function ProfilePage() {
   const [tab, setTab]           = useState<Tab>("profile");
   const [saved, setSaved]       = useState(false);
 
+  const [meEmail, setMeEmail]       = useState("");
+  const [meName, setMeName]         = useState("");
+  const [teamMembers, setTeamMembers]   = useState<TeamMember[]>([]);
+  const [teamLoading, setTeamLoading]   = useState(false);
+  const [addEmail, setAddEmail]         = useState("");
+  const [addRole, setAddRole]           = useState("marketing");
+  const [addError, setAddError]         = useState("");
+  const [addLoading, setAddLoading]     = useState(false);
+
   const [currentPw, setCurrentPw]   = useState("");
   const [newPw, setNewPw]           = useState("");
   const [confirmPw, setConfirmPw]   = useState("");
@@ -294,9 +316,51 @@ export default function ProfilePage() {
   useEffect(() => {
     fetch("/api/auth/me")
       .then(r => r.json())
-      .then(d => setIsAdmin(!!d.isAdmin))
+      .then(d => {
+        setIsAdmin(!!d.isAdmin);
+        setMeEmail(d.email ?? "");
+        setMeName(d.name ?? "");
+      })
       .catch(() => setIsAdmin(false));
   }, []);
+
+  useEffect(() => {
+    if (tab !== "team") return;
+    setTeamLoading(true);
+    fetch("/api/team")
+      .then(r => r.json())
+      .then(d => setTeamMembers(d.members ?? []))
+      .catch(() => {})
+      .finally(() => setTeamLoading(false));
+  }, [tab]);
+
+  const addMember = async () => {
+    setAddError("");
+    if (!addEmail.trim()) { setAddError("Enter an email address."); return; }
+    setAddLoading(true);
+    const res = await fetch("/api/team", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: addEmail.trim(), role: addRole }),
+    });
+    const json = await res.json() as { ok?: boolean; error?: string; member?: TeamMember };
+    setAddLoading(false);
+    if (res.ok && json.member) {
+      setTeamMembers(prev => [...prev, json.member!]);
+      setAddEmail("");
+    } else {
+      setAddError(json.error ?? "Failed to add member.");
+    }
+  };
+
+  const removeMember = async (email: string) => {
+    const res = await fetch("/api/team", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (res.ok) setTeamMembers(prev => prev.filter(m => m.email !== email));
+  };
 
   useEffect(() => {
     if (isAdmin) return;
@@ -585,29 +649,74 @@ export default function ProfilePage() {
       {tab === "team" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Team Members" right="1 member" />
+            <CardHeader title="Team Members" right={`${1 + teamMembers.length} member${teamMembers.length ? "s" : ""}`} />
+
+            {/* Owner row — always first */}
             <div className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-center gap-3">
-                <Avatar photoUrl={data.photoUrl} name={data.fullName || "Owner"} size={40} />
+                <Avatar photoUrl={data.photoUrl} name={meName || "Owner"} size={40} />
                 <div>
-                  <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{data.fullName || "Account Owner"}</div>
-                  <div className="text-[11px] text-[#A1A1AA]">{data.email || "—"} · {data.mobile || "—"}</div>
+                  <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{meName || "Account Owner"} <span className="text-[11px] text-[#A1A1AA] font-normal">(you)</span></div>
+                  <div className="text-[11px] text-[#A1A1AA]">{meEmail || "—"}</div>
                 </div>
               </div>
               <span className="flex items-center gap-1 text-[11px] font-bold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] px-2.5 py-1 rounded-full">
                 <Crown size={10} /> Owner
               </span>
             </div>
-            <div className="pt-3">
-              <div className="flex items-center gap-2 text-[12px] text-[#A1A1AA] mb-3">
-                <Info size={12} />
-                Multi-user login and invite system is on our roadmap.
+
+            {/* Team members */}
+            {teamLoading ? (
+              <div className="py-4 text-center text-[12px] text-[#A1A1AA]">Loading…</div>
+            ) : teamMembers.map(m => (
+              <div key={m.email} className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
+                <div className="flex items-center gap-3">
+                  <Avatar photoUrl="" name={m.email} size={40} />
+                  <div>
+                    <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{m.email}</div>
+                    <div className="text-[11px] text-[#A1A1AA]">Added {new Date(m.addedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full", ROLE_COLORS[m.role] ?? ROLE_COLORS.view_only)}>
+                    {ROLE_LABELS[m.role] ?? m.role}
+                  </span>
+                  <button
+                    onClick={() => removeMember(m.email)}
+                    className="text-[11px] text-[#EF4444] hover:text-[#DC2626] font-semibold px-2 py-1 rounded-lg hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-              <button disabled
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#A1A1AA] text-[13px] font-semibold cursor-not-allowed w-full justify-center border border-dashed border-[#D4D4D4] dark:border-[#333]">
-                <Users size={14} /> + Invite team member
-                <span className="text-[11px] bg-[#E5E5E5] dark:bg-[#262626] px-1.5 py-0.5 rounded-full ml-1">Coming soon</span>
-              </button>
+            ))}
+
+            {/* Add member form */}
+            <div className="pt-4 mt-1 border-t border-black/[0.06] dark:border-white/[0.06]">
+              <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Add Team Member</div>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="email" value={addEmail} onChange={e => setAddEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addMember()}
+                  placeholder="colleague@email.com"
+                  className="flex-1 min-w-[180px] bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all"
+                />
+                <select value={addRole} onChange={e => setAddRole(e.target.value)}
+                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] appearance-none cursor-pointer">
+                  <option value="admin">Admin</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="view_only">View Only</option>
+                </select>
+                <button onClick={addMember} disabled={addLoading}
+                  className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50 whitespace-nowrap">
+                  {addLoading ? "Adding…" : "+ Add"}
+                </button>
+              </div>
+              {addError && <div className="text-[12px] text-[#EF4444] mt-2">{addError}</div>}
+              <div className="text-[11px] text-[#A1A1AA] mt-2 flex items-start gap-1.5">
+                <Info size={11} className="shrink-0 mt-0.5" />
+                If they already have a Skylitee account, they get access immediately. If not, they get access when they sign up with this email.
+              </div>
             </div>
           </Card>
 
