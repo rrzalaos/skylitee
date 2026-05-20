@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { getGoogleAccessToken } from "@/lib/google";
 import { getGa4RefreshToken, getGa4Property, getAuthorizedShop } from "@/lib/session";
 
@@ -41,6 +42,10 @@ export async function GET(req: NextRequest) {
   const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
+
+  const cacheKey = `cache:${shop}:ga4:${startDate}:${endDate}`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+
   const dateRanges = [{ startDate, endDate }];
 
   const runReport = async (dimensions: GA4Dimension[], metrics: GA4Metric[], limit = 10) => {
@@ -141,7 +146,7 @@ export async function GET(req: NextRequest) {
     purchaseRate: eRow ? +(parseInt(eRow.metricValues[3].value) / Math.max(parseInt(eRow.metricValues[2].value), 1) * 100).toFixed(1) : 0,
   } : null;
 
-  return NextResponse.json({
+  const result = {
     property: propertyName,
     period: { startDate, endDate },
     kpis: { sessions, users, pageviews, bounceRate, avgSessionMin, newUsers },
@@ -205,5 +210,7 @@ export async function GET(req: NextRequest) {
       sessions: parseInt(r.metricValues[0].value),
       users: parseInt(r.metricValues[1].value),
     })),
-  });
+  };
+  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
+  return NextResponse.json(result);
 }

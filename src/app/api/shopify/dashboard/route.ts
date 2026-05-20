@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { shopifyFetch, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -10,6 +11,9 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
+
+  const cacheKey = `cache:${shop}:dashboard:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const now = new Date();
   const periodStart = fromParam
@@ -64,7 +68,7 @@ export async function GET(req: NextRequest) {
     .slice(0, 5)
     .map(([city, revenue]) => ({ city, revenue: Math.round(revenue) }));
 
-  return NextResponse.json({
+  const result = {
     shop,
     kpis: {
       grossSales: Math.round(grossSales),
@@ -80,5 +84,7 @@ export async function GET(req: NextRequest) {
     dailyRevenue,
     topCities,
     period: { from: periodStart.toISOString(), to: periodEnd.toISOString(), days },
-  });
+  };
+  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
+  return NextResponse.json(result);
 }

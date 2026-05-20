@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { shopifyFetch, ShopifyCustomer } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -6,6 +7,9 @@ export async function GET(req: NextRequest) {
   const session = await getShopifySession(req);
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
   const { shop, token } = session;
+
+  const cacheKey = `cache:${shop}:customers`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const { customers } = await shopifyFetch<{ customers: ShopifyCustomer[] }>(
     shop, token,
@@ -34,8 +38,10 @@ export async function GET(req: NextRequest) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const newThisMonth = customers.filter(c => new Date(c.created_at) >= monthStart).length;
 
-  return NextResponse.json({
+  const result = {
     kpis: { totalCustomers, repeat, oneTime, avgLTV: Math.round(avgLTV), newThisMonth },
     topCities,
-  });
+  };
+  kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});
+  return NextResponse.json(result);
 }

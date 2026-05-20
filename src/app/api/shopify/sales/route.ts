@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { shopifyFetch } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -25,6 +26,10 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
+
+  const cacheKey = `cache:${shop}:sales:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+
   const periodStart = fromParam ? new Date(fromParam + "T00:00:00.000Z") : new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = toParam ? new Date(toParam + "T23:59:59.999Z") : now;
   const days = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
@@ -100,9 +105,11 @@ export async function GET(req: NextRequest) {
       date: o.created_at.substring(5, 10),
     }));
 
-  return NextResponse.json({
+  const result = {
     kpis: { grossSales: Math.round(grossSales), totalOrders, aov: Math.round(aov), newCustomers, returningCustomers, codOrders, prepaidOrders, avgItemsPerOrder },
     topByQty, topByRevenue, allBySku, topCities, topStates, recentOrders,
     period: { days },
-  });
+  };
+  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
+  return NextResponse.json(result);
 }

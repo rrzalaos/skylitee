@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
 import { resolveMetaAccount } from "@/lib/meta";
 
@@ -51,6 +52,10 @@ export async function GET(req: NextRequest) {
   const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
+
+  const cacheKey = `cache:${shop}:meta:${from}:${to}`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
   const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
 
@@ -180,7 +185,7 @@ export async function GET(req: NextRequest) {
     ).toFixed(2),
   }));
 
-  return NextResponse.json({
+  const result = {
     adAccountId: selected.id,
     adAccountName: selected.name,
     currency: selected.currency,
@@ -200,5 +205,7 @@ export async function GET(req: NextRequest) {
     },
     campaigns,
     daily,
-  });
+  };
+  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
+  return NextResponse.json(result);
 }

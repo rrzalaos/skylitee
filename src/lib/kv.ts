@@ -4,8 +4,14 @@ import { kv } from "@vercel/kv";
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
 }
-async function kvSet(key: string, value: unknown): Promise<void> {
-  try { await kv.set(key, value as Parameters<typeof kv.set>[1]); } catch { /* KV not configured */ }
+async function kvSet(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+  try {
+    if (ttlSeconds) {
+      await kv.set(key, value as Parameters<typeof kv.set>[1], { ex: ttlSeconds });
+    } else {
+      await kv.set(key, value as Parameters<typeof kv.set>[1]);
+    }
+  } catch { /* KV not configured */ }
 }
 async function kvDel(key: string): Promise<void> {
   try { await kv.del(key); } catch { /* KV not configured */ }

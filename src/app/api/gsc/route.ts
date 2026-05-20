@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { getGoogleAccessToken } from "@/lib/google";
 import { getGscRefreshToken, getGscSite, getAuthorizedShop } from "@/lib/session";
 
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
   const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
+
+  const cacheKey = `cache:${shop}:gsc:${startDate}:${endDate}`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const query = (extra: object) =>
     fetch(
@@ -124,7 +128,7 @@ export async function GET(req: NextRequest) {
   const sitemapErrors = sitemaps.reduce((s, m) => s + m.errors, 0);
   if (sitemapErrors > 0) achievements.push({ icon: "🔴", label: `${sitemapErrors} sitemap error${sitemapErrors > 1 ? "s" : ""} detected`, type: "bad" });
 
-  return NextResponse.json({
+  const result = {
     site: siteUrl,
     period: { startDate, endDate },
     kpis: {
@@ -166,5 +170,7 @@ export async function GET(req: NextRequest) {
     })),
     sitemaps,
     achievements,
-  });
+  };
+  kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});
+  return NextResponse.json(result);
 }

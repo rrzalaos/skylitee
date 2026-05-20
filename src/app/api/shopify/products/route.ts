@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import { shopifyFetch, ShopifyProduct, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -6,6 +7,9 @@ export async function GET(req: NextRequest) {
   const session = await getShopifySession(req);
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
   const { shop, token } = session;
+
+  const cacheKey = `cache:${shop}:products`;
+  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -34,5 +38,7 @@ export async function GET(req: NextRequest) {
     return { id: p.id, name: p.title, total: sold, revenue: Math.round(revenue), stock, price, signal };
   }).sort((a, b) => b.revenue - a.revenue);
 
-  return NextResponse.json({ products: result });
+  const response = { products: result };
+  kv.set(cacheKey, response, { ex: 900 }).catch(() => {});
+  return NextResponse.json(response);
 }
