@@ -61,7 +61,10 @@ function PricingContent() {
       if (data.valid) {
         setCouponResult({ discountPct: data.discountPct!, finalPrice: data.finalPrice! });
       } else {
-        setCouponError(data.error ?? "Invalid coupon code");
+        const msg = data.error === "not_connected"
+        ? "Please connect your Shopify store first (Settings → Connections)"
+        : data.error ?? "Invalid coupon code";
+      setCouponError(msg);
       }
     } catch {
       setCouponError("Network error. Please try again.");
