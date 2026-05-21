@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
+import { couponKv, Coupon } from "@/lib/kv";
+
+async function checkAdmin(req: NextRequest): Promise<boolean> {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return false;
+  const session = await getSession(token);
+  return session?.email === ADMIN_EMAIL;
+}
+
+export async function GET(req: NextRequest) {
+  if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const coupons = await couponKv.listAll();
+  coupons.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return NextResponse.json({ coupons });
+}
+
+export async function POST(req: NextRequest) {
+  if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const body = await req.json() as {
+    code: string;
+    discountPct: number;
+    maxUses: number;
+    expiresAt: string | null;
+  };
+
+  const normalized = body.code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!normalized || normalized.length < 3) {
+    return NextResponse.json({ error: "Code must be at least 3 characters (letters & numbers only)" }, { status: 400 });
+  }
+  if (body.discountPct < 1 || body.discountPct > 100) {
+    return NextResponse.json({ error: "Discount must be between 1% and 100%" }, { status: 400 });
+  }
+  if (body.maxUses < 0) {
+    return NextResponse.json({ error: "Max uses must be 0 or more" }, { status: 400 });
+  }
+
+  const existing = await couponKv.get(normalized);
+  if (existing) return NextResponse.json({ error: "A coupon with this code already exists" }, { status: 400 });
+
+  const coupon: Coupon = {
+    code: normalized,
+    discountPct: body.discountPct,
+    maxUses: body.maxUses,
+    usedCount: 0,
+    expiresAt: body.expiresAt || null,
+    createdAt: new Date().toISOString(),
+    active: true,
+    redemptions: [],
+  };
+
+  await couponKv.set(normalized, coupon);
+  await couponKv.addToIndex(normalized);
+
+  return NextResponse.json({ coupon });
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const code = req.nextUrl.searchParams.get("code");
+  if (!code) return NextResponse.json({ error: "code required" }, { status: 400 });
+
+  const normalized = code.toUpperCase();
+  await couponKv.del(normalized);
+  await couponKv.removeFromIndex(normalized);
+
+  return NextResponse.json({ ok: true });
+}
+
+// PATCH — deactivate/reactivate a coupon
+export async function PATCH(req: NextRequest) {
+  if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  const { code, active } = await req.json() as { code: string; active: boolean };
+  const normalized = code.toUpperCase();
+  const coupon = await couponKv.get(normalized);
+  if (!coupon) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await couponKv.set(normalized, { ...coupon, active });
+  return NextResponse.json({ ok: true });
+}

@@ -7,6 +7,7 @@ import {
   Users, BarChart2, LayoutDashboard,
   Search, UserX, UserCheck, ShieldCheck,
   Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
+  Tag, Plus, Trash2, ToggleLeft, ToggleRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,6 +31,17 @@ interface StoreStats {
   hasMetaToken: boolean;
   loading: boolean;
   error: boolean;
+}
+
+interface Coupon {
+  code: string;
+  discountPct: number;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: string | null;
+  createdAt: string;
+  active: boolean;
+  redemptions: string[];
 }
 
 const ADMIN_PIN = "skylitee2026";
@@ -96,7 +108,7 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
   );
 }
 
-type AdminTab = "overview" | "users" | "analytics";
+type AdminTab = "overview" | "users" | "analytics" | "coupons";
 
 export default function AdminPage() {
   const [authed, setAuthed]       = useState(false);
@@ -110,6 +122,17 @@ export default function AdminPage() {
   const [toast, setToast]         = useState("");
   const [loginAsLoading, setLoginAsLoading] = useState<string | null>(null);
   const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
+
+  // Coupons state
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newDiscount, setNewDiscount] = useState(100);
+  const [newMaxUses, setNewMaxUses] = useState(1);
+  const [newExpiry, setNewExpiry] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createLoading, setCreateLoading] = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -156,6 +179,22 @@ export default function AdminPage() {
       loadStoreStats(users);
     }
   }, [users, tab, loadStoreStats]);
+
+  const loadCoupons = useCallback(async () => {
+    setCouponsLoading(true);
+    try {
+      const res = await fetch("/api/admin/coupons");
+      if (res.ok) {
+        const data = await res.json() as { coupons: Coupon[] };
+        setCoupons(data.coupons ?? []);
+      }
+    } catch { /* ignore */ }
+    setCouponsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === "coupons") loadCoupons();
+  }, [tab, loadCoupons]);
 
   const doLogin = () => {
     if (pin === ADMIN_PIN) {
@@ -227,10 +266,76 @@ export default function AdminPage() {
     return matchQ && matchStatus;
   });
 
+  const createCoupon = async () => {
+    setCreateError(null);
+    setCreateLoading(true);
+    try {
+      const res = await fetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: newCode,
+          discountPct: newDiscount,
+          maxUses: newMaxUses,
+          expiresAt: newExpiry || null,
+        }),
+      });
+      const data = await res.json() as { coupon?: Coupon; error?: string };
+      if (data.coupon) {
+        setCoupons(prev => [data.coupon!, ...prev]);
+        setShowCreateForm(false);
+        setNewCode("");
+        setNewDiscount(100);
+        setNewMaxUses(1);
+        setNewExpiry("");
+        showToast("Coupon created.");
+      } else {
+        setCreateError(data.error ?? "Failed to create coupon");
+      }
+    } catch {
+      setCreateError("Network error.");
+    }
+    setCreateLoading(false);
+  };
+
+  const deleteCoupon = async (code: string) => {
+    const res = await fetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, { method: "DELETE" });
+    if (res.ok) {
+      setCoupons(prev => prev.filter(c => c.code !== code));
+      showToast("Coupon deleted.");
+    }
+  };
+
+  const toggleCoupon = async (coupon: Coupon) => {
+    const res = await fetch("/api/admin/coupons", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: coupon.code, active: !coupon.active }),
+    });
+    if (res.ok) {
+      setCoupons(prev => prev.map(c => c.code === coupon.code ? { ...c, active: !c.active } : c));
+      showToast(`Coupon ${coupon.active ? "deactivated" : "activated"}.`);
+    }
+  };
+
+  const generateRandomCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const code = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    setNewCode(code);
+  };
+
+  const couponStatus = (c: Coupon) => {
+    if (!c.active) return { label: "Inactive", color: "text-[#A1A1AA]" };
+    if (c.expiresAt && new Date(c.expiresAt) < new Date()) return { label: "Expired", color: "text-[#EF4444]" };
+    if (c.maxUses > 0 && c.usedCount >= c.maxUses) return { label: "Exhausted", color: "text-[#EAB308]" };
+    return { label: "Active", color: "text-[#22C55E]" };
+  };
+
   const tabs: { key: AdminTab; label: string; icon: React.ElementType }[] = [
     { key: "overview",  label: "Overview",            icon: LayoutDashboard },
     { key: "users",     label: `Users (${users.length})`, icon: Users       },
     { key: "analytics", label: "Analytics",           icon: BarChart2       },
+    { key: "coupons",   label: `Coupons (${coupons.length})`, icon: Tag     },
   ];
 
   return (
@@ -548,6 +653,198 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── COUPONS ── */}
+      {tab === "coupons" && (
+        <div className="space-y-4">
+          {/* Header + Create button */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 className="text-[15px] font-bold dark:text-[#F4F4F5]">Coupon Codes</h3>
+              <p className="text-[13px] text-[#A1A1AA]">Generate discount codes for clients</p>
+            </div>
+            <button
+              onClick={() => setShowCreateForm(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"
+            >
+              <Plus size={12} /> Generate Coupon
+            </button>
+          </div>
+
+          {/* Create form */}
+          {showCreateForm && (
+            <Card>
+              <div className="text-[14px] font-bold dark:text-[#F4F4F5] mb-4">New Coupon</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Code */}
+                <div>
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Coupon Code</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={newCode}
+                      onChange={e => setNewCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                      placeholder="e.g. RRAHI2025"
+                      maxLength={20}
+                      className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] font-mono uppercase"
+                    />
+                    <button
+                      onClick={generateRandomCode}
+                      className="px-3 py-2 rounded-xl text-[12px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#71717A] hover:text-[#18181B] dark:hover:text-[#F4F4F5] transition-colors whitespace-nowrap"
+                    >
+                      Random
+                    </button>
+                  </div>
+                </div>
+
+                {/* Discount % */}
+                <div>
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">
+                    Discount — {newDiscount}% off
+                    {newDiscount === 100 && <span className="ml-1 text-[#22C55E]">(Free access)</span>}
+                  </label>
+                  <input
+                    type="range"
+                    min={1}
+                    max={100}
+                    value={newDiscount}
+                    onChange={e => setNewDiscount(Number(e.target.value))}
+                    className="w-full accent-[#F97316]"
+                  />
+                  <div className="flex justify-between text-[11px] text-[#A1A1AA] mt-0.5">
+                    <span>1%</span>
+                    <span className="text-[#F97316] font-bold">
+                      ${((29 * (1 - newDiscount / 100))).toFixed(2)}/mo
+                      {newDiscount === 100 && " · FREE"}
+                    </span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                {/* Max uses */}
+                <div>
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Max Uses (0 = unlimited)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newMaxUses}
+                    onChange={e => setNewMaxUses(Math.max(0, Number(e.target.value)))}
+                    className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]"
+                  />
+                </div>
+
+                {/* Expiry */}
+                <div>
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Expiry Date (optional)</label>
+                  <input
+                    type="date"
+                    value={newExpiry}
+                    onChange={e => setNewExpiry(e.target.value)}
+                    className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]"
+                  />
+                </div>
+              </div>
+
+              {createError && (
+                <p className="text-[12px] text-[#EF4444] font-semibold mt-3">{createError}</p>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={createCoupon}
+                  disabled={createLoading || !newCode.trim()}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors disabled:opacity-50"
+                >
+                  {createLoading ? <RefreshCw size={11} className="animate-spin" /> : <Plus size={11} />}
+                  Create Coupon
+                </button>
+                <button
+                  onClick={() => { setShowCreateForm(false); setCreateError(null); }}
+                  className="px-4 py-2 rounded-xl text-[13px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Card>
+          )}
+
+          {/* Coupons table */}
+          <Card>
+            {couponsLoading ? (
+              <div className="py-10 text-center text-[13px] text-[#A1A1AA]">Loading coupons…</div>
+            ) : coupons.length === 0 ? (
+              <div className="py-10 text-center text-[13px] text-[#A1A1AA]">No coupons yet. Generate your first one above.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px] min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                      {["Code", "Discount", "Uses", "Expires", "Status", "Actions"].map(h => (
+                        <th key={h} className="text-left text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-4 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coupons.map(c => {
+                      const status = couponStatus(c);
+                      return (
+                        <tr key={c.code} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#FAFAF9] dark:hover:bg-[#1C1C1C] transition-colors">
+                          <td className="py-3 pr-4">
+                            <span className="font-mono font-bold text-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2 py-0.5 rounded-lg text-[12px]">
+                              {c.code}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 font-bold dark:text-[#F4F4F5]">
+                            {c.discountPct}% off
+                            {c.discountPct === 100 && (
+                              <span className="ml-1 text-[#22C55E] font-semibold text-[11px]">FREE</span>
+                            )}
+                            {c.discountPct < 100 && (
+                              <div className="text-[11px] text-[#A1A1AA] font-normal">
+                                ${(29 * (1 - c.discountPct / 100)).toFixed(2)}/mo
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 pr-4 dark:text-[#F4F4F5]">
+                            {c.usedCount} / {c.maxUses === 0 ? "∞" : c.maxUses}
+                          </td>
+                          <td className="py-3 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">
+                            {c.expiresAt
+                              ? new Date(c.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })
+                              : "Never"}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span className={cn("text-[12px] font-bold", status.color)}>
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => toggleCoupon(c)}
+                                title={c.active ? "Deactivate" : "Activate"}
+                                className="text-[#A1A1AA] hover:text-[#F97316] transition-colors"
+                              >
+                                {c.active ? <ToggleRight size={16} className="text-[#22C55E]" /> : <ToggleLeft size={16} />}
+                              </button>
+                              <button
+                                onClick={() => deleteCoupon(c.code)}
+                                title="Delete coupon"
+                                className="text-[#A1A1AA] hover:text-[#EF4444] transition-colors"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </div>
       )}

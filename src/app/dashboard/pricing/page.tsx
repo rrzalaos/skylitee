@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Zap } from "lucide-react";
+import { Check, ChevronDown, Tag, Zap } from "lucide-react";
 import { PLANS } from "@/lib/billing";
 
 export default function PricingPage() {
@@ -12,11 +12,23 @@ export default function PricingPage() {
   );
 }
 
+interface CouponResult {
+  discountPct: number;
+  finalPrice: number;
+}
+
 function PricingContent() {
   const searchParams = useSearchParams();
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Coupon state
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
 
   const plan = PLANS[0];
   const errorParam = searchParams.get("error");
@@ -34,14 +46,64 @@ function PricingContent() {
     if (errorParam === "failed") setError("Something went wrong. Please try again.");
   }, [errorParam]);
 
+  async function validateCoupon() {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponResult(null);
+    try {
+      const res = await fetch("/api/billing/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, action: "validate" }),
+      });
+      const data = await res.json() as { valid?: boolean; discountPct?: number; finalPrice?: number; error?: string };
+      if (data.valid) {
+        setCouponResult({ discountPct: data.discountPct!, finalPrice: data.finalPrice! });
+      } else {
+        setCouponError(data.error ?? "Invalid coupon code");
+      }
+    } catch {
+      setCouponError("Network error. Please try again.");
+    }
+    setCouponLoading(false);
+  }
+
   async function subscribe() {
     setLoading(true);
     setError(null);
+
+    // 100% off — bypass Shopify billing entirely
+    if (couponResult?.discountPct === 100) {
+      try {
+        const res = await fetch("/api/billing/coupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: couponCode, action: "apply" }),
+        });
+        const data = await res.json() as { ok?: boolean; error?: string };
+        if (data.ok) {
+          window.location.href = "/dashboard?subscribed=1";
+        } else {
+          setError(data.error ?? "Could not apply coupon. Please try again.");
+          setLoading(false);
+        }
+      } catch {
+        setError("Network error. Please try again.");
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Regular subscription (with or without partial-discount coupon)
     try {
       const res = await fetch("/api/billing/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id }),
+        body: JSON.stringify({
+          planId: plan.id,
+          ...(couponResult ? { couponCode } : {}),
+        }),
       });
       const data = await res.json() as { confirmationUrl?: string; error?: string };
       if (data.confirmationUrl) {
@@ -57,6 +119,18 @@ function PricingContent() {
   }
 
   const isActive = currentPlan === plan.id;
+
+  const displayPrice = couponResult
+    ? couponResult.finalPrice
+    : plan.price;
+
+  const btnLabel = loading
+    ? "Redirecting to Shopify…"
+    : couponResult?.discountPct === 100
+      ? "Get Free Access"
+      : couponResult
+        ? `Subscribe at $${couponResult.finalPrice}/mo`
+        : "Start 14-day free trial";
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center py-10 px-4">
@@ -100,10 +174,40 @@ function PricingContent() {
             <div className="text-[12px] text-[#22C55E] font-semibold mt-0.5">14-day free trial included</div>
           </div>
           <div className="text-right">
-            <div className="text-[32px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-none">${plan.price}</div>
-            <div className="text-[12px] text-[#A1A1AA]">/month after trial</div>
+            {couponResult ? (
+              <div>
+                <div className="flex items-end gap-1.5 justify-end">
+                  <span className="text-[20px] font-bold text-[#A1A1AA] line-through leading-none">${plan.price}</span>
+                  {couponResult.finalPrice === 0 ? (
+                    <span className="text-[28px] font-black text-[#22C55E] leading-none">FREE</span>
+                  ) : (
+                    <span className="text-[28px] font-black text-[#22C55E] leading-none">${couponResult.finalPrice}</span>
+                  )}
+                </div>
+                <div className="text-[12px] text-[#A1A1AA]">/month after trial</div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-[32px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-none">${displayPrice}</div>
+                <div className="text-[12px] text-[#A1A1AA]">/month after trial</div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Applied coupon badge */}
+        {couponResult && (
+          <div className="flex items-center gap-2 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-xl px-3 py-2 mb-5 text-[12px] font-bold text-[#15803D] dark:text-[#4ADE80]">
+            <Tag size={11} />
+            Coupon applied — {couponResult.discountPct}% off
+            <button
+              className="ml-auto text-[#A1A1AA] hover:text-[#EF4444] text-[11px] font-semibold"
+              onClick={() => { setCouponResult(null); setCouponCode(""); setCouponOpen(false); }}
+            >
+              Remove
+            </button>
+          </div>
+        )}
 
         {/* Features */}
         <ul className="space-y-3 mb-8">
@@ -121,13 +225,53 @@ function PricingContent() {
             ✓ Plan Active
           </div>
         ) : (
-          <button
-            onClick={subscribe}
-            disabled={loading}
-            className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-all shadow-sm disabled:opacity-60"
-          >
-            {loading ? "Redirecting to Shopify…" : "Start 14-day free trial"}
-          </button>
+          <>
+            <button
+              onClick={subscribe}
+              disabled={loading}
+              className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-all shadow-sm disabled:opacity-60"
+            >
+              {btnLabel}
+            </button>
+
+            {/* Coupon code section */}
+            {!couponResult && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setCouponOpen(v => !v)}
+                  className="flex items-center gap-1 text-[12px] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors mx-auto"
+                >
+                  <Tag size={11} />
+                  Have a coupon code?
+                  <ChevronDown size={11} className={`transition-transform ${couponOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {couponOpen && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        value={couponCode}
+                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
+                        onKeyDown={e => e.key === "Enter" && validateCoupon()}
+                        placeholder="Enter coupon code"
+                        className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] uppercase placeholder:normal-case"
+                      />
+                      <button
+                        onClick={validateCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="px-4 py-2 rounded-xl text-[13px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#E5E5E5] dark:hover:bg-[#333] transition-colors disabled:opacity-50"
+                      >
+                        {couponLoading ? "…" : "Apply"}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="text-[12px] text-[#EF4444] font-semibold">{couponError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

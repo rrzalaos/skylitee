@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShopifySession } from "@/lib/session";
 import { shopifyPost } from "@/lib/shopify";
-import { shopKv } from "@/lib/kv";
+import { shopKv, couponKv } from "@/lib/kv";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
@@ -38,6 +38,21 @@ export async function GET(req: NextRequest) {
     if (status === "active") {
       await shopKv.setPlan(shop, planId);
       await shopKv.setChargeId(shop, chargeId);
+
+      // Mark pending coupon (partial discount) as used
+      const pendingCoupon = await shopKv.getPendingCoupon(shop);
+      if (pendingCoupon) {
+        const coupon = await couponKv.get(pendingCoupon);
+        if (coupon) {
+          await couponKv.set(pendingCoupon, {
+            ...coupon,
+            usedCount: coupon.usedCount + 1,
+            redemptions: [...coupon.redemptions, shop],
+          });
+        }
+        await shopKv.delPendingCoupon(shop);
+      }
+
       return NextResponse.redirect(`${APP_URL}/dashboard?subscribed=1`);
     } else {
       return NextResponse.redirect(`${APP_URL}/dashboard/pricing?error=declined`);

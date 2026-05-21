@@ -1,5 +1,16 @@
 import { kv } from "@vercel/kv";
 
+export interface Coupon {
+  code: string;
+  discountPct: number;      // 1–100
+  maxUses: number;          // 0 = unlimited
+  usedCount: number;
+  expiresAt: string | null; // ISO date or null
+  createdAt: string;
+  active: boolean;
+  redemptions: string[];    // shops that redeemed
+}
+
 // Gracefully no-ops if KV env vars are not set (local dev without KV)
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
@@ -50,6 +61,11 @@ export const shopKv = {
   setPlan:      (shop: string, v: string) => kvSet(`shop:${shop}:plan`, v),
   getChargeId:  (shop: string) => kvGet<string>(`shop:${shop}:charge_id`),
   setChargeId:  (shop: string, v: string) => kvSet(`shop:${shop}:charge_id`, v),
+
+  // Pending coupon code (stored during discounted Shopify billing flow, 1-hour TTL)
+  getPendingCoupon: (shop: string) => kvGet<string>(`shop:${shop}:pending_coupon`),
+  setPendingCoupon: (shop: string, v: string) => kvSet(`shop:${shop}:pending_coupon`, v, 3600),
+  delPendingCoupon: (shop: string) => kvDel(`shop:${shop}:pending_coupon`),
 
   // Team members per shop
   getTeam: (shop: string) => kvGet<TeamMember[]>(`shop:${shop}:team`),
@@ -139,5 +155,25 @@ export const activityKv = {
     const all = (await kvGet<ActivityLog[]>(`user:${email.toLowerCase()}:activity`)) ?? [];
     all.unshift({ ...entry, id: `l_${Date.now()}`, createdAt: new Date().toISOString() });
     await kvSet(`user:${email.toLowerCase()}:activity`, all.slice(0, 100));
+  },
+};
+
+// Coupon codes
+export const couponKv = {
+  get: (code: string) => kvGet<Coupon>(`coupon:${code.toUpperCase()}`),
+  set: (code: string, v: Coupon) => kvSet(`coupon:${code.toUpperCase()}`, v),
+  del: (code: string) => kvDel(`coupon:${code.toUpperCase()}`),
+  async listAll(): Promise<Coupon[]> {
+    try {
+      const codes = (await kv.smembers("coupons:index")) as string[];
+      const results = await Promise.allSettled(codes.map(c => couponKv.get(c)));
+      return results.flatMap(r => r.status === "fulfilled" && r.value ? [r.value] : []);
+    } catch { return []; }
+  },
+  async addToIndex(code: string): Promise<void> {
+    try { await kv.sadd("coupons:index", code.toUpperCase()); } catch { /* KV not configured */ }
+  },
+  async removeFromIndex(code: string): Promise<void> {
+    try { await kv.srem("coupons:index", code.toUpperCase()); } catch { /* KV not configured */ }
   },
 };
