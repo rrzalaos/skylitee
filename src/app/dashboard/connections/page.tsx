@@ -7,6 +7,7 @@ import { ShoppingBag, Share2, Search, Megaphone, CheckCircle2, XCircle, BarChart
 interface GoogleSite { url: string; }
 interface GA4Property { id: string; name: string; account: string; }
 interface MetaAccount { id: string; name: string; currency: string; }
+interface GadsCustomer { id: string; name: string; currency: string; }
 
 function ConnectionsContent() {
   const router = useRouter();
@@ -25,6 +26,13 @@ function ConnectionsContent() {
   const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([]);
   const [selectedGa4, setSelectedGa4] = useState("");
   const [ga4Saved, setGa4Saved] = useState(false);
+
+  // Google Ads — independent connection
+  const [gadsConnected, setGadsConnected] = useState(false);
+  const [gadsCustomers, setGadsCustomers] = useState<GadsCustomer[]>([]);
+  const [selectedGads, setSelectedGads] = useState("");
+  const [gadsSaved, setGadsSaved] = useState(false);
+  const [gadsError, setGadsError] = useState<string | null>(null);
 
   // Meta
   const [metaConnected, setMetaConnected] = useState(false);
@@ -47,12 +55,25 @@ function ConnectionsContent() {
         if (d.error) return;
         setGscConnected(!!d.gscConnected);
         setGa4Connected(!!d.ga4Connected);
+        setGadsConnected(!!d.gadsConnected);
         setGscSites(d.gscSites ?? []);
         setGa4Properties(d.ga4Properties ?? []);
         setSelectedGsc(d.savedGscSite ?? d.gscSites?.[0]?.url ?? "");
         setSelectedGa4(d.savedGa4Property ?? d.ga4Properties?.[0]?.id ?? "");
         setGscSaved(!!d.savedGscSite);
         setGa4Saved(!!d.savedGa4Property);
+      })
+      .catch(() => {});
+
+    fetch("/api/google/ads/customers")
+      .then(r => r.json())
+      .then(d => {
+        if (d.error === "not_connected") return;
+        if (d.error === "google_ads_dev_token_missing") { setGadsError("dev_token"); return; }
+        if (d.error) { setGadsError(d.error); return; }
+        setGadsCustomers(d.customers ?? []);
+        setSelectedGads(d.savedCustomerId ?? d.customers?.[0]?.id ?? "");
+        setGadsSaved(!!d.savedCustomerId);
       })
       .catch(() => {});
 
@@ -98,6 +119,27 @@ function ConnectionsContent() {
     setGa4Properties([]);
     setGa4Saved(false);
     showToast("Google Analytics 4 disconnected");
+  };
+
+  const disconnectGads = async () => {
+    if (!confirm("Disconnect Google Ads? Campaign and keyword data will be removed from the dashboard.")) return;
+    await fetch("/api/auth/google/disconnect?service=gads", { method: "POST" });
+    setGadsConnected(false);
+    setGadsCustomers([]);
+    setGadsSaved(false);
+    showToast("Google Ads disconnected");
+  };
+
+  const saveGadsCustomer = async () => {
+    setSaving(true);
+    await fetch("/api/google/ads/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: selectedGads }),
+    });
+    setSaving(false);
+    setGadsSaved(true);
+    showToast("Google Ads account saved!");
   };
 
   const disconnectMeta = async () => {
@@ -189,13 +231,15 @@ function ConnectionsContent() {
       disconnectFn: metaConnected ? disconnectMeta : null,
     },
     {
-      name: "Google Ads Manager",
+      name: "Google Ads",
       icon: <Megaphone size={17} className="text-white" />,
       bg: "bg-[#34A853]",
-      status: "disconnected",
-      detail: "Not connected · Est. ₹40–60K revenue/month missed",
-      href: null,
-      disconnectFn: null,
+      status: gadsConnected ? "connected" : "disconnected",
+      detail: gadsConnected
+        ? `Connected · ${gadsSaved ? "account selected" : "select account below"}`
+        : "Not connected — track campaign spend, ROAS & keywords",
+      href: "/api/auth/google?service=gads",
+      disconnectFn: gadsConnected ? disconnectGads : null,
     },
   ];
 
@@ -315,6 +359,46 @@ function ConnectionsContent() {
             </div>
           )}
 
+          {/* Google Ads customer picker */}
+          {gadsConnected && (
+            <div className="mt-3 pt-3 border-t border-black/[0.06]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                  <Megaphone size={11} className="text-[#34A853]" /> Google Ads — select account
+                </div>
+                {gadsSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+              </div>
+              {gadsError === "dev_token" ? (
+                <div className="text-[13px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
+                  Add <code className="font-mono text-[12px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables to enable Google Ads.
+                </div>
+              ) : gadsCustomers.length === 0 ? (
+                <div className="text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-3 py-2.5">
+                  No Google Ads accounts found. Make sure you are an admin of a Google Ads account.
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={selectedGads}
+                    onChange={e => { setSelectedGads(e.target.value); setGadsSaved(false); }}
+                    className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                  >
+                    {gadsCustomers.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} · ID {a.id} ({a.currency})</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={saveGadsCustomer}
+                    disabled={saving || gadsSaved}
+                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[14px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? "Saving..." : gadsSaved ? "✓ Saved — change dropdown to update" : "Save Google Ads Account"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Meta ad account picker */}
           {metaConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
@@ -361,7 +445,7 @@ function ConnectionsContent() {
                 { label: "Search Console", status: gscConnected && gscSaved, detail: "Keyword rankings & clicks" },
                 { label: "Analytics GA4", status: ga4Connected && ga4Saved, detail: "Sessions, users, bounce rate" },
                 { label: "Meta Ads", status: metaConnected && metaSaved, detail: "Ad campaigns & ROAS" },
-                { label: "Google Ads", status: false, detail: "Paid search data" },
+                { label: "Google Ads", status: gadsConnected && gadsSaved, detail: "Campaigns, keywords, ROAS" },
               ].map((p, i) => (
                 <div key={i} className="p-3 bg-[#f7f7f5] rounded-lg">
                   <div className="flex items-center gap-1.5 mb-1">
@@ -389,12 +473,16 @@ function ConnectionsContent() {
                 </div>
               ))}
             </div>
-            <div className="bg-[#fce8e8] rounded-lg p-3 text-[13px] text-[#6e1c1c] border border-[#f5a0a0]">
-              <div className="flex items-center gap-1.5 font-semibold mb-1">
-                <XCircle size={12} /> Meta &amp; Google Ads not connected
+            {(!metaConnected || !gadsConnected) && (
+              <div className="bg-[#fce8e8] rounded-lg p-3 text-[13px] text-[#6e1c1c] border border-[#f5a0a0]">
+                <div className="flex items-center gap-1.5 font-semibold mb-1">
+                  <XCircle size={12} />
+                  {!metaConnected && !gadsConnected ? "Meta & Google Ads not connected" :
+                   !metaConnected ? "Meta Ads not connected" : "Google Ads not connected"}
+                </div>
+                <div>Connect when ready to track ad spend and ROAS across channels.</div>
               </div>
-              <div>Connect when ready to track ad spend and ROAS across channels.</div>
-            </div>
+            )}
           </Card>
         </div>
       </div>

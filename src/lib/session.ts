@@ -38,6 +38,14 @@ export async function getShopifySession(
 // All platform tokens are stored in KV after OAuth. Cookies are never written
 // for tokens and must not be used as a fallback (they don't exist post-migration).
 
+export async function getGadsRefreshToken(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGadsToken(shop);
+}
+
+export async function getGadsCustomerId(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGadsCustomerId(shop);
+}
+
 export async function getGscRefreshToken(_req: NextRequest, shop: string): Promise<string | null> {
   return shopKv.getGscToken(shop);
 }

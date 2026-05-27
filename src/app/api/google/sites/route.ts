@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGscRefreshToken, getGa4RefreshToken, getAuthorizedShop, getGscSite, getGa4Property } from "@/lib/session";
+import { getGscRefreshToken, getGa4RefreshToken, getGadsRefreshToken, getAuthorizedShop, getGscSite, getGa4Property } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
   if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
-  const gscRefresh = await getGscRefreshToken(req, shop);
-  const ga4Refresh = await getGa4RefreshToken(req, shop);
+  const gscRefresh  = await getGscRefreshToken(req, shop);
+  const ga4Refresh  = await getGa4RefreshToken(req, shop);
+  const gadsRefresh = await getGadsRefreshToken(req, shop);
 
-  if (!gscRefresh && !ga4Refresh) {
+  if (!gscRefresh && !ga4Refresh && !gadsRefresh) {
     return NextResponse.json({ error: "not_connected" }, { status: 401 });
   }
 
@@ -61,8 +62,9 @@ export async function GET(req: NextRequest) {
   const savedGa4Property = await getGa4Property(req, shop);
 
   return NextResponse.json({
-    gscConnected: !!gscRefresh,
-    ga4Connected: !!ga4Refresh,
+    gscConnected:  !!gscRefresh,
+    ga4Connected:  !!ga4Refresh,
+    gadsConnected: !!gadsRefresh,
     gscSites,
     ga4Properties,
     savedGscSite,

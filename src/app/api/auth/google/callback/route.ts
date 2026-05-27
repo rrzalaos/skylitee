@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
     } else if (service === "ga4") {
       await shopKv.setGa4Token(shop, tokens.refresh_token);
       res.cookies.set("google_ga4_token", tokens.refresh_token, cookieOpts);
+    } else if (service === "gads") {
+      await shopKv.setGadsToken(shop, tokens.refresh_token);
     } else {
       // "both" — legacy path
       await shopKv.setGscToken(shop, tokens.refresh_token);

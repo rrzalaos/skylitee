@@ -66,7 +66,7 @@ const navSections: NavSection[] = [
     label: "Google",
     tooltip: "Google Search Console (SEO, keywords, sitemaps) and GA4 (website traffic, ecommerce, user behavior).",
     items: [
-      { href: "/dashboard/gads", label: "Google Ads", icon: Megaphone, badge: null, dot: "off" },
+      { href: "/dashboard/gads", label: "Google Ads", icon: Megaphone, badge: null, dot: "google_gads" },
       { href: "/dashboard/gsc", label: "Search Console", icon: Search, badge: null, dot: "google_gsc" },
       { href: "/dashboard/ga4", label: "Analytics GA4", icon: LineChart, badge: null, dot: "google_ga4" },
     ],
@@ -130,8 +130,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const [allShops, setAllShops] = useState<string[]>([]);
   const [showShopMenu, setShowShopMenu] = useState(false);
   const shopMenuRef = useRef<HTMLDivElement>(null);
-  const [gscConnected, setGscConnected] = useState<boolean | null>(null);
-  const [ga4Connected, setGa4Connected] = useState<boolean | null>(null);
+  const [gscConnected, setGscConnected]   = useState<boolean | null>(null);
+  const [ga4Connected, setGa4Connected]   = useState<boolean | null>(null);
+  const [gadsConnected, setGadsConnected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -151,8 +152,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       .catch(() => {});
     fetch("/api/google/sites")
       .then(r => r.json())
-      .then(d => { setGscConnected(!!d.gscConnected); setGa4Connected(!!d.ga4Connected); })
-      .catch(() => { setGscConnected(false); setGa4Connected(false); });
+      .then(d => {
+        setGscConnected(!!d.gscConnected);
+        setGa4Connected(!!d.ga4Connected);
+        setGadsConnected(!!d.gadsConnected);
+      })
+      .catch(() => { setGscConnected(false); setGa4Connected(false); setGadsConnected(false); });
     fetch("/api/meta/accounts")
       .then(r => r.json())
       .then(d => setMetaConnected(!d.error))
@@ -176,13 +181,18 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   });
 
   function resolveDot(dot: string | null): string | null {
-    if (dot === "google_gsc") return gscConnected == null ? null : gscConnected ? "on" : "off";
-    if (dot === "google_ga4") return ga4Connected == null ? null : ga4Connected ? "on" : "off";
-    if (dot === "meta") return metaConnected == null ? null : metaConnected ? "on" : "off";
+    if (dot === "google_gsc")  return gscConnected  == null ? null : gscConnected  ? "on" : "off";
+    if (dot === "google_ga4")  return ga4Connected  == null ? null : ga4Connected  ? "on" : "off";
+    if (dot === "google_gads") return gadsConnected == null ? null : gadsConnected ? "on" : "off";
+    if (dot === "meta")        return metaConnected == null ? null : metaConnected ? "on" : "off";
     return dot;
   }
 
-  const liveCount = 1 + (gscConnected ? 1 : 0) + (ga4Connected ? 1 : 0) + (metaConnected ? 1 : 0);
+  const liveCount = 1
+    + (gscConnected  ? 1 : 0)
+    + (ga4Connected  ? 1 : 0)
+    + (gadsConnected ? 1 : 0)
+    + (metaConnected ? 1 : 0);
 
   const inner = (
     <aside className="w-[218px] min-w-[218px] bg-white dark:bg-[#111111] border-r border-black/[0.06] dark:border-white/[0.06] flex flex-col h-full">

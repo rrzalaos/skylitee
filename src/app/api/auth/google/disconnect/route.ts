@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
     await shopKv.delGa4Token(shop);
     res.cookies.delete("google_ga4_token");
     res.cookies.delete("google_ga4_property");
+  } else if (service === "gads") {
+    await shopKv.delGadsToken(shop);
+    await shopKv.delGadsCustomerId(shop);
   } else {
     await shopKv.delGscToken(shop);
     await shopKv.delGa4Token(shop);

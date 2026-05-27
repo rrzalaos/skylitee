@@ -48,6 +48,14 @@ export const shopKv = {
   getGa4Property: (shop: string) => kvGet<string>(`shop:${shop}:ga4_property`),
   setGa4Property: (shop: string, v: string) => kvSet(`shop:${shop}:ga4_property`, v),
 
+  // Google Ads
+  getGadsToken:      (shop: string) => kvGet<string>(`shop:${shop}:gads_token`),
+  setGadsToken:      (shop: string, v: string) => kvSet(`shop:${shop}:gads_token`, v),
+  delGadsToken:      (shop: string) => kvDel(`shop:${shop}:gads_token`),
+  getGadsCustomerId: (shop: string) => kvGet<string>(`shop:${shop}:gads_customer_id`),
+  setGadsCustomerId: (shop: string, v: string) => kvSet(`shop:${shop}:gads_customer_id`, v),
+  delGadsCustomerId: (shop: string) => kvDel(`shop:${shop}:gads_customer_id`),
+
   // Meta
   getMetaToken:   (shop: string) => kvGet<string>(`shop:${shop}:meta_token`),
   setMetaToken:   (shop: string, v: string) => kvSet(`shop:${shop}:meta_token`, v),
@@ -79,6 +87,8 @@ export const shopKv = {
       `shop:${shop}:gsc_site`,
       `shop:${shop}:ga4_token`,
       `shop:${shop}:ga4_property`,
+      `shop:${shop}:gads_token`,
+      `shop:${shop}:gads_customer_id`,
       `shop:${shop}:meta_token`,
       `shop:${shop}:meta_ad_account`,
       `shop:${shop}:plan`,
