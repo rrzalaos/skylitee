@@ -70,7 +70,12 @@ function ConnectionsContent() {
       .then(d => {
         if (d.error === "not_connected") return;
         if (d.error === "google_ads_dev_token_missing") { setGadsError("dev_token"); return; }
-        if (d.error) { setGadsError(d.error); return; }
+        // For test_token/no_customers, still restore any saved customer ID
+        if (d.error) {
+          setGadsError(d.error);
+          if (d.savedCustomerId) { setSelectedGads(d.savedCustomerId); setGadsSaved(true); }
+          return;
+        }
         setGadsCustomers(d.customers ?? []);
         setSelectedGads(d.savedCustomerId ?? d.customers?.[0]?.id ?? "");
         setGadsSaved(!!d.savedCustomerId);
@@ -371,6 +376,29 @@ function ConnectionsContent() {
               {gadsError === "dev_token" ? (
                 <div className="text-[13px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
                   Add <code className="font-mono text-[12px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables to enable Google Ads.
+                </div>
+              ) : (gadsError === "test_token" || (gadsError && gadsCustomers.length === 0)) ? (
+                /* Test token mode — auto-detect blocked, allow manual entry */
+                <div className="space-y-2">
+                  <div className="text-[13px] text-[#7a5a00] bg-[#fffbe6] border border-[#ffe58f] rounded-lg px-3 py-2.5">
+                    <div className="font-semibold mb-0.5">Developer token in test mode</div>
+                    <div>Google is reviewing your token (1–3 business days). Meanwhile, enter your Customer ID manually — find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
+                  </div>
+                  <input
+                    type="text"
+                    value={selectedGads}
+                    onChange={e => { setSelectedGads(e.target.value); setGadsSaved(false); }}
+                    placeholder="e.g. 4017892231 (remove hyphens)"
+                    className="w-full text-[14px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
+                  />
+                  {gadsSaved && <div className="text-[13px] text-[#0d6b4f]">✓ Saved Customer ID: {selectedGads}</div>}
+                  <button
+                    onClick={saveGadsCustomer}
+                    disabled={saving || !selectedGads || gadsSaved}
+                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[14px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? "Saving..." : gadsSaved ? "✓ Saved — type new ID to update" : "Save Customer ID"}
+                  </button>
                 </div>
               ) : gadsCustomers.length === 0 ? (
                 <div className="text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-3 py-2.5">

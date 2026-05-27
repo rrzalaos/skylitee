@@ -7,6 +7,7 @@ const DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
 
 interface GadsSearchResult {
   results?: { customer?: { id?: string; descriptiveName?: string; currencyCode?: string } }[];
+  error?: { message?: string; status?: string };
 }
 
 async function gadsSearch(accessToken: string, customerId: string, query: string): Promise<GadsSearchResult> {
@@ -36,6 +37,8 @@ export async function GET(req: NextRequest) {
   const refreshToken = await getGadsRefreshToken(req, shop);
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
+  const savedCustomerId = await getGadsCustomerId(req, shop);
+
   try {
     const accessToken = await getGoogleAccessToken(refreshToken);
 
@@ -49,10 +52,24 @@ export async function GET(req: NextRequest) {
         },
       }
     );
-    const listData = await listRes.json() as { resourceNames?: string[]; error?: { message: string } };
+    const listData = await listRes.json() as { resourceNames?: string[]; error?: { message?: string; status?: string } };
 
-    if (listData.error || !listData.resourceNames?.length) {
-      return NextResponse.json({ error: "no_customers", detail: listData.error?.message }, { status: 400 });
+    // Test token returns PERMISSION_DENIED — fall back to manual entry mode
+    if (listData.error) {
+      const msg = listData.error.message ?? "";
+      const isTestToken = listRes.status === 403 || listRes.status === 401 ||
+        msg.toLowerCase().includes("test") ||
+        msg.toLowerCase().includes("permission") ||
+        listData.error.status === "PERMISSION_DENIED";
+      return NextResponse.json({
+        error: isTestToken ? "test_token" : "no_customers",
+        detail: msg,
+        savedCustomerId,          // still return saved ID so UI can show it
+      });
+    }
+
+    if (!listData.resourceNames?.length) {
+      return NextResponse.json({ error: "no_customers", savedCustomerId });
     }
 
     // Fetch name + currency for each customer (parallel, max 20)
@@ -80,12 +97,10 @@ export async function GET(req: NextRequest) {
       .filter(r => r.status === "fulfilled")
       .map(r => (r as PromiseFulfilledResult<{ id: string; name: string; currency: string }>).value);
 
-    const savedCustomerId = await getGadsCustomerId(req, shop);
-
     return NextResponse.json({ customers, savedCustomerId });
   } catch (e) {
     console.error("Google Ads customers error:", e);
-    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+    return NextResponse.json({ error: "fetch_failed", savedCustomerId }, { status: 500 });
   }
 }
 
@@ -96,6 +111,8 @@ export async function POST(req: NextRequest) {
   const { customerId } = await req.json() as { customerId?: string };
   if (!customerId) return NextResponse.json({ error: "missing_customer_id" }, { status: 400 });
 
-  await shopKv.setGadsCustomerId(shop, customerId);
+  // Strip hyphens in case user typed "401-789-2231" instead of "4017892231"
+  const cleanId = customerId.replace(/-/g, "").trim();
+  await shopKv.setGadsCustomerId(shop, cleanId);
   return NextResponse.json({ ok: true });
 }
