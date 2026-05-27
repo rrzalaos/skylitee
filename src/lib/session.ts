@@ -2,12 +2,14 @@ import { NextRequest } from "next/server";
 import { shopKv } from "./kv";
 import { getSession, getUser, SESSION_COOKIE } from "./auth";
 
+// ── Shop identity (cookies are correct here — shop domain is a UI cookie, not a secret token) ──
+
 export function getShopFromRequest(req: NextRequest): string | null {
   return process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value ?? null;
 }
 
-// Verified version — confirms the session user actually owns this shop.
-// Use this in every data API route instead of getShopFromRequest.
+// Verified version — confirms the session user actually owns this shop cookie.
+// Use this on every data API route instead of getShopFromRequest.
 export async function getAuthorizedShop(req: NextRequest): Promise<string | null> {
   if (process.env.SHOPIFY_STORE) return process.env.SHOPIFY_STORE;
   const shop = req.cookies.get("shopify_shop")?.value;
@@ -21,65 +23,41 @@ export async function getAuthorizedShop(req: NextRequest): Promise<string | null
   return shop;
 }
 
+// Returns shop + Shopify API token. Use on routes that call the Shopify REST API.
 export async function getShopifySession(
   req: NextRequest
 ): Promise<{ shop: string; token: string } | null> {
   const shop = await getAuthorizedShop(req);
   if (!shop) return null;
-  const token =
-    (await shopKv.getToken(shop)) ??
-    process.env.SHOPIFY_ACCESS_TOKEN ??
-    null;
+  const token = (await shopKv.getToken(shop)) ?? process.env.SHOPIFY_ACCESS_TOKEN ?? null;
   if (!token) return null;
   return { shop, token };
 }
 
-export async function getGscRefreshToken(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getGscToken(shop)) ??
-    req.cookies.get("google_gsc_token")?.value ??
-    req.cookies.get("google_refresh_token")?.value ??
-    null
-  );
+// ── Platform token helpers — KV only, no cookie fallbacks ────────────────────
+// All platform tokens are stored in KV after OAuth. Cookies are never written
+// for tokens and must not be used as a fallback (they don't exist post-migration).
+
+export async function getGscRefreshToken(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGscToken(shop);
 }
 
-export async function getGa4RefreshToken(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getGa4Token(shop)) ??
-    req.cookies.get("google_ga4_token")?.value ??
-    req.cookies.get("google_refresh_token")?.value ??
-    null
-  );
+export async function getGa4RefreshToken(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGa4Token(shop);
 }
 
-export async function getMetaToken(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getMetaToken(shop)) ??
-    req.cookies.get("meta_token")?.value ??
-    null
-  );
+export async function getMetaToken(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getMetaToken(shop);
 }
 
-export async function getMetaAdAccount(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getMetaAccount(shop)) ??
-    req.cookies.get("meta_ad_account")?.value ??
-    null
-  );
+export async function getMetaAdAccount(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getMetaAccount(shop);
 }
 
-export async function getGscSite(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getGscSite(shop)) ??
-    req.cookies.get("google_gsc_site")?.value ??
-    null
-  );
+export async function getGscSite(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGscSite(shop);
 }
 
-export async function getGa4Property(req: NextRequest, shop: string): Promise<string | null> {
-  return (
-    (await shopKv.getGa4Property(shop)) ??
-    req.cookies.get("google_ga4_property")?.value ??
-    null
-  );
+export async function getGa4Property(_req: NextRequest, shop: string): Promise<string | null> {
+  return shopKv.getGa4Property(shop);
 }

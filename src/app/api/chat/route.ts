@@ -69,8 +69,8 @@ ${productList}
 
 // ── Meta Ads ──────────────────────────────────────────────────────────────────
 
-async function buildMetaContext(req: NextRequest, shop: string): Promise<string> {
-  const token = (await shopKv.getMetaToken(shop)) ?? req.cookies.get("meta_token")?.value;
+async function buildMetaContext(_req: NextRequest, shop: string): Promise<string> {
+  const token = await shopKv.getMetaToken(shop);
   if (!token) return "Meta Ads: not connected.";
 
   try {
@@ -78,7 +78,7 @@ async function buildMetaContext(req: NextRequest, shop: string): Promise<string>
     const accountsData = await accountsRes.json() as { data?: { id: string; name: string; currency: string }[]; error?: { message: string } };
     if (accountsData.error || !accountsData.data?.length) return "Meta Ads: token error or no accounts.";
 
-    const savedAccount = (await shopKv.getMetaAccount(shop)) ?? req.cookies.get("meta_ad_account")?.value;
+    const savedAccount = await shopKv.getMetaAccount(shop);
     const account = (savedAccount && accountsData.data.find(a => a.id === savedAccount)) || accountsData.data[0];
     const cur = account.currency === "INR" ? "₹" : account.currency === "USD" ? "$" : account.currency + " ";
 
