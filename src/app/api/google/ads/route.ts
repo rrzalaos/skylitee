@@ -21,7 +21,12 @@ interface GadsRow {
   customer?: { descriptiveName?: string; currencyCode?: string };
 }
 
-async function gadsSearch(accessToken: string, customerId: string, query: string): Promise<{ results?: GadsRow[] }> {
+interface GadsResponse {
+  results?: GadsRow[];
+  error?: { message?: string; status?: string; code?: number };
+}
+
+async function gadsSearch(accessToken: string, customerId: string, query: string): Promise<GadsResponse> {
   const res = await fetch(
     `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:search`,
     {
@@ -34,7 +39,15 @@ async function gadsSearch(accessToken: string, customerId: string, query: string
       body: JSON.stringify({ query }),
     }
   );
-  return res.json() as Promise<{ results?: GadsRow[] }>;
+  return res.json() as Promise<GadsResponse>;
+}
+
+function isTestTokenError(r: GadsResponse): boolean {
+  if (!r.error) return false;
+  const msg = (r.error.message ?? "").toLowerCase();
+  return r.error.status === "PERMISSION_DENIED" ||
+    msg.includes("test") || msg.includes("not approved") ||
+    r.error.code === 403;
 }
 
 const micros = (v?: string) => parseFloat(v ?? "0") / 1_000_000;
@@ -58,7 +71,7 @@ export async function GET(req: NextRequest) {
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate   = req.nextUrl.searchParams.get("to")   ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:gads:${startDate}:${endDate}`;
+  const cacheKey = `cache:${shop}:gads:${customerId}:${startDate}:${endDate}`;
   try {
     const cached = await kv.get(cacheKey);
     if (cached) return NextResponse.json(cached);
@@ -148,6 +161,14 @@ export async function GET(req: NextRequest) {
     const campaigns = safe(campaignData);
     const daily     = safe(dailyData);
     const keywords  = safe(keywordData);
+
+    // Detect test token — if the first query returns PERMISSION_DENIED, surface that
+    if (overview && isTestTokenError(overview as GadsResponse)) {
+      return NextResponse.json({
+        error: "test_token",
+        detail: (overview as GadsResponse).error?.message ?? "Developer token not approved for real accounts",
+      }, { status: 403 });
+    }
 
     // Overview aggregates (sum across all rows — customer query returns one row per date)
     let totalImpressions = 0, totalClicks = 0, totalCost = 0, totalConversions = 0, totalConvValue = 0;

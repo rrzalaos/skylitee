@@ -64,10 +64,11 @@ function GadsContent() {
     fetch(`/api/google/ads?from=${from}&to=${to}`)
       .then(r => r.json())
       .then((d: GadsData & { error?: string }) => {
-        if (d.error === "not_connected")            { setError("not_connected"); return; }
-        if (d.error === "no_customer_selected")     { setError("no_customer");   return; }
-        if (d.error === "google_ads_dev_token_missing") { setError("dev_token"); return; }
-        if (d.error)                                { setError("failed");        return; }
+        if (d.error === "not_connected")                { setError("not_connected"); return; }
+        if (d.error === "no_customer_selected")         { setError("no_customer");   return; }
+        if (d.error === "google_ads_dev_token_missing") { setError("dev_token");     return; }
+        if (d.error === "test_token")                   { setError("test_token");    return; }
+        if (d.error)                                    { setError("failed");        return; }
         setData(d);
       })
       .catch(() => setError("failed"))
@@ -131,6 +132,37 @@ function GadsContent() {
           <div className="text-[17px] font-semibold text-[#181816] mb-2">Google Ads API not configured</div>
           <div className="text-[14px] text-[#686864]">
             Add <code className="bg-[#f5f5f4] px-1 rounded text-[13px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables.
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+
+  if (error === "test_token") return (
+    <div className="max-w-lg mx-auto mt-12 space-y-3">
+      <Card>
+        <div className="p-6">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#fffbe6] border border-[#ffe58f] flex items-center justify-center shrink-0">
+              <AlertCircle size={20} className="text-amber-500" />
+            </div>
+            <div>
+              <div className="text-[16px] font-semibold text-[#181816] mb-1">
+                Token in test mode — data pending
+              </div>
+              <div className="text-[14px] text-[#686864] space-y-2">
+                <p>Your Google Ads developer token is under review. Google does not allow querying real account data until the token is approved.</p>
+                <p className="font-medium text-[#181816]">What's happening:</p>
+                <ul className="space-y-1 list-disc list-inside text-[13px]">
+                  <li>OAuth ✓ Connected</li>
+                  <li>Customer ID ✓ Saved</li>
+                  <li>Data queries ✗ Blocked (test token)</li>
+                </ul>
+                <p className="text-[13px] bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg px-3 py-2 text-[#1b5e20]">
+                  ✓ Google will email you at <strong>digital@yellowsky.in</strong> once approved (usually 1–3 business days). No action needed — data will auto-load after approval.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </Card>
