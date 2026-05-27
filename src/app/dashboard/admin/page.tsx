@@ -7,7 +7,7 @@ import {
   Users, BarChart2, LayoutDashboard,
   Search, UserX, UserCheck, ShieldCheck,
   Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
-  Tag, Plus, Trash2, ToggleLeft, ToggleRight,
+  Tag, Plus, Trash2, ToggleLeft, ToggleRight, KeyRound,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -121,6 +121,8 @@ export default function AdminPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [toast, setToast]         = useState("");
   const [loginAsLoading, setLoginAsLoading] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<string | null>(null); // email of user being reset
+  const [resetPassword, setResetPassword] = useState("");
   const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
 
   // Coupons state
@@ -222,6 +224,22 @@ export default function AdminPage() {
     if (res.ok) {
       setUsers(prev => prev.map(u => u.email === email ? { ...u, disabled: !currentlyDisabled } : u));
       showToast(`User ${action}d.`);
+    }
+  };
+
+  const doResetPassword = async () => {
+    if (!resetTarget || resetPassword.length < 6) return;
+    const res = await fetch("/api/admin/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: resetTarget, action: "reset-password", newPassword: resetPassword }),
+    });
+    if (res.ok) {
+      showToast(`Password reset for ${resetTarget}.`);
+      setResetTarget(null);
+      setResetPassword("");
+    } else {
+      showToast("Failed to reset password.");
     }
   };
 
@@ -496,7 +514,7 @@ export default function AdminPage() {
               <table className="w-full text-[17px] min-w-[900px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                    {["User / Email", "Brand", "Phone", "Shopify Store", "Platforms", "This Month", "Status", "Access", "Login As"].map(h => (
+                    {["User / Email", "Brand", "Phone", "Shopify Store", "Platforms", "This Month", "Status", "Access", "Reset Pwd", "Login As"].map(h => (
                       <th key={h} className="text-left text-[14px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-3 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -564,6 +582,15 @@ export default function AdminPage() {
                                 : "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2]"
                             )}>
                             {u.disabled ? <><UserCheck size={10} /> Restore</> : <><UserX size={10} /> Suspend</>}
+                          </button>
+                        </td>
+                        {/* Reset Password */}
+                        <td className="py-3 pr-3">
+                          <button
+                            onClick={() => { setResetTarget(u.email); setResetPassword(""); }}
+                            title={`Reset password for ${u.name}`}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] hover:bg-[#FFEDD5] transition-colors">
+                            <KeyRound size={10} /> Reset
                           </button>
                         </td>
                         {/* Login As */}
@@ -846,6 +873,47 @@ export default function AdminPage() {
               </div>
             )}
           </Card>
+        </div>
+      )}
+
+      {/* Reset Password modal */}
+      {resetTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-black/[0.06] dark:border-white/[0.06]">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl flex items-center justify-center shrink-0">
+                <KeyRound size={14} className="text-[#EA580C]" />
+              </div>
+              <div>
+                <div className="text-[14px] font-bold dark:text-[#F4F4F5]">Reset Password</div>
+                <div className="text-[12px] text-[#A1A1AA] truncate max-w-[220px]">{resetTarget}</div>
+              </div>
+            </div>
+            <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1.5">New Password</label>
+            <input
+              type="text"
+              value={resetPassword}
+              onChange={e => setResetPassword(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doResetPassword()}
+              placeholder="Minimum 6 characters"
+              className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2.5 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] mb-4 font-mono"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={doResetPassword}
+                disabled={resetPassword.length < 6}
+                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors disabled:opacity-50"
+              >
+                Set Password
+              </button>
+              <button
+                onClick={() => { setResetTarget(null); setResetPassword(""); }}
+                className="px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

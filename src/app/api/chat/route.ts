@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { shopifyFetch, ShopifyProduct } from "@/lib/shopify";
 import { NextRequest } from "next/server";
+import { getShopifySession } from "@/lib/session";
+import { shopKv } from "@/lib/kv";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -13,8 +15,8 @@ interface MetaInsightRow {
   campaign_name?: string; campaign_id?: string;
 }
 
-async function buildMetaContext(req: NextRequest): Promise<string> {
-  const token = req.cookies.get("meta_token")?.value;
+async function buildMetaContext(req: NextRequest, shop: string): Promise<string> {
+  const token = (await shopKv.getMetaToken(shop)) ?? req.cookies.get("meta_token")?.value;
   if (!token) return "Meta Ads: not connected.";
 
   try {
@@ -24,7 +26,7 @@ async function buildMetaContext(req: NextRequest): Promise<string> {
     const accountsData = await accountsRes.json() as { data?: { id: string; name: string; currency: string }[]; error?: { message: string } };
     if (accountsData.error || !accountsData.data?.length) return "Meta Ads: token error or no accounts.";
 
-    const savedAccount = req.cookies.get("meta_ad_account")?.value;
+    const savedAccount = (await shopKv.getMetaAccount(shop)) ?? req.cookies.get("meta_ad_account")?.value;
     const account = (savedAccount && accountsData.data.find(a => a.id === savedAccount)) || accountsData.data[0];
     const cur = account.currency === "INR" ? "₹" : account.currency === "USD" ? "$" : account.currency + " ";
 
@@ -66,10 +68,11 @@ ${topCampaigns || "  No campaign data"}
   }
 }
 
-async function buildStoreContext(req: NextRequest): Promise<string> {
-  const shop = process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value;
-  const token = process.env.SHOPIFY_ACCESS_TOKEN ?? req.cookies.get("shopify_token")?.value;
-  if (!shop || !token) return "No Shopify store connected.";
+async function buildStoreContext(req: NextRequest): Promise<{ context: string; shop: string | null }> {
+  const session = await getShopifySession(req);
+  if (!session) return { context: "No Shopify store connected.", shop: null };
+
+  const { shop, token } = session;
 
   try {
     const now = new Date();
@@ -99,7 +102,9 @@ async function buildStoreContext(req: NextRequest): Promise<string> {
       return `  - ${p.title}: stock ${stock}, price ₹${p.variants[0]?.price ?? "?"}`;
     }).join("\n");
 
-    return `
+    return {
+      shop,
+      context: `
 Store: ${shop}
 Date: ${now.toDateString()} (day ${days} of the month)
 Revenue this month: ₹${grossSales}
@@ -112,20 +117,22 @@ Repeat rate: ${repeatRate}%
 Avg customer LTV: ₹${avgLTV}
 Products:
 ${productList}
-`.trim();
+`.trim(),
+    };
   } catch {
-    return "Could not load store data at this time.";
+    return { context: "Could not load store data at this time.", shop };
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
-    const [storeContext, metaContext] = await Promise.all([
-      buildStoreContext(req),
-      buildMetaContext(req),
-    ]);
-    const shop = process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value ?? "your store";
+    const { context: storeContext, shop } = await buildStoreContext(req);
+    const metaContext = shop
+      ? await buildMetaContext(req, shop)
+      : "Meta Ads: not connected.";
+
+    const displayShop = shop ?? "your store";
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-6",
@@ -149,7 +156,7 @@ If asked about Google Ads or GA4, acknowledge that data isn't available yet.`,
 
     const content = response.content[0];
     if (content.type !== "text") return Response.json({ error: "Unexpected response type" }, { status: 500 });
-    return Response.json({ reply: content.text });
+    return Response.json({ reply: content.text, shop: displayShop });
   } catch (error) {
     console.error("Chat API error:", error);
     return Response.json({ error: "Failed to get AI response" }, { status: 500 });
