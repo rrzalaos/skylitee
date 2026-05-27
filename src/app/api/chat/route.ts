@@ -5,6 +5,8 @@ import { getShopifySession } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 import { getGoogleAccessToken } from "@/lib/google";
 
+const GADS_DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 interface Order { total_price: string; payment_gateway?: string; customer?: { orders_count: number }; }
@@ -218,6 +220,73 @@ ${topSources || "  No source data"}
   }
 }
 
+// ── Google Ads ────────────────────────────────────────────────────────────────
+
+async function buildGadsContext(shop: string): Promise<string> {
+  try {
+    const refreshToken = await shopKv.getGadsToken(shop);
+    if (!refreshToken) return "Google Ads: not connected.";
+    const customerId = await shopKv.getGadsCustomerId(shop);
+    if (!customerId) return "Google Ads: connected but no account selected.";
+    if (!GADS_DEV_TOKEN) return "Google Ads: not configured.";
+
+    const accessToken = await getGoogleAccessToken(refreshToken);
+    const now = new Date();
+    const endDate   = now.toISOString().split("T")[0];
+    const startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+    const res = await fetch(
+      `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:search`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "developer-token": GADS_DEV_TOKEN,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `
+            SELECT metrics.impressions, metrics.clicks, metrics.cost_micros,
+                   metrics.conversions, metrics.conversions_value, metrics.ctr
+            FROM customer
+            WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
+          `,
+        }),
+      }
+    );
+    const data = await res.json() as {
+      results?: { metrics?: { impressions?: string; clicks?: string; costMicros?: string; conversions?: string; conversionsValue?: string; ctr?: string } }[];
+      error?: { status?: string; message?: string };
+    };
+
+    if (data.error?.status === "PERMISSION_DENIED") {
+      return "Google Ads: connected but developer token pending production approval.";
+    }
+
+    let totalImpressions = 0, totalClicks = 0, totalCost = 0, totalConversions = 0, totalConvValue = 0;
+    for (const row of data.results ?? []) {
+      totalImpressions  += parseFloat(row.metrics?.impressions  ?? "0");
+      totalClicks       += parseFloat(row.metrics?.clicks       ?? "0");
+      totalCost         += parseFloat(row.metrics?.costMicros   ?? "0") / 1_000_000;
+      totalConversions  += parseFloat(row.metrics?.conversions  ?? "0");
+      totalConvValue    += parseFloat(row.metrics?.conversionsValue ?? "0");
+    }
+    if (totalImpressions === 0 && totalClicks === 0) return "Google Ads: connected but no data for this period.";
+
+    const roas = totalCost > 0 ? (totalConvValue / totalCost).toFixed(2) : "0.00";
+    const ctr  = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
+
+    return `
+Google Ads (last 28 days · Account ${customerId}):
+Spend: $${totalCost.toFixed(2)} | Impressions: ${Math.round(totalImpressions).toLocaleString()}
+Clicks: ${Math.round(totalClicks).toLocaleString()} | CTR: ${ctr}%
+Conversions: ${totalConversions.toFixed(1)} | Conv. Value: $${totalConvValue.toFixed(2)} | ROAS: ${roas}x
+`.trim();
+  } catch {
+    return "Google Ads: could not load data.";
+  }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -226,10 +295,11 @@ export async function POST(req: NextRequest) {
 
     const { context: storeContext, shop } = await buildStoreContext(req);
 
-    const [metaContext, gscContext, ga4Context] = await Promise.all([
+    const [metaContext, gscContext, ga4Context, gadsContext] = await Promise.all([
       shop ? buildMetaContext(req, shop) : Promise.resolve("Meta Ads: not connected."),
       shop ? buildGscContext(shop)       : Promise.resolve("Google Search Console: not connected."),
       shop ? buildGa4Context(shop)       : Promise.resolve("Google Analytics 4: not connected."),
+      shop ? buildGadsContext(shop)      : Promise.resolve("Google Ads: not connected."),
     ]);
 
     const response = await client.messages.create({
@@ -249,6 +319,9 @@ ${gscContext}
 
 GOOGLE ANALYTICS 4 DATA:
 ${ga4Context}
+
+GOOGLE ADS DATA:
+${gadsContext}
 
 Rules:
 - Give specific, numbers-based answers using ONLY the data above
