@@ -296,9 +296,14 @@ function ConnectionsContent() {
                 onChange={e => { setSelectedGa4(e.target.value); setGa4Saved(false); }}
                 className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
               >
-                {ga4Properties.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} — {p.account}</option>
-                ))}
+                {ga4Properties.map(p => {
+                    const numericId = p.id.replace("properties/", "");
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.name} — {p.account} · ID {numericId}
+                      </option>
+                    );
+                  })}
               </select>
               <button
                 onClick={saveGa4Property}
