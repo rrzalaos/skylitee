@@ -183,13 +183,17 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </button>
         )}
 
-        {/* Admin badge */}
+        {/* Admin badge — clickable, always goes back to admin panel */}
         {isAdmin && (
-          <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => router.push("/dashboard/admin")}
+            title="Go to Admin Panel"
+            className="flex items-center gap-1.5 shrink-0 hover:opacity-75 transition-opacity"
+          >
             <div className="w-6 h-6 bg-[#F97316] rounded-lg flex items-center justify-center">
               <ShieldCheck size={12} className="text-white" />
             </div>
-          </div>
+          </button>
         )}
 
         <h1 className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] flex-1 uppercase tracking-wider truncate">{title}</h1>
@@ -420,6 +424,18 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </button>
           {showUserMenu && (
             <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5 min-w-[160px]">
+              {/* Admin panel shortcut — only for admin */}
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => { setShowUserMenu(false); router.push("/dashboard/admin"); }}
+                    className="w-full text-left px-3.5 py-2 text-[13px] text-[#F97316] font-semibold hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] flex items-center gap-2 transition-colors"
+                  >
+                    <ShieldCheck size={13} /> Admin Panel
+                  </button>
+                  <div className="border-t border-black/[0.06] dark:border-white/[0.06] my-1" />
+                </>
+              )}
               <button
                 onClick={() => { setShowUserMenu(false); router.push("/dashboard/profile"); }}
                 className="w-full text-left px-3.5 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626] flex items-center gap-2 transition-colors"
