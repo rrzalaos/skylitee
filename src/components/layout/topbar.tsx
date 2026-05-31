@@ -63,7 +63,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   const [userName, setUserName] = useState("S");
   const userMenuRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
-  const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false });
+  const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false, gads: false });
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -138,8 +138,9 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
       .then(d => {
         setConnections(c => ({
           ...c,
-          gsc: !!(d.gscConnected ?? (d.gscSites?.length > 0)),
-          ga4: !!(d.ga4Connected ?? (d.ga4Properties?.length > 0)),
+          gsc:  !!(d.gscConnected  ?? (d.gscSites?.length > 0)),
+          ga4:  !!(d.ga4Connected  ?? (d.ga4Properties?.length > 0)),
+          gads: !!d.gadsConnected,
         }));
       })
       .catch(() => {});
@@ -167,7 +168,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
     { label: "Meta", connected: connections.meta },
     { label: "GSC", connected: connections.gsc },
     { label: "GA4", connected: connections.ga4 },
-    { label: "G.Ads", connected: false },
+    { label: "G.Ads", connected: connections.gads },
   ];
 
   return (
