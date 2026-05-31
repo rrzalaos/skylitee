@@ -1,7 +1,17 @@
-const API_VERSION = "2024-01";
+import { shopKv } from "@/lib/kv";
+
+// Shopify releases API versions quarterly. Update when Shopify deprecates this version.
+const API_VERSION = "2025-04";
 
 export function shopifyApiUrl(shop: string, path: string) {
   return `https://${shop}/admin/api/${API_VERSION}${path}`;
+}
+
+// Shopify rotating offline tokens: when a token is rotated, the response includes
+// X-Shopify-Access-Token-Next. We must persist it immediately or future calls will fail.
+function rotateTokenIfNeeded(shop: string, res: Response) {
+  const next = res.headers.get("X-Shopify-Access-Token-Next");
+  if (next) shopKv.setToken(shop, next).catch(() => {});
 }
 
 export async function shopifyFetch<T = unknown>(
@@ -16,6 +26,7 @@ export async function shopifyFetch<T = unknown>(
     },
     next: { revalidate: 120 },
   });
+  rotateTokenIfNeeded(shop, res);
   if (!res.ok) throw new Error(`Shopify API ${res.status}: ${path}`);
   return res.json();
 }
@@ -34,6 +45,7 @@ export async function shopifyPost<T = unknown>(
     },
     body: JSON.stringify(body),
   });
+  rotateTokenIfNeeded(shop, res);
   if (!res.ok) throw new Error(`Shopify API ${res.status}: ${path}`);
   return res.json();
 }
