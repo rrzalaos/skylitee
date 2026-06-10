@@ -31,6 +31,7 @@ interface AnomalyData {
   summary: { projectedMonthly: number; grossSales: number; totalOrders: number; codPct: number; repeatRate: number };
 }
 interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; clicks: number; ctr: number; impressions: number; frequency: number }
+interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue: number; clicks: number; ctr: number; impressions: number }
 interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPosition: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
 
@@ -72,9 +73,11 @@ export default function CommandCenterPage() {
   const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
   const [meta, setMeta] = useState<MetaKPIs | null>(null);
   const [metaDaily, setMetaDaily] = useState<{ date: string; spend: number; purchaseValue: number }[]>([]);
+  const [gads, setGads] = useState<GadsKPIs | null>(null);
+  const [gadsDaily, setGadsDaily] = useState<{ date: string; spend: number }[]>([]);
   const [gsc, setGsc] = useState<GscKPIs | null>(null);
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
-  const [connections, setConnections] = useState({ shopify: false, meta: false, gsc: false, ga4: false });
+  const [connections, setConnections] = useState({ shopify: false, meta: false, gads: false, gsc: false, ga4: false });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,8 +91,9 @@ export default function CommandCenterPage() {
       fetch(`/api/meta?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/gsc?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/ga4?from=${range.from}&to=${range.to}`).then(r => r.json()),
+      fetch(`/api/google/ads?from=${range.from}&to=${range.to}`).then(r => r.json()),
     ]).then(results => {
-      const [shopRes, anomRes, compRes, metaRes, gscRes, ga4Res] = results;
+      const [shopRes, anomRes, compRes, metaRes, gscRes, ga4Res, gadsRes] = results;
 
       if (shopRes.status === "fulfilled" && !shopRes.value?.error) {
         setShop(shopRes.value);
@@ -109,6 +113,11 @@ export default function CommandCenterPage() {
       if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) {
         setGa4(ga4Res.value.kpis ?? null);
         setConnections(c => ({ ...c, ga4: true }));
+      }
+      if (gadsRes.status === "fulfilled" && !gadsRes.value?.error) {
+        setGads(gadsRes.value.kpis ?? null);
+        setGadsDaily(gadsRes.value.daily ?? []);
+        setConnections(c => ({ ...c, gads: true }));
       }
     }).finally(() => setLoading(false));
   }, [range.from, range.to, compareWith]);
@@ -133,14 +142,21 @@ export default function CommandCenterPage() {
   const ordersChange = pct(shop?.kpis.totalOrders ?? 0, compShop?.kpis.totalOrders);
   const aovChange = pct(shop?.kpis.aov ?? 0, compShop?.kpis.aov);
 
+  /* ── Blended ad metrics (MER): total store sales vs total ad spend across channels ── */
+  const totalSpend = (meta?.spend ?? 0) + (gads?.spend ?? 0);
+  const totalSales = shop?.kpis.grossSales ?? 0;
+  const blendedRoas = totalSpend > 0 ? +(totalSales / totalSpend).toFixed(2) : 0;
+  const hasSpend = !!(meta || gads);
+
   /* ── Combined chart data ── */
   const chartData = useMemo(() => {
     if (!shop) return [];
     return shop.dailyRevenue.map(d => {
       const md = metaDaily.find(m => m.date.slice(5).replace("-", "/") === d.day || m.date === d.day);
-      return { day: d.day, revenue: d.revenue, spend: md?.spend ?? 0 };
+      const gd = gadsDaily.find(g => g.date.slice(5).replace("-", "/") === d.day || g.date === d.day);
+      return { day: d.day, revenue: d.revenue, spend: (md?.spend ?? 0) + (gd?.spend ?? 0) };
     });
-  }, [shop, metaDaily]);
+  }, [shop, metaDaily, gadsDaily]);
 
   /* ── Key Insights (computed, no API) ── */
   const insights = useMemo(() => {
@@ -171,7 +187,7 @@ export default function CommandCenterPage() {
     { label: "Meta Ads", connected: connections.meta },
     { label: "GSC", connected: connections.gsc },
     { label: "GA4", connected: connections.ga4 },
-    { label: "Google Ads", connected: false },
+    { label: "Google Ads", connected: connections.gads },
   ];
 
   return (
@@ -220,10 +236,10 @@ export default function CommandCenterPage() {
           changeLabel={deltaLabel(salesChange)}
         />
         <KPICard
-          label="ROAS"
-          value={meta ? `${meta.roas}x` : "—"}
-          change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
-          changeLabel={meta ? signal("roas", meta.roas).label : undefined}
+          label="Blended ROAS"
+          value={hasSpend ? `${blendedRoas}x` : "—"}
+          change={hasSpend ? (blendedRoas >= 2 ? 1 : -1) : undefined}
+          changeLabel={hasSpend ? signal("roas", blendedRoas).label : undefined}
         />
         <KPICard
           label="Orders"
@@ -238,10 +254,10 @@ export default function CommandCenterPage() {
           changeLabel={deltaLabel(aovChange)}
         />
         <KPICard
-          label="Ad Spend"
-          value={meta ? formatINR(meta.spend) : "—"}
-          change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
-          changeLabel={meta ? `ROAS ${meta.roas}x` : undefined}
+          label="Total Ad Spend"
+          value={hasSpend ? formatINR(totalSpend) : "—"}
+          change={hasSpend ? (blendedRoas >= 2 ? 1 : -1) : undefined}
+          changeLabel={hasSpend ? `${connections.gads ? "Meta + Google" : "Meta"} · ${blendedRoas}x` : undefined}
         />
         <KPICard
           label={gsc ? "GSC Clicks" : ga4 ? "Sessions" : "New Customers"}
@@ -261,7 +277,7 @@ export default function CommandCenterPage() {
               title="Revenue vs Ad Spend"
               right={<span className="flex items-center gap-3 text-[11px]">
                 <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-[#F97316] inline-block" /> Revenue</span>
-                {connections.meta && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
+                {(connections.meta || connections.gads) && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
               </span>}
             />
             {loading ? (
@@ -279,7 +295,7 @@ export default function CommandCenterPage() {
                     formatter={(v, name) => [formatINR(Number(v)), name === "revenue" ? "Revenue" : "Ad Spend"]}
                   />
                   <Bar dataKey="revenue" fill="#F97316" radius={[3, 3, 0, 0]} barSize={10} opacity={0.9} />
-                  {connections.meta && (
+                  {(connections.meta || connections.gads) && (
                     <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                   )}
                 </ComposedChart>
