@@ -31,6 +31,47 @@ export async function shopifyFetch<T = unknown>(
   return res.json();
 }
 
+// Parse the `next` URL out of Shopify's cursor-pagination Link header.
+// Format: <https://…?page_info=…>; rel="previous", <https://…?page_info=…>; rel="next"
+function parseNextLink(link: string | null): string | null {
+  if (!link) return null;
+  for (const part of link.split(",")) {
+    const m = part.match(/<([^>]+)>;\s*rel="next"/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// Follows Shopify cursor pagination (Link header) and returns every page concatenated.
+// `path` is the first-page path (include limit + fields); subsequent pages follow the
+// full URL Shopify returns in the Link header. `key` is the JSON array key, e.g. "customers".
+// maxPages bounds the loop (40 × 250 = 10,000 records) so a huge store can't hang the request.
+export async function shopifyFetchAll<T = unknown>(
+  shop: string,
+  accessToken: string,
+  path: string,
+  key: string,
+  maxPages = 40
+): Promise<T[]> {
+  let url: string | null = shopifyApiUrl(shop, path);
+  const all: T[] = [];
+  for (let page = 0; page < maxPages && url; page++) {
+    const res = await fetch(url, {
+      headers: {
+        "X-Shopify-Access-Token": accessToken,
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 120 },
+    });
+    rotateTokenIfNeeded(shop, res);
+    if (!res.ok) throw new Error(`Shopify API ${res.status}: ${path}`);
+    const json = (await res.json()) as Record<string, T[]>;
+    all.push(...(json[key] ?? []));
+    url = parseNextLink(res.headers.get("Link"));
+  }
+  return all;
+}
+
 export async function shopifyPost<T = unknown>(
   shop: string,
   accessToken: string,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetch, ShopifyCustomer } from "@/lib/shopify";
+import { shopifyFetchAll, ShopifyCustomer } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -11,9 +11,12 @@ export async function GET(req: NextRequest) {
   const cacheKey = `cache:${shop}:customers`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  const { customers } = await shopifyFetch<{ customers: ShopifyCustomer[] }>(
+  // Paginate through the FULL customer base — not just the first 250 — so totals,
+  // LTV, repeat rate and city splits reflect every customer.
+  const customers = await shopifyFetchAll<ShopifyCustomer>(
     shop, token,
-    "/customers.json?limit=250&fields=id,orders_count,total_spent,created_at,default_address"
+    "/customers.json?limit=250&fields=id,orders_count,total_spent,created_at,default_address",
+    "customers"
   );
 
   const totalCustomers = customers.length;

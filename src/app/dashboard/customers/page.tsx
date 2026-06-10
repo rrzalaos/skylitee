@@ -80,8 +80,14 @@ export default function CustomersPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Customer Intelligence</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">Real customer data from Shopify</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Customer Intelligence</h2>
+            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">All-time</span>
+          </div>
+          <p className="text-[15px] text-[#686864] mt-0.5">
+            Lifetime customer data from Shopify · auto-synced every 30 min
+            <span className="text-[#a3a39e]"> (not affected by the date range)</span>
+          </p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
       </div>
