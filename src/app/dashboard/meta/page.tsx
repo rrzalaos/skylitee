@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck } from "lucide-react";
+import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -185,58 +185,83 @@ function DiagCard({ insight }: { insight: DiagInsight }) {
   );
 }
 
+// Every benchmarked metric returns ONE verdict: a "strength" (at/above standard, why it
+// works + how to keep it) or an "issue"/"risk"/"warning" (below standard, why it happened
+// + how to fix). This guarantees the user always sees what's working AND what's not.
 function buildDiagnosis(k: MetaKPIs): DiagInsight[] {
   const out: DiagInsight[] = [];
 
-  // ── ROAS ────────────────────────────────────────────────────────────────
+  // ── OVERALL: ROAS (avg 2x break-even, 3x good) ───────────────────────────
   if (k.roas >= 3.0) {
-    out.push({ source: "overall", severity: "strength", title: `ROAS ${k.roas}x — profitable spend`, body: "Above the 3x good threshold. Increase daily budget 20–30% incrementally and duplicate winning ad sets into lookalike audiences to scale without hurting ROAS." });
-  } else if (k.roas < 2.0) {
-    out.push({ source: "overall", severity: "risk", title: `ROAS ${k.roas}x — below the 2x minimum`, body: "You're not recovering ad spend. Pause the lowest-ROAS campaigns first, then fix the weakest funnel stage below. Don't increase budget until ROAS crosses 2x." });
+    out.push({ source: "overall", severity: "strength", title: `ROAS ${k.roas}x — profitable, above the 3x target`, body: `Every ₹1 spent returns ₹${k.roas}. This works because targeting, creative and offer are aligned. Scale carefully: raise budget 20–30% at a time and duplicate winning ad sets into lookalikes so you don't reset learning.` });
+  } else if (k.roas >= 2.0) {
+    out.push({ source: "overall", severity: "warning", title: `ROAS ${k.roas}x — okay but below the 3x target`, body: "You're past the 2x break-even guide but not in strong-profit territory. Why: one funnel stage is leaking value. Fix the weakest stage flagged below and shift budget to your best campaigns to push ROAS toward 3x." });
+  } else {
+    out.push({ source: "overall", severity: "risk", title: `ROAS ${k.roas}x — below the 2x minimum`, body: "You're spending more than you earn back. Why: usually a weak funnel stage (see below) or low-intent traffic. Pause the lowest-ROAS campaigns first, fix the biggest drop-off stage, and don't raise budgets until ROAS clears 2x." });
   }
 
-  // ── META SIDE: CTR ───────────────────────────────────────────────────────
-  if (k.ctr < 0.9) {
-    out.push({ source: "meta", severity: "issue", title: `CTR ${k.ctr}% — ad is not compelling enough`, body: "Below the 0.9% industry avg. People are seeing your ad but not clicking. Test 2–3 new ad copy angles: different hook, stronger headline, new offer framing (discount, bundle, free shipping). Also try a new creative format (video vs. image)." });
-  } else if (k.ctr >= 1.5) {
-    out.push({ source: "meta", severity: "strength", title: `CTR ${k.ctr}% — strong ad engagement`, body: "Above the 1.5% good threshold. Your ad creative is working. Focus budget on the campaigns driving this CTR and keep this creative active." });
+  // ── META: CTR (avg 0.9%, 1.5% good) ──────────────────────────────────────
+  if (k.ctr >= 1.5) {
+    out.push({ source: "meta", severity: "strength", title: `CTR ${k.ctr}% — strong ad engagement`, body: "Above the 1.5% good mark (avg 0.9%). Your hook and creative are resonating. Keep this creative running and use it as the template for new variations." });
+  } else if (k.ctr >= 0.9) {
+    out.push({ source: "meta", severity: "warning", title: `CTR ${k.ctr}% — around the 0.9% average`, body: "At industry average but not standout. Test 2–3 new hooks/headlines and a different format (video vs image) to push CTR past 1.5% — that also lowers your CPC." });
+  } else {
+    out.push({ source: "meta", severity: "issue", title: `CTR ${k.ctr}% — ad not compelling enough`, body: "Below the 0.9% avg. People see the ad but don't click. Why: weak hook, unclear offer, or wrong audience. Fix: test new angles (problem-led hook, stronger headline, clearer offer like discount/bundle/free shipping) and a fresh creative format." });
   }
 
-  // ── META SIDE: Frequency / Fatigue ──────────────────────────────────────
-  if (k.frequency > 5) {
-    out.push({ source: "meta", severity: "risk", title: `Frequency ${k.frequency}x — severe ad fatigue`, body: "Your audience has seen this ad too many times. Launch at least 2–3 fresh creatives immediately: new hook, UGC/testimonial format, or a different offer angle. Expand targeting to new audiences or lookalikes." });
-  } else if (k.frequency > 3) {
-    out.push({ source: "meta", severity: "warning", title: `Frequency ${k.frequency}x — creative fatigue building`, body: "Approaching the fatigue zone (>5x). Refresh creatives soon — try different visual styles, add a new ad angle, or introduce a seasonal/limited offer to re-engage the audience." });
+  // ── META: Frequency (1–3x healthy, >5x fatigue) ─────────────────────────
+  if (k.frequency <= 3) {
+    out.push({ source: "meta", severity: "strength", title: `Frequency ${k.frequency}x — healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the same ad. No action needed — just watch it as you scale budget." });
+  } else if (k.frequency <= 5) {
+    out.push({ source: "meta", severity: "warning", title: `Frequency ${k.frequency}x — fatigue building`, body: "Approaching the >5x fatigue zone — the same people keep seeing the ad, which slowly raises CPM and drops CTR. Refresh creatives soon (new angle/format) or widen the audience." });
+  } else {
+    out.push({ source: "meta", severity: "risk", title: `Frequency ${k.frequency}x — severe ad fatigue`, body: "The audience has seen this ad too many times, inflating CPMs and killing CTR. Launch 2–3 fresh creatives now and expand targeting / lookalikes." });
   }
 
-  // ── META SIDE: Video ────────────────────────────────────────────────────
-  if (k.videoViews3s > 0 && k.thumbStopRatio < 25) {
-    out.push({ source: "meta", severity: "issue", title: `Thumb Stop ${k.thumbStopRatio}% — weak opening hook`, body: "Below the 25% avg — people scroll past your video. The first 1–2 seconds must be more attention-grabbing: bold text overlay, show the product immediately, start with a surprising visual or a strong problem statement." });
-  }
-  if (k.videoViews3s > 0 && k.holdRatio < 15) {
-    out.push({ source: "meta", severity: "issue", title: `Hold Ratio ${k.holdRatio}% — video losing viewers too fast`, body: "Below the 15% avg. You stop the scroll but lose them quickly. Keep the video tight: get to the key benefit in under 5 seconds, remove long intros, add subtitles, and show product proof earlier." });
-  }
-
-  // ── WEBSITE SIDE: LP Ratio (Click → LPV) ────────────────────────────────
-  if (k.lpRatio < 65) {
-    out.push({ source: "website", severity: "issue", title: `LP Ratio ${k.lpRatio}% — clicks not reaching your landing page`, body: "Below the 65% avg. Most people click your ad but never see your page. This is usually a page load speed issue (target <3s) or a mismatch — what your ad promises vs. what loads. Check: page speed, headline matches ad copy, no popup blocking content on arrival." });
+  // ── WEBSITE: Landing page rate (avg 65%) ─────────────────────────────────
+  if (k.lpRatio >= 65) {
+    out.push({ source: "website", severity: "strength", title: `Landing page rate ${k.lpRatio}% — clicks reach your page`, body: "Above the 65% avg, so the page loads fast and most clicks become real visits. Protect it: keep mobile load under 3s and keep the ad↔page message consistent." });
+  } else if (k.lpRatio >= 45) {
+    out.push({ source: "website", severity: "warning", title: `Landing page rate ${k.lpRatio}% — some clicks lost`, body: "Below the 65% avg. A chunk of clickers never see the page. Why: slow mobile load or a redirect. Fix: test page speed (target <3s) and remove pop-ups that block content on arrival." });
+  } else {
+    out.push({ source: "website", severity: "issue", title: `Landing page rate ${k.lpRatio}% — most clicks never load the page`, body: "Well below the 65% avg — often the biggest leak. Why: slow load, broken/redirecting link, or ad↔page mismatch. Fix: page speed first (<3s on mobile), verify the link works, and match the page headline to the ad promise." });
   }
 
-  // ── WEBSITE SIDE: ATC Ratio (LPV → ATC) ─────────────────────────────────
-  if (k.atcRatio < 7) {
-    out.push({ source: "website", severity: "issue", title: `ATC Ratio ${k.atcRatio}% — product page not converting`, body: "Below the 7% avg. Visitors land but don't add to cart — this is a Shopify/PDP issue, not an ad issue. Fix: add customer reviews with photos, make the offer crystal clear (price, what's included), create urgency (low stock, limited offer), and ensure the ATC button is visible without scrolling." });
-  } else if (k.atcRatio >= 12) {
-    out.push({ source: "website", severity: "strength", title: `ATC Ratio ${k.atcRatio}% — product page converting well`, body: "Above the 12% good threshold. Your PDP is doing its job. Protect these elements: the offer clarity, social proof, and page layout. Reapply the same structure to any new product pages." });
+  // ── WEBSITE: Add-to-cart rate (avg 7%, 12% strong) ──────────────────────
+  if (k.atcRatio >= 12) {
+    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% — product page converting well`, body: "Above the 12% strong mark (avg 7%). Your product page — offer clarity, photos, reviews — is doing its job. Reuse this page structure for new products." });
+  } else if (k.atcRatio >= 7) {
+    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% — above average`, body: "Above the 7% avg. The product page is turning visitors into carts. To push higher, add photo reviews and make the price/offer even clearer above the fold." });
+  } else {
+    out.push({ source: "website", severity: "issue", title: `Add-to-cart rate ${k.atcRatio}% — product page not converting`, body: "Below the 7% avg. Visitors land but don't add to cart — a product-page issue, not an ad issue. Fix: photo reviews, a crystal-clear offer (price, what's included), urgency (low stock), and an Add-to-Cart button visible without scrolling." });
   }
 
-  // ── WEBSITE SIDE: Checkout Ratio (ATC → Checkout) ───────────────────────
-  if (k.checkoutRatio < 50) {
-    out.push({ source: "website", severity: "issue", title: `Checkout Ratio ${k.checkoutRatio}% — high cart abandonment`, body: "Below the 50% avg. Customers add to cart but abandon before checkout. Fix: show shipping cost + ETA upfront (surprise fees are #1 reason for cart drop), add trust badges (secure payment, easy returns), offer COD prominently. Set up a cart abandonment WhatsApp/email sequence within 1 hour." });
+  // ── WEBSITE: Cart → checkout (avg 50%) ──────────────────────────────────
+  if (k.checkoutRatio >= 50) {
+    out.push({ source: "website", severity: "strength", title: `Cart → checkout ${k.checkoutRatio}% — low cart abandonment`, body: "Above the 50% avg. Shoppers who add to cart are moving to checkout — your shipping and trust signals are clear. Keep showing shipping cost + ETA early." });
+  } else {
+    out.push({ source: "website", severity: "issue", title: `Cart → checkout ${k.checkoutRatio}% — high cart abandonment`, body: "Below the 50% avg. Carts are abandoned before checkout. Why: surprise shipping fees, weak trust, or no COD. Fix: show shipping cost + ETA upfront, add trust badges, surface COD, and add a 1-hour cart-recovery WhatsApp/email." });
   }
 
-  // ── WEBSITE SIDE: Purchase Ratio (Checkout → Purchase) ──────────────────
-  if (k.purchaseRatio < 40) {
-    out.push({ source: "website", severity: "issue", title: `Purchase Ratio ${k.purchaseRatio}% — drop-off at payment`, body: "Below the 40% avg. Customers reach checkout but don't pay. Fix: show all payment options clearly (UPI, COD, card, EMI), display delivery date on checkout page, add trust signals (Razorpay/Stripe badge, 'easy returns' note), and eliminate shipping fee surprises." });
+  // ── WEBSITE: Checkout → purchase (avg 40%) ──────────────────────────────
+  if (k.purchaseRatio >= 40) {
+    out.push({ source: "website", severity: "strength", title: `Checkout → purchase ${k.purchaseRatio}% — payment step converting`, body: "Above the 40% avg. People who reach checkout are paying — your payment options and checkout trust are working. Keep UPI/COD/card all visible." });
+  } else {
+    out.push({ source: "website", severity: "issue", title: `Checkout → purchase ${k.purchaseRatio}% — drop-off at payment`, body: "Below the 40% avg. Customers reach checkout but don't pay. Why: limited payment options, surprise fees, or low trust. Fix: show UPI/COD/card/EMI clearly, display the delivery date, add payment-security badges, and remove fee surprises." });
+  }
+
+  // ── META: Video (only when there are video views) ───────────────────────
+  if (k.videoViews3s > 0) {
+    if (k.thumbStopRatio >= 25) {
+      out.push({ source: "meta", severity: "strength", title: `Thumb-stop ${k.thumbStopRatio}% — strong opening hook`, body: "Above the 25% avg — your first 1–2s stop the scroll. Keep opening with the product/bold hook and replicate it in new videos." });
+    } else {
+      out.push({ source: "meta", severity: "issue", title: `Thumb-stop ${k.thumbStopRatio}% — weak opening hook`, body: "Below the 25% avg — people scroll past. Why: slow or unclear opening. Fix: make the first 1–2s grab attention — bold text overlay, show the product instantly, or open with a surprising visual/problem." });
+    }
+    if (k.holdRatio >= 15) {
+      out.push({ source: "meta", severity: "strength", title: `Hold ratio ${k.holdRatio}% — viewers staying`, body: "Above the 15% avg — the video keeps attention. Maintain the tight pacing and get to the benefit early." });
+    } else {
+      out.push({ source: "meta", severity: "issue", title: `Hold ratio ${k.holdRatio}% — losing viewers fast`, body: "Below the 15% avg. You stop the scroll but lose them. Fix: get to the key benefit in under 5s, cut long intros, add subtitles, and show product proof earlier." });
+    }
   }
 
   return out;
@@ -452,9 +477,16 @@ export default function MetaPage() {
                 { label: "Checkout Ratio", value: `${k.checkoutRatio}%`, avg: "Avg: 50%", good: k.checkoutRatio >= 50 },
                 { label: "Purchase Ratio", value: `${k.purchaseRatio}%`, avg: "Avg: 40%", good: k.purchaseRatio >= 40 },
               ].map(r => (
-                <div key={r.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
+                <div key={r.label} className={cn("rounded-xl p-2.5 text-center border",
+                  r.good
+                    ? "bg-[#F0FDF4] border-[#BBF7D0] dark:bg-[#052E16] dark:border-[#14532D]"
+                    : "bg-[#FEF2F2] border-[#FECACA] dark:bg-[#2D0A0A] dark:border-[#7F1D1D]"
+                )}>
                   <div className="text-[11px] text-[#A1A1AA] font-medium mb-1">{r.label}</div>
-                  <div className={cn("text-[16px] font-black", r.good ? "text-[#F97316]" : "text-[#EF4444]")}>{r.value}</div>
+                  <div className={cn("text-[16px] font-black", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>{r.value}</div>
+                  <div className={cn("text-[10px] font-bold mt-0.5", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+                    {r.good ? "✓ Good" : "↓ Below avg"}
+                  </div>
                   <div className="text-[11px] text-[#A1A1AA]">{r.avg}</div>
                 </div>
               ))}
@@ -510,16 +542,39 @@ export default function MetaPage() {
             </Card>
           )}
 
-          {/* Funnel Diagnosis */}
+          {/* What's working & what's not — vs industry benchmarks */}
           {(() => {
             const diag = buildDiagnosis(k);
             if (diag.length === 0) return null;
+            const attention = diag.filter(d => d.severity !== "strength");
+            const working = diag.filter(d => d.severity === "strength");
             return (
               <Card>
-                <CardHeader title="Funnel Diagnosis" right="vs D2C industry benchmarks" />
-                <div className="space-y-2">
-                  {diag.map((ins, i) => <DiagCard key={i} insight={ins} />)}
-                </div>
+                <CardHeader title="What's Working & What's Not" right="vs D2C industry benchmarks" />
+                {attention.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <AlertTriangle size={14} className="text-[#EF4444]" />
+                      <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">Needs attention</span>
+                      <span className="text-[11px] font-bold text-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] px-1.5 py-0.5 rounded-full">{attention.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {attention.map((ins, i) => <DiagCard key={i} insight={ins} />)}
+                    </div>
+                  </div>
+                )}
+                {working.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <CheckCircle2 size={14} className="text-[#22C55E]" />
+                      <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">What's working</span>
+                      <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full">{working.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {working.map((ins, i) => <DiagCard key={i} insight={ins} />)}
+                    </div>
+                  </div>
+                )}
               </Card>
             );
           })()}
