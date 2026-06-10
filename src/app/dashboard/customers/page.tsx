@@ -7,73 +7,109 @@ import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
+import { useDateRange } from "@/lib/date-range-context";
 
-interface CustomerData {
-  kpis: {
-    totalCustomers: number;
-    repeat: number;
-    oneTime: number;
-    avgLTV: number;
-    newThisMonth: number;
-  };
+type Mode = "all" | "period";
+
+interface AllTimeData {
+  kpis: { totalCustomers: number; repeat: number; oneTime: number; avgLTV: number; newThisMonth: number };
+  topCities: { city: string; count: number; pct: number }[];
+}
+interface PeriodData {
+  kpis: { activeBuyers: number; newBuyers: number; returningBuyers: number; repeatShare: number; spendPerBuyer: number; revenue: number; orders: number };
   topCities: { city: string; count: number; pct: number }[];
 }
 
-export default function CustomersPage() {
-  const [data, setData] = useState<CustomerData | null>(null);
-  const [loading, setLoading] = useState(true);
+const cityColors = ["green", "blue", "amber", "purple", "teal", "green", "blue", "amber"] as const;
 
+export default function CustomersPage() {
+  const { range } = useDateRange();
+  const [mode, setMode] = useState<Mode>("all");
+
+  const [allData, setAllData] = useState<AllTimeData | null>(null);
+  const [loadingAll, setLoadingAll] = useState(true);
+
+  const [periodData, setPeriodData] = useState<PeriodData | null>(null);
+  const [loadingPeriod, setLoadingPeriod] = useState(false);
+
+  // All-time base — fetched once (lifetime data, not affected by the date range).
   useEffect(() => {
     fetch("/api/shopify/customers")
       .then(r => r.json())
-      .then(d => { if (d.kpis) setData(d); })
-      .finally(() => setLoading(false));
+      .then(d => { if (d.kpis) setAllData(d); })
+      .finally(() => setLoadingAll(false));
   }, []);
 
-  const repeatRate = data ? Math.round((data.kpis.repeat / Math.max(data.kpis.totalCustomers, 1)) * 100) : 0;
-  const maxCity = data ? Math.max(...data.topCities.map(c => c.count), 1) : 1;
+  // Period view — refetched whenever the range changes, only while that tab is active.
+  useEffect(() => {
+    if (mode !== "period") return;
+    setLoadingPeriod(true);
+    setPeriodData(null);
+    fetch(`/api/shopify/customers/period?from=${range.from}&to=${range.to}`)
+      .then(r => r.json())
+      .then(d => { if (d.kpis) setPeriodData(d); })
+      .finally(() => setLoadingPeriod(false));
+  }, [mode, range.from, range.to]);
 
+  const loading = mode === "all" ? loadingAll : loadingPeriod;
+  const data = mode === "all" ? allData : periodData;
+  const topCities = data?.topCities ?? [];
+  const maxCity = topCities.length ? Math.max(...topCities.map(c => c.count), 1) : 1;
+
+  const repeatRate = allData ? Math.round((allData.kpis.repeat / Math.max(allData.kpis.totalCustomers, 1)) * 100) : 0;
+
+  /* ── Export ── */
   function buildSections() {
-    if (!data) return [];
-    return [
-      {
-        title: "Customer KPIs",
-        headers: ["Metric", "Value"],
-        rows: [
-          ["Total Customers", data.kpis.totalCustomers],
-          ["Avg LTV (Revenue per customer)", formatINR(data.kpis.avgLTV)],
+    if (mode === "all") {
+      if (!allData) return [];
+      const k = allData.kpis;
+      return [
+        { title: "Customer KPIs (All-time)", headers: ["Metric", "Value"], rows: [
+          ["Total Customers", k.totalCustomers],
+          ["Avg LTV (Revenue per customer)", formatINR(k.avgLTV)],
           ["Repeat Rate", `${repeatRate}%`],
-          ["Repeat Buyers", data.kpis.repeat],
-          ["One-time Buyers", data.kpis.oneTime],
-          ["New This Month", data.kpis.newThisMonth],
-        ],
-      },
-      {
-        title: "Customer Segments",
-        headers: ["Segment", "Count", "% of Total"],
-        rows: [
-          ["Repeat Buyers", data.kpis.repeat, `${Math.round((data.kpis.repeat / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
-          ["One-time Buyers", data.kpis.oneTime, `${Math.round((data.kpis.oneTime / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
-          ["New This Month", data.kpis.newThisMonth, `${Math.round((data.kpis.newThisMonth / Math.max(data.kpis.totalCustomers, 1)) * 100)}%`],
-        ],
-      },
-      {
-        title: "Top Cities by Customers",
-        headers: ["#", "City", "Customers", "% of Total"],
-        rows: data.topCities.map((c, i) => [i + 1, c.city, c.count, `${c.pct}%`]),
-      },
+          ["Repeat Buyers", k.repeat],
+          ["One-time Buyers", k.oneTime],
+          ["New This Month", k.newThisMonth],
+        ] },
+        { title: "Top Cities by Customers", headers: ["#", "City", "Customers", "% of Total"],
+          rows: allData.topCities.map((c, i) => [i + 1, c.city, c.count, `${c.pct}%`]) },
+      ];
+    }
+    if (!periodData) return [];
+    const k = periodData.kpis;
+    return [
+      { title: `Customer KPIs (${range.label})`, headers: ["Metric", "Value"], rows: [
+        ["Active Buyers", k.activeBuyers],
+        ["New Buyers", k.newBuyers],
+        ["Returning Buyers", k.returningBuyers],
+        ["Returning Share", `${k.repeatShare}%`],
+        ["Spend / Buyer", formatINR(k.spendPerBuyer)],
+        ["Revenue", formatINR(k.revenue)],
+        ["Orders", k.orders],
+      ] },
+      { title: "Top Cities by Buyers", headers: ["#", "City", "Buyers", "% of Buyers"],
+        rows: periodData.topCities.map((c, i) => [i + 1, c.city, c.count, `${c.pct}%`]) },
     ];
   }
-
   function handleExportCSV() { exportToCSV("skylitee-customers", buildSections()); }
   async function handleExportPDF() {
-    await exportToPDF("skylitee-customers", "Customer Intelligence", "Shopify live data · All time", buildSections());
+    await exportToPDF(
+      "skylitee-customers", "Customer Intelligence",
+      mode === "all" ? "Shopify live data · All-time" : `Shopify live data · ${range.label}`,
+      buildSections()
+    );
   }
 
-  const segments = data ? [
-    { name: "Repeat buyers", icon: "🏆", count: data.kpis.repeat, color: "text-[#0d6b4f]", border: "border-[#e0f5ee]", desc: "Ordered more than once" },
-    { name: "One-time", icon: "🛍️", count: data.kpis.oneTime, color: "text-[#5c3608]", border: "border-[#faecd7]", desc: "Only one order so far" },
-    { name: "New this month", icon: "🆕", count: data.kpis.newThisMonth, color: "text-[#0a3d7a]", border: "border-[#e4eef9]", desc: "Joined this month" },
+  /* ── Segments per mode ── */
+  const segments = mode === "all" && allData ? [
+    { name: "Repeat buyers", icon: "🏆", count: allData.kpis.repeat, color: "text-[#0d6b4f]", border: "border-[#e0f5ee]", desc: "Ordered more than once" },
+    { name: "One-time", icon: "🛍️", count: allData.kpis.oneTime, color: "text-[#5c3608]", border: "border-[#faecd7]", desc: "Only one order so far" },
+    { name: "New this month", icon: "🆕", count: allData.kpis.newThisMonth, color: "text-[#0a3d7a]", border: "border-[#e4eef9]", desc: "Joined this month" },
+  ] : mode === "period" && periodData ? [
+    { name: "New buyers", icon: "🆕", count: periodData.kpis.newBuyers, color: "text-[#0a3d7a]", border: "border-[#e4eef9]", desc: "First-time customers" },
+    { name: "Returning buyers", icon: "🏆", count: periodData.kpis.returningBuyers, color: "text-[#0d6b4f]", border: "border-[#e0f5ee]", desc: "Ordered before this period" },
+    { name: "Orders", icon: "🛍️", count: periodData.kpis.orders, color: "text-[#5c3608]", border: "border-[#faecd7]", desc: "Placed in this period" },
   ] : [];
 
   return (
@@ -82,87 +118,149 @@ export default function CustomersPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Customer Intelligence</h2>
-            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">All-time</span>
+            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">
+              {mode === "all" ? "All-time" : range.label}
+            </span>
           </div>
           <p className="text-[15px] text-[#686864] mt-0.5">
-            Lifetime customer data from Shopify · auto-synced every 30 min
-            <span className="text-[#a3a39e]"> (not affected by the date range)</span>
+            {mode === "all"
+              ? <>Lifetime customer data from Shopify · auto-synced every 30 min <span className="text-[#a3a39e]">(not affected by the date range)</span></>
+              : <>Customers who ordered during <span className="font-medium text-[#181816]">{range.label}</span> · change the date range up top</>}
           </p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
       </div>
 
+      {/* Mode toggle */}
+      <div className="inline-flex rounded-lg border border-[#e6e6e3] bg-white p-0.5 mb-3">
+        {(["all", "period"] as Mode[]).map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
+              mode === m ? "bg-[#181816] text-white" : "text-[#686864] hover:text-[#181816]"
+            }`}
+          >
+            {m === "all" ? "All-time" : `By date range (${range.label})`}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real customer data...</div>
+        <div className="text-[15px] text-[#686864] py-8 text-center">Loading customer data...</div>
       ) : !data ? (
         <div className="text-[15px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
-      ) : (
+      ) : mode === "period" && periodData && periodData.kpis.activeBuyers === 0 ? (
+        <div className="text-[15px] text-[#686864] py-8 text-center">No customers ordered during {range.label}.</div>
+      ) : mode === "all" && allData ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-            <KPICard label="Total Customers" value={data.kpis.totalCustomers.toLocaleString()} />
-            <KPICard label="Avg LTV" value={formatINR(data.kpis.avgLTV)} sub="Revenue per customer" />
+            <KPICard label="Total Customers" value={allData.kpis.totalCustomers.toLocaleString()} />
+            <KPICard label="Avg LTV" value={formatINR(allData.kpis.avgLTV)} sub="Revenue per customer" />
             <KPICard
               label="Repeat Rate"
               value={`${repeatRate}%`}
               change={repeatRate >= 25 ? 1 : -1}
               changeLabel={repeatRate >= 25 ? "Above 25% benchmark" : "Below 25% benchmark"}
             />
-            <KPICard label="New This Month" value={data.kpis.newThisMonth.toString()} sub="New customers acquired" />
+            <KPICard label="New This Month" value={allData.kpis.newThisMonth.toString()} sub="New customers acquired" />
           </div>
+          {renderSegments()}
+          {renderActionsAndCities("all")}
+        </>
+      ) : mode === "period" && periodData ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+            <KPICard label="Active Buyers" value={periodData.kpis.activeBuyers.toLocaleString()} sub={`Ordered in ${range.label}`} />
+            <KPICard label="New Buyers" value={periodData.kpis.newBuyers.toLocaleString()} sub="First-time customers" />
+            <KPICard
+              label="Returning Buyers"
+              value={periodData.kpis.returningBuyers.toLocaleString()}
+              change={periodData.kpis.repeatShare >= 25 ? 1 : -1}
+              changeLabel={`${periodData.kpis.repeatShare}% of buyers`}
+            />
+            <KPICard label="Spend / Buyer" value={formatINR(periodData.kpis.spendPerBuyer)} sub="Avg revenue per buyer" />
+          </div>
+          {renderSegments()}
+          {renderActionsAndCities("period")}
+        </>
+      ) : null}
+    </div>
+  );
 
-          <Card className="mb-2">
-            <CardHeader title="Customer Segments" right={`${data.kpis.totalCustomers.toLocaleString()} total customers`} />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
-              {segments.map(seg => (
-                <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
-                  <div className="text-2xl mb-1.5">{seg.icon}</div>
-                  <div className="text-[14px] font-semibold text-[#181816]">{seg.name}</div>
-                  <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
-                  <div className="text-[13px] text-[#686864] mt-1">{seg.desc}</div>
-                  <div className={`text-[13px] font-semibold mt-1 ${seg.color}`}>
-                    {Math.round((seg.count / Math.max(data.kpis.totalCustomers, 1)) * 100)}% of total
-                  </div>
-                </div>
-              ))}
+  function renderSegments() {
+    const total = mode === "all" ? (allData?.kpis.totalCustomers ?? 0) : (periodData?.kpis.activeBuyers ?? 0);
+    const totalLabel = mode === "all" ? `${total.toLocaleString()} total customers` : `${total.toLocaleString()} buyers in ${range.label}`;
+    return (
+      <Card className="mb-2">
+        <CardHeader title="Customer Segments" right={totalLabel} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
+          {segments.map(seg => (
+            <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
+              <div className="text-2xl mb-1.5">{seg.icon}</div>
+              <div className="text-[14px] font-semibold text-[#181816]">{seg.name}</div>
+              <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
+              <div className="text-[13px] text-[#686864] mt-1">{seg.desc}</div>
             </div>
-          </Card>
+          ))}
+        </div>
+      </Card>
+    );
+  }
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <Card>
-              <CardHeader title="AI actions" />
-              {data.kpis.repeat > 0 && (
-                <InsightCard title={`${data.kpis.repeat} repeat buyers — reward them`} body="Send a WhatsApp or email with early access to new drops. Repeat buyers spend 3× more on average." />
+  function renderActionsAndCities(m: Mode) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Card>
+          <CardHeader title="AI actions" />
+          {m === "all" && allData && (
+            <>
+              {allData.kpis.repeat > 0 && (
+                <InsightCard title={`${allData.kpis.repeat} repeat buyers — reward them`} body="Send a WhatsApp or email with early access to new drops. Repeat buyers spend 3× more on average." />
               )}
-              {data.kpis.oneTime > 0 && (
-                <InsightCard type="info" title={`${data.kpis.oneTime} one-time buyers — trigger 2nd purchase`} body="Email Day 7 post-purchase with complementary product suggestion. 2nd purchase rate increases from ~18% → 31% with this nudge." />
+              {allData.kpis.oneTime > 0 && (
+                <InsightCard type="info" title={`${allData.kpis.oneTime} one-time buyers — trigger 2nd purchase`} body="Email Day 7 post-purchase with complementary product suggestion. 2nd purchase rate increases from ~18% → 31% with this nudge." />
               )}
-              {data.kpis.newThisMonth > 0 && (
-                <InsightCard type="purple" title={`${data.kpis.newThisMonth} new customers this month`} body="Welcome flow: send a personalised thank-you with brand story + product care tips. Sets the tone for long-term loyalty." />
+              {allData.kpis.newThisMonth > 0 && (
+                <InsightCard type="purple" title={`${allData.kpis.newThisMonth} new customers this month`} body="Welcome flow: send a personalised thank-you with brand story + product care tips. Sets the tone for long-term loyalty." />
               )}
               {repeatRate < 25 && (
                 <InsightCard type="warning" title={`Repeat rate ${repeatRate}% — below 25% benchmark`} body="Focus on post-purchase flows: 7-day follow-up email, loyalty points, or a small discount on the next order." />
               )}
-            </Card>
-
-            <Card>
-              <CardHeader title="Top cities by customers" />
-              {data.topCities.length === 0 ? (
-                <div className="text-[15px] text-[#686864] py-4 text-center">No location data available</div>
-              ) : (
-                data.topCities.map((c, i) => (
-                  <BarRow
-                    key={i}
-                    label={c.city}
-                    pct={Math.round((c.count / maxCity) * 100)}
-                    value={`${c.count} customers (${c.pct}%)`}
-                    color={["green", "blue", "amber", "purple", "teal", "green", "blue", "amber"][i] as "green" | "blue" | "amber" | "purple" | "teal"}
-                  />
-                ))
+            </>
+          )}
+          {m === "period" && periodData && (
+            <>
+              {periodData.kpis.newBuyers > 0 && (
+                <InsightCard type="purple" title={`${periodData.kpis.newBuyers} new buyers in ${range.label}`} body="Trigger a welcome flow now while they're warm: thank-you note, brand story, and a small nudge toward a 2nd order." />
               )}
-            </Card>
-          </div>
-        </>
-      )}
-    </div>
-  );
+              {periodData.kpis.returningBuyers > 0 && (
+                <InsightCard title={`${periodData.kpis.returningBuyers} returning buyers — keep them loyal`} body="Returning buyers drove repeat revenue this period. Reward with early access or loyalty points to protect retention." />
+              )}
+              {periodData.kpis.repeatShare < 25 && periodData.kpis.activeBuyers > 0 && (
+                <InsightCard type="warning" title={`Only ${periodData.kpis.repeatShare}% of buyers were returning`} body="Acquisition is carrying this period. Strengthen post-purchase flows so more of these buyers come back." />
+              )}
+            </>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader title={m === "all" ? "Top cities by customers" : "Top cities by buyers"} />
+          {topCities.length === 0 ? (
+            <div className="text-[15px] text-[#686864] py-4 text-center">No location data available</div>
+          ) : (
+            topCities.map((c, i) => (
+              <BarRow
+                key={i}
+                label={c.city}
+                pct={Math.round((c.count / maxCity) * 100)}
+                value={`${c.count} ${m === "all" ? "customers" : "buyers"} (${c.pct}%)`}
+                color={cityColors[i]}
+              />
+            ))
+          )}
+        </Card>
+      </div>
+    );
+  }
 }
