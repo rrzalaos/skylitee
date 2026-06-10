@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowRight } from "lucide-react";
+import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck } from "lucide-react";
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -77,23 +77,76 @@ function bench(value: number, avg: number, good: number, higherIsBetter = true):
   return { change: -1, changeLabel: `Below avg · ${avgLabel}` };
 }
 
-function FunnelStep({ label, count, value, ratio, ratioLabel, cur }: {
-  label: string; count: number; value?: number; ratio?: number; ratioLabel?: string; cur: string;
-}) {
+const FUNNEL_COLORS = ["#FB923C", "#F97316", "#EA580C", "#DC2626", "#16A34A"];
+
+function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
+  const stages = [
+    { label: "Visitors", desc: "Clicked the ad to your site", count: k.outboundClicks, value: 0, Icon: MousePointerClick },
+    { label: "Landing Page Views", desc: "Page actually loaded", count: k.lpv, value: 0, Icon: MonitorSmartphone },
+    { label: "Add to Cart", desc: "Added a product", count: k.atc, value: k.atcValue, Icon: ShoppingCart },
+    { label: "Reached Checkout", desc: "Started checkout", count: k.checkout, value: k.checkoutValue, Icon: CreditCard },
+    { label: "Purchased", desc: "Completed the order", count: k.purchases, value: k.purchaseValue, Icon: PackageCheck },
+  ];
+  const top = Math.max(stages[0].count, 1);
+  // sqrt scale keeps the tiny end-stages visible while the funnel still narrows clearly
+  const barWidth = (c: number) => `${Math.max(Math.sqrt(c / top) * 100, 14)}%`;
+
   return (
-    <div className="flex flex-col items-center text-center min-w-0 flex-1">
-      <div className="text-[11px] text-[#A1A1AA] font-semibold mb-1 uppercase tracking-wide">{label}</div>
-      <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{count.toLocaleString("en-IN")}</div>
-      {value !== undefined && value > 0 && (
-        <div className="text-[12px] text-[#EA580C] dark:text-[#FB923C] font-semibold">{cur}{value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
-      )}
-      {ratio !== undefined && (
-        <div className={cn("text-[11px] mt-0.5 px-1.5 py-0.5 rounded-full font-bold",
-          ratio >= 60 ? "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]"
-            : ratio >= 40 ? "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]"
-            : "bg-[#FEF2F2] text-[#991B1B] dark:bg-[#2D0A0A] dark:text-[#FCA5A5]"
-        )}>{ratio}% {ratioLabel}</div>
-      )}
+    <div>
+      {/* Plain-language summary */}
+      <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] mb-4 leading-relaxed">
+        Of <b className="text-[#18181B] dark:text-[#F4F4F5]">{stages[0].count.toLocaleString("en-IN")}</b> visitors sent to your site,{" "}
+        <b className="text-[#16A34A]">{k.purchases.toLocaleString("en-IN")}</b> completed a purchase. Each step shows how many continued and how many dropped off.
+      </p>
+
+      <div className="space-y-0">
+        {stages.map((s, i) => {
+          const pctOfTop = (s.count / top) * 100;
+          const prev = i > 0 ? stages[i - 1].count : null;
+          const continued = prev !== null ? (s.count / Math.max(prev, 1)) * 100 : null;
+          const dropped = prev !== null ? Math.max(prev - s.count, 0) : 0;
+          const Icon = s.Icon;
+          return (
+            <div key={s.label}>
+              {/* Drop-off connector */}
+              {continued !== null && (
+                <div className="flex items-center gap-2 pl-9 py-1.5 text-[11px]">
+                  <ArrowDown size={13} className="text-[#A1A1AA] shrink-0" />
+                  <span className={cn("font-bold",
+                    continued >= 50 ? "text-[#16A34A]" : continued >= 20 ? "text-[#EA580C]" : "text-[#DC2626]"
+                  )}>{continued.toFixed(1)}% continued</span>
+                  <span className="text-[#D4D4D4] dark:text-[#525252]">·</span>
+                  <span className="text-[#A1A1AA]">{dropped.toLocaleString("en-IN")} dropped off</span>
+                </div>
+              )}
+              {/* Stage row */}
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${FUNNEL_COLORS[i]}1A` }}>
+                  <Icon size={15} style={{ color: FUNNEL_COLORS[i] }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <div className="min-w-0 truncate">
+                      <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.label}</span>
+                      <span className="text-[11px] text-[#A1A1AA] ml-2 hidden sm:inline">{s.desc}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 shrink-0">
+                      {s.value > 0 && (
+                        <span className="text-[11px] text-[#EA580C] dark:text-[#FB923C] font-semibold">{cur}{s.value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                      )}
+                      <span className="text-[17px] font-black text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.count.toLocaleString("en-IN")}</span>
+                      <span className="text-[11px] text-[#A1A1AA] w-11 text-right">{pctOfTop.toFixed(pctOfTop < 1 ? 2 : 0)}%</span>
+                    </div>
+                  </div>
+                  <div className="h-3 rounded-full bg-[#F5F5F4] dark:bg-[#1C1C1C] overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: barWidth(s.count), background: `linear-gradient(90deg, ${FUNNEL_COLORS[i]}, ${FUNNEL_COLORS[i]}bb)` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -385,40 +438,12 @@ export default function MetaPage() {
           {/* Conversion Funnel */}
           <Card>
             <CardHeader title="Conversion Funnel" right={<span className="text-[#F97316] font-semibold">CVR: {k.conversionRatio}%</span>} />
-            {/* Funnel steps */}
-            <div className="flex items-start gap-1 mb-4">
-              <FunnelStep label="Outbound Clicks" count={k.outboundClicks} cur={cur} />
-              <div className="flex flex-col items-center justify-center mt-5 shrink-0">
-                <ArrowRight size={12} className="text-[#D4D4D4] dark:text-[#525252]" />
-                <div className={cn("text-[10px] font-bold mt-0.5",
-                  k.lpRatio >= 65 ? "text-[#EA580C]" : k.lpRatio >= 45 ? "text-[#EAB308]" : "text-[#EF4444]"
-                )}>{k.lpRatio}%</div>
-              </div>
-              <FunnelStep label="Landing Page Views" count={k.lpv} cur={cur} ratio={k.lpRatio} ratioLabel="LP Rate" />
-              <div className="flex flex-col items-center justify-center mt-5 shrink-0">
-                <ArrowRight size={12} className="text-[#D4D4D4] dark:text-[#525252]" />
-                <div className={cn("text-[10px] font-bold mt-0.5",
-                  k.atcRatio >= 12 ? "text-[#EA580C]" : k.atcRatio >= 5 ? "text-[#EAB308]" : "text-[#EF4444]"
-                )}>{k.atcRatio}%</div>
-              </div>
-              <FunnelStep label="Add to Cart" count={k.atc} value={k.atcValue} cur={cur} ratio={k.atcRatio} ratioLabel="ATC Rate" />
-              <div className="flex flex-col items-center justify-center mt-5 shrink-0">
-                <ArrowRight size={12} className="text-[#D4D4D4] dark:text-[#525252]" />
-                <div className={cn("text-[10px] font-bold mt-0.5",
-                  k.checkoutRatio >= 60 ? "text-[#EA580C]" : k.checkoutRatio >= 40 ? "text-[#EAB308]" : "text-[#EF4444]"
-                )}>{k.checkoutRatio}%</div>
-              </div>
-              <FunnelStep label="Checkout" count={k.checkout} value={k.checkoutValue} cur={cur} ratio={k.checkoutRatio} ratioLabel="Chk Rate" />
-              <div className="flex flex-col items-center justify-center mt-5 shrink-0">
-                <ArrowRight size={12} className="text-[#D4D4D4] dark:text-[#525252]" />
-                <div className={cn("text-[10px] font-bold mt-0.5",
-                  k.purchaseRatio >= 50 ? "text-[#EA580C]" : k.purchaseRatio >= 30 ? "text-[#EAB308]" : "text-[#EF4444]"
-                )}>{k.purchaseRatio}%</div>
-              </div>
-              <FunnelStep label="Purchase" count={k.purchases} value={k.purchaseValue} cur={cur} ratio={k.purchaseRatio} ratioLabel="Pur Rate" />
+            {/* Visual funnel */}
+            <div className="mb-4">
+              <ConversionFunnel k={k} cur={cur} />
             </div>
 
-            {/* Ratio summary bar */}
+            {/* Ratio summary bar — stage conversion vs industry benchmark */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
               {[
                 { label: "LP Ratio", value: `${k.lpRatio}%`, avg: "Avg: 65%", good: k.lpRatio >= 65 },
