@@ -161,21 +161,30 @@ export default function CommandCenterPage() {
   /* ── Key Insights (computed, no API) ── */
   const insights = useMemo(() => {
     const list: { type: "positive" | "warning" | "danger"; title: string; body: string }[] = [];
+    // Meta ROAS — vs 2x break-even / 3x good
     if (meta) {
-      if (meta.roas < 2.0) list.push({ type: "danger", title: "ROAS below benchmark", body: `Current ROAS is ${meta.roas}x against a D2C target of 2x. Campaign efficiency needs attention.` });
-      else if (meta.roas >= 3.0) list.push({ type: "positive", title: "Strong ROAS performance", body: `ROAS at ${meta.roas}x is above the 3x D2C benchmark — campaigns are profitable.` });
+      if (meta.roas >= 3.0) list.push({ type: "positive", title: `ROAS ${meta.roas}x — campaigns profitable`, body: "Above the 3x D2C benchmark. Ads are working — scale budget 20–30% on your best campaigns to grow without hurting ROAS." });
+      else if (meta.roas >= 2.0) list.push({ type: "warning", title: `ROAS ${meta.roas}x — okay, below the 3x target`, body: "Past break-even but not strong profit yet. Why: one funnel stage is leaking. Fix the weakest stage on the Meta page and shift budget to top campaigns to reach 3x." });
+      else list.push({ type: "danger", title: `ROAS ${meta.roas}x — below the 2x minimum`, body: "You're not recovering ad spend. Pause the lowest-ROAS campaigns and fix your biggest funnel drop-off before raising budgets." });
     }
-    if (shop) {
-      if (codPct > 55) list.push({ type: "warning", title: `COD at ${codPct}% — consider prepaid incentive`, body: "High COD increases return risk. A ₹75–100 prepaid discount can shift buyer behaviour." });
+    // Search CTR — vs 2–3% average
+    if (gsc) {
+      if (gsc.ctr >= 2.0) list.push({ type: "positive", title: `Search CTR ${gsc.ctr.toFixed(1)}% — healthy`, body: "At/above the 2–3% search average. Your titles and descriptions are pulling clicks. Keep optimising top pages to hold rankings." });
+      else list.push({ type: "warning", title: `Search CTR ${gsc.ctr.toFixed(1)}% — below the 2% average`, body: "People see you in search but don't click. Why: weak title tags / meta descriptions. Rewrite them with the benefit + a reason to click on your highest-impression pages." });
     }
-    if (anomalies?.positive?.length) {
-      list.push({ type: "positive", title: anomalies.positive[0].title, body: anomalies.positive[0].desc });
+    // COD mix — vs return-risk threshold
+    if (shop && shop.kpis.totalOrders > 0) {
+      if (codPct > 55) list.push({ type: "warning", title: `COD at ${codPct}% — return risk`, body: "High COD raises RTO/returns and ties up cash. Why: prepaid isn't incentivised. Offer a ₹75–100 prepaid discount or free shipping on prepaid to shift behaviour." });
+      else if (codPct <= 40) list.push({ type: "positive", title: `COD at ${codPct}% — healthy prepaid mix`, body: "Most orders are prepaid, lowering return risk and improving cash flow. Keep prepaid incentives running." });
     }
-    if (anomalies?.critical?.length) {
-      list.push({ type: "danger", title: anomalies.critical[0].title, body: anomalies.critical[0].desc });
-    }
-    if (gsc && gsc.ctr < 2.0) list.push({ type: "warning", title: "Search CTR needs improvement", body: `Your GSC CTR is ${gsc.ctr.toFixed(1)}% — industry average is 2-3%. Review title tags and meta descriptions.` });
-    return list.slice(0, 4);
+    // Anomaly feed highlights
+    if (anomalies?.critical?.length) list.push({ type: "danger", title: anomalies.critical[0].title, body: anomalies.critical[0].desc });
+    if (anomalies?.positive?.length) list.push({ type: "positive", title: anomalies.positive[0].title, body: anomalies.positive[0].desc });
+
+    // Show what needs attention first, then what's working
+    const order = { danger: 0, warning: 1, positive: 2 } as const;
+    list.sort((a, b) => order[a.type] - order[b.type]);
+    return list.slice(0, 5);
   }, [meta, shop, codPct, anomalies, gsc]);
 
   const allAlerts = [...(anomalies?.critical ?? []), ...(anomalies?.warnings ?? [])];
@@ -494,11 +503,16 @@ export default function CommandCenterPage() {
               {insights.map((ins, i) => (
                 <div key={i} className={cn(
                   "rounded-xl p-3 border-l-[3px]",
-                  ins.type === "positive" ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] border-l-[#F97316]" :
+                  ins.type === "positive" ? "bg-[#F0FDF4] dark:bg-[#052E16] border-l-[#22C55E]" :
                   ins.type === "warning" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] border-l-[#EAB308]" :
                   "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[#EF4444]"
                 )}>
-                  <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div>
+                  <div className="flex items-center gap-1.5">
+                    {ins.type === "positive"
+                      ? <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
+                      : <AlertTriangle size={13} className={cn("shrink-0", ins.type === "warning" ? "text-[#EAB308]" : "text-[#EF4444]")} />}
+                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div>
+                  </div>
                   <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{ins.body}</div>
                 </div>
               ))}

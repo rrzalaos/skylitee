@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { NotConnected } from "@/components/ui/not-connected";
 import { useDateRange } from "@/lib/date-range-context";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -45,6 +46,46 @@ const groupColors: Record<string, string> = {
 };
 
 const COLS = ["Placement", "Spend", "Spend%", "ROAS", "Orders", "Revenue", "ATC", "LP Views", "LP%", "Clicks", "CTR", "CPC", "CPM", "Reach"];
+
+interface PInsight { good: boolean; title: string; body: string; }
+
+// Compare each placement to D2C benchmarks and surface what's working vs what's leaking,
+// each with the reason + the action to take.
+function buildPlacementInsights(placements: Placement[], totalSpend: number): PInsight[] {
+  const out: PInsight[] = [];
+  const spending = placements.filter(p => p.spend > 0);
+  if (spending.length === 0 || totalSpend <= 0) return out;
+
+  const share = (p: Placement) => (p.spend / totalSpend) * 100;
+  const withRoas = spending.filter(p => p.roas > 0);
+
+  // Best placement — highest ROAS, preferring ones with meaningful spend share
+  const best = [...withRoas].filter(p => share(p) >= 5).sort((a, b) => b.roas - a.roas)[0]
+    ?? [...withRoas].sort((a, b) => b.roas - a.roas)[0];
+  if (best && best.roas >= 2) {
+    out.push({ good: true, title: `${best.label} is your best placement — ROAS ${best.roas}x`, body: `Best return on spend (${best.roas}× on ${share(best).toFixed(0)}% of budget). This is working — shift more budget here and build more creatives sized for this surface to scale efficiently.` });
+  }
+
+  // Budget drain — big spend share but ROAS below the 1.5x line
+  const drain = spending.filter(p => share(p) >= 15 && p.roas > 0 && p.roas < 1.5).sort((a, b) => b.spend - a.spend)[0];
+  if (drain) {
+    out.push({ good: false, title: `${drain.label} is draining budget — ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5x line while eating a big share of budget. Why: weak audience/creative fit for this surface. Cut its budget and move it to ${best ? best.label : "your best placement"}.` });
+  }
+
+  // Landing-page leak on a specific surface
+  const lpLeak = spending.filter(p => p.lpv > 0 && p.lpRatio > 0 && p.lpRatio < 45).sort((a, b) => b.spend - a.spend)[0];
+  if (lpLeak) {
+    out.push({ good: false, title: `${lpLeak.label} — landing page rate ${lpLeak.lpRatio}%`, body: `Below the 65% avg: clicks from this surface aren't reaching your site, usually mobile load speed. Test your page speed (<3s) and the link for this placement.` });
+  }
+
+  // Strong engagement surface (different from best ROAS one)
+  const ctrStar = spending.filter(p => p.ctr >= 1.5 && p.clicks > 0).sort((a, b) => b.ctr - a.ctr)[0];
+  if (ctrStar && (!best || ctrStar.label !== best.label)) {
+    out.push({ good: true, title: `${ctrStar.label} has strong engagement — CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates on this surface — keep it running and reuse this creative style on other placements.` });
+  }
+
+  return out.slice(0, 5);
+}
 
 export default function PlacementPage() {
   const { range } = useDateRange();
@@ -160,7 +201,7 @@ export default function PlacementPage() {
               <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{fmtC(g.spend)}</div>
               <div className="flex items-center gap-3 mt-1.5">
                 <span className="text-[12px] text-[#71717A]">
-                  ROAS: <span className={cn("font-bold", g.roas >= 3 ? "text-[#F97316]" : g.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
+                  ROAS: <span className={cn("font-bold", g.roas >= 3 ? "text-[#16A34A]" : g.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
                     {g.roas > 0 ? `${g.roas}x` : "—"}
                   </span>
                 </span>
@@ -170,6 +211,39 @@ export default function PlacementPage() {
           ))}
         </div>
       )}
+
+      {/* What's working & what's not — across placements */}
+      {(() => {
+        const ins = buildPlacementInsights(data.placements, data.totalSpend);
+        if (ins.length === 0) return null;
+        const attention = ins.filter(i => !i.good);
+        const working = ins.filter(i => i.good);
+        return (
+          <Card className="mb-4">
+            <CardHeader title="What's Working & What's Not" right="across placements" />
+            <div className="space-y-2">
+              {attention.map((i, idx) => (
+                <div key={`a${idx}`} className="border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl p-3">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <AlertTriangle size={13} className="text-[#EF4444] shrink-0" />
+                    <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                  </div>
+                  <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                </div>
+              ))}
+              {working.map((i, idx) => (
+                <div key={`w${idx}`} className="border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl p-3">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
+                    <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                  </div>
+                  <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         {/* Spend by placement */}
@@ -211,7 +285,7 @@ export default function PlacementPage() {
                     formatter={(v) => [`${v}x`, "ROAS"]} />
                   <Bar dataKey="roas" radius={[0, 6, 6, 0]}>
                     {chartData.filter(c => c.roas > 0).map((entry, i) => (
-                      <Cell key={i} fill={entry.roas >= 3 ? "#F97316" : entry.roas >= 1.5 ? "#94A3B8" : "#EF4444"} />
+                      <Cell key={i} fill={entry.roas >= 3 ? "#16A34A" : entry.roas >= 1.5 ? "#94A3B8" : "#EF4444"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -259,7 +333,7 @@ export default function PlacementPage() {
                     </td>
                     <td className="py-2.5 px-2">
                       {p.roas > 0 ? (
-                        <span className={cn("font-bold", p.roas >= 3 ? "text-[#F97316]" : p.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
+                        <span className={cn("font-bold", p.roas >= 3 ? "text-[#16A34A]" : p.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
                           {p.roas}x
                         </span>
                       ) : <span className="text-[#A1A1AA]">—</span>}
@@ -270,14 +344,14 @@ export default function PlacementPage() {
                     <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{p.lpv > 0 ? fmt(p.lpv) : "—"}</td>
                     <td className="py-2.5 px-2">
                       {p.lpRatio > 0 ? (
-                        <span className={cn("font-semibold", p.lpRatio >= 65 ? "text-[#F97316]" : p.lpRatio >= 45 ? "text-[#EAB308]" : "text-[#EF4444]")}>
+                        <span className={cn("font-semibold", p.lpRatio >= 65 ? "text-[#16A34A]" : p.lpRatio >= 45 ? "text-[#EAB308]" : "text-[#EF4444]")}>
                           {p.lpRatio}%
                         </span>
                       ) : <span className="text-[#A1A1AA]">—</span>}
                     </td>
                     <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.clicks)}</td>
                     <td className="py-2.5 px-2">
-                      <span className={cn(p.ctr >= 1.5 ? "text-[#F97316] font-semibold" : p.ctr >= 0.9 ? "text-[#71717A] dark:text-[#A1A1AA]" : "text-[#EF4444]")}>
+                      <span className={cn(p.ctr >= 1.5 ? "text-[#16A34A] font-semibold" : p.ctr >= 0.9 ? "text-[#71717A] dark:text-[#A1A1AA]" : "text-[#EF4444]")}>
                         {p.ctr}%
                       </span>
                     </td>
@@ -291,7 +365,7 @@ export default function PlacementPage() {
           </div>
         )}
         <div className="mt-3 text-[11px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
-          Orange ROAS = above 3× · Gray = above 1.5× · Red = below 1.5× · Orange LP% ≥65% · Amber ≥45% · Red &lt;45%
+          Green ROAS = above 3× · Gray = above 1.5× · Red = below 1.5× · Green LP% ≥65% · Amber ≥45% · Red &lt;45%
         </div>
       </Card>
     </div>
