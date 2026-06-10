@@ -81,8 +81,8 @@ const FUNNEL_COLORS = ["#FB923C", "#F97316", "#EA580C", "#DC2626", "#16A34A"];
 
 function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
   const stages = [
-    { label: "Visitors", desc: "Clicked the ad to your site", count: k.outboundClicks, value: 0, Icon: MousePointerClick },
-    { label: "Landing Page Views", desc: "Page actually loaded", count: k.lpv, value: 0, Icon: MonitorSmartphone },
+    { label: "Ad Clicks", desc: "Clicked your ad", count: k.clicks, value: 0, Icon: MousePointerClick },
+    { label: "Visited Site", desc: "Landing page loaded", count: k.lpv, value: 0, Icon: MonitorSmartphone },
     { label: "Add to Cart", desc: "Added a product", count: k.atc, value: k.atcValue, Icon: ShoppingCart },
     { label: "Reached Checkout", desc: "Started checkout", count: k.checkout, value: k.checkoutValue, Icon: CreditCard },
     { label: "Purchased", desc: "Completed the order", count: k.purchases, value: k.purchaseValue, Icon: PackageCheck },
@@ -95,8 +95,9 @@ function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
     <div>
       {/* Plain-language summary */}
       <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] mb-4 leading-relaxed">
-        Of <b className="text-[#18181B] dark:text-[#F4F4F5]">{stages[0].count.toLocaleString("en-IN")}</b> visitors sent to your site,{" "}
-        <b className="text-[#16A34A]">{k.purchases.toLocaleString("en-IN")}</b> completed a purchase. Each step shows how many continued and how many dropped off.
+        Of <b className="text-[#18181B] dark:text-[#F4F4F5]">{stages[0].count.toLocaleString("en-IN")}</b> people who clicked your ad,{" "}
+        <b className="text-[#16A34A]">{k.purchases.toLocaleString("en-IN")}</b> completed a purchase{" "}
+        <b className="text-[#18181B] dark:text-[#F4F4F5]">({k.conversionRatio}%)</b>. Each step shows how many continued and how many dropped off.
       </p>
 
       <div className="space-y-0">
