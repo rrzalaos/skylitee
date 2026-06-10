@@ -7,28 +7,35 @@ import { BarRow } from "@/components/ui/bar-row";
 import { formatINR } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
+import { useDateRange } from "@/lib/date-range-context";
 
 interface CityRevenue { city: string; revenue: number; }
 interface CityCustomers { city: string; count: number; pct: number; }
 
+const cityColors = ["green", "blue", "amber", "purple", "teal"] as const;
+
 export default function GeoPage() {
+  const { range } = useDateRange();
   const [revenueByCity, setRevenueByCity] = useState<CityRevenue[]>([]);
   const [customersByCity, setCustomersByCity] = useState<CityCustomers[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Both revenue-by-city and buyers-by-city follow the selected date range.
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      fetch("/api/shopify/dashboard").then(r => r.json()),
-      fetch("/api/shopify/customers").then(r => r.json()),
+      fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`).then(r => r.json()),
+      fetch(`/api/shopify/customers/period?from=${range.from}&to=${range.to}`).then(r => r.json()),
     ]).then(([d, c]) => {
-      if (d.topCities) setRevenueByCity(d.topCities);
-      if (c.topCities) setCustomersByCity(c.topCities);
+      setRevenueByCity(d.topCities ?? []);
+      setCustomersByCity(c.topCities ?? []);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [range.from, range.to]);
 
   const topCity = revenueByCity[0];
   const totalRevenue = revenueByCity.reduce((s, c) => s + c.revenue, 0);
   const maxRev = Math.max(...revenueByCity.map(c => c.revenue), 1);
+  const totalBuyers = customersByCity.reduce((s, c) => s + c.count, 0);
 
   function buildSections() {
     const mergedData = revenueByCity.map(r => {
@@ -38,19 +45,19 @@ export default function GeoPage() {
     });
     return [
       {
-        title: "Geo KPIs",
+        title: `Geo KPIs (${range.label})`,
         headers: ["Metric", "Value"],
         rows: [
           ["Top City", topCity?.city ?? "—"],
           ["Top City Revenue", topCity ? formatINR(topCity.revenue) : "—"],
           ["Cities with Orders", revenueByCity.length],
           ["Total Revenue", formatINR(totalRevenue)],
-          ["Total Customers Tracked", customersByCity.reduce((s, c) => s + c.count, 0)],
+          ["Buyers Tracked", totalBuyers],
         ],
       },
       {
         title: "City Performance",
-        headers: ["#", "City", "Revenue", "Revenue Share", "Customers"],
+        headers: ["#", "City", "Revenue", "Revenue Share", "Buyers"],
         rows: mergedData.map((g, i) => [i + 1, g.city, formatINR(g.revenue), `${g.share}%`, g.customers > 0 ? g.customers : "—"]),
       },
     ];
@@ -58,7 +65,7 @@ export default function GeoPage() {
 
   function handleExportCSV() { exportToCSV("skylitee-geo", buildSections()); }
   async function handleExportPDF() {
-    await exportToPDF("skylitee-geo", "Geo Performance", "City-level revenue & customer data · Shopify · This month", buildSections());
+    await exportToPDF("skylitee-geo", "Geo Performance", `City-level revenue & buyers · Shopify · ${range.label}`, buildSections());
   }
 
   // Merge city data
@@ -71,8 +78,11 @@ export default function GeoPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Geo Performance</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">City-level revenue & customer data from Shopify · This month</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Geo Performance</h2>
+            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">{range.label}</span>
+          </div>
+          <p className="text-[15px] text-[#686864] mt-0.5">City-level revenue &amp; buyers from Shopify · change the date range up top</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={revenueByCity.length === 0} />
       </div>
@@ -80,7 +90,7 @@ export default function GeoPage() {
       {loading ? (
         <div className="text-[15px] text-[#686864] py-8 text-center">Loading real geo data...</div>
       ) : revenueByCity.length === 0 ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">No geo data available yet — orders need shipping addresses to show city data.</div>
+        <div className="text-[15px] text-[#686864] py-8 text-center">No geo data for {range.label} — orders need shipping addresses to show city data.</div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
@@ -91,17 +101,17 @@ export default function GeoPage() {
               value={topCity ? `${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}%` : "—"}
               sub="of total revenue"
             />
-            <KPICard label="Total customers tracked" value={customersByCity.reduce((s, c) => s + c.count, 0).toString()} sub="With location data" />
+            <KPICard label="Buyers tracked" value={totalBuyers.toString()} sub={`With location data · ${range.label}`} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Card>
-              <CardHeader title="City performance" right="By revenue · This month" />
+              <CardHeader title="City performance" right={`By revenue · ${range.label}`} />
               <div className="overflow-x-auto">
                 <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
-                      {["City", "Revenue", "Customers", "Revenue share"].map(h => (
+                      {["City", "Revenue", "Buyers", "Revenue share"].map(h => (
                         <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
@@ -136,7 +146,7 @@ export default function GeoPage() {
                     label={c.city}
                     pct={Math.round((c.revenue / maxRev) * 100)}
                     value={formatINR(c.revenue)}
-                    color={["green", "blue", "amber", "purple", "teal"][i % 5] as "green" | "blue" | "amber" | "purple" | "teal"}
+                    color={cityColors[i % cityColors.length]}
                   />
                 ))}
               </Card>
@@ -144,7 +154,7 @@ export default function GeoPage() {
               <Card>
                 <CardHeader title="Geo AI insights" />
                 {topCity && (
-                  <InsightCard title={`${topCity.city} is your top market`} body={`${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}% of revenue. Run city-specific Meta ads targeting ${topCity.city} for higher relevance and lower CPMs.`} />
+                  <InsightCard title={`${topCity.city} is your top market`} body={`${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}% of revenue in ${range.label}. Run city-specific Meta ads targeting ${topCity.city} for higher relevance and lower CPMs.`} />
                 )}
                 {revenueByCity.length >= 3 && (
                   <InsightCard type="info" title="Multi-city presence detected" body={`Revenue spread across ${revenueByCity.length} cities. Consider city-specific delivery speed messaging in ads — converts better in metros.`} />
