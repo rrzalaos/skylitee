@@ -960,10 +960,20 @@ export default function MetaPage() {
           { label: "CTR",         render: c => <span>{c.ctr}%</span> },
           { label: "CPC",         render: c => <span className="whitespace-nowrap">{cur}{c.cpc}</span> },
         ];
+        // In the mixed "All" view, ROAS/Orders are meaningless for non-sales campaigns.
+        // The "Result" column shows each campaign's own primary outcome instead.
+        const renderResult = (c: CampaignRow) => {
+          const o = normalizeObj(c.objective);
+          if (o === "SALES") return c.purchases > 0 ? `${c.purchases} orders` : "—";
+          if (o === "LEADS") return c.leads > 0 ? `${c.leads} leads` : "—";
+          if (o === "AWARENESS") return c.reach > 0 ? `${compact(c.reach)} reach` : "—";
+          if (o === "TRAFFIC") return c.lpv > 0 ? `${c.lpv.toLocaleString("en-IN")} visits` : `${c.clicks.toLocaleString("en-IN")} clicks`;
+          return c.clicks > 0 ? `${c.clicks.toLocaleString("en-IN")} clicks` : "—";
+        };
         const allCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
-          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
-          { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "—"}</span> },
+          { label: "Result",   render: c => <span className="font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{renderResult(c)}</span> },
+          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : c.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
           { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
           { label: "Clicks",   render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
           { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
