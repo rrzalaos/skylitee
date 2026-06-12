@@ -104,6 +104,23 @@ function objectiveResult(obj: ObjFilter, r: { purchases: number; leads: number; 
   return r.clicks > 0 ? `${r.clicks.toLocaleString("en-IN")} clicks` : "—";
 }
 
+// Objective's cost-per-result label, shared by table header + cards.
+function costLabelFor(obj: ObjFilter): string {
+  if (obj === "LEADS") return "Cost/Lead";
+  if (obj === "SALES") return "CAC";
+  if (obj === "TRAFFIC") return "Cost/Visit";
+  if (obj === "AWARENESS") return "CPM";
+  return "CPC";
+}
+// Objective's cost-per-result value (the headline efficiency metric for that objective).
+function objectiveCost(obj: ObjFilter, r: { spend: number; leads: number; purchases: number; cac: number; lpv: number; cpm: number; cpc: number }, cur: string): string {
+  if (obj === "LEADS") return r.leads > 0 ? money(cur, +(r.spend / r.leads).toFixed(2)) : "—";
+  if (obj === "SALES") return r.purchases > 0 ? money(cur, r.cac) : "—";
+  if (obj === "TRAFFIC") return r.lpv > 0 ? money(cur, +(r.spend / r.lpv).toFixed(2)) : "—";
+  if (obj === "AWARENESS") return money(cur, r.cpm);
+  return money(cur, r.cpc);
+}
+
 // CTA enum (SHOP_NOW / WHATSAPP_MESSAGE / …) → human label.
 function ctaLabel(cta: string | null): string | null {
   if (!cta) return null;
@@ -685,6 +702,7 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
   const stats: { label: string; value: string }[] = [
     { label: "Spend", value: money(cur, ad.spend) },
     { label: "Result", value: result },
+    { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
     { label: "CTR", value: `${ad.ctr}%` },
     { label: "CPC", value: money(cur, ad.cpc) },
   ];
@@ -1167,7 +1185,7 @@ export default function MetaPage() {
                     <table className="w-full text-[13px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                          {["Ad Set", "Status", "Spend", "Result", "Impressions", "Clicks", "CTR", "CPC"].map(h => (
+                          {["Ad Set", "Status", "Spend", "Result", costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC"].map(h => (
                             <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1188,6 +1206,7 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2"><span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(a.status))}>{a.status}</span></td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{cur}{a.spend.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{drillResult(a)}</td>
+                            <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{objectiveCost(drill.obj, a, cur)}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.impressions >= 1000 ? `${(a.impressions / 1000).toFixed(1)}K` : a.impressions}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.ctr}%</td>
