@@ -40,6 +40,17 @@ function actInt(arr: ActionEntry[] | undefined, type: string): number {
 function sumArr(arr: ActionEntry[] | undefined): number {
   return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
+// Meta reports leads under several action types depending on form type (instant form,
+// website pixel, on-site lead). Take the largest so we don't double-count or miss them.
+function leadCount(arr: ActionEntry[] | undefined): number {
+  return Math.max(
+    actInt(arr, "lead"),
+    actInt(arr, "onsite_conversion.lead_grouped"),
+    actInt(arr, "leadgen_grouped"),
+    actInt(arr, "offsite_conversion.fb_pixel_lead"),
+    actInt(arr, "onsite_conversion.lead")
+  );
+}
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
@@ -70,7 +81,7 @@ export async function GET(req: NextRequest) {
     "actions,action_values",
     "video_thruplay_watched_actions",
   ].join(",");
-  const campaignFields = "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values";
+  const campaignFields = "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,outbound_clicks,actions,action_values";
 
   const [overviewRes, campaignInsightsRes, dailyRes, campaignsMetaRes] = await Promise.all([
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${overviewFields}&time_range=${timeRange}&action_attribution_windows=${attrWindows}&access_token=${token}`),
@@ -109,6 +120,7 @@ export async function GET(req: NextRequest) {
     actInt(o?.actions, "purchase")
   );
   const videoViews3s = actInt(o?.actions, "video_view");
+  const leads = leadCount(o?.actions);
 
   const atcValue = Math.max(
     actVal(o?.action_values, "offsite_conversion.fb_pixel_add_to_cart"),
@@ -127,6 +139,7 @@ export async function GET(req: NextRequest) {
 
   const roas = spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0;
   const cac = purchases > 0 ? +(spend / purchases).toFixed(2) : 0;
+  const costPerLead = leads > 0 ? +(spend / leads).toFixed(2) : 0;
   const lpRatio = clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0;
   const atcRatio = lpv > 0 ? +(atc / lpv * 100).toFixed(1) : 0;
   const checkoutRatio = atc > 0 ? +(checkout / atc * 100).toFixed(1) : 0;
@@ -152,6 +165,8 @@ export async function GET(req: NextRequest) {
       actInt(c?.actions, "add_to_cart")
     );
     const cSpend = parseFloat(c.spend ?? "0");
+    const cLpv = actInt(c?.actions, "landing_page_view");
+    const cLeads = leadCount(c?.actions);
     return {
       id: c.campaign_id ?? "",
       name: c.campaign_name ?? "",
@@ -159,10 +174,15 @@ export async function GET(req: NextRequest) {
       objective: meta?.objective ?? "",
       spend: +cSpend.toFixed(2),
       impressions: parseInt(c.impressions ?? "0"),
+      reach: parseInt(c.reach ?? "0"),
+      frequency: +parseFloat(c.frequency ?? "0").toFixed(2),
       clicks: parseInt(c.clicks ?? "0"),
       ctr: +parseFloat(c.ctr ?? "0").toFixed(2),
       cpc: +parseFloat(c.cpc ?? "0").toFixed(2),
       cpm: +parseFloat(c.cpm ?? "0").toFixed(2),
+      outboundClicks: actInt(c?.outbound_clicks, "outbound_click"),
+      lpv: cLpv,
+      leads: cLeads,
       purchases: cPurchases,
       purchaseValue: +cPurchaseValue.toFixed(2),
       roas: cSpend > 0 ? +(cPurchaseValue / cSpend).toFixed(2) : 0,
@@ -192,6 +212,7 @@ export async function GET(req: NextRequest) {
     period: { from, to },
     kpis: {
       spend: +spend.toFixed(2), roas, cac, purchases, purchaseValue: +purchaseValue.toFixed(2),
+      leads, costPerLead,
       impressions, reach: parseInt(o?.reach ?? "0"),
       frequency: +parseFloat(o?.frequency ?? "0").toFixed(2),
       cpm: +parseFloat(o?.cpm ?? "0").toFixed(2),

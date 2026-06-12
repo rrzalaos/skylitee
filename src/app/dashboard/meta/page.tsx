@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 interface MetaKPIs {
   spend: number; roas: number; cac: number; purchases: number; purchaseValue: number;
+  leads: number; costPerLead: number;
   impressions: number; reach: number; frequency: number; cpm: number;
   clicks: number; ctr: number; cpc: number; outboundClicks: number; outboundCtr: number;
   lpv: number; lpRatio: number;
@@ -31,8 +32,9 @@ interface MetaData {
   kpis: MetaKPIs;
   campaigns: {
     id: string; name: string; status: string; objective: string;
-    spend: number; impressions: number; clicks: number; ctr: number;
-    cpc: number; cpm: number; purchases: number; purchaseValue: number; roas: number; atc: number;
+    spend: number; impressions: number; reach: number; frequency: number; clicks: number; ctr: number;
+    cpc: number; cpm: number; outboundClicks: number; lpv: number; leads: number;
+    purchases: number; purchaseValue: number; roas: number; atc: number;
   }[];
   daily: { date: string; spend: number; impressions: number; clicks: number; purchases: number; purchaseValue: number }[];
 }
@@ -75,6 +77,126 @@ function bench(value: number, avg: number, good: number, higherIsBetter = true):
   if (isGood) return { change: 1, changeLabel: `Above avg · ${avgLabel}` };
   if (isAvg) return { change: 1, changeLabel: `At avg · ${avgLabel}` };
   return { change: -1, changeLabel: `Below avg · ${avgLabel}` };
+}
+
+// ── Objective-level aggregation ─────────────────────────────────────────────
+// Every ad objective is judged on the KPI it's actually optimized for (Meta's
+// "cost per result" logic): Awareness→CPM, Traffic→cost per visit, Sales→ROAS,
+// Leads→cost per lead. We bucket campaigns by objective and re-derive the rates.
+type Campaign = MetaData["campaigns"][number];
+interface ObjBucket {
+  obj: ObjFilter; count: number;
+  spend: number; impressions: number; reach: number; clicks: number;
+  lpv: number; leads: number; purchases: number; purchaseValue: number; atc: number; outboundClicks: number;
+  cpm: number; ctr: number; cpc: number; frequency: number; cpl: number; cplpv: number; lpRatio: number; roas: number; cac: number;
+}
+
+function money(cur: string, n: number) { return `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`; }
+function compact(n: number) { return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`; }
+
+// Display / scorecard order — the four primary objectives first, then the rest.
+const OBJ_ORDER: ObjFilter[] = ["AWARENESS", "TRAFFIC", "SALES", "LEADS", "ENGAGEMENT", "APP", "OTHER"];
+
+function aggregate(camps: Campaign[], obj: ObjFilter): ObjBucket {
+  const c = camps.filter(x => normalizeObj(x.objective) === obj);
+  const sum = (f: (x: Campaign) => number) => c.reduce((s, x) => s + (f(x) || 0), 0);
+  const spend = sum(x => x.spend), impressions = sum(x => x.impressions), reach = sum(x => x.reach);
+  const clicks = sum(x => x.clicks), lpv = sum(x => x.lpv), leads = sum(x => x.leads);
+  const purchases = sum(x => x.purchases), purchaseValue = sum(x => x.purchaseValue);
+  const atc = sum(x => x.atc), outboundClicks = sum(x => x.outboundClicks);
+  return {
+    obj, count: c.length, spend, impressions, reach, clicks, lpv, leads, purchases, purchaseValue, atc, outboundClicks,
+    cpm: impressions > 0 ? +(spend / impressions * 1000).toFixed(2) : 0,
+    ctr: impressions > 0 ? +(clicks / impressions * 100).toFixed(2) : 0,
+    cpc: clicks > 0 ? +(spend / clicks).toFixed(2) : 0,
+    frequency: reach > 0 ? +(impressions / reach).toFixed(2) : 0,
+    cpl: leads > 0 ? +(spend / leads).toFixed(2) : 0,
+    cplpv: lpv > 0 ? +(spend / lpv).toFixed(2) : 0,
+    lpRatio: clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0,
+    roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
+    cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
+  };
+}
+
+// The single hero metric + supporting pair shown on each objective scorecard.
+// `good` is null when there's no delivery yet, so the card stays neutral (never red on no data).
+function objHero(b: ObjBucket, cur: string): { label: string; value: string; good: boolean | null; why: string; supports: { label: string; value: string }[] } {
+  switch (b.obj) {
+    case "AWARENESS": {
+      const good = b.cpm > 0 ? b.cpm <= 150 : null;
+      return { label: "CPM", value: money(cur, b.cpm), good,
+        why: good === null ? "No delivery yet." : good ? "Efficient cost per 1,000 people reached." : "Above the ₹150 benchmark — tighten audience or refresh creative.",
+        supports: [{ label: "Reach", value: compact(b.reach) }, { label: "Freq", value: `${b.frequency}x` }] };
+    }
+    case "TRAFFIC": {
+      const usingLpv = b.lpv > 0;
+      const metric = usingLpv ? b.cplpv : b.cpc;
+      const good = metric > 0 ? metric <= (usingLpv ? 8 : 10) : null;
+      return { label: usingLpv ? "Cost / Visit" : "CPC", value: metric > 0 ? money(cur, metric) : "—", good,
+        why: good === null ? "No clicks yet." : good ? (usingLpv ? "Cheap, real landing-page visits." : "Low cost per click.") : "Costly traffic — lift CTR or tighten targeting.",
+        supports: [{ label: usingLpv ? "Visits" : "Clicks", value: compact(usingLpv ? b.lpv : b.clicks) }, { label: "CTR", value: `${b.ctr}%` }] };
+    }
+    case "SALES": {
+      const good = b.spend > 0 ? b.roas >= 2 : null;
+      return { label: "ROAS", value: `${b.roas}x`, good,
+        why: good === null ? "No spend yet." : good ? "Above the 2x break-even." : "Below 2x — spending more than it returns.",
+        supports: [{ label: "Orders", value: `${b.purchases}` }, { label: "CAC", value: money(cur, b.cac) }] };
+    }
+    case "LEADS": {
+      const good = b.leads > 0 ? b.cpl <= 200 : null;
+      return { label: "Cost / Lead", value: b.leads > 0 ? money(cur, b.cpl) : "—", good,
+        why: good === null ? "No leads tracked yet — check the lead event is firing." : good ? "Within the ₹200/lead target." : "Above the ₹200/lead target — refine form, offer or audience.",
+        supports: [{ label: "Leads", value: `${b.leads}` }, { label: "CTR", value: `${b.ctr}%` }] };
+    }
+    default: {
+      const good = b.ctr > 0 ? b.ctr >= 0.9 : null;
+      return { label: "CTR", value: `${b.ctr}%`, good,
+        why: good === null ? "No delivery yet." : good ? "Healthy engagement." : "Low engagement — test new creative.",
+        supports: [{ label: "Clicks", value: compact(b.clicks) }, { label: "CPM", value: money(cur, b.cpm) }] };
+    }
+  }
+}
+
+// Per-objective "what's working / what's not" — each insight is GREEN (why it works) or
+// RED/amber (why + how to fix), per the benchmark-flagging rule. Sales reuses buildDiagnosis.
+function buildObjDiagnosis(b: ObjBucket, cur: string): DiagInsight[] {
+  const out: DiagInsight[] = [];
+  const ctrInsight = () => {
+    if (b.ctr >= 1.5) out.push({ source: "meta", severity: "strength", title: `CTR ${b.ctr}% — strong engagement`, body: "Above the 1.5% good mark. The hook and creative resonate — reuse this angle for new variations." });
+    else if (b.ctr >= 0.9) out.push({ source: "meta", severity: "warning", title: `CTR ${b.ctr}% — around the 0.9% average`, body: "At industry average. Test 2–3 fresh hooks/formats to push past 1.5% and lower cost." });
+    else out.push({ source: "meta", severity: "issue", title: `CTR ${b.ctr}% — ad not compelling`, body: "Below the 0.9% avg. Weak hook, unclear offer or wrong audience. Test new angles and a fresh creative format." });
+  };
+  if (b.obj === "AWARENESS" || b.obj === "ENGAGEMENT" || b.obj === "APP" || b.obj === "OTHER") {
+    if (b.cpm > 0) {
+      if (b.cpm <= 150) out.push({ source: "meta", severity: "strength", title: `CPM ${money(cur, b.cpm)} — efficient reach`, body: "Below the ₹150 benchmark — you're reaching 1,000 people cheaply. Keep the audience broad and rotate creatives to hold this." });
+      else out.push({ source: "meta", severity: "issue", title: `CPM ${money(cur, b.cpm)} — expensive reach`, body: "Above the ₹150 benchmark. The auction is costly — broaden or replace the audience and refresh creative to raise relevance and pull CPM down." });
+    }
+    if (b.frequency > 0) {
+      if (b.frequency <= 3) out.push({ source: "meta", severity: "strength", title: `Frequency ${b.frequency}x — healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the ad. Watch it as you scale." });
+      else if (b.frequency <= 5) out.push({ source: "meta", severity: "warning", title: `Frequency ${b.frequency}x — fatigue building`, body: "Approaching the >5x fatigue zone — refresh creatives or widen the audience soon." });
+      else out.push({ source: "meta", severity: "risk", title: `Frequency ${b.frequency}x — severe fatigue`, body: "The audience has seen the ad too often, inflating CPM. Launch fresh creatives and expand targeting now." });
+    }
+    ctrInsight();
+  } else if (b.obj === "TRAFFIC") {
+    if (b.cplpv > 0) {
+      if (b.cplpv <= 8) out.push({ source: "meta", severity: "strength", title: `Cost per visit ${money(cur, b.cplpv)} — cheap traffic`, body: "Below the ₹8 benchmark per real landing-page visit. Targeting and creative are efficient — scale gradually." });
+      else out.push({ source: "meta", severity: "issue", title: `Cost per visit ${money(cur, b.cplpv)} — expensive traffic`, body: "Above the ₹8 benchmark. Lift CTR with a stronger hook or tighten the audience so clicks are cheaper and more relevant." });
+    }
+    ctrInsight();
+    if (b.lpv > 0) {
+      if (b.lpRatio >= 65) out.push({ source: "website", severity: "strength", title: `Landing rate ${b.lpRatio}% — clicks reach the page`, body: "Above the 65% avg — the page loads fast and most clicks become visits. Keep mobile load under 3s." });
+      else out.push({ source: "website", severity: "issue", title: `Landing rate ${b.lpRatio}% — clicks lost before page loads`, body: "Below the 65% avg. Often slow mobile load or a broken/redirecting link. Fix page speed (<3s) and verify the link works." });
+    }
+  } else if (b.obj === "LEADS") {
+    if (b.leads > 0) {
+      if (b.cpl <= 200) out.push({ source: "overall", severity: "strength", title: `Cost per lead ${money(cur, b.cpl)} — within target`, body: "At or below the ₹200 benchmark. The form, offer and audience are working — scale carefully and watch lead quality." });
+      else out.push({ source: "overall", severity: "issue", title: `Cost per lead ${money(cur, b.cpl)} — above target`, body: "Above the ₹200 benchmark. Shorten the form, sharpen the offer, or tighten the audience to lower cost per lead." });
+    } else {
+      out.push({ source: "overall", severity: "warning", title: "No leads recorded yet", body: "Spend is running but no lead events came back. Check the instant form / pixel lead event is firing, then re-check this view." });
+    }
+    ctrInsight();
+  }
+  return out;
 }
 
 const FUNNEL_COLORS = ["#FB923C", "#F97316", "#EA580C", "#DC2626", "#16A34A"];
@@ -188,16 +310,20 @@ function DiagCard({ insight }: { insight: DiagInsight }) {
 // Every benchmarked metric returns ONE verdict: a "strength" (at/above standard, why it
 // works + how to keep it) or an "issue"/"risk"/"warning" (below standard, why it happened
 // + how to fix). This guarantees the user always sees what's working AND what's not.
-function buildDiagnosis(k: MetaKPIs): DiagInsight[] {
+function buildDiagnosis(k: MetaKPIs, roas: number, hasConversion: boolean): DiagInsight[] {
   const out: DiagInsight[] = [];
 
-  // ── OVERALL: ROAS (avg 2x break-even, 3x good) ───────────────────────────
-  if (k.roas >= 3.0) {
-    out.push({ source: "overall", severity: "strength", title: `ROAS ${k.roas}x — profitable, above the 3x target`, body: `Every ₹1 spent returns ₹${k.roas}. This works because targeting, creative and offer are aligned. Scale carefully: raise budget 20–30% at a time and duplicate winning ad sets into lookalikes so you don't reset learning.` });
-  } else if (k.roas >= 2.0) {
-    out.push({ source: "overall", severity: "warning", title: `ROAS ${k.roas}x — okay but below the 3x target`, body: "You're past the 2x break-even guide but not in strong-profit territory. Why: one funnel stage is leaking value. Fix the weakest stage flagged below and shift budget to your best campaigns to push ROAS toward 3x." });
-  } else {
-    out.push({ source: "overall", severity: "risk", title: `ROAS ${k.roas}x — below the 2x minimum`, body: "You're spending more than you earn back. Why: usually a weak funnel stage (see below) or low-intent traffic. Pause the lowest-ROAS campaigns first, fix the biggest drop-off stage, and don't raise budgets until ROAS clears 2x." });
+  // ── OVERALL: ROAS — judged on conversion-campaign spend only (avg 2x, 3x good).
+  // Skipped entirely when no conversion campaigns ran, so awareness/traffic/lead
+  // spend is never wrongly flagged on a sales metric it was never optimized for.
+  if (hasConversion) {
+    if (roas >= 3.0) {
+      out.push({ source: "overall", severity: "strength", title: `ROAS ${roas}x — profitable, above the 3x target`, body: `Every ₹1 of conversion spend returns ₹${roas}. This works because targeting, creative and offer are aligned. Scale carefully: raise budget 20–30% at a time and duplicate winning ad sets into lookalikes so you don't reset learning.` });
+    } else if (roas >= 2.0) {
+      out.push({ source: "overall", severity: "warning", title: `ROAS ${roas}x — okay but below the 3x target`, body: "Past the 2x break-even guide on conversion spend but not in strong-profit territory. Why: one funnel stage is leaking value. Fix the weakest stage flagged below and shift budget to your best campaigns to push ROAS toward 3x." });
+    } else {
+      out.push({ source: "overall", severity: "risk", title: `ROAS ${roas}x — below the 2x minimum`, body: "Conversion spend is returning less than it costs. Why: usually a weak funnel stage (see below) or low-intent traffic. Pause the lowest-ROAS campaigns first, fix the biggest drop-off stage, and don't raise budgets until ROAS clears 2x." });
+    }
   }
 
   // ── META: CTR (avg 0.9%, 1.5% good) ──────────────────────────────────────
@@ -276,6 +402,215 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Site conversion funnel + stage-ratio bar. Reused by the account Overview and the
+// Conversion objective view. Funnel data is always account-level (Meta only reports
+// the deep stages — ATC/checkout — at account scope).
+function FunnelCard({ k, cur, note }: { k: MetaKPIs; cur: string; note?: string }) {
+  return (
+    <Card>
+      <CardHeader title="Conversion Funnel" right={<span className="text-[#F97316] font-semibold">CVR: {k.conversionRatio}%</span>} />
+      {note && <p className="text-[12px] text-[#A1A1AA] -mt-2 mb-3">{note}</p>}
+      <div className="mb-4">
+        <ConversionFunnel k={k} cur={cur} />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
+        {[
+          { label: "LP Ratio", value: `${k.lpRatio}%`, avg: "Avg: 65%", good: k.lpRatio >= 65 },
+          { label: "ATC Ratio", value: `${k.atcRatio}%`, avg: "Avg: 7%", good: k.atcRatio >= 7 },
+          { label: "Checkout Ratio", value: `${k.checkoutRatio}%`, avg: "Avg: 50%", good: k.checkoutRatio >= 50 },
+          { label: "Purchase Ratio", value: `${k.purchaseRatio}%`, avg: "Avg: 40%", good: k.purchaseRatio >= 40 },
+        ].map(r => (
+          <div key={r.label} className={cn("rounded-xl p-2.5 text-center border",
+            r.good
+              ? "bg-[#F0FDF4] border-[#BBF7D0] dark:bg-[#052E16] dark:border-[#14532D]"
+              : "bg-[#FEF2F2] border-[#FECACA] dark:bg-[#2D0A0A] dark:border-[#7F1D1D]"
+          )}>
+            <div className="text-[11px] text-[#A1A1AA] font-medium mb-1">{r.label}</div>
+            <div className={cn("text-[16px] font-black", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>{r.value}</div>
+            <div className={cn("text-[10px] font-bold mt-0.5", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+              {r.good ? "✓ Good" : "↓ Below avg"}
+            </div>
+            <div className="text-[11px] text-[#A1A1AA]">{r.avg}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+// "What's Working & What's Not" — splits insights into needs-attention vs working.
+function DiagnosisPanel({ diag }: { diag: DiagInsight[] }) {
+  if (diag.length === 0) return null;
+  const attention = diag.filter(d => d.severity !== "strength");
+  const working = diag.filter(d => d.severity === "strength");
+  return (
+    <Card>
+      <CardHeader title="What's Working & What's Not" right="vs D2C industry benchmarks" />
+      {attention.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <AlertTriangle size={14} className="text-[#EF4444]" />
+            <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">Needs attention</span>
+            <span className="text-[11px] font-bold text-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] px-1.5 py-0.5 rounded-full">{attention.length}</span>
+          </div>
+          <div className="space-y-2">{attention.map((ins, i) => <DiagCard key={i} insight={ins} />)}</div>
+        </div>
+      )}
+      {working.length > 0 && (
+        <div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <CheckCircle2 size={14} className="text-[#22C55E]" />
+            <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">What's working</span>
+            <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full">{working.length}</span>
+          </div>
+          <div className="space-y-2">{working.map((ins, i) => <DiagCard key={i} insight={ins} />)}</div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// One scorecard per objective — spend share + the hero KPI it's optimized for, flagged
+// green (working) / red (below standard) / neutral (no delivery). Clicking focuses that view.
+function ScoreCard({ b, cur, totalSpend, active, onClick }: { b: ObjBucket; cur: string; totalSpend: number; active: boolean; onClick: () => void }) {
+  const hero = objHero(b, cur);
+  const m = OBJ_META[b.obj];
+  const pct = totalSpend > 0 ? Math.round(b.spend / totalSpend * 100) : 0;
+  const tone = hero.good === null ? "neutral" : hero.good ? "good" : "bad";
+  const valueColor = tone === "good" ? "text-[#16A34A]" : tone === "bad" ? "text-[#EF4444]" : "text-[#18181B] dark:text-[#F4F4F5]";
+  const whyColor = tone === "good" ? "text-[#16A34A]" : tone === "bad" ? "text-[#DC2626]" : "text-[#A1A1AA]";
+  return (
+    <button onClick={onClick}
+      className={cn("text-left rounded-2xl border p-3 transition-all hover:shadow-sm",
+        active ? "ring-1 ring-[#F97316] border-[#F97316]" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/10 dark:hover:border-white/10")}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", m.badge)}>{m.label}</span>
+        <span className="text-[11px] text-[#A1A1AA] font-medium">{pct}% of spend</span>
+      </div>
+      <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5] mb-2 tabular-nums">{money(cur, b.spend)}</div>
+      <div className="flex items-baseline justify-between gap-2 mb-1">
+        <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wide">{hero.label}</span>
+        <span className={cn("text-[16px] font-black tabular-nums", valueColor)}>{hero.value}</span>
+      </div>
+      <div className={cn("text-[11px] leading-snug mb-2", whyColor)}>
+        {tone === "good" ? "✓ " : tone === "bad" ? "↓ " : ""}{hero.why}
+      </div>
+      <div className="flex gap-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
+        {hero.supports.map(s => (
+          <div key={s.label} className="flex-1">
+            <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</div>
+            <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.value}</div>
+          </div>
+        ))}
+      </div>
+    </button>
+  );
+}
+
+function ObjectiveScorecards({ campaigns, cur, totalSpend, active, onSelect }: { campaigns: Campaign[]; cur: string; totalSpend: number; active: ObjFilter; onSelect: (o: ObjFilter) => void }) {
+  const present = OBJ_ORDER.map(o => aggregate(campaigns, o)).filter(b => b.count > 0);
+  if (present.length < 2) return null; // single-objective accounts don't need a breakdown
+  return (
+    <div>
+      <SectionLabel>Performance by Objective</SectionLabel>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {present.map(b => (
+          <ScoreCard key={b.obj} b={b} cur={cur} totalSpend={totalSpend} active={active === b.obj} onClick={() => onSelect(active === b.obj ? "ALL" : b.obj)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Focused single-objective view: KPI cards relevant to that objective + its own
+// working/not-working diagnosis. Sales additionally shows the site funnel.
+function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs; cur: string; totalSpend: number }) {
+  const fmt = (n: number) => n.toLocaleString("en-IN");
+  const fmtC = (n: number) => money(cur, n);
+  const m = OBJ_META[b.obj];
+  const pct = totalSpend > 0 ? Math.round(b.spend / totalSpend * 100) : 0;
+  const freqLabel = b.frequency <= 3 ? "Healthy range" : b.frequency <= 5 ? "Approaching fatigue" : "Ad fatigue risk";
+
+  let cards: React.ReactNode = null;
+  if (b.obj === "AWARENESS") {
+    cards = (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        <KPICard label="Spend" value={fmtC(b.spend)} />
+        <KPICard label="CPM" value={fmtC(b.cpm)} {...bench(b.cpm, 150, 110, false)} sub="Cost per 1,000 views" />
+        <KPICard label="Reach" value={compact(b.reach)} />
+        <KPICard label="Frequency" value={`${b.frequency}x`} {...bench(b.frequency, 3, 1, false)} changeLabel={freqLabel} />
+        <KPICard label="Impressions" value={compact(b.impressions)} />
+        <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
+        <KPICard label="Outbound Clicks" value={fmt(b.outboundClicks)} />
+      </div>
+    );
+  } else if (b.obj === "TRAFFIC") {
+    cards = (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        <KPICard label="Spend" value={fmtC(b.spend)} />
+        <KPICard label="Landing Page Views" value={fmt(b.lpv)} sub="Visited the site" />
+        <KPICard label="Cost / Visit" value={b.cplpv > 0 ? fmtC(b.cplpv) : "—"} {...(b.cplpv > 0 ? bench(b.cplpv, 12, 8, false) : {})} sub="Per landing-page view" />
+        <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
+        <KPICard label="CPC" value={fmtC(b.cpc)} />
+        <KPICard label="LP Ratio" value={`${b.lpRatio}%`} {...bench(b.lpRatio, 45, 65)} sub="Clicks that loaded" />
+        <KPICard label="Clicks" value={fmt(b.clicks)} />
+        <KPICard label="Impressions" value={compact(b.impressions)} />
+      </div>
+    );
+  } else if (b.obj === "SALES") {
+    cards = (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <KPICard label="Spend" value={fmtC(b.spend)} />
+        <KPICard label="ROAS" value={`${b.roas}x`} {...(b.spend > 0 ? bench(b.roas, 2, 3) : {})} />
+        <KPICard label="Orders" value={fmt(b.purchases)} />
+        <KPICard label="Revenue" value={fmtC(b.purchaseValue)} />
+        <KPICard label="CAC" value={fmtC(b.cac)} sub="Cost per order" />
+      </div>
+    );
+  } else if (b.obj === "LEADS") {
+    cards = (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        <KPICard label="Spend" value={fmtC(b.spend)} />
+        <KPICard label="Leads" value={fmt(b.leads)} />
+        <KPICard label="Cost / Lead" value={b.leads > 0 ? fmtC(b.cpl) : "—"} {...(b.leads > 0 ? bench(b.cpl, 300, 200, false) : {})} />
+        <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
+        <KPICard label="CPC" value={fmtC(b.cpc)} />
+        <KPICard label="Clicks" value={fmt(b.clicks)} />
+        <KPICard label="Landing Page Views" value={fmt(b.lpv)} />
+      </div>
+    );
+  } else {
+    cards = (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        <KPICard label="Spend" value={fmtC(b.spend)} />
+        <KPICard label="Impressions" value={compact(b.impressions)} />
+        <KPICard label="Reach" value={compact(b.reach)} />
+        <KPICard label="CPM" value={fmtC(b.cpm)} {...bench(b.cpm, 150, 110, false)} />
+        <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
+        <KPICard label="CPC" value={fmtC(b.cpc)} />
+        <KPICard label="Clicks" value={fmt(b.clicks)} />
+        <KPICard label="Frequency" value={`${b.frequency}x`} {...bench(b.frequency, 3, 1, false)} changeLabel={freqLabel} />
+      </div>
+    );
+  }
+
+  const diag = b.obj === "SALES" ? buildDiagnosis(k, b.roas, b.spend > 0) : buildObjDiagnosis(b, cur);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={cn("text-[12px] px-2.5 py-1 rounded-full font-bold", m.badge)}>{m.label}</span>
+        <span className="text-[13px] text-[#52525B] dark:text-[#A1A1AA]">
+          {b.count} campaign{b.count === 1 ? "" : "s"} · {money(cur, b.spend)} ({pct}% of total spend)
+        </span>
+      </div>
+      {cards}
+      {b.obj === "SALES" && <FunnelCard k={k} cur={cur} note="Site funnel reflects all on-site events (clicks → purchase) in this period." />}
+      <DiagnosisPanel diag={diag} />
+    </div>
+  );
+}
+
 export default function MetaPage() {
   const { range } = useDateRange();
   const [data, setData] = useState<MetaData | null>(null);
@@ -283,6 +618,7 @@ export default function MetaPage() {
   const [notConnected, setNotConnected] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
   const [objFilter, setObjFilter] = useState<ObjFilter>("ALL");
+  const [objView, setObjView] = useState<ObjFilter>("ALL");
 
   useEffect(() => {
     setLoading(true);
@@ -326,6 +662,24 @@ export default function MetaPage() {
 
   const hasVideo = k.videoViews3s > 0 || k.thruplay > 0;
 
+  // Hero row is judged on conversion-campaign spend only — so awareness/traffic/lead
+  // spend never drags ROAS into the red on a metric it was never optimized for.
+  const salesBucket = aggregate(data.campaigns, "SALES");
+  const hasConv = salesBucket.count > 0;
+  const convRoas = hasConv ? salesBucket.roas : k.roas;
+  const convOrders = hasConv ? salesBucket.purchases : k.purchases;
+  const convRevenue = hasConv ? salesBucket.purchaseValue : k.purchaseValue;
+  const convCac = hasConv ? salesBucket.cac : k.cac;
+  const convSpend = hasConv ? salesBucket.spend : k.spend;
+  const hasAnyConv = convOrders > 0 || convRevenue > 0;
+
+  const presentObjs = OBJ_ORDER.filter(o => data.campaigns.some(c => normalizeObj(c.objective) === o));
+  const showObjective = presentObjs.length >= 2;
+  const objViews: ObjFilter[] = ["ALL", ...presentObjs];
+  // Fall back to "All" if the focused objective no longer exists in the current range.
+  const effectiveView: ObjFilter = objView !== "ALL" && presentObjs.includes(objView) ? objView : "ALL";
+  const viewBucket = effectiveView !== "ALL" ? aggregate(data.campaigns, effectiveView) : null;
+
   function buildSections() {
     if (!data) return [];
     const objLabel = (raw: string) => OBJ_META[normalizeObj(raw)]?.label ?? raw;
@@ -339,6 +693,8 @@ export default function MetaPage() {
           ["CAC (Cost per acquisition)", fmtC(k.cac)],
           ["Purchases", k.purchases],
           ["Purchase Value", fmtC(k.purchaseValue)],
+          ["Leads", fmt(k.leads)],
+          ["Cost per Lead", k.leads > 0 ? fmtC(k.costPerLead) : "—"],
           ["Impressions", fmt(k.impressions)],
           ["Reach", fmt(k.reach)],
           ["Frequency", k.frequency.toFixed(2)],
@@ -427,13 +783,44 @@ export default function MetaPage() {
 
       {tab === "overview" && (
         <div className="space-y-4">
-          {/* Core KPIs */}
+          {/* Performance by Objective — each objective judged on the KPI it's optimized for */}
+          {showObjective && (
+            <ObjectiveScorecards campaigns={data.campaigns} cur={cur} totalSpend={k.spend} active={effectiveView} onSelect={setObjView} />
+          )}
+
+          {/* Objective toggle */}
+          {showObjective && (
+            <div className="flex flex-wrap gap-2">
+              {objViews.map(o => {
+                const isActive = effectiveView === o;
+                const m = OBJ_META[o];
+                return (
+                  <button key={o} onClick={() => setObjView(o)}
+                    className={cn("px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
+                      isActive
+                        ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
+                        : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10")}>
+                    {o === "ALL" ? "All objectives" : m.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Focused single-objective view */}
+          {effectiveView !== "ALL" && viewBucket ? (
+            <ObjectiveDetail b={viewBucket} k={k} cur={cur} totalSpend={k.spend} />
+          ) : (
+          <>
+          {/* Core KPIs — ROAS / orders / revenue / CAC scoped to conversion spend */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-            <KPICard label="Total Spend" value={fmtC(k.spend)} />
-            <KPICard label="ROAS" value={`${k.roas}x`} {...bench(k.roas, 2.0, 3.0)} />
-            <KPICard label="CAC" value={fmtC(k.cac)} sub="Cost per order" />
-            <KPICard label="Total Orders" value={fmt(k.purchases)} />
-            <KPICard label="Total Order Value" value={fmtC(k.purchaseValue)} />
+            <KPICard label="Total Spend" value={fmtC(k.spend)} sub={hasConv ? `${cur}${convSpend.toLocaleString("en-IN", { maximumFractionDigits: 0 })} on conversion` : undefined} />
+            <KPICard label="ROAS" value={hasAnyConv ? `${convRoas}x` : "—"}
+              {...(hasAnyConv ? bench(convRoas, 2.0, 3.0) : {})}
+              sub={hasConv ? "Conversion campaigns" : "No conversion campaigns"} />
+            <KPICard label="CAC" value={hasAnyConv ? fmtC(convCac) : "—"} sub="Cost per order" />
+            <KPICard label="Total Orders" value={fmt(convOrders)} />
+            <KPICard label="Total Order Value" value={fmtC(convRevenue)} />
           </div>
 
           {/* Reach & Delivery */}
@@ -461,37 +848,8 @@ export default function MetaPage() {
             </div>
           </div>
 
-          {/* Conversion Funnel */}
-          <Card>
-            <CardHeader title="Conversion Funnel" right={<span className="text-[#F97316] font-semibold">CVR: {k.conversionRatio}%</span>} />
-            {/* Visual funnel */}
-            <div className="mb-4">
-              <ConversionFunnel k={k} cur={cur} />
-            </div>
-
-            {/* Ratio summary bar — stage conversion vs industry benchmark */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
-              {[
-                { label: "LP Ratio", value: `${k.lpRatio}%`, avg: "Avg: 65%", good: k.lpRatio >= 65 },
-                { label: "ATC Ratio", value: `${k.atcRatio}%`, avg: "Avg: 7%", good: k.atcRatio >= 7 },
-                { label: "Checkout Ratio", value: `${k.checkoutRatio}%`, avg: "Avg: 50%", good: k.checkoutRatio >= 50 },
-                { label: "Purchase Ratio", value: `${k.purchaseRatio}%`, avg: "Avg: 40%", good: k.purchaseRatio >= 40 },
-              ].map(r => (
-                <div key={r.label} className={cn("rounded-xl p-2.5 text-center border",
-                  r.good
-                    ? "bg-[#F0FDF4] border-[#BBF7D0] dark:bg-[#052E16] dark:border-[#14532D]"
-                    : "bg-[#FEF2F2] border-[#FECACA] dark:bg-[#2D0A0A] dark:border-[#7F1D1D]"
-                )}>
-                  <div className="text-[11px] text-[#A1A1AA] font-medium mb-1">{r.label}</div>
-                  <div className={cn("text-[16px] font-black", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>{r.value}</div>
-                  <div className={cn("text-[10px] font-bold mt-0.5", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>
-                    {r.good ? "✓ Good" : "↓ Below avg"}
-                  </div>
-                  <div className="text-[11px] text-[#A1A1AA]">{r.avg}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          {/* Conversion Funnel — account-level site events */}
+          <FunnelCard k={k} cur={cur} />
 
           {/* Video metrics */}
           {hasVideo && (
@@ -542,42 +900,10 @@ export default function MetaPage() {
             </Card>
           )}
 
-          {/* What's working & what's not — vs industry benchmarks */}
-          {(() => {
-            const diag = buildDiagnosis(k);
-            if (diag.length === 0) return null;
-            const attention = diag.filter(d => d.severity !== "strength");
-            const working = diag.filter(d => d.severity === "strength");
-            return (
-              <Card>
-                <CardHeader title="What's Working & What's Not" right="vs D2C industry benchmarks" />
-                {attention.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <AlertTriangle size={14} className="text-[#EF4444]" />
-                      <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">Needs attention</span>
-                      <span className="text-[11px] font-bold text-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] px-1.5 py-0.5 rounded-full">{attention.length}</span>
-                    </div>
-                    <div className="space-y-2">
-                      {attention.map((ins, i) => <DiagCard key={i} insight={ins} />)}
-                    </div>
-                  </div>
-                )}
-                {working.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <CheckCircle2 size={14} className="text-[#22C55E]" />
-                      <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">What's working</span>
-                      <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full">{working.length}</span>
-                    </div>
-                    <div className="space-y-2">
-                      {working.map((ins, i) => <DiagCard key={i} insight={ins} />)}
-                    </div>
-                  </div>
-                )}
-              </Card>
-            );
-          })()}
+          {/* What's working & what's not — vs industry benchmarks (ROAS scoped to conversion) */}
+          <DiagnosisPanel diag={buildDiagnosis(k, convRoas, hasAnyConv)} />
+          </>
+          )}
         </div>
       )}
 
@@ -606,17 +932,26 @@ export default function MetaPage() {
         const trafficCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Clicks",   render: c => <span>{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "Visits",   render: c => <span className="font-bold">{c.lpv > 0 ? c.lpv.toLocaleString("en-IN") : "—"}</span> },
+          { label: "Cost/Visit", render: c => <span className="whitespace-nowrap font-semibold">{c.lpv > 0 ? `${cur}${(c.spend / c.lpv).toFixed(2)}` : "—"}</span> },
           { label: "CTR",      render: c => <span className={cn("font-bold", c.ctr >= 1.5 ? "text-[#F97316]" : c.ctr >= 0.9 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.ctr}%</span> },
-          { label: "CPC",      render: c => <span className="whitespace-nowrap font-semibold">{cur}{c.cpc}</span> },
-          { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
-          { label: "CPM",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpm}</span> },
+          { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
         ];
         const awareCols: Col[] = [
           { label: "Spend",       render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Impressions", render: c => <span className="font-bold">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
+          { label: "Reach",       render: c => <span>{c.reach >= 1000 ? `${(c.reach/1000).toFixed(1)}K` : c.reach}</span> },
           { label: "CPM",         render: c => <span className="whitespace-nowrap font-semibold">{cur}{c.cpm}</span> },
-          { label: "Clicks",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
+          { label: "Freq",        render: c => <span className={cn(c.frequency > 5 ? "text-[#EF4444]" : c.frequency > 3 ? "text-[#EA580C]" : "text-[#71717A] dark:text-[#A1A1AA]")}>{c.frequency > 0 ? `${c.frequency}x` : "—"}</span> },
           { label: "CTR",         render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
+        ];
+        const leadsCols: Col[] = [
+          { label: "Spend",     render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
+          { label: "Leads",     render: c => <span className="font-bold">{c.leads > 0 ? c.leads.toLocaleString("en-IN") : "—"}</span> },
+          { label: "Cost/Lead", render: c => <span className="whitespace-nowrap font-semibold">{c.leads > 0 ? `${cur}${(c.spend / c.leads).toFixed(2)}` : "—"}</span> },
+          { label: "CTR",       render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
+          { label: "CPC",       render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
+          { label: "Clicks",    render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
         ];
         const defaultCols: Col[] = [
           { label: "Spend",       render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
@@ -639,6 +974,7 @@ export default function MetaPage() {
           objFilter === "SALES"     ? salesCols :
           objFilter === "TRAFFIC"   ? trafficCols :
           objFilter === "AWARENESS" ? awareCols :
+          objFilter === "LEADS"     ? leadsCols :
           objFilter === "ALL"       ? allCols :
           defaultCols;
 
@@ -670,10 +1006,10 @@ export default function MetaPage() {
             {objFilter !== "ALL" && (
               <div className="mb-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
                 {objFilter === "SALES"     && "Showing: Spend · ROAS · Orders · Revenue · ATC · CTR · CPC"}
-                {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · CTR · CPC · Impressions · CPM"}
-                {objFilter === "AWARENESS" && "Showing: Spend · Impressions · CPM · Clicks · CTR"}
+                {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · Visits · Cost/Visit · CTR · CPC"}
+                {objFilter === "AWARENESS" && "Showing: Spend · Impressions · Reach · CPM · Frequency · CTR"}
                 {objFilter === "ENGAGEMENT"&& "Showing: Spend · Impressions · Clicks · CTR · CPC"}
-                {objFilter === "LEADS"     && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+                {objFilter === "LEADS"     && "Showing: Spend · Leads · Cost/Lead · CTR · CPC · Clicks"}
                 {objFilter === "APP"       && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
               </div>
             )}
