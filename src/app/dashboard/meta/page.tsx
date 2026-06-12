@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2, ChevronRight, Play, Film, Images, Image as ImageIcon, Layers } from "lucide-react";
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -93,6 +93,28 @@ interface ObjBucket {
 
 function money(cur: string, n: number) { return `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`; }
 function compact(n: number) { return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`; }
+
+// Objective's headline outcome as display text — shared by the campaigns table and the
+// ad-set / ad drill-down so a row always shows the result it was actually optimized for.
+function objectiveResult(obj: ObjFilter, r: { purchases: number; leads: number; reach: number; lpv: number; clicks: number }): string {
+  if (obj === "SALES") return r.purchases > 0 ? `${r.purchases} orders` : "—";
+  if (obj === "LEADS") return r.leads > 0 ? `${r.leads.toLocaleString("en-IN")} leads` : "—";
+  if (obj === "AWARENESS") return r.reach > 0 ? `${compact(r.reach)} reach` : "—";
+  if (obj === "TRAFFIC") return r.lpv > 0 ? `${r.lpv.toLocaleString("en-IN")} visits` : `${r.clicks.toLocaleString("en-IN")} clicks`;
+  return r.clicks > 0 ? `${r.clicks.toLocaleString("en-IN")} clicks` : "—";
+}
+
+// CTA enum (SHOP_NOW / WHATSAPP_MESSAGE / …) → human label.
+function ctaLabel(cta: string | null): string | null {
+  if (!cta) return null;
+  const special: Record<string, string> = {
+    WHATSAPP_MESSAGE: "WhatsApp", MESSAGE_PAGE: "Send Message", LEARN_MORE: "Learn More",
+    SHOP_NOW: "Shop Now", SIGN_UP: "Sign Up", SUBSCRIBE: "Subscribe", BOOK_TRAVEL: "Book Now",
+    GET_QUOTE: "Get Quote", CONTACT_US: "Contact Us", CALL_NOW: "Call Now", ORDER_NOW: "Order Now",
+    DOWNLOAD: "Download", GET_OFFER: "Get Offer", APPLY_NOW: "Apply Now", BUY_NOW: "Buy Now",
+  };
+  return special[cta] ?? cta.split("_").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+}
 
 // Display / scorecard order — the four primary objectives first, then the rest.
 const OBJ_ORDER: ObjFilter[] = ["AWARENESS", "TRAFFIC", "SALES", "LEADS", "ENGAGEMENT", "APP", "OTHER"];
@@ -611,6 +633,94 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
   );
 }
 
+// ── Drill-down (Campaign → Ad Set → Ad → Creative) ──────────────────────────
+interface DrillMetrics {
+  spend: number; impressions: number; reach: number; frequency: number;
+  clicks: number; ctr: number; cpc: number; cpm: number; outboundClicks: number;
+  lpv: number; leads: number; purchases: number; purchaseValue: number; roas: number; cac: number; atc: number;
+}
+interface AdSetRow extends DrillMetrics { id: string; name: string; status: string; optimizationGoal: string | null; budget: number | null; }
+interface ParsedCreative {
+  type: "image" | "carousel" | "video" | "unknown";
+  images: string[]; videoThumb: string | null; videoSrc: string | null; videoId: string | null;
+  cta: string | null; primaryText: string | null; headline: string | null;
+}
+interface AdRow extends DrillMetrics { id: string; name: string; status: string; creative: ParsedCreative; videoViews3s: number; thruplay: number; thumbStopRatio: number; }
+
+function CreativeMedia({ c }: { c: ParsedCreative }) {
+  const placeholder = (Icon: typeof ImageIcon, label: string) => (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#A1A1AA]">
+      <Icon size={28} /><span className="text-[11px] font-medium">{label}</span>
+    </div>
+  );
+  if (c.type === "video") {
+    if (c.videoSrc) return <video src={c.videoSrc} poster={c.videoThumb ?? undefined} controls playsInline className="w-full h-full object-contain bg-black" />;
+    if (c.videoThumb) return (
+      <div className="relative w-full h-full">
+        <img src={c.videoThumb} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="w-11 h-11 rounded-full bg-black/55 flex items-center justify-center"><Play size={20} className="text-white ml-0.5" fill="white" /></div>
+        </div>
+      </div>
+    );
+    return placeholder(Film, "Video");
+  }
+  if (c.type === "carousel" && c.images.length > 0) {
+    return (
+      <div className="flex h-full gap-1 overflow-x-auto snap-x">
+        {c.images.map((src, i) => (
+          <img key={i} src={src} alt="" className="h-full aspect-square object-cover snap-start shrink-0 first:rounded-l-none" />
+        ))}
+      </div>
+    );
+  }
+  if (c.images.length > 0) return <img src={c.images[0]} alt="" className="w-full h-full object-cover" />;
+  return placeholder(ImageIcon, "No preview");
+}
+
+function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
+  const cta = ctaLabel(ad.creative.cta);
+  const result = objectiveResult(obj, ad);
+  const TypeIcon = ad.creative.type === "video" ? Film : ad.creative.type === "carousel" ? Images : ImageIcon;
+  const stats: { label: string; value: string }[] = [
+    { label: "Spend", value: money(cur, ad.spend) },
+    { label: "Result", value: result },
+    { label: "CTR", value: `${ad.ctr}%` },
+    { label: "CPC", value: money(cur, ad.cpc) },
+  ];
+  if (ad.creative.type === "video" && ad.thumbStopRatio > 0) stats.push({ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` });
+  return (
+    <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden bg-white dark:bg-[#171717]">
+      <div className="aspect-square bg-[#F5F5F4] dark:bg-[#0C0C0C] relative">
+        <CreativeMedia c={ad.creative} />
+        <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/55 text-white">
+          <TypeIcon size={11} /> {ad.creative.type === "unknown" ? "Ad" : ad.creative.type.charAt(0).toUpperCase() + ad.creative.type.slice(1)}
+        </span>
+        <span className={cn("absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
+      </div>
+      <div className="p-3">
+        <div className="font-bold text-[13px] text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</div>
+        {cta && (
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2 py-0.5 rounded-full">
+            <MousePointerClick size={11} /> {cta}
+          </span>
+        )}
+        {ad.creative.primaryText && (
+          <p className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-2 leading-snug line-clamp-2">{ad.creative.primaryText}</p>
+        )}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+          {stats.map(s => (
+            <div key={s.label} className="flex items-baseline justify-between gap-2">
+              <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
+              <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MetaPage() {
   const { range } = useDateRange();
   const [data, setData] = useState<MetaData | null>(null);
@@ -619,10 +729,15 @@ export default function MetaPage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [objFilter, setObjFilter] = useState<ObjFilter>("ALL");
   const [objView, setObjView] = useState<ObjFilter>("ALL");
+  const [drill, setDrill] = useState<{ campId: string; campName: string; obj: ObjFilter; adsetId?: string; adsetName?: string } | null>(null);
+  const [drillRows, setDrillRows] = useState<(AdSetRow | AdRow)[]>([]);
+  const [drillLoading, setDrillLoading] = useState(false);
+  const [drillError, setDrillError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setData(null);
+    setDrill(null); setDrillRows([]); // a new date range invalidates any open drill-down
     fetch(`/api/meta?from=${range.from}&to=${range.to}`)
       .then(r => r.json())
       .then(d => {
@@ -631,6 +746,32 @@ export default function MetaPage() {
       })
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  async function loadDrill(level: "adset" | "ad", parentId: string) {
+    setDrillLoading(true); setDrillError(null); setDrillRows([]);
+    try {
+      const r = await fetch(`/api/meta/drilldown?level=${level}&parentId=${parentId}&from=${range.from}&to=${range.to}`);
+      const d = await r.json();
+      if (d.error) setDrillError(typeof d.error === "string" ? d.error : "Could not load");
+      else setDrillRows(d.rows ?? []);
+    } catch { setDrillError("Could not load"); }
+    finally { setDrillLoading(false); }
+  }
+  function openCampaign(c: MetaData["campaigns"][number]) {
+    setObjFilter("ALL");
+    setDrill({ campId: c.id, campName: c.name, obj: normalizeObj(c.objective) });
+    loadDrill("adset", c.id);
+  }
+  function openAdset(a: AdSetRow) {
+    setDrill(d => d ? { ...d, adsetId: a.id, adsetName: a.name } : d);
+    loadDrill("ad", a.id);
+  }
+  function drillToCampaigns() { setDrill(null); setDrillRows([]); setDrillError(null); }
+  function drillToAdsets() {
+    if (!drill) return;
+    setDrill({ campId: drill.campId, campName: drill.campName, obj: drill.obj });
+    loadDrill("adset", drill.campId);
+  }
 
   if (loading) return <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading Meta Ads data…</div>;
 
@@ -962,14 +1103,7 @@ export default function MetaPage() {
         ];
         // In the mixed "All" view, ROAS/Orders are meaningless for non-sales campaigns.
         // The "Result" column shows each campaign's own primary outcome instead.
-        const renderResult = (c: CampaignRow) => {
-          const o = normalizeObj(c.objective);
-          if (o === "SALES") return c.purchases > 0 ? `${c.purchases} orders` : "—";
-          if (o === "LEADS") return c.leads > 0 ? `${c.leads} leads` : "—";
-          if (o === "AWARENESS") return c.reach > 0 ? `${compact(c.reach)} reach` : "—";
-          if (o === "TRAFFIC") return c.lpv > 0 ? `${c.lpv.toLocaleString("en-IN")} visits` : `${c.clicks.toLocaleString("en-IN")} clicks`;
-          return c.clicks > 0 ? `${c.clicks.toLocaleString("en-IN")} clicks` : "—";
-        };
+        const renderResult = (c: CampaignRow) => objectiveResult(normalizeObj(c.objective), c);
         const allCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Result",   render: c => <span className="font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{renderResult(c)}</span> },
@@ -988,82 +1122,166 @@ export default function MetaPage() {
           objFilter === "ALL"       ? allCols :
           defaultCols;
 
+        // Ad-set / ad rows share a compact objective-aware column set.
+        const drillResult = (r: DrillMetrics) => objectiveResult(drill?.obj ?? "OTHER", r);
+
         return (
           <Card>
-            <CardHeader title={`Campaigns (${data.campaigns.length})`} right="From Meta Ads Manager" />
+            <CardHeader title={drill ? "Campaign Breakdown" : `Campaigns (${data.campaigns.length})`} right="From Meta Ads Manager" />
 
-            {/* Objective filter chips */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {activeFilters.map(f => {
-                const m = OBJ_META[f];
-                const count = f === "ALL" ? data.campaigns.length : (objCounts.get(f) ?? 0);
-                const isActive = objFilter === f;
-                return (
-                  <button key={f} onClick={() => setObjFilter(f)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
-                      isActive
-                        ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
-                        : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10"
-                    )}>
-                    {m.label} <span className="font-normal opacity-70">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {drill ? (
+              <>
+                {/* Breadcrumb */}
+                <div className="flex items-center gap-1.5 text-[13px] mb-1.5 flex-wrap">
+                  <button onClick={drillToCampaigns} className="font-semibold text-[#F97316] hover:underline">Campaigns</button>
+                  <ChevronRight size={14} className="text-[#A1A1AA] shrink-0" />
+                  {drill.adsetId ? (
+                    <button onClick={drillToAdsets} className="font-semibold text-[#F97316] hover:underline truncate max-w-[180px]">{drill.campName}</button>
+                  ) : (
+                    <span className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate max-w-[240px]">{drill.campName}</span>
+                  )}
+                  {drill.adsetId && (
+                    <>
+                      <ChevronRight size={14} className="text-[#A1A1AA] shrink-0" />
+                      <span className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate max-w-[240px]">{drill.adsetName}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", OBJ_META[drill.obj].badge)}>{OBJ_META[drill.obj].label}</span>
+                  <span className="text-[12px] text-[#A1A1AA]">{drill.adsetId ? "Ads & creatives in this ad set" : "Ad sets in this campaign — click one to see its ads"}</span>
+                </div>
 
-            {/* KPI hint for selected objective */}
-            {objFilter !== "ALL" && (
-              <div className="mb-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
-                {objFilter === "SALES"     && "Showing: Spend · ROAS · Orders · Revenue · ATC · CTR · CPC"}
-                {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · Visits · Cost/Visit · CTR · CPC"}
-                {objFilter === "AWARENESS" && "Showing: Spend · Impressions · Reach · CPM · Frequency · CTR"}
-                {objFilter === "ENGAGEMENT"&& "Showing: Spend · Impressions · Clicks · CTR · CPC"}
-                {objFilter === "LEADS"     && "Showing: Spend · Leads · Cost/Lead · CTR · CPC · Clicks"}
-                {objFilter === "APP"       && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
-              </div>
-            )}
-
-            {filtered.length === 0 ? (
-              <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No {OBJ_META[objFilter].label.toLowerCase()} campaigns in this period</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Campaign</th>
-                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Objective</th>
-                      <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Status</th>
-                      {cols.map(col => (
-                        <th key={col.label} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{col.label}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((c, i) => {
-                      const obj = normalizeObj(c.objective);
-                      const objM = OBJ_META[obj];
-                      return (
-                        <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
-                          <td className="py-2.5 px-2 max-w-[180px]">
-                            <div className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{c.name}</div>
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap", objM.badge)}>{objM.label}</span>
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
-                          </td>
-                          {cols.map(col => (
-                            <td key={col.label} className="py-2.5 px-2">{col.render(c)}</td>
+                {drillLoading ? (
+                  <div className="text-[13px] text-[#A1A1AA] py-12 text-center">Loading…</div>
+                ) : drillError ? (
+                  <div className="text-[13px] text-[#EF4444] py-12 text-center">{drillError}</div>
+                ) : drillRows.length === 0 ? (
+                  <div className="text-[13px] text-[#A1A1AA] py-12 text-center">Nothing ran here in this period.</div>
+                ) : drill.adsetId ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {(drillRows as AdRow[]).map(ad => <AdCard key={ad.id} ad={ad} obj={drill.obj} cur={cur} />)}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[13px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                          {["Ad Set", "Status", "Spend", "Result", "Impressions", "Clicks", "CTR", "CPC"].map(h => (
+                            <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {(drillRows as AdSetRow[]).map(a => (
+                          <tr key={a.id} onClick={() => openAdset(a)}
+                            className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors cursor-pointer">
+                            <td className="py-2.5 px-2 max-w-[220px]">
+                              <div className="flex items-center gap-1.5">
+                                <Layers size={13} className="text-[#A1A1AA] shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{a.name}</div>
+                                  {a.optimizationGoal && <div className="text-[10px] text-[#A1A1AA] truncate">{a.optimizationGoal.replace(/_/g, " ")}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-2"><span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(a.status))}>{a.status}</span></td>
+                            <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{cur}{a.spend.toLocaleString("en-IN")}</td>
+                            <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{drillResult(a)}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.impressions >= 1000 ? `${(a.impressions / 1000).toFixed(1)}K` : a.impressions}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks.toLocaleString("en-IN")}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.ctr}%</td>
+                            <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Objective filter chips */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {activeFilters.map(f => {
+                    const m = OBJ_META[f];
+                    const count = f === "ALL" ? data.campaigns.length : (objCounts.get(f) ?? 0);
+                    const isActive = objFilter === f;
+                    return (
+                      <button key={f} onClick={() => setObjFilter(f)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
+                          isActive
+                            ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
+                            : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10"
+                        )}>
+                        {m.label} <span className="font-normal opacity-70">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* KPI hint for selected objective */}
+                {objFilter !== "ALL" && (
+                  <div className="mb-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
+                    {objFilter === "SALES"     && "Showing: Spend · ROAS · Orders · Revenue · ATC · CTR · CPC"}
+                    {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · Visits · Cost/Visit · CTR · CPC"}
+                    {objFilter === "AWARENESS" && "Showing: Spend · Impressions · Reach · CPM · Frequency · CTR"}
+                    {objFilter === "ENGAGEMENT"&& "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+                    {objFilter === "LEADS"     && "Showing: Spend · Leads · Cost/Lead · CTR · CPC · Clicks"}
+                    {objFilter === "APP"       && "Showing: Spend · Impressions · Clicks · CTR · CPC"}
+                  </div>
+                )}
+
+                <div className="mb-2 text-[12px] text-[#A1A1AA]">Click a campaign to see its ad sets, ads and creatives.</div>
+
+                {filtered.length === 0 ? (
+                  <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No {OBJ_META[objFilter].label.toLowerCase()} campaigns in this period</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[13px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Campaign</th>
+                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Objective</th>
+                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Status</th>
+                          {cols.map(col => (
+                            <th key={col.label} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{col.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((c, i) => {
+                          const obj = normalizeObj(c.objective);
+                          const objM = OBJ_META[obj];
+                          return (
+                            <tr key={i} onClick={() => openCampaign(c)}
+                              className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors cursor-pointer">
+                              <td className="py-2.5 px-2 max-w-[180px]">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{c.name}</div>
+                                  <ChevronRight size={14} className="text-[#A1A1AA] shrink-0" />
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-2">
+                                <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap", objM.badge)}>{objM.label}</span>
+                              </td>
+                              <td className="py-2.5 px-2">
+                                <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
+                              </td>
+                              {cols.map(col => (
+                                <td key={col.label} className="py-2.5 px-2">{col.render(c)}</td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
+
             <div className="mt-3 text-[12px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
               {data.adAccountName} · Live from Meta Ads Manager
             </div>
