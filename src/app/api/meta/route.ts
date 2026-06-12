@@ -40,16 +40,31 @@ function actInt(arr: ActionEntry[] | undefined, type: string): number {
 function sumArr(arr: ActionEntry[] | undefined): number {
   return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
-// Meta reports leads under several action types depending on form type (instant form,
-// website pixel, on-site lead). Take the largest so we don't double-count or miss them.
+// A "lead" under Meta's OUTCOME_LEADS objective is whatever result the campaign was
+// optimized for — and that varies a lot: instant-form leads, website-pixel leads, OR
+// messaging conversations (WhatsApp / Messenger / IG DM), calls, or registrations.
+// Hardcoding form-only action types misses messaging campaigns entirely (they report
+// 0 form leads). So we scan for any result-type action by name pattern and take the
+// largest single value — the campaign's headline "result" — instead of summing
+// (which would double-count grouped vs individual variants of the same action).
+const LEAD_ACTION_PATTERNS = [
+  "lead",                            // lead, leadgen_grouped, onsite_conversion.lead_grouped, *fb_pixel_lead, onsite_conversion.lead
+  "messaging_conversation_started",  // WhatsApp / Messenger / IG conversation leads
+  "total_messaging_connection",
+  "messaging_first_reply",
+  "complete_registration",           // sign-up leads
+  "click_to_call",                   // call leads
+];
 function leadCount(arr: ActionEntry[] | undefined): number {
-  return Math.max(
-    actInt(arr, "lead"),
-    actInt(arr, "onsite_conversion.lead_grouped"),
-    actInt(arr, "leadgen_grouped"),
-    actInt(arr, "offsite_conversion.fb_pixel_lead"),
-    actInt(arr, "onsite_conversion.lead")
-  );
+  if (!arr) return 0;
+  let max = 0;
+  for (const a of arr) {
+    const t = a.action_type.toLowerCase();
+    if (LEAD_ACTION_PATTERNS.some(p => t.includes(p))) {
+      max = Math.max(max, Math.round(parseFloat(a.value) || 0));
+    }
+  }
+  return max;
 }
 
 export async function GET(req: NextRequest) {
@@ -64,8 +79,11 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
+  // ?debug=1 returns the raw action types Meta sent (and bypasses cache) so we can map
+  // the right "result" action for each objective when a count looks wrong (e.g. leads = 0).
+  const debug = req.nextUrl.searchParams.get("debug") === "1";
   const cacheKey = `cache:${shop}:meta:${from}:${to}`;
-  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  if (!debug) { try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ } }
 
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
   const attrWindows = encodeURIComponent(JSON.stringify(["7d_click", "1d_view"]));
@@ -226,7 +244,17 @@ export async function GET(req: NextRequest) {
     },
     campaigns,
     daily,
+    ...(debug ? {
+      _debug: {
+        overviewActions: (o?.actions ?? []).map(a => ({ type: a.action_type, value: a.value })),
+        campaigns: (campaignInsightsData.data ?? []).map(c => ({
+          name: c.campaign_name,
+          objective: statusMap.get(c.campaign_id ?? "")?.objective ?? "",
+          actions: (c.actions ?? []).map(a => ({ type: a.action_type, value: a.value })),
+        })),
+      },
+    } : {}),
   };
-  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
+  if (!debug) kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
   return NextResponse.json(result);
 }
