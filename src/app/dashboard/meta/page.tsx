@@ -725,6 +725,7 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
   const stats: { label: string; value: string }[] = [
     { label: "Spend", value: money(cur, ad.spend) },
     { label: "Result", value: result },
+    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "—" }] : []),
     { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
     { label: "CTR", value: `${ad.ctr}%` },
     { label: "CPC", value: money(cur, ad.cpc) },
@@ -1234,7 +1235,7 @@ export default function MetaPage() {
                     <table className="w-full text-[13px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                          {["Ad Set", "Status", "Spend", "Result", costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC"].map(h => (
+                          {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC"].map(h => (
                             <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1255,6 +1256,9 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2"><span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(a.status))}>{a.status}</span></td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{cur}{a.spend.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{drillResult(a)}</td>
+                            {drill.obj === "SALES" && (
+                              <td className="py-2.5 px-2"><span className={cn("font-bold", a.roas >= 3 ? "text-[#F97316]" : a.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : a.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{a.roas > 0 ? `${a.roas}x` : "—"}</span></td>
+                            )}
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{objectiveCost(drill.obj, a, cur)}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.impressions >= 1000 ? `${(a.impressions / 1000).toFixed(1)}K` : a.impressions}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks.toLocaleString("en-IN")}</td>
