@@ -30,13 +30,24 @@ interface Placement {
   lpRatio: number;
 }
 
+interface BBucket {
+  key: string; label: string; sort: number;
+  spend: number; impressions: number; reach: number; clicks: number;
+  ctr: number; cpc: number; cpm: number;
+  purchases: number; purchaseValue: number; atc: number; lpv: number;
+  roas: number; cac: number; lpRatio: number; costPerLpv: number; convRate: number; spendPct: number;
+}
+
 interface PlacementData {
   adAccountName: string;
   currency: string;
   period: { from: string; to: string };
   totalSpend: number;
   placements: Placement[];
+  breakdowns?: { age: BBucket[]; gender: BBucket[]; device: BBucket[]; hourly: BBucket[] };
 }
+
+type PTab = "placement" | "age" | "gender" | "time" | "device";
 
 const groupColors: Record<string, string> = {
   Facebook: "#1877F2",
@@ -87,12 +98,90 @@ function buildPlacementInsights(placements: Placement[], totalSpend: number): PI
   return out.slice(0, 5);
 }
 
+function barColor(roas: number) { return roas >= 3 ? "#16A34A" : roas >= 1.5 ? "#94A3B8" : roas > 0 ? "#EF4444" : "#FB923C"; }
+
+// Generic breakdown view (Age / Gender / Time / Device) — Spend chart + full metric table.
+function BreakdownView({ title, dimLabel, buckets, cur }: { title: string; dimLabel: string; buckets: BBucket[]; cur: string }) {
+  const fmt = (n: number) => n.toLocaleString("en-IN");
+  const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  if (!buckets || buckets.length === 0) return (
+    <Card><CardHeader title={title} /><div className="text-[13px] text-[#A1A1AA] py-10 text-center">No {dimLabel.toLowerCase()} data from Meta for this period.</div></Card>
+  );
+  const vertical = buckets.length > 10; // hourly (24 buckets) reads better as columns
+  const chartData = buckets.map(b => ({ label: b.label, spend: b.spend, roas: b.roas }));
+  const cols = ["Spend", "Spend%", "ROAS", "Orders", "Cost/Order", "Revenue", "Impr", "Reach", "CPM", "CTR", "Clicks", "CPC", "LP Views", "Cost/LPV", "Conv%"];
+  return (
+    <>
+      <Card className="mb-4">
+        <CardHeader title={`Spend by ${dimLabel}`} right="Bar colour = ROAS · green ≥3× · red <1.5×" />
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            {vertical ? (
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#A1A1AA" }} tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={52} />
+                <YAxis tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} tickFormatter={v => `${cur}${v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}`} />
+                <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E5E5", borderRadius: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }} formatter={(v) => [`${cur}${(v as number).toLocaleString("en-IN")}`, "Spend"]} />
+                <Bar dataKey="spend" radius={[6, 6, 0, 0]}>{chartData.map((e, i) => <Cell key={i} fill={barColor(e.roas)} />)}</Bar>
+              </BarChart>
+            ) : (
+              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} tickFormatter={v => `${cur}${v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}`} />
+                <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: "#71717A" }} tickLine={false} axisLine={false} width={110} />
+                <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E5E5", borderRadius: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }} formatter={(v) => [`${cur}${(v as number).toLocaleString("en-IN")}`, "Spend"]} />
+                <Bar dataKey="spend" radius={[0, 6, 6, 0]}>{chartData.map((e, i) => <Cell key={i} fill={barColor(e.roas)} />)}</Bar>
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+      </Card>
+      <Card>
+        <CardHeader title={title} right={`${buckets.length} ${dimLabel.toLowerCase()} segments`} />
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px] border-collapse">
+            <thead>
+              <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
+                <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{dimLabel}</th>
+                {cols.map(h => <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {buckets.map((b, i) => (
+                <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+                  <td className="py-2.5 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{b.label}</td>
+                  <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{fmtC(b.spend)}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.spendPct}%</td>
+                  <td className="py-2.5 px-2">{b.roas > 0 ? <span className={cn("font-bold", b.roas >= 3 ? "text-[#16A34A]" : b.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{b.roas}x</span> : <span className="text-[#A1A1AA]">—</span>}</td>
+                  <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{b.purchases > 0 ? b.purchases : <span className="text-[#A1A1AA]">—</span>}</td>
+                  <td className="py-2.5 px-2 whitespace-nowrap">{b.cac > 0 ? fmtC(b.cac) : <span className="text-[#A1A1AA]">—</span>}</td>
+                  <td className="py-2.5 px-2 whitespace-nowrap">{b.purchaseValue > 0 ? fmtC(b.purchaseValue) : <span className="text-[#A1A1AA]">—</span>}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.impressions >= 1000 ? `${(b.impressions / 1000).toFixed(1)}K` : b.impressions}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.reach >= 1000 ? `${(b.reach / 1000).toFixed(1)}K` : b.reach}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{fmtC(b.cpm)}</td>
+                  <td className="py-2.5 px-2"><span className={cn(b.ctr >= 1.5 ? "text-[#16A34A] font-semibold" : b.ctr >= 0.9 ? "text-[#71717A] dark:text-[#A1A1AA]" : "text-[#EF4444]")}>{b.ctr}%</span></td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{fmt(b.clicks)}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{fmtC(b.cpc)}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.lpv > 0 ? fmt(b.lpv) : "—"}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "—"}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.convRate > 0 ? `${b.convRate}%` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
+  );
+}
+
 export default function PlacementPage() {
   const { range } = useDateRange();
   const [data, setData] = useState<PlacementData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const [sortBy, setSortBy] = useState<keyof Placement>("spend");
+  const [tab, setTab] = useState<PTab>("placement");
 
   useEffect(() => {
     setLoading(true);
@@ -121,6 +210,18 @@ export default function PlacementPage() {
   const fmt = (n: number) => n.toLocaleString("en-IN");
   const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
+  function bucketSection(title: string, dimLabel: string, buckets: BBucket[] | undefined) {
+    return {
+      title,
+      headers: [dimLabel, "Spend", "Spend %", "ROAS", "Orders", "Cost/Order", "Revenue", "Impressions", "Reach", "CPM", "CTR", "Clicks", "CPC", "LP Views", "Cost/LPV", "Conv %"],
+      rows: (buckets ?? []).map(b => [
+        b.label, fmtC(b.spend), `${b.spendPct}%`, b.roas > 0 ? `${b.roas}x` : "—",
+        b.purchases, b.cac > 0 ? fmtC(b.cac) : "—", fmtC(b.purchaseValue), fmt(b.impressions), fmt(b.reach),
+        fmtC(b.cpm), `${b.ctr}%`, fmt(b.clicks), fmtC(b.cpc), fmt(b.lpv), b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "—", `${b.convRate}%`,
+      ]),
+    };
+  }
+
   function buildSections() {
     if (!data) return [];
     return [
@@ -135,6 +236,10 @@ export default function PlacementPage() {
           `${p.lpRatio}%`, fmt(p.clicks), `${p.ctr}%`, fmtC(p.cpc), fmtC(p.cpm), fmt(p.reach),
         ]),
       },
+      bucketSection("By Age", "Age", data.breakdowns?.age),
+      bucketSection("By Gender", "Gender", data.breakdowns?.gender),
+      bucketSection("By Time of Day", "Hour", data.breakdowns?.hourly),
+      bucketSection("By Device", "Device", data.breakdowns?.device),
     ];
   }
 
@@ -186,6 +291,29 @@ export default function PlacementPage() {
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
 
+      {/* Breakdown tabs */}
+      <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
+        {([
+          { key: "placement", label: "Placement" },
+          { key: "age", label: "Age" },
+          { key: "gender", label: "Gender" },
+          { key: "time", label: "Time of Day" },
+          { key: "device", label: "Device" },
+        ] as { key: PTab; label: string }[]).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={cn("px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
+              tab === t.key ? "border-[#F97316] text-[#F97316]" : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]")}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "age" && <BreakdownView title="Performance by Age" dimLabel="Age" buckets={data.breakdowns?.age ?? []} cur={cur} />}
+      {tab === "gender" && <BreakdownView title="Performance by Gender" dimLabel="Gender" buckets={data.breakdowns?.gender ?? []} cur={cur} />}
+      {tab === "time" && <BreakdownView title="Performance by Time of Day" dimLabel="Hour" buckets={data.breakdowns?.hourly ?? []} cur={cur} />}
+      {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
+
+      {tab === "placement" && (<>
       {/* Platform group summary */}
       {groupData.length > 0 && (
         <div className={cn("grid gap-2.5 mb-4", groupData.length === 4 ? "grid-cols-4" : groupData.length === 3 ? "grid-cols-3" : groupData.length === 2 ? "grid-cols-2" : "grid-cols-1")}>
@@ -368,6 +496,7 @@ export default function PlacementPage() {
           Green ROAS = above 3× · Gray = above 1.5× · Red = below 1.5× · Green LP% ≥65% · Amber ≥45% · Red &lt;45%
         </div>
       </Card>
+      </>)}
     </div>
   );
 }
