@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2, ChevronRight, Play, Film, Images, Image as ImageIcon, Layers } from "lucide-react";
+import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown, Play, Film, Images, Image as ImageIcon, Layers } from "lucide-react";
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -695,7 +695,30 @@ function CreativeMedia({ c }: { c: ParsedCreative }) {
   return placeholder(ImageIcon, "No preview");
 }
 
+// Ad-level fixes — only the creative/delivery levers that live on the ad or its ad set.
+// Funnel KPIs (LPV/ATC/Checkout/Conversion) are store-wide and stay in the Overview.
+interface AdFix { kpi: string; severity: "issue" | "warning"; advice: string }
+function buildAdFixes(ad: AdRow, cur: string): AdFix[] {
+  const out: AdFix[] = [];
+  if (ad.ctr > 0 && ad.ctr < 0.9)
+    out.push({ kpi: `CTR ${ad.ctr}%`, severity: "issue", advice: "Below the 0.9% benchmark. Test new ad creatives, hooks/headlines and a clearer CTA; check the offer and audience relevance." });
+  if (ad.cpm > 150)
+    out.push({ kpi: `CPM ${money(cur, ad.cpm)}`, severity: ad.cpm > 250 ? "issue" : "warning", advice: "Above the ₹150 benchmark. Refine this ad set's targeting & placement and adjust bidding; refresh the creative to raise relevance and lower cost." });
+  if (ad.frequency > 3)
+    out.push({ kpi: `Frequency ${ad.frequency}x`, severity: ad.frequency > 5 ? "issue" : "warning", advice: "Above 3x — the same people keep seeing this ad. Refresh the creative or widen this ad set's audience." });
+  if (ad.creative.type === "video" && ad.videoViews3s > 0) {
+    if (ad.thumbStopRatio > 0 && ad.thumbStopRatio < 25)
+      out.push({ kpi: `Thumb-stop ${ad.thumbStopRatio}%`, severity: "issue", advice: "Below 25% — the first 1–2s don't grab attention. Open with the product or a bold hook / text overlay." });
+    const hold = ad.videoViews3s > 0 ? +(ad.thruplay / ad.videoViews3s * 100).toFixed(1) : 0;
+    if (hold > 0 && hold < 15)
+      out.push({ kpi: `Hold ${hold}%`, severity: "issue", advice: "Below 15% — viewers drop off fast. Get to the benefit in under 5s, cut the intro, add subtitles." });
+  }
+  return out;
+}
+
 function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
+  const [showFixes, setShowFixes] = useState(false);
+  const fixes = buildAdFixes(ad, cur);
   const cta = ctaLabel(ad.creative.cta);
   const result = objectiveResult(obj, ad);
   const TypeIcon = ad.creative.type === "video" ? Film : ad.creative.type === "carousel" ? Images : ImageIcon;
@@ -734,6 +757,32 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
             </div>
           ))}
         </div>
+
+        {/* Below-benchmark fixes for this specific ad (creative + delivery levers) */}
+        {fixes.length > 0 ? (
+          <div className="mt-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
+            <button onClick={() => setShowFixes(o => !o)}
+              className="flex items-center gap-1.5 text-[11px] font-bold text-[#EA580C] dark:text-[#FB923C]">
+              <AlertTriangle size={12} /> {fixes.length} fix{fixes.length > 1 ? "es" : ""} to improve
+              <ChevronDown size={12} className={cn("transition-transform", showFixes && "rotate-180")} />
+            </button>
+            {showFixes && (
+              <ul className="mt-2 space-y-2">
+                {fixes.map((f, i) => (
+                  <li key={i} className={cn("border-l-[3px] rounded-r-lg pl-2 py-1",
+                    f.severity === "issue" ? "border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "border-l-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]")}>
+                    <div className="text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{f.kpi}</div>
+                    <div className="text-[11px] text-[#52525B] dark:text-[#A1A1AA] leading-snug">{f.advice}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <div className="mt-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center gap-1.5 text-[11px] font-bold text-[#16A34A]">
+            <CheckCircle2 size={12} /> Meeting benchmarks
+          </div>
+        )}
       </div>
     </div>
   );
