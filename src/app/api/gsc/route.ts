@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:gsc:v2:${startDate}:${endDate}`;
+  const cacheKey = `cache:${shop}:gsc:v3:${startDate}:${endDate}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const query = (extra: object) =>
@@ -109,6 +109,42 @@ export async function GET(req: NextRequest) {
   const avgPos = aggRow ? +aggRow.position.toFixed(1) : 0;
   const ctrPct = aggRow ? +(aggRow.ctr * 100).toFixed(1) : 0;
 
+  // Branded vs non-branded split. Brand token derived from the site's main domain label
+  // (e.g. "sc-domain:naachiyars.in" / "https://naachiyars.in/" → "naachiyars"). A query is
+  // "branded" when its space-stripped form contains that token.
+  const brandLabel = siteUrl
+    .replace(/^sc-domain:/, "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .replace(/^www\./, "")
+    .split(".")[0]
+    .toLowerCase();
+  const isBranded = (q: string) => brandLabel.length >= 3 && q.toLowerCase().replace(/\s+/g, "").includes(brandLabel);
+  let brandedClicks = 0, brandedImpr = 0, nonBrandedClicks = 0, nonBrandedImpr = 0;
+  for (const r of kwRows) {
+    const q = r.keys?.[0] ?? "";
+    if (isBranded(q)) { brandedClicks += r.clicks; brandedImpr += r.impressions; }
+    else { nonBrandedClicks += r.clicks; nonBrandedImpr += r.impressions; }
+  }
+  const branded = { brandLabel, brandedClicks, brandedImpr, nonBrandedClicks, nonBrandedImpr };
+
+  // Clicks distribution by ranking position — shows where your traffic actually comes from.
+  const posBuckets = [
+    { label: "1–3", min: 0, max: 3 },
+    { label: "4–10", min: 3, max: 10 },
+    { label: "11–20", min: 10, max: 20 },
+    { label: "21+", min: 20, max: Infinity },
+  ];
+  const positionBuckets = posBuckets.map(b => {
+    const rows = kwRows.filter(r => r.position > b.min && r.position <= b.max);
+    return {
+      label: b.label,
+      clicks: rows.reduce((s, r) => s + r.clicks, 0),
+      impressions: rows.reduce((s, r) => s + r.impressions, 0),
+      keywords: rows.length,
+    };
+  });
+
   const page1Keywords = kwRows.filter(r => r.position <= 10).length;
   const top3Keywords = kwRows.filter(r => r.position <= 3).length;
   const highCtrKws = kwRows.filter(r => r.ctr * 100 >= 5 && r.clicks > 0).length;
@@ -177,6 +213,8 @@ export async function GET(req: NextRequest) {
     })),
     sitemaps,
     achievements,
+    branded,
+    positionBuckets,
   };
   kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});
   return NextResponse.json(result);

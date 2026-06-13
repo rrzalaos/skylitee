@@ -42,16 +42,18 @@ export async function GET(req: NextRequest) {
   const startDate = req.nextUrl.searchParams.get("from") ?? "28daysAgo";
   const endDate = req.nextUrl.searchParams.get("to") ?? "today";
 
-  const cacheKey = `cache:${shop}:ga4:v2:${startDate}:${endDate}`;
+  // ?organic=1 adds an Organic-Search-only block (summary + landing pages) for the SEO report.
+  const organic = req.nextUrl.searchParams.get("organic") === "1";
+  const cacheKey = `cache:${shop}:ga4:v2:${startDate}:${endDate}:org${organic ? 1 : 0}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const dateRanges = [{ startDate, endDate }];
 
-  const runReport = async (dimensions: GA4Dimension[], metrics: GA4Metric[], limit = 10) => {
+  const runReport = async (dimensions: GA4Dimension[], metrics: GA4Metric[], limit = 10, dimensionFilter?: object) => {
     const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ dateRanges, dimensions, metrics, limit }),
+      body: JSON.stringify({ dateRanges, dimensions, metrics, limit, ...(dimensionFilter ? { dimensionFilter } : {}) }),
     });
     const json = await res.json() as { rows?: GA4Row[]; error?: unknown };
     // Throw on API errors (quota/permission/invalid metric) so this report resolves to null
@@ -148,9 +150,51 @@ export async function GET(req: NextRequest) {
     purchaseRate: eRow ? +(parseInt(eRow.metricValues[3].value) / Math.max(parseInt(eRow.metricValues[2].value), 1) * 100).toFixed(1) : 0,
   } : null;
 
+  // Organic-Search-only block (SEO report). Channel-filtered so we measure the quality and
+  // revenue of search-driven visits specifically, not all traffic.
+  const ORGANIC_FILTER = { filter: { fieldName: "sessionDefaultChannelGroup", stringFilter: { value: "Organic Search", matchType: "EXACT" } } };
+  let organicSummary: {
+    sessions: number; users: number; bounceRate: number; avgSessionSec: number;
+    purchases: number; revenue: number; engagementRate: number;
+  } | null = null;
+  let organicLandingPages: { page: string; sessions: number; bounceRate: number; purchases: number; revenue: number }[] = [];
+  if (organic) {
+    const [osData, olData] = await Promise.allSettled([
+      runReport([], [
+        { name: "sessions" }, { name: "activeUsers" }, { name: "bounceRate" },
+        { name: "averageSessionDuration" }, { name: "ecommercePurchases" },
+        { name: "purchaseRevenue" }, { name: "engagementRate" },
+      ], 1, ORGANIC_FILTER),
+      runReport([{ name: "landingPage" }], [
+        { name: "sessions" }, { name: "bounceRate" },
+        { name: "ecommercePurchases" }, { name: "purchaseRevenue" },
+      ], 100, ORGANIC_FILTER),
+    ]);
+    const os = safe(osData); const ol = safe(olData);
+    const osRow = os?.rows?.[0];
+    organicSummary = osRow ? {
+      sessions: parseInt(osRow.metricValues[0].value),
+      users: parseInt(osRow.metricValues[1].value),
+      bounceRate: +(parseFloat(osRow.metricValues[2].value) * 100).toFixed(1),
+      avgSessionSec: Math.round(parseFloat(osRow.metricValues[3].value)),
+      purchases: parseInt(osRow.metricValues[4].value),
+      revenue: parseFloat(osRow.metricValues[5].value),
+      engagementRate: +(parseFloat(osRow.metricValues[6].value) * 100).toFixed(1),
+    } : null;
+    organicLandingPages = (ol?.rows ?? []).map(r => ({
+      page: r.dimensionValues[0].value,
+      sessions: parseInt(r.metricValues[0].value),
+      bounceRate: +(parseFloat(r.metricValues[1].value) * 100).toFixed(1),
+      purchases: parseInt(r.metricValues[2].value),
+      revenue: parseFloat(r.metricValues[3].value),
+    }));
+  }
+
   const result = {
     property: propertyName,
     period: { startDate, endDate },
+    organic: organicSummary,
+    organicLandingPages,
     kpis: { sessions, users, pageviews, bounceRate, avgSessionMin, newUsers },
     channels: (channels?.rows ?? []).map(r => ({
       channel: r.dimensionValues[0].value,
