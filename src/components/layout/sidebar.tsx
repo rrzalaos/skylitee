@@ -13,7 +13,7 @@ import {
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, ChevronDown, UserCircle,
   X, ShieldCheck, CreditCard, Plus,
-  FileText, TrendingUp, BarChart3, Globe, DollarSign, Sparkles, HelpCircle, FilePlus,
+  FileText, TrendingUp, BarChart3, DollarSign, Sparkles, HelpCircle, FilePlus,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
@@ -89,8 +89,6 @@ const navSections: NavSection[] = [
       { href: "/dashboard/reports/builder", label: "Custom Report", icon: FilePlus, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/reports/seo", label: "SEO Report", icon: FileText, badge: null, dot: "google_gsc" },
       { href: "/dashboard/reports/performance", label: "Performance Marketing", icon: TrendingUp, badge: null, dot: null },
-      { href: "/dashboard/reports/meta", label: "Meta Ads Report", icon: BarChart3, badge: null, dot: "meta" },
-      { href: "/dashboard/reports/traffic", label: "Traffic Report", icon: Globe, badge: null, dot: "google_ga4" },
       { href: "/dashboard/reports/financial", label: "Financial P&L", icon: DollarSign, badge: null, dot: null },
       { href: "/dashboard/reports/insights", label: "AI Insights", icon: Sparkles, badge: { text: "AI", color: "orange" }, dot: null },
     ],
