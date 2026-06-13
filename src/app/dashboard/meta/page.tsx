@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown, Play, Film, Images, Image as ImageIcon, Layers } from "lucide-react";
+import { Share2, ArrowDown, MousePointerClick, MonitorSmartphone, ShoppingCart, CreditCard, PackageCheck, AlertTriangle, CheckCircle2, ChevronRight, ChevronDown, Play, Film, Images, Image as ImageIcon, Layers, X } from "lucide-react";
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -716,8 +717,98 @@ function buildAdFixes(ad: AdRow, cur: string): AdFix[] {
   return out;
 }
 
+// Full-size preview — the complete creative + all the ad copy, opened by clicking an ad card.
+function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; cur: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
+
+  const c = ad.creative;
+  const cta = ctaLabel(c.cta);
+  const stats: { label: string; value: string }[] = [
+    { label: "Spend", value: money(cur, ad.spend) },
+    { label: "Result", value: objectiveResult(obj, ad) },
+    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "—" }] : []),
+    { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
+    { label: "Impressions", value: compact(ad.impressions) },
+    { label: "Reach", value: compact(ad.reach) },
+    { label: "CTR", value: `${ad.ctr}%` },
+    { label: "CPC", value: money(cur, ad.cpc) },
+    ...(ad.creative.type === "video" && ad.thumbStopRatio > 0 ? [{ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` }] : []),
+  ];
+
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between p-4 border-b border-black/[0.06] dark:border-white/[0.06] sticky top-0 bg-white dark:bg-[#171717] z-10">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-bold", OBJ_META[obj]?.badge ?? OBJ_META.OTHER.badge)}>{OBJ_META[obj]?.label ?? "Ad"}</span>
+              <span className="text-[12px] text-[#A1A1AA] capitalize">{c.type === "unknown" ? "ad" : c.type}</span>
+              <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
+            </div>
+            <h3 className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</h3>
+          </div>
+          <button onClick={onClose} className="shrink-0 p-1.5 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#262626] text-[#71717A] dark:text-[#A1A1AA]"><X size={18} /></button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-0">
+          {/* Creative */}
+          <div className="bg-[#0C0C0C] flex items-center justify-center min-h-[260px] md:min-h-[420px] p-2">
+            {c.type === "carousel" && c.images.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto snap-x w-full h-full items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {c.images.map((src, i) => <img key={i} src={src} alt="" className="max-h-[400px] rounded-lg object-contain snap-center shrink-0" />)}
+              </div>
+            ) : c.type === "video" && c.videoThumb ? (
+              <a href={c.videoId ? `https://www.facebook.com/watch/?v=${c.videoId}` : undefined} target="_blank" rel="noreferrer" className="relative block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.videoThumb} alt="" className="max-h-[420px] rounded-lg object-contain" />
+                <div className="absolute inset-0 flex items-center justify-center"><div className="w-14 h-14 rounded-full bg-black/55 flex items-center justify-center"><Play size={26} className="text-white ml-1" fill="white" /></div></div>
+              </a>
+            ) : c.images.length > 0 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.images[0]} alt="" className="max-h-[420px] rounded-lg object-contain" />
+            ) : (
+              <div className="text-[#A1A1AA] text-[13px]">No preview available</div>
+            )}
+          </div>
+
+          {/* Copy + metrics */}
+          <div className="p-4">
+            {cta && (
+              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2.5 py-1 rounded-full mb-3">
+                <MousePointerClick size={12} /> {cta}
+              </span>
+            )}
+            <div className="space-y-3 text-[13px]">
+              {c.primaryText && (<div><div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#18181B] dark:text-[#F4F4F5] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
+              {c.headline && (<div><div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Headline</div><p className="text-[#18181B] dark:text-[#F4F4F5] font-semibold">{c.headline}</p></div>)}
+              {!c.primaryText && !c.headline && (<p className="text-[#A1A1AA]">No ad copy returned for this creative.</p>)}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
+              {stats.map(s => (
+                <div key={s.label} className="flex items-baseline justify-between gap-2">
+                  <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
+                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
   const [showFixes, setShowFixes] = useState(false);
+  const [preview, setPreview] = useState(false);
   const fixes = buildAdFixes(ad, cur);
   const cta = ctaLabel(ad.creative.cta);
   const result = objectiveResult(obj, ad);
@@ -733,13 +824,15 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
   if (ad.creative.type === "video" && ad.thumbStopRatio > 0) stats.push({ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` });
   return (
     <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] overflow-hidden bg-white dark:bg-[#171717]">
-      <div className="aspect-square bg-[#F5F5F4] dark:bg-[#0C0C0C] relative">
+      {preview && <AdPreviewModal ad={ad} obj={obj} cur={cur} onClose={() => setPreview(false)} />}
+      <button onClick={() => setPreview(true)} className="block w-full aspect-square bg-[#F5F5F4] dark:bg-[#0C0C0C] relative cursor-pointer group" title="Click to preview full creative & copy">
         <CreativeMedia c={ad.creative} />
         <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/55 text-white">
           <TypeIcon size={11} /> {ad.creative.type === "unknown" ? "Ad" : ad.creative.type.charAt(0).toUpperCase() + ad.creative.type.slice(1)}
         </span>
         <span className={cn("absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
-      </div>
+        <span className="absolute bottom-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">Tap to expand</span>
+      </button>
       <div className="p-3">
         <div className="font-bold text-[13px] text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</div>
         {cta && (
