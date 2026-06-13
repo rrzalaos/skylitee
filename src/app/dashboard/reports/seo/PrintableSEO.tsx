@@ -2,7 +2,7 @@
 import { Gauge, Donut } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, MousePointerClick, Eye, Users, IndianRupee, Target, BarChart3, Globe, Activity } from "lucide-react";
-import type { GSCData, GA4Data, MonthlyMonth } from "./types";
+import type { GSCData, GA4Data, MonthlyMonth, GA4MonthlyMonth } from "./types";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const num = (n: number) => n.toLocaleString("en-IN");
@@ -59,8 +59,8 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn" | "bad"
 const th = "text-left py-2 px-2.5 text-[12px] font-bold text-white uppercase tracking-wide";
 const td = "py-2 px-2.5 text-[14px]";
 
-export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt }: {
-  data: GSCData; ga4: GA4Data | null; monthly: MonthlyMonth[]; site: string; rangeLabel: string; generatedAt: string;
+export function PrintableSEO({ data, ga4, monthly, ga4Monthly, site, rangeLabel, generatedAt }: {
+  data: GSCData; ga4: GA4Data | null; monthly: MonthlyMonth[]; ga4Monthly: GA4MonthlyMonth[]; site: string; rangeLabel: string; generatedAt: string;
 }) {
   const k = data.kpis;
   const ctrGood = k.ctr >= 2;
@@ -109,6 +109,28 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
   if (org && org.engagementRate > 0 && org.engagementRate < 45) attentionSignals.push({ type: "warn", metric: "Organic Engagement", value: `${org.engagementRate}%`, detail: "Search visitors leave quickly — align landing pages to query intent." });
 
   const monthlyChart = monthly.map(m => ({ label: m.label.replace(/ \d{4}$/, ""), Clicks: m.clicks, Impressions: m.impressions }));
+
+  // Month-wise progress — merge GSC monthly (clicks/impr/ctr/position) with GA4 monthly organic
+  // sessions (ym "YYYYMM" → "YYYY-MM"). MoM = latest month vs previous.
+  const gaMoByYm = new Map(ga4Monthly.map(m => [`${m.ym.slice(0, 4)}-${m.ym.slice(4, 6)}`, m]));
+  const hasGaMonthly = ga4Monthly.length > 0;
+  const mwHeaders = monthly.map(m => m.label.replace(/(\w+) (\d{4})/, (_, mon, yr) => `${mon} '${yr.slice(2)}`));
+  const mom = (vals: (number | null)[], lowerBetter: boolean) => {
+    const clean = vals.filter((v): v is number => v != null);
+    if (clean.length < 2) return null;
+    const cur = clean[clean.length - 1], prev = clean[clean.length - 2];
+    if (prev === 0) return null;
+    const pct = Math.round(((cur - prev) / Math.abs(prev)) * 100);
+    return { pct, better: lowerBetter ? pct < 0 : pct > 0, up: pct >= 0 };
+  };
+  const mwRows: { key: string; fmt: (v: number) => string; vals: (number | null)[]; lowerBetter: boolean; accent?: string }[] = [
+    { key: "Clicks", fmt: num, vals: monthly.map(m => m.clicks), lowerBetter: false, accent: "#4285F4" },
+    { key: "Impressions", fmt: num, vals: monthly.map(m => m.impressions), lowerBetter: false },
+    { key: "CTR", fmt: v => `${v}%`, vals: monthly.map(m => m.ctr), lowerBetter: false },
+    { key: "Avg Position", fmt: v => v.toFixed(1), vals: monthly.map(m => m.position), lowerBetter: true },
+    ...(hasGaMonthly ? [{ key: "Organic Sessions", fmt: num, vals: monthly.map(m => gaMoByYm.get(m.ym)?.organic ?? null), lowerBetter: false, accent: "#F97316" }] : []),
+  ];
+
   const maxBucket = Math.max(1, ...data.positionBuckets.map(x => x.clicks));
   const maxCountry = Math.max(1, ...data.countries.map(c => c.clicks));
   const ctrGaugeVal = Math.min(100, (k.ctr / 2) * 100);
@@ -204,6 +226,40 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
             <p className="text-[13px] text-[#71717A] mt-3 leading-snug">Non-branded clicks are <strong>new customers discovering you</strong>; branded clicks are people already searching your name.</p>
           </Section>
         </div>
+
+        {/* Month-wise progress */}
+        {monthly.length >= 2 && (
+          <Section title="Month-wise Progress" color="#0EA5E9" icon={<Activity size={16} />} right={`last ${monthly.length} months · vs previous`}>
+            <p className="text-[13px] text-[#71717A] mb-3">Period-over-period view of your search KPIs. <span className="text-[#16A34A] font-semibold">Green</span> = improved vs the prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (for Avg Position, lower is better so a drop shows green). The latest month may be partial.</p>
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "#0EA5E9" }}>
+                  <th className={th}>KPI</th>
+                  {mwHeaders.map(h => <th key={h} className={th} style={{ textAlign: "right" }}>{h}</th>)}
+                  <th className={th} style={{ textAlign: "right" }}>MoM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mwRows.map((row, ri) => {
+                  const m = mom(row.vals, row.lowerBetter);
+                  return (
+                    <tr key={row.key} style={{ background: ri % 2 ? "#F0F9FF" : "#fff" }}>
+                      <td className={`${td} font-bold`} style={{ color: row.accent ?? "#27272A" }}>{row.key}</td>
+                      {row.vals.map((v, ci) => (
+                        <td key={ci} className={`${td} text-right tabular-nums ${ci === row.vals.length - 1 ? "font-extrabold" : "text-[#3F3F46]"}`}>{v == null ? "—" : row.fmt(v)}</td>
+                      ))}
+                      <td className={`${td} text-right font-extrabold`}>
+                        {m ? (
+                          <span style={{ color: m.pct === 0 ? "#A1A1AA" : m.better ? "#16A34A" : "#DC2626" }}>{m.up ? "▲" : "▼"} {Math.abs(m.pct)}%</span>
+                        ) : <span className="text-[#A1A1AA]">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Section>
+        )}
 
         {/* Signals */}
         <div className="grid grid-cols-2 gap-3">

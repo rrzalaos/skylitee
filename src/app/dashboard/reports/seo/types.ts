@@ -19,3 +19,6 @@ export interface GA4Data {
 }
 
 export interface MonthlyMonth { ym: string; label: string; clicks: number; impressions: number; ctr: number; position: number }
+
+// GA4 month-wise row (ym is "YYYYMM"); `organic` = Organic-Search sessions that month.
+export interface GA4MonthlyMonth { ym: string; label: string; sessions: number; users: number; organic: number; revenue: number; purchases: number; convRate: number }

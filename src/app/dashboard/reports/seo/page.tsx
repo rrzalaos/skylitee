@@ -6,7 +6,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV } from "@/lib/export";
 import { exportElementToPDF } from "@/lib/export-visual";
 import { PrintableSEO } from "./PrintableSEO";
-import type { GSCData, GA4Data, MonthlyMonth } from "./types";
+import type { GSCData, GA4Data, MonthlyMonth, GA4MonthlyMonth } from "./types";
 import { Donut, Gauge } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, TrendingUp, MousePointerClick, Eye, Users, IndianRupee, Filter } from "lucide-react";
@@ -61,6 +61,7 @@ export default function SEOReportPage() {
   const [data, setData] = useState<GSCData | null>(null);
   const [ga4, setGa4] = useState<GA4Data | null>(null);
   const [monthly, setMonthly] = useState<MonthlyMonth[]>([]);
+  const [ga4Monthly, setGa4Monthly] = useState<GA4MonthlyMonth[]>([]);
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const generatedAt = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -72,11 +73,13 @@ export default function SEOReportPage() {
       fetch(`/api/gsc?from=${range.from}&to=${range.to}`).then(r => r.json()).catch(() => ({ error: "fetch" })),
       fetch(`/api/ga4?organic=1&from=${range.from}&to=${range.to}`).then(r => r.json()).catch(() => null),
       fetch(`/api/gsc/monthly?months=6`).then(r => r.json()).catch(() => null),
-    ]).then(([gsc, ga, mo]) => {
+      fetch(`/api/ga4/monthly?months=6`).then(r => r.json()).catch(() => null),
+    ]).then(([gsc, ga, mo, gaMo]) => {
       if (gsc?.error === "not_connected") { setNotConnected(true); return; }
       if (gsc && !gsc.error) setData(gsc);
       if (ga && !ga.error) setGa4(ga);
       if (mo && !mo.error && Array.isArray(mo.months)) setMonthly(mo.months);
+      if (gaMo && !gaMo.error && Array.isArray(gaMo.months)) setGa4Monthly(gaMo.months);
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
 
@@ -446,7 +449,7 @@ export default function SEOReportPage() {
 
     {/* Off-screen, PDF-optimized layout — captured for the PDF export (bigger fonts, color, dense). */}
     <div ref={printRef} aria-hidden style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
-      <PrintableSEO data={data} ga4={ga4} monthly={monthly} site={data.site} rangeLabel={range.label} generatedAt={generatedAt} />
+      <PrintableSEO data={data} ga4={ga4} monthly={monthly} ga4Monthly={ga4Monthly} site={data.site} rangeLabel={range.label} generatedAt={generatedAt} />
     </div>
     </>
   );
