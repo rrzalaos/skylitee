@@ -9,6 +9,18 @@ import { ShoppingCart, Share2, Megaphone, TrendingUp, Package, MapPin } from "lu
 import Link from "next/link";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF, ExportSection } from "@/lib/export";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+
+interface SalesMonthRow { ym: string; label: string; revenue: number; orders: number; aov: number; newCustomers: number; returningCustomers: number; codOrders: number; codPct: number; prepaidRevenue: number }
+const SALES_MONTHLY_KPIS: { key: keyof SalesMonthRow; label: string; fmt: (v: number) => string; higher: boolean }[] = [
+  { key: "revenue", label: "Revenue", fmt: v => formatINR(v), higher: true },
+  { key: "orders", label: "Orders", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "aov", label: "AOV", fmt: v => formatINR(v), higher: true },
+  { key: "newCustomers", label: "New Customers", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "returningCustomers", label: "Returning Customers", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "prepaidRevenue", label: "Prepaid Revenue (cash)", fmt: v => formatINR(v), higher: true },
+  { key: "codPct", label: "COD %", fmt: v => `${v}%`, higher: false },
+];
 
 /* ─── Types ───────────────────────────────────────────────────── */
 interface SalesData {
@@ -33,6 +45,9 @@ export default function SalesPage() {
   const [metaConnected, setMetaConnected] = useState(false);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [months, setMonths] = useState(6);
+  const [monthly, setMonthly] = useState<SalesMonthRow[] | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +61,15 @@ export default function SalesPage() {
       if (gRes.status === "fulfilled" && !gRes.value?.error) { setGa4(gRes.value.kpis ?? null); setGa4Connected(true); }
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  // Month-wise store performance (independent of the global range).
+  useEffect(() => {
+    setMonthlyLoading(true);
+    fetch(`/api/shopify/monthly?months=${months}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setMonthly(d.months ?? []); })
+      .finally(() => setMonthlyLoading(false));
+  }, [months]);
 
   /* ── Derived ── */
   const codPct = sales ? Math.round((sales.kpis.codOrders / Math.max(sales.kpis.totalOrders, 1)) * 100) : 0;
@@ -544,6 +568,78 @@ export default function SalesPage() {
             </tbody>
           </table>
         </div>
+      </Card>
+
+      {/* ── Month-wise store performance ── */}
+      <Card>
+        <CardHeader
+          title="Month-wise performance"
+          right={
+            <div className="flex items-center gap-1.5 text-[14px]">
+              <span className="text-[#A1A1AA]">Last</span>
+              <select value={months} onChange={e => setMonths(parseInt(e.target.value, 10))}
+                className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2 py-1 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n} month{n > 1 ? "s" : ""}</option>)}
+              </select>
+            </div>
+          }
+        />
+        {monthlyLoading ? (
+          <div className="text-[15px] text-[#71717A] py-10 text-center">Loading month-wise data…</div>
+        ) : !monthly || monthly.length === 0 ? (
+          <div className="text-[15px] text-[#71717A] py-10 text-center">No monthly data yet.</div>
+        ) : (
+          <>
+            {monthly.length > 1 && (
+              <div className="h-56 mb-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthly.map(m => ({ label: m.label, Revenue: m.revenue, Orders: m.orders }))} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.5} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="l" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ fontSize: 13, borderRadius: 12, border: "1px solid #E5E5E5" }} />
+                    <Line yAxisId="l" type="monotone" dataKey="Revenue" stroke="#F97316" strokeWidth={2.5} dot={false} />
+                    <Line yAxisId="r" type="monotone" dataKey="Orders" stroke="#3B82F6" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[14px] border-collapse min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-black/[0.08]">
+                    <th className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider sticky left-0 bg-white">KPI</th>
+                    {monthly.map(m => <th key={m.ym} className="text-right py-2 px-3 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{m.label}</th>)}
+                    {monthly.length > 1 && <th className="text-right py-2 px-3 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">MoM</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {SALES_MONTHLY_KPIS.map(row => {
+                    const last = monthly[monthly.length - 1];
+                    const prev = monthly[monthly.length - 2];
+                    const cv = last[row.key] as number;
+                    const pv = prev ? (prev[row.key] as number) : undefined;
+                    const mom = pv && pv !== 0 ? ((cv - pv) / pv) * 100 : null;
+                    const good = mom === null ? null : (row.higher ? mom >= 0 : mom <= 0);
+                    return (
+                      <tr key={row.key} className="border-b border-black/[0.04] last:border-0 hover:bg-[#f7f7f5]">
+                        <td className="py-2 px-2 font-semibold text-[#181816] sticky left-0 bg-white">{row.label}</td>
+                        {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums">{row.fmt(m[row.key] as number)}</td>)}
+                        {monthly.length > 1 && (
+                          <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+                            {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[13px] text-[#A1A1AA] mt-2">MoM = latest month ({monthly[monthly.length - 1]?.label}) vs previous. Green = better (COD% is lower-is-better). The current month is partial until it ends.</p>
+          </>
+        )}
       </Card>
 
     </div>
