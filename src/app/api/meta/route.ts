@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
-import { resolveMetaAccount } from "@/lib/meta";
+import { resolveMetaAccount, leadCount, leadBreakdown } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -40,32 +40,9 @@ function actInt(arr: ActionEntry[] | undefined, type: string): number {
 function sumArr(arr: ActionEntry[] | undefined): number {
   return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
-// A "lead" under Meta's OUTCOME_LEADS objective is whatever result the campaign was
-// optimized for — and that varies a lot: instant-form leads, website-pixel leads, OR
-// messaging conversations (WhatsApp / Messenger / IG DM), calls, or registrations.
-// Hardcoding form-only action types misses messaging campaigns entirely (they report
-// 0 form leads). So we scan for any result-type action by name pattern and take the
-// largest single value — the campaign's headline "result" — instead of summing
-// (which would double-count grouped vs individual variants of the same action).
-const LEAD_ACTION_PATTERNS = [
-  "lead",                            // lead, leadgen_grouped, onsite_conversion.lead_grouped, *fb_pixel_lead, onsite_conversion.lead
-  "messaging_conversation_started",  // WhatsApp / Messenger / IG conversation leads
-  "total_messaging_connection",
-  "messaging_first_reply",
-  "complete_registration",           // sign-up leads
-  "click_to_call",                   // call leads
-];
-function leadCount(arr: ActionEntry[] | undefined): number {
-  if (!arr) return 0;
-  let max = 0;
-  for (const a of arr) {
-    const t = a.action_type.toLowerCase();
-    if (LEAD_ACTION_PATTERNS.some(p => t.includes(p))) {
-      max = Math.max(max, Math.round(parseFloat(a.value) || 0));
-    }
-  }
-  return max;
-}
+// leadCount / leadBreakdown live in @/lib/meta so every Meta route counts leads the same
+// way and matches Ads Manager's "Results" (first result-event in priority order, not the
+// max of all lead-ish events — which over-counts when a website Lead pixel fires loosely).
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
@@ -82,7 +59,7 @@ export async function GET(req: NextRequest) {
   // ?debug=1 returns the raw action types Meta sent (and bypasses cache) so we can map
   // the right "result" action for each objective when a count looks wrong (e.g. leads = 0).
   const debug = req.nextUrl.searchParams.get("debug") === "1";
-  const cacheKey = `cache:${shop}:meta:${from}:${to}`;
+  const cacheKey = `cache:${shop}:meta:v2:${from}:${to}`;
   if (!debug) { try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ } }
 
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
@@ -246,11 +223,15 @@ export async function GET(req: NextRequest) {
     daily,
     ...(debug ? {
       _debug: {
-        overviewActions: (o?.actions ?? []).map(a => ({ type: a.action_type, value: a.value })),
+        note: "leads = what we now report (Ads Manager 'Results'). leadBreakdown lists every lead-ish event; chosen=true is the one we counted.",
+        overview: { leads: leadCount(o?.actions), leadBreakdown: leadBreakdown(o?.actions) },
         campaigns: (campaignInsightsData.data ?? []).map(c => ({
           name: c.campaign_name,
           objective: statusMap.get(c.campaign_id ?? "")?.objective ?? "",
-          actions: (c.actions ?? []).map(a => ({ type: a.action_type, value: a.value })),
+          spend: c.spend,
+          leads: leadCount(c.actions),
+          leadBreakdown: leadBreakdown(c.actions),
+          allActions: (c.actions ?? []).map(a => ({ type: a.action_type, value: a.value })),
         })),
       },
     } : {}),

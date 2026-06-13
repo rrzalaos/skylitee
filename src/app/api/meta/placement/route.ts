@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
-import { resolveMetaAccount } from "@/lib/meta";
+import { resolveMetaAccount, leadCount } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -44,19 +44,7 @@ function actVal(arr: ActionEntry[] | undefined, type: string): number {
   return parseFloat(arr?.find(a => a.action_type === type)?.value ?? "0");
 }
 
-// Lead = whatever result a leads campaign was optimized for (instant form, website pixel,
-// messaging/WhatsApp/IG DM, call, registration). Mirrors /api/meta — scan by name pattern
-// and take the largest single value rather than summing grouped+individual variants.
-const LEAD_ACTION_PATTERNS = ["lead", "messaging_conversation_started", "total_messaging_connection", "messaging_first_reply", "complete_registration", "click_to_call"];
-function leadCount(arr: ActionEntry[] | undefined): number {
-  if (!arr) return 0;
-  let max = 0;
-  for (const a of arr) {
-    const t = a.action_type.toLowerCase();
-    if (LEAD_ACTION_PATTERNS.some(p => t.includes(p))) max = Math.max(max, Math.round(parseFloat(a.value) || 0));
-  }
-  return max;
-}
+// leadCount shared from @/lib/meta — matches Ads Manager "Results" (priority, not max).
 
 function friendlyLabel(platform: string, position: string): string {
   const p = platform.toLowerCase();
@@ -180,7 +168,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:meta:placement:${from}:${to}`;
+  const cacheKey = `cache:${shop}:meta:placement:v2:${from}:${to}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));

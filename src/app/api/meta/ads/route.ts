@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
-import { resolveMetaAccount } from "@/lib/meta";
+import { resolveMetaAccount, leadCount } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -104,18 +104,8 @@ function sumArr(arr: ActionEntry[] | undefined): number {
   return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
 
-// Lead = whatever result a leads campaign was optimized for (form, website pixel,
-// messaging/WhatsApp/IG DM, call, registration). Mirrors /api/meta + /placement.
-const LEAD_ACTION_PATTERNS = ["lead", "messaging_conversation_started", "total_messaging_connection", "messaging_first_reply", "complete_registration", "click_to_call"];
-function leadCount(arr: ActionEntry[] | undefined): number {
-  if (!arr) return 0;
-  let max = 0;
-  for (const a of arr) {
-    const t = a.action_type.toLowerCase();
-    if (LEAD_ACTION_PATTERNS.some(p => t.includes(p))) max = Math.max(max, Math.round(parseFloat(a.value) || 0));
-  }
-  return max;
-}
+// leadCount is shared from @/lib/meta so ads, drill-down, placement & overview all match
+// Ads Manager's "Results" (first result-event in priority order, not the over-counting max).
 
 export type Objective = "SALES" | "TRAFFIC" | "AWARENESS" | "ENGAGEMENT" | "LEADS" | "APP" | "OTHER";
 // Map Meta's raw objective (OUTCOME_SALES / LEAD_GENERATION / …) to our normalized buckets.
