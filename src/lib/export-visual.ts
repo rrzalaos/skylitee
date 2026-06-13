@@ -73,14 +73,38 @@ export async function exportElementToPDF(
     doc.text(brandName, margin, pageH - 3);
   }
 
-  const totalPages = Math.max(1, Math.ceil(canvas.height / pageContentPx));
+  // Page-break-aware slicing: snap each page's bottom to a gap BETWEEN top-level blocks so
+  // no card/title/table row is cut across pages. Falls back to a hard cut if a single block
+  // is taller than a page.
+  const ranges: [number, number][] = [];
+  const root = (el.querySelector("[data-pdf-root]") as HTMLElement) || el;
+  const elRect = el.getBoundingClientRect();
+  const ratio = elRect.height > 0 ? canvas.height / elRect.height : 2;
+  const cutYs = Array.from(root.children).map(c => (c.getBoundingClientRect().bottom - elRect.top) * ratio);
 
-  for (let page = 0; page < totalPages; page++) {
+  let startY = 0;
+  let guard = 0;
+  while (startY < canvas.height - 1 && guard++ < 200) {
+    const limit = startY + pageContentPx;
+    let endY: number;
+    if (limit >= canvas.height) {
+      endY = canvas.height;
+    } else {
+      // last block boundary that fits within this page
+      let best = -1;
+      for (const c of cutYs) if (c > startY + 20 && c <= limit) best = Math.max(best, c);
+      endY = best > 0 ? best : limit; // no boundary fits → block taller than a page, hard cut
+    }
+    endY = Math.min(Math.round(endY), canvas.height);
+    if (endY <= startY) endY = Math.min(startY + pageContentPx, canvas.height);
+    ranges.push([startY, endY]);
+    startY = endY;
+  }
+  const totalPages = ranges.length || 1;
+
+  ranges.forEach(([sY, eY], page) => {
     if (page > 0) doc.addPage();
-    const srcY = page * pageContentPx;
-    const sliceH = Math.min(pageContentPx, canvas.height - srcY);
-
-    // Cut this page's slice into its own canvas, then place it below the header.
+    const sliceH = eY - sY;
     const slice = document.createElement("canvas");
     slice.width = canvas.width;
     slice.height = sliceH;
@@ -88,12 +112,12 @@ export async function exportElementToPDF(
     if (ctx) {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, slice.width, slice.height);
-      ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      ctx.drawImage(canvas, 0, sY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
     }
     const sliceImg = slice.toDataURL("image/jpeg", 0.92);
     doc.addImage(sliceImg, "JPEG", margin, topGap, imgW, sliceH * mmPerPx);
     drawHeader(page + 1, totalPages);
-  }
+  });
 
   doc.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
 }

@@ -16,9 +16,9 @@ function Section({ title, color, icon, right, children, span = 2 }: { title: str
       <div className="flex items-center justify-between px-5 py-3" style={{ background: `${color}14` }}>
         <div className="flex items-center gap-2.5">
           <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: color }}>{icon}</span>
-          <h2 className="text-[19px] font-extrabold text-[#18181B]">{title}</h2>
+          <h2 className="text-[18px] font-extrabold text-[#18181B]">{title}</h2>
         </div>
-        {right && <span className="text-[14px] font-semibold text-[#71717A]">{right}</span>}
+        {right && <span className="text-[13px] font-semibold text-[#71717A]">{right}</span>}
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -29,8 +29,8 @@ function PoleBar({ label, value, pct, color, sub }: { label: string; value: stri
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <span className="text-[16px] font-semibold text-[#27272A]">{label}</span>
-        <span className="text-[16px] font-extrabold text-[#18181B] tabular-nums">{value}{sub && <span className="text-[13px] font-medium text-[#A1A1AA] ml-1.5">{sub}</span>}</span>
+        <span className="text-[15px] font-semibold text-[#27272A]">{label}</span>
+        <span className="text-[15px] font-extrabold text-[#18181B] tabular-nums">{value}{sub && <span className="text-[12px] font-medium text-[#A1A1AA] ml-1.5">{sub}</span>}</span>
       </div>
       <div className="h-3.5 rounded-full bg-[#F1F1F0] overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${Math.max(2, Math.min(100, pct))}%`, background: color }} />
@@ -49,15 +49,15 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn" | "bad"
     <div className="flex items-start gap-3 rounded-xl border p-3.5" style={{ background: s.bg, borderColor: s.bd }}>
       <div className="mt-0.5 shrink-0">{s.ic}</div>
       <div>
-        <div className="text-[16px] font-bold" style={{ color: s.tx }}>{metric}: {value}</div>
-        <div className="text-[15px] text-[#52525B] mt-0.5 leading-snug">{detail}</div>
+        <div className="text-[15px] font-bold" style={{ color: s.tx }}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] mt-0.5 leading-snug">{detail}</div>
       </div>
     </div>
   );
 }
 
-const th = "text-left py-2 px-2.5 text-[13px] font-bold text-white uppercase tracking-wide";
-const td = "py-2 px-2.5 text-[15px]";
+const th = "text-left py-2 px-2.5 text-[12px] font-bold text-white uppercase tracking-wide";
+const td = "py-2 px-2.5 text-[14px]";
 
 export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt }: {
   data: GSCData; ga4: GA4Data | null; monthly: MonthlyMonth[]; site: string; rangeLabel: string; generatedAt: string;
@@ -124,25 +124,25 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
 
   return (
     <div style={{ width: 820, background: "#FFFFFF" }} className="text-[#18181B]">
-      <div className="p-7 space-y-4">
+      <div data-pdf-root className="p-7 space-y-4">
         {/* Hero */}
         <div className="rounded-2xl px-6 py-5 flex items-center justify-between" style={{ background: "linear-gradient(135deg,#4285F4,#1E5FD0)" }}>
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center"><Search size={22} className="text-white" /></span>
             <div>
-              <h1 className="text-[26px] font-black text-white leading-tight">SEO Performance Report</h1>
-              <p className="text-[15px] text-white/85">{site} · {rangeLabel} · Search Console + Analytics</p>
+              <h1 className="text-[25px] font-black text-white leading-tight">SEO Performance Report</h1>
+              <p className="text-[14px] text-white/85">{site} · {rangeLabel} · Search Console + Analytics</p>
             </div>
           </div>
-          <div className="text-right text-white/85 text-[13px]">Generated<br /><span className="text-[15px] font-semibold text-white">{generatedAt}</span></div>
+          <div className="text-right text-white/85 text-[12px]">Generated<br /><span className="text-[14px] font-semibold text-white">{generatedAt}</span></div>
         </div>
 
         {/* KPI cards */}
         <div className="grid grid-cols-4 gap-3">
           {kpis.map(it => (
             <div key={it.label} className="rounded-2xl p-4 border border-black/[0.06]" style={{ background: `${it.color}10` }}>
-              <div className="flex items-center gap-1.5 mb-2" style={{ color: it.color }}>{it.icon}<span className="text-[13px] font-bold uppercase tracking-wide">{it.label}</span></div>
-              <div className="text-[28px] font-black leading-none">{it.value}</div>
+              <div className="flex items-center gap-1.5 mb-2" style={{ color: it.color }}>{it.icon}<span className="text-[12px] font-bold uppercase tracking-wide">{it.label}</span></div>
+              <div className="text-[27px] font-black leading-none">{it.value}</div>
             </div>
           ))}
         </div>
@@ -152,10 +152,10 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
           {[
             { title: "Click-through Rate", right: "target 2%", node: <Gauge value={ctrGaugeVal} color={ctrGood ? "#22C55E" : k.ctr >= 1 ? "#EAB308" : "#EF4444"} centerValue={`${k.ctr}%`} centerLabel={ctrGood ? "above target" : "below target"} size={150} /> },
             { title: "Avg Position", right: "page 1 = ≤10", node: <Gauge value={posGaugeVal} color={posGood ? "#22C55E" : posWarn ? "#EAB308" : "#EF4444"} centerValue={k.avgPosition.toFixed(1)} centerLabel={posGood ? "page 1" : posWarn ? "page 2" : "beyond p2"} size={150} /> },
-            { title: "Organic Engagement", right: "target 55%", node: org ? <Gauge value={org.engagementRate} color={org.engagementRate >= 55 ? "#22C55E" : org.engagementRate >= 40 ? "#EAB308" : "#EF4444"} centerValue={`${org.engagementRate}%`} centerLabel="engaged" size={150} /> : <div className="text-[14px] text-[#A1A1AA] text-center py-8">Connect GA4</div> },
+            { title: "Organic Engagement", right: "target 55%", node: org ? <Gauge value={org.engagementRate} color={org.engagementRate >= 55 ? "#22C55E" : org.engagementRate >= 40 ? "#EAB308" : "#EF4444"} centerValue={`${org.engagementRate}%`} centerLabel="engaged" size={150} /> : <div className="text-[13px] text-[#A1A1AA] text-center py-8">Connect GA4</div> },
           ].map(g => (
             <div key={g.title} className="rounded-2xl border border-black/[0.07] bg-white p-4">
-              <div className="flex items-center justify-between mb-1"><span className="text-[15px] font-bold text-[#27272A]">{g.title}</span><span className="text-[12px] text-[#A1A1AA]">{g.right}</span></div>
+              <div className="flex items-center justify-between mb-1"><span className="text-[14px] font-bold text-[#27272A]">{g.title}</span><span className="text-[11px] text-[#A1A1AA]">{g.right}</span></div>
               {g.node}
             </div>
           ))}
@@ -167,8 +167,8 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
             {funnel.map(f => <PoleBar key={f.label} label={f.label} value={num(f.value)} sub={f.sub} pct={(f.value / impr) * 100} color={f.color} />)}
             {org && (
               <div className="flex items-center justify-between rounded-xl border-2 px-5 py-3.5 mt-1" style={{ borderColor: "#86EFAC", background: "#F0FDF4" }}>
-                <span className="text-[17px] font-extrabold text-[#166534]">Organic Revenue</span>
-                <span className="text-[22px] font-black text-[#166534]">{inr(org.revenue)} <span className="text-[14px] font-medium text-[#16A34A]">· {inr(org.revenue / Math.max(org.purchases, 1))} AOV</span></span>
+                <span className="text-[16px] font-extrabold text-[#166534]">Organic Revenue</span>
+                <span className="text-[21px] font-black text-[#166534]">{inr(org.revenue)} <span className="text-[13px] font-medium text-[#16A34A]">· {inr(org.revenue / Math.max(org.purchases, 1))} AOV</span></span>
               </div>
             )}
           </div>
@@ -189,7 +189,7 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
                   <Line yAxisId="r" type="monotone" dataKey="Impressions" stroke="#F97316" strokeWidth={2.5} dot={false} strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
-            ) : <div className="text-[14px] text-[#A1A1AA] py-14 text-center">Not enough history yet.</div>}
+            ) : <div className="text-[13px] text-[#A1A1AA] py-14 text-center">Not enough history yet.</div>}
           </Section>
           <Section title="Branded vs Non-branded" color="#EC4899" icon={<Target size={16} />} right={b.brandLabel ? `brand: ${b.brandLabel}` : undefined} span={1}>
             <Donut
@@ -201,7 +201,7 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
               centerLabel="non-branded"
               size={150}
             />
-            <p className="text-[14px] text-[#71717A] mt-3 leading-snug">Non-branded clicks are <strong>new customers discovering you</strong>; branded clicks are people already searching your name.</p>
+            <p className="text-[13px] text-[#71717A] mt-3 leading-snug">Non-branded clicks are <strong>new customers discovering you</strong>; branded clicks are people already searching your name.</p>
           </Section>
         </div>
 
@@ -211,7 +211,7 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
             <div className="space-y-2.5">{workingSignals.map((s, i) => <Signal key={i} type="good" {...s} />)}</div>
           </Section>
           <Section title="Needs Attention" color="#F59E0B" icon={<AlertTriangle size={16} />} span={1}>
-            <div className="space-y-2.5">{attentionSignals.length ? attentionSignals.map((s, i) => <Signal key={i} {...s} />) : <p className="text-[15px] text-[#A1A1AA]">No major issues detected.</p>}</div>
+            <div className="space-y-2.5">{attentionSignals.length ? attentionSignals.map((s, i) => <Signal key={i} {...s} />) : <p className="text-[14px] text-[#A1A1AA]">No major issues detected.</p>}</div>
           </Section>
         </div>
 
@@ -230,7 +230,7 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
         {/* CTR Opportunities */}
         {opportunities.length > 0 && (
           <Section title="CTR Opportunities" color="#EAB308" icon={<Target size={16} />} right="high impressions · low CTR">
-            <p className="text-[14px] text-[#71717A] mb-3">Keywords where you&apos;re visible but under-clicked. Rewriting titles/meta to a 3% CTR could win the extra clicks shown.</p>
+            <p className="text-[13px] text-[#71717A] mb-3">Keywords where you&apos;re visible but under-clicked. Rewriting titles/meta to a 3% CTR could win the extra clicks shown.</p>
             <table className="w-full">
               <thead><tr style={{ background: "#EAB308" }}>{["Keyword", "Impressions", "CTR", "Position", "Potential +clicks"].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
               <tbody>
@@ -259,7 +259,7 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
                   <td className={`${td} font-bold text-[#4285F4]`}>{kw.clicks}</td>
                   <td className={`${td} text-[#71717A]`}>{num(kw.impressions)}</td>
                   <td className={`${td} font-bold`} style={{ color: kw.ctr >= 2 ? "#16A34A" : kw.ctr >= 1 ? "#CA8A04" : "#DC2626" }}>{kw.ctr}%</td>
-                  <td className={td}><span className="px-2.5 py-0.5 rounded-full text-[13px] font-bold" style={{ background: kw.position <= 10 ? "#F0FDF4" : kw.position <= 20 ? "#FFFBEB" : "#F5F5F4", color: kw.position <= 10 ? "#166534" : kw.position <= 20 ? "#92400E" : "#71717A" }}>{kw.position.toFixed(1)}</span></td>
+                  <td className={td}><span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold" style={{ background: kw.position <= 10 ? "#F0FDF4" : kw.position <= 20 ? "#FFFBEB" : "#F5F5F4", color: kw.position <= 10 ? "#166534" : kw.position <= 20 ? "#92400E" : "#71717A" }}>{kw.position.toFixed(1)}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -308,16 +308,16 @@ export function PrintableSEO({ data, ga4, monthly, site, rangeLabel, generatedAt
                   { label: "Conv. rate", value: org.sessions > 0 ? `${((org.purchases / org.sessions) * 100).toFixed(2)}%` : "—", color: "#EC4899" },
                 ].map(s => (
                   <div key={s.label} className="rounded-xl bg-[#FAFAF9] p-3.5">
-                    <div className="text-[14px] text-[#A1A1AA] mb-1">{s.label}</div>
-                    <div className="text-[22px] font-black" style={{ color: s.color }}>{s.value}</div>
+                    <div className="text-[13px] text-[#A1A1AA] mb-1">{s.label}</div>
+                    <div className="text-[21px] font-black" style={{ color: s.color }}>{s.value}</div>
                   </div>
                 ))}
               </div>
-            ) : <div className="text-[15px] text-[#A1A1AA] text-center py-10">Connect Google Analytics to see what organic visitors do after they click.</div>}
+            ) : <div className="text-[14px] text-[#A1A1AA] text-center py-10">Connect Google Analytics to see what organic visitors do after they click.</div>}
           </Section>
         </div>
 
-        <p className="text-[13px] text-[#A1A1AA] text-center pt-1">Search Console reflects Google Search (≈3-day lag, Pacific Time). Analytics organic = Organic Search channel only. Branded split inferred from the &quot;{b.brandLabel}&quot; domain term.</p>
+        <p className="text-[12px] text-[#A1A1AA] text-center pt-1">Search Console reflects Google Search (≈3-day lag, Pacific Time). Analytics organic = Organic Search channel only. Branded split inferred from the &quot;{b.brandLabel}&quot; domain term.</p>
       </div>
     </div>
   );
