@@ -49,6 +49,10 @@ Each tool shows only its own slice of the truth. You never see the full picture.
 | Attribution across paid + organic | ✗ | ✓ |
 | COD analytics (cash-on-delivery) | ✗ | ✓ |
 | Avg LTV, repeat rate, customer intelligence | ✗ | ✓ |
+| **Objective-aware ad scoring** (judges each campaign on its own goal) | ✗ | ✓ |
+| **AI Creative Studio** (0–100 scoring, fatigue detection, ad-copy preview) | ✗ | ✓ |
+| **Placement intelligence** (age / gender / time / device winners) | ✗ | ✓ |
+| **Tells you what's working AND what to fix** (not just numbers) | ✗ | ✓ |
 | Setup in under 10 minutes | ✗ | ✓ |
 | No data analyst required | ✗ | ✓ |
 
@@ -71,14 +75,35 @@ Your store's heartbeat, fully visible:
 - Inventory levels and low-stock alerts
 - Customer intelligence: LTV, repeat rate, new vs returning
 
-#### 📣 Meta Ads Intelligence
-Stop guessing if your ads are working:
+#### 📣 Meta Ads Intelligence — A Full Suite, Not One Screen
+Most tools show you a wall of ad numbers and leave you to figure out what they mean. Skylitee turns Meta data into clear answers across **four dedicated modules**:
+
+**1. Meta Campaigns — objective-aware performance**
 - Live spend, ROAS, CPM, CPC, CTR across all campaigns
-- Campaign-level and ad-set-level performance breakdown
+- **Every campaign is judged on the KPI it was actually optimized for** — Awareness on CPM, Traffic on Cost-per-Visit, Sales on ROAS, Leads on Cost-per-Lead. No more judging a brand-awareness campaign by ROAS it was never meant to deliver.
+- Per-objective scorecards: see at a glance whether each goal is hitting its benchmark
+- **Drill down Campaign → Ad Set → Ad → Creative** with creative previews and the full ad copy
+- **Per-ad "fixes to improve"** — every underperforming ad gets specific, actionable advice (weak hook, high CPM, fatigue, slow landing page)
+- Lead detection that catches form leads *and* WhatsApp / Messenger / Instagram DM conversations — not just website forms
 - 7-day / 28-day / custom date range comparison
-- Budget pacing: are you on track or overspending?
-- Audience reach and frequency alerts
 - Revenue attribution from Meta directly to Shopify orders
+
+**2. Ads Placement Intelligence — where your money actually works**
+- Performance broken down by **Placement, Age, Gender, Time of Day, and Device**
+- Each tab leads with a plain-English **"winner" headline** — which platform / age group / gender / hour / device drives the most orders (or leads) and the most spend
+- "What's Working & What's Not" cards: your best surface to scale, and the budget drains to cut
+- Spots the costly mismatch where you spend the most where you convert the least
+
+**3. Creative Studio — AI creative scoring & fatigue detection**
+- Every ad creative scored **0–100**, judged on its own objective (not always ROAS)
+- Clear **Scale / Keep / Refresh / Pause** signal for each creative
+- **Creative fatigue detection** via frequency — know when an ad has been seen too often before it kills your CPM
+- See the **real creative** — full image, swipeable carousel, or video — plus the **complete ad copy** (primary text, headline, CTA) in a one-click preview
+- Automatically detects format: Image, Carousel, or Video
+
+**4. Time Intelligence — when to run your ads**
+- Best-performing hours of the day and days of the week
+- Spend and conversion patterns by time, so you schedule budget when buyers are actually active
 
 #### 🔍 Google Search Console
 Know exactly how people find you:
@@ -117,6 +142,35 @@ One-screen health check for your entire business:
 - Combined KPI grid: revenue, ad spend, clicks, sessions, rankings
 - Quick anomaly detection across all platforms
 - Instant daily briefing view
+
+#### 🚨 Anomaly Feed & AI Insights
+Skylitee watches your data so you don't have to:
+- **Anomaly Feed** flags unusual changes the moment they happen — a CPM spike, a revenue dip, an organic traffic drop — across every connected platform
+- **AI Insights** surfaces prioritized observations and opportunities automatically, so you open the app to a ready-made to-do list, not a blank dashboard
+
+#### 👥 Customer Intelligence — Intel, Cohorts & Geo
+Go beyond "how many orders" to "who, where, and how loyal":
+- **Customer Intel:** LTV, repeat rate, new vs returning, COD vs prepaid behavior
+- **Cohort Analysis:** track how each month's new customers retain and re-purchase over time
+- **Geo Performance:** see which cities / states drive revenue, AOV, and COD risk
+
+#### 🎯 Monthly Goals & Weekly Digest
+Stay on target without manual tracking:
+- **Monthly Goals:** set a revenue target and track daily run-rate vs pace — know if you're ahead or behind in real time
+- **Weekly Digest:** an automatic week-in-review of what moved across store, ads, and traffic
+
+#### 💰 Financial P&L & Benchmarking
+The numbers that decide whether you're actually profitable:
+- **Financial P&L:** revenue, ad spend, and margins pulled into a single profit view — not just top-line revenue
+- **Benchmarking:** your key metrics compared against industry standards, with clear green/red flags so you know where you lead and where you lag
+
+#### 🟢 Built-In Benchmark Coaching
+Skylitee doesn't just show a number — it tells you whether it's **good or bad and why.** Every key metric is flagged **green** (what's working, and why to keep doing it) or **red** (what's below benchmark, and exactly how to fix it). It turns analytics into coaching for owners who aren't data analysts.
+
+#### 🔍📊 Google Ads, Search Console & GA4 + Report Suite
+- **Google Ads** performance alongside Meta, for a true paid-channel comparison
+- **Search Console** and **GA4** for the full organic + traffic picture
+- A complete **Reports suite** — SEO, Performance Marketing, Meta Ads, Traffic, Financial P&L, and AI Insights — each exportable to **CSV or PDF** for clients and stakeholders
 
 ### Technical Architecture
 
@@ -236,8 +290,14 @@ Indian D2C brands lose 5–15% of revenue to COD returns and cancellations. Skyl
 #### 📈 Lever 5: Traffic Source Intelligence
 GA4 sessions by channel reveal which sources send your highest-quality visitors. When you know that organic Google sends 3x more converted sessions than paid social, you invest in SEO — and when paid is outperforming organic, you scale ads. **Without this data, most brands spray budget evenly across channels.**
 
-#### 📈 Lever 6: AI-Powered Action Items
-Skylitee AI doesn't just summarize your data — it suggests specific actions. Ask it "what should I focus on this week?" and it responds with specific, numbered priorities based on your real numbers. **This turns every dashboard session into an actionable growth sprint.**
+#### 📈 Lever 6: Kill Creative Fatigue Before It Drains Budget
+Creative Studio scores every ad 0–100 and flags fatigue via frequency — so you refresh a tiring ad before its CPM climbs and ROAS slides. **Catching one fatigued creative a week and refreshing it instead of letting it run protects a meaningful slice of monthly ad spend from being wasted on an audience that's stopped responding.**
+
+#### 📈 Lever 7: Put Budget Where It Actually Converts
+Placement Intelligence shows the exact age, gender, time of day, device, and placement that drive your orders — and the ones quietly burning budget. **Shifting spend from the losing segments to the winning ones lifts blended ROAS without spending a rupee more.**
+
+#### 📈 Lever 8: AI-Powered Action Items
+Skylitee AI doesn't just summarize your data — it suggests specific actions. Ask it "what should I focus on this week?" and it responds with specific, numbered priorities based on your real numbers. Combined with per-ad "fixes to improve" and green/red benchmark flags, **every dashboard session becomes an actionable growth sprint.**
 
 ---
 
@@ -300,7 +360,9 @@ This is not generic advice from a chatbot trained on the internet. **It is speci
 | **Meta Ads Manager** | Ad data only | No Shopify, no Google, no AI |
 | **Spreadsheets** | Manual data stitching | Takes hours, always out of date, no AI |
 
-**Skylitee's position:** The only tool that covers all four critical D2C data sources (Shopify + Meta + GSC + GA4) at an accessible price point, with an AI assistant that knows your specific store data.
+**Skylitee's position:** The only tool that covers all four critical D2C data sources (Shopify + Meta + GSC + GA4) at an accessible price point — and the only one that goes past reporting into **decision-making**: objective-aware ad scoring, AI Creative Studio with fatigue detection, placement-level winners, per-ad fixes, and green/red benchmark coaching, all with an AI assistant that knows your specific store data.
+
+> **The deeper moat:** Attribution tools (Triple Whale, Northbeam, Polar) tell you *what happened*. Skylitee tells you *what's working, what's broken, and what to do next* — at a fraction of the price, built for the way Indian D2C brands actually run ads.
 
 ---
 
@@ -356,6 +418,11 @@ For a brand doing **₹5,00,000/month (~$6,000) in Shopify revenue:**
 ### For Instagram/LinkedIn Ads
 > "5 tabs. 2 hours. Every morning. Or... one dashboard. 15 minutes. Try Skylitee free."
 
+> "Your dashboard shows ROAS. Skylitee tells you *which* creative to pause, *which* age group to scale, and *when* to run your ads. Try it free."
+
+### For Performance Marketers
+> "Stop judging every campaign by ROAS. Skylitee scores each one on the goal it was built for — Awareness on CPM, Leads on cost-per-lead, Sales on ROAS — and tells you the exact fix for every underperforming ad."
+
 ### For WhatsApp / Direct Outreach
 > "If you're running Shopify + Meta Ads, I want to show you something — a single dashboard that shows your Shopify revenue, Meta ROAS, Google rankings, and website traffic all in one place. Free for 14 days."
 
@@ -376,4 +443,4 @@ For a brand doing **₹5,00,000/month (~$6,000) in Shopify revenue:**
 
 *Skylitee — Built for D2C brands that want to grow faster with clarity, not confusion.*
 
-*Document version: May 2026 | skylitee.io*
+*Document version: June 2026 | skylitee.io*
