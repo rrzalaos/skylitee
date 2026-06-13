@@ -9,7 +9,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
 import { useDateRange } from "@/lib/date-range-context";
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip,
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,9 @@ interface MetaData {
   daily: { date: string; spend: number; impressions: number; clicks: number; purchases: number; purchaseValue: number }[];
 }
 
-type Tab = "overview" | "campaigns";
+type Tab = "overview" | "campaigns" | "monthly";
+
+interface MetaMonthRow { ym: string; label: string; spend: number; impressions: number; clicks: number; ctr: number; cpm: number; purchases: number; purchaseValue: number; roas: number; cac: number; leads: number; cpl: number }
 type ObjFilter = "ALL" | "SALES" | "TRAFFIC" | "AWARENESS" | "ENGAGEMENT" | "LEADS" | "APP" | "OTHER";
 
 function normalizeObj(raw: string): ObjFilter {
@@ -894,6 +896,9 @@ export default function MetaPage() {
   const [drillRows, setDrillRows] = useState<(AdSetRow | AdRow)[]>([]);
   const [drillLoading, setDrillLoading] = useState(false);
   const [drillError, setDrillError] = useState<string | null>(null);
+  const [months, setMonths] = useState(6);
+  const [monthly, setMonthly] = useState<MetaMonthRow[] | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -907,6 +912,16 @@ export default function MetaPage() {
       })
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  // Month-wise — lazy load on tab open / window change.
+  useEffect(() => {
+    if (tab !== "monthly") return;
+    setMonthlyLoading(true);
+    fetch(`/api/meta/monthly?months=${months}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setMonthly(d.months ?? []); })
+      .finally(() => setMonthlyLoading(false));
+  }, [tab, months]);
 
   async function loadDrill(level: "adset" | "ad", parentId: string) {
     setDrillLoading(true); setDrillError(null); setDrillRows([]);
@@ -960,6 +975,21 @@ export default function MetaPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "campaigns", label: `Campaigns (${data.campaigns.length})` },
+    { key: "monthly", label: "Month-wise" },
+  ];
+
+  const META_MONTHLY_KPIS: { key: keyof MetaMonthRow; label: string; fmt: (v: number) => string; higher: boolean }[] = [
+    { key: "spend", label: "Spend", fmt: v => money(cur, v), higher: false },
+    { key: "purchaseValue", label: "Revenue", fmt: v => money(cur, v), higher: true },
+    { key: "roas", label: "ROAS", fmt: v => `${v}×`, higher: true },
+    { key: "purchases", label: "Orders", fmt: v => v.toLocaleString("en-IN"), higher: true },
+    { key: "cac", label: "CAC", fmt: v => v > 0 ? money(cur, v) : "—", higher: false },
+    { key: "leads", label: "Leads", fmt: v => v.toLocaleString("en-IN"), higher: true },
+    { key: "cpl", label: "Cost / Lead", fmt: v => v > 0 ? money(cur, v) : "—", higher: false },
+    { key: "ctr", label: "CTR", fmt: v => `${v}%`, higher: true },
+    { key: "cpm", label: "CPM", fmt: v => money(cur, v), higher: false },
+    { key: "clicks", label: "Clicks", fmt: v => v.toLocaleString("en-IN"), higher: true },
+    { key: "impressions", label: "Impressions", fmt: v => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : `${v}`, higher: true },
   ];
 
   const hasVideo = k.videoViews3s > 0 || k.thruplay > 0;
@@ -1456,6 +1486,80 @@ export default function MetaPage() {
           </Card>
         );
       })()}
+
+      {/* ── MONTH-WISE ── */}
+      {tab === "monthly" && (
+        <Card>
+          <CardHeader
+            title="Month-wise ad performance"
+            right={
+              <div className="flex items-center gap-1.5 text-[14px]">
+                <span className="text-[#A1A1AA]">Last</span>
+                <select value={months} onChange={e => setMonths(parseInt(e.target.value, 10))}
+                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2 py-1 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#1877F2]">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n} month{n > 1 ? "s" : ""}</option>)}
+                </select>
+              </div>
+            }
+          />
+          {monthlyLoading ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">Loading month-wise data…</div>
+          ) : !monthly || monthly.length === 0 ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">No monthly data for this window.</div>
+          ) : (
+            <>
+              {monthly.length > 1 && (
+                <div className="h-56 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthly.map(m => ({ label: m.label, Spend: m.spend, Revenue: m.purchaseValue }))} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.5} vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 13, borderRadius: 12, border: "1px solid #E5E5E5" }} formatter={(v) => money(cur, Number(v))} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Line type="monotone" dataKey="Spend" stroke="#94A3B8" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="Revenue" stroke="#1877F2" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-[14px] border-collapse min-w-[640px]">
+                  <thead>
+                    <tr className="border-b border-black/[0.08] dark:border-white/[0.08]">
+                      <th className="text-left py-2 px-2 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider sticky left-0 bg-white dark:bg-[#171717]">KPI</th>
+                      {monthly.map(m => <th key={m.ym} className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{m.label}</th>)}
+                      {monthly.length > 1 && <th className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider">MoM</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {META_MONTHLY_KPIS.map(row => {
+                      const last = monthly[monthly.length - 1];
+                      const prev = monthly[monthly.length - 2];
+                      const cv = last[row.key] as number;
+                      const pv = prev ? (prev[row.key] as number) : undefined;
+                      const mom = pv && pv !== 0 ? ((cv - pv) / pv) * 100 : null;
+                      const good = mom === null ? null : (row.higher ? mom >= 0 : mom <= 0);
+                      return (
+                        <tr key={row.key} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C]">
+                          <td className="py-2 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] sticky left-0 bg-white dark:bg-[#171717]">{row.label}</td>
+                          {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums dark:text-[#F4F4F5]">{row.fmt(m[row.key] as number)}</td>)}
+                          {monthly.length > 1 && (
+                            <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[13px] text-[#A1A1AA] mt-2">MoM = latest month ({monthly[monthly.length - 1]?.label}) vs previous. Green = better (spend, CAC, CPM, cost/lead are lower-is-better). The current month is partial until it ends.</p>
+            </>
+          )}
+        </Card>
+      )}
     </div>
   );
 }
