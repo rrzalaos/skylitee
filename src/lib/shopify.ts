@@ -1,4 +1,5 @@
 import { shopKv } from "@/lib/kv";
+import { startOfMonthInTz, todayInTz, zonedDayStartISO, zonedDayEndISO, dayCount } from "@/lib/timezone";
 
 // Shopify releases API versions quarterly. Update when Shopify deprecates this version.
 const API_VERSION = "2025-04";
@@ -183,6 +184,38 @@ export async function fetchOrdersInRange(
   const path = `/orders.json?status=any&created_at_min=${encodeURIComponent(fromISO)}${max}&limit=250&fields=${ORDER_FIELDS}`;
   const orders = await shopifyFetchAll<ShopifyOrder>(shop, accessToken, path, "orders", 100);
   return orders.filter(isRealOrder);
+}
+
+// The store's IANA timezone (e.g. "Asia/Kolkata"), cached. Shopify reports sales by the
+// store's local day, so we need this to build matching date-range boundaries. Falls back to
+// UTC if unavailable.
+export async function getShopTimezone(shop: string, accessToken: string): Promise<string> {
+  const cached = await shopKv.getTz(shop);
+  if (cached) return cached;
+  try {
+    const data = await shopifyFetch<{ shop?: { iana_timezone?: string } }>(shop, accessToken, "/shop.json?fields=iana_timezone");
+    const tz = data.shop?.iana_timezone || "UTC";
+    shopKv.setTz(shop, tz).catch(() => {});
+    return tz;
+  } catch { return "UTC"; }
+}
+
+// Resolve a reporting period in the STORE's timezone so created_at boundaries and the day
+// count line up with the Shopify admin. `fromParam`/`toParam` are YYYY-MM-DD (or null →
+// month-to-date). Returns absolute ISO instants for the Shopify query plus the store tz.
+export async function resolveShopifyPeriod(
+  shop: string,
+  accessToken: string,
+  fromParam: string | null,
+  toParam: string | null,
+): Promise<{ startISO: string; endISO: string; startYmd: string; endYmd: string; days: number; tz: string }> {
+  const tz = await getShopTimezone(shop, accessToken);
+  const startYmd = fromParam || startOfMonthInTz(tz);
+  const endYmd = toParam || todayInTz(tz);
+  const startISO = zonedDayStartISO(startYmd, tz);
+  // Open-ended through "now" when the period runs to today; otherwise local end-of-day.
+  const endISO = toParam ? zonedDayEndISO(toParam, tz) : new Date().toISOString();
+  return { startISO, endISO, startYmd, endYmd, days: dayCount(startYmd, endYmd), tz };
 }
 
 export interface ShopifyProduct {

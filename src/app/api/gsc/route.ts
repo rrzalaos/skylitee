@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getGoogleAccessToken } from "@/lib/google";
 import { getGscRefreshToken, getGscSite, getAuthorizedShop } from "@/lib/session";
+import { daysAgoInTz } from "@/lib/timezone";
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
@@ -23,14 +24,13 @@ export async function GET(req: NextRequest) {
     ? savedSite
     : sites[0].siteUrl;
 
-  // GSC data lags ~2-3 days. Defaulting the end date to "today" pulls in empty/partial
-  // days, so our totals read LOWER than the GSC dashboard (which shows the last stable
-  // window). Anchor the default end 3 days back. `dataState: "final"` (below) further
-  // guarantees only finalized days count, regardless of the dates requested.
-  const now = new Date();
-  const lagEnd = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const defaultEnd = lagEnd.toISOString().split("T")[0];
-  const defaultStart = new Date(lagEnd.getTime() - 27 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  // GSC data lags ~2-3 days and its day boundaries are Pacific Time. Defaulting the end to
+  // "today" pulls in empty/partial days, so totals read LOWER than the GSC dashboard. Anchor
+  // the default window to PT dates, ending 3 days back (28-day window). `dataState: "final"`
+  // (below) further guarantees only finalized days count.
+  const PT = "America/Los_Angeles";
+  const defaultEnd = daysAgoInTz(PT, 3);
+  const defaultStart = daysAgoInTz(PT, 30);
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 

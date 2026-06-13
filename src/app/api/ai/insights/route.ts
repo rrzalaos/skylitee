@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { shopifyFetch, fetchOrdersInRange, orderRevenue, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetch, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 interface Customer { orders_count: number; total_spent: string; }
@@ -13,11 +13,12 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const days = now.getDate();
+  // Month-to-date in the store's timezone.
+  const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
 
   const [orders, { products }, { customers }] = await Promise.all([
-    fetchOrdersInRange(shop, token, monthStart),
+    fetchOrdersInRange(shop, token, startISO),
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
     shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
   ]);

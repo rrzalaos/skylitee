@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod } from "@/lib/shopify";
+import { ymdInTz } from "@/lib/timezone";
 import { getShopifySession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -12,20 +13,16 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:dashboard:v2:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:dashboard:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  const now = new Date();
-  const periodStart = fromParam
-    ? new Date(fromParam + "T00:00:00.000Z")
-    : new Date(now.getFullYear(), now.getMonth(), 1);
-  const periodEnd = toParam
-    ? new Date(toParam + "T23:59:59.999Z")
-    : now;
+  // Period boundaries + day buckets in the STORE's timezone so totals & the daily chart
+  // align with the Shopify admin.
+  const { startISO, endISO, startYmd, endYmd, days, tz } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
+  const periodStart = new Date(startISO);
+  const periodEnd = new Date(endISO);
 
-  const days = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
-
-  const orders = await fetchOrdersInRange(shop, token, periodStart.toISOString(), periodEnd.toISOString());
+  const orders = await fetchOrdersInRange(shop, token, startISO, endISO);
 
   const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
@@ -42,17 +39,18 @@ export async function GET(req: NextRequest) {
 
   const dailyMap: Record<string, number> = {};
   orders.forEach(o => {
-    const d = o.created_at.substring(0, 10);
+    const d = ymdInTz(new Date(o.created_at), tz);   // store-local day
     dailyMap[d] = (dailyMap[d] || 0) + orderRevenue(o);
   });
 
   const dailyRevenue: { day: string; revenue: number }[] = [];
-  const cursor = new Date(periodStart);
-  while (cursor <= periodEnd) {
-    const key = cursor.toISOString().split("T")[0];
-    const label = `${cursor.getMonth() + 1}/${cursor.getDate()}`;
-    dailyRevenue.push({ day: label, revenue: Math.round(dailyMap[key] || 0) });
-    cursor.setDate(cursor.getDate() + 1);
+  const cur = new Date(`${startYmd}T00:00:00.000Z`);
+  const last = new Date(`${endYmd}T00:00:00.000Z`);
+  while (cur <= last) {
+    const key = cur.toISOString().split("T")[0];          // YYYY-MM-DD
+    const [, mm, dd] = key.split("-");
+    dailyRevenue.push({ day: `${parseInt(mm)}/${parseInt(dd)}`, revenue: Math.round(dailyMap[key] || 0) });
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   const cityMap: Record<string, number> = {};

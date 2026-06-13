@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetch, fetchOrdersInRange, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetch, fetchOrdersInRange, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
   const cacheKey = `cache:${shop}:products:v2`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  // Month-to-date in the store's timezone.
+  const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
 
   const [{ products }, orders] = await Promise.all([
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
-    fetchOrdersInRange(shop, token, monthStart),
+    fetchOrdersInRange(shop, token, startISO),
   ]);
 
   // Build sales map from orders

@@ -37,13 +37,12 @@ export async function GET(req: NextRequest) {
   const propertyId = selected.property;
   const propertyName = selected.displayName;
 
-  const now = new Date();
-  const defaultEnd = now.toISOString().split("T")[0];
-  const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
-  const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
+  // Default to GA4 relative dates — GA4 resolves "today"/"NdaysAgo" in the PROPERTY's
+  // timezone, so the default window matches the GA4 UI instead of the server's UTC day.
+  const startDate = req.nextUrl.searchParams.get("from") ?? "28daysAgo";
+  const endDate = req.nextUrl.searchParams.get("to") ?? "today";
 
-  const cacheKey = `cache:${shop}:ga4:${startDate}:${endDate}`;
+  const cacheKey = `cache:${shop}:ga4:v2:${startDate}:${endDate}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const dateRanges = [{ startDate, endDate }];

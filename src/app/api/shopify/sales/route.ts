@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue, ShopifyOrder } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 type Order = ShopifyOrder;
@@ -16,18 +16,15 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   const url = new URL(req.url);
-  const now = new Date();
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:v2:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:sales:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  const periodStart = fromParam ? new Date(fromParam + "T00:00:00.000Z") : new Date(now.getFullYear(), now.getMonth(), 1);
-  const periodEnd = toParam ? new Date(toParam + "T23:59:59.999Z") : now;
-  const days = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
-
-  const orders = await fetchOrdersInRange(shop, token, periodStart.toISOString(), periodEnd.toISOString());
+  // Period boundaries in the STORE's timezone so totals match the Shopify admin.
+  const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
+  const orders = await fetchOrdersInRange(shop, token, startISO, endISO);
 
   /* ── KPIs ── */
   const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);

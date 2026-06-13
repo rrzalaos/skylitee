@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 // Period-scoped customer intelligence: built from ORDERS placed inside the selected
@@ -15,17 +15,14 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const now = new Date();
-  const periodStart = fromParam
-    ? new Date(fromParam + "T00:00:00.000Z")
-    : new Date(now.getFullYear(), now.getMonth(), 1);
-  const periodEnd = toParam ? new Date(toParam + "T23:59:59.999Z") : now;
-
-  const cacheKey = `cache:${shop}:customers:period:v2:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:customers:period:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
+  // Period boundaries in the store's timezone (matches Shopify admin day boundaries).
+  const { startISO, endISO } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
+
   // Pull every real order in the window (paginated; test/cancelled/voided excluded).
-  const orders = await fetchOrdersInRange(shop, token, periodStart.toISOString(), periodEnd.toISOString());
+  const orders = await fetchOrdersInRange(shop, token, startISO, endISO);
 
   // Dedupe to unique customers who bought in the window.
   const byCustomer = new Map<number, { ordersCount: number; spent: number; city?: string }>();
@@ -71,7 +68,7 @@ export async function GET(req: NextRequest) {
       orders: orders.length,
     },
     topCities,
-    period: { from: periodStart.toISOString(), to: periodEnd.toISOString() },
+    period: { from: startISO, to: endISO },
   };
   kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
   return NextResponse.json(result);

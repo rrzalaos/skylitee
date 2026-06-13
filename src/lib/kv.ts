@@ -125,6 +125,11 @@ export const shopKv = {
   setPendingCoupon: (shop: string, v: string) => kvSet(`shop:${shop}:pending_coupon`, v, 3600),
   delPendingCoupon: (shop: string) => kvDel(`shop:${shop}:pending_coupon`),
 
+  // Store IANA timezone (e.g. "Asia/Kolkata") — cached 7 days so date ranges match the
+  // Shopify admin's local-day boundaries without re-fetching /shop.json each request.
+  getTz: (shop: string) => kvGet<string>(`shop:${shop}:tz`),
+  setTz: (shop: string, v: string) => kvSet(`shop:${shop}:tz`, v, 7 * 24 * 60 * 60),
+
   // Team members per shop
   getTeam: (shop: string) => kvGet<TeamMember[]>(`shop:${shop}:team`),
   setTeam: (shop: string, v: TeamMember[]) => kvSet(`shop:${shop}:team`, v),

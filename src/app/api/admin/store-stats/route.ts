@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
-import { fetchOrdersInRange, orderRevenue } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod } from "@/lib/shopify";
 
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
@@ -26,13 +26,10 @@ export async function GET(req: NextRequest) {
   const sToken = shopifyToken.status === "fulfilled" ? shopifyToken.value : null;
   if (!sToken) return NextResponse.json({ error: "no_shopify" });
 
-  // Current month date range
-  const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const to = now.toISOString();
-
   try {
-    const orders = await fetchOrdersInRange(shop, sToken, from, to);
+    // Month-to-date in the store's timezone.
+    const { startISO, endISO } = await resolveShopifyPeriod(shop, sToken, null, null);
+    const orders = await fetchOrdersInRange(shop, sToken, startISO, endISO);
 
     const revenue = orders.reduce((s, o) => s + orderRevenue(o), 0);
     const ordersCount = orders.length;
