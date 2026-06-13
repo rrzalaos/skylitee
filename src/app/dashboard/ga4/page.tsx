@@ -31,7 +31,28 @@ interface GA4Data {
   regions: { region: string; sessions: number; users: number }[];
 }
 
-type Tab = "overview" | "traffic" | "ecommerce" | "audience" | "geo" | "landing";
+type Tab = "overview" | "traffic" | "ecommerce" | "audience" | "geo" | "landing" | "monthly";
+
+interface MonthRow {
+  ym: string; label: string; sessions: number; users: number; newUsers: number; returningUsers: number;
+  pageviews: number; bounceRate: number; avgDurationSec: number; engagementRate: number;
+  purchases: number; revenue: number; organic: number; convRate: number;
+}
+const fmtDur = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+const MONTHLY_KPIS: { key: keyof MonthRow; label: string; fmt: (v: number) => string; higher: boolean }[] = [
+  { key: "sessions", label: "Sessions", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "users", label: "Users", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "newUsers", label: "New Visitors", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "returningUsers", label: "Returning Visitors", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "avgDurationSec", label: "Avg. Visit Duration", fmt: v => fmtDur(v), higher: true },
+  { key: "engagementRate", label: "Engagement Rate", fmt: v => `${v}%`, higher: true },
+  { key: "bounceRate", label: "Bounce Rate", fmt: v => `${v}%`, higher: false },
+  { key: "pageviews", label: "Pageviews", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "organic", label: "Organic Search", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "purchases", label: "Purchasers", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "revenue", label: "Revenue", fmt: v => formatINR(v), higher: true },
+  { key: "convRate", label: "Conversion Rate", fmt: v => `${v}%`, higher: true },
+];
 
 function FunnelStep({ label, count, rate, rateLabel }: {
   label: string; count: number; rate?: number; rateLabel?: string;
@@ -58,6 +79,9 @@ export default function GA4Page() {
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
+  const [months, setMonths] = useState(6);
+  const [monthly, setMonthly] = useState<MonthRow[] | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -70,6 +94,16 @@ export default function GA4Page() {
       })
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  // Month-wise trend — lazy load when the tab is opened or the window changes.
+  useEffect(() => {
+    if (tab !== "monthly") return;
+    setMonthlyLoading(true);
+    fetch(`/api/ga4/monthly?months=${months}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setMonthly(d.months ?? []); })
+      .finally(() => setMonthlyLoading(false));
+  }, [tab, months]);
 
   if (loading) return <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Loading GA4 data…</div>;
 
@@ -93,6 +127,7 @@ export default function GA4Page() {
     { key: "audience", label: "Audience" },
     { key: "geo", label: "Geo" },
     { key: "landing", label: "Landing Pages" },
+    { key: "monthly", label: "Month-wise" },
   ];
 
   const maxSessions = Math.max(...data.channels.map(c => c.sessions), 1);
@@ -661,6 +696,87 @@ export default function GA4Page() {
                 </tbody>
               </table>
             </div>
+          )}
+        </Card>
+      )}
+
+      {/* ── MONTH-WISE ── */}
+      {tab === "monthly" && (
+        <Card>
+          <CardHeader
+            title="Month-wise performance"
+            right={
+              <div className="flex items-center gap-1.5 text-[13px]">
+                <span className="text-[#A1A1AA]">Last</span>
+                <select value={months} onChange={e => setMonths(parseInt(e.target.value, 10))}
+                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2 py-1 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#4285F4]">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n} month{n > 1 ? "s" : ""}</option>)}
+                </select>
+              </div>
+            }
+          />
+          {monthlyLoading ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">Loading month-wise data…</div>
+          ) : !monthly || monthly.length === 0 ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">No monthly data for this window.</div>
+          ) : (
+            <>
+              {/* Trend chart — sessions & users */}
+              {monthly.length > 1 && (
+                <div className="h-56 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthly.map(m => ({ label: m.label, Sessions: m.sessions, Users: m.users }))} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.5} vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 13, borderRadius: 12, border: "1px solid #E5E5E5" }} />
+                      <Line type="monotone" dataKey="Sessions" stroke="#4285F4" strokeWidth={2.5} dot={false} />
+                      <Line type="monotone" dataKey="Users" stroke="#F97316" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* KPI × month table with MoM change on the latest month */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-[14px] border-collapse min-w-[640px]">
+                  <thead>
+                    <tr className="border-b border-black/[0.08] dark:border-white/[0.08]">
+                      <th className="text-left py-2 px-2 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider sticky left-0 bg-white dark:bg-[#171717]">KPI</th>
+                      {monthly.map(m => (
+                        <th key={m.ym} className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{m.label}</th>
+                      ))}
+                      {monthly.length > 1 && <th className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider">MoM</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MONTHLY_KPIS.map(row => {
+                      const last = monthly[monthly.length - 1];
+                      const prev = monthly[monthly.length - 2];
+                      const cur = last[row.key] as number;
+                      const pv = prev ? (prev[row.key] as number) : undefined;
+                      const mom = pv && pv !== 0 ? ((cur - pv) / pv) * 100 : null;
+                      const good = mom === null ? null : (row.higher ? mom >= 0 : mom <= 0);
+                      return (
+                        <tr key={row.key} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C]">
+                          <td className="py-2 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] sticky left-0 bg-white dark:bg-[#171717]">{row.label}</td>
+                          {monthly.map(m => (
+                            <td key={m.ym} className="py-2 px-3 text-right tabular-nums dark:text-[#F4F4F5]">{row.fmt(m[row.key] as number)}</td>
+                          ))}
+                          {monthly.length > 1 && (
+                            <td className={cn("py-2 px-3 text-right tabular-nums font-bold",
+                              mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[12px] text-[#A1A1AA] mt-2">MoM = latest month ({monthly[monthly.length - 1]?.label}) vs the previous month. Green = better, red = worse (bounce rate inverted). The current month is partial until it ends.</p>
+            </>
           )}
         </Card>
       )}
