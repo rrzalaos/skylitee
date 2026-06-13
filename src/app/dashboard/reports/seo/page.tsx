@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDateRange } from "@/lib/date-range-context";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ExportButton } from "@/components/ui/export-button";
-import { exportToCSV, exportToPDF } from "@/lib/export";
+import { exportToCSV } from "@/lib/export";
+import { exportElementToPDF } from "@/lib/export-visual";
 import { Donut, Gauge } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, TrendingUp, MousePointerClick, Eye, Users, IndianRupee, Filter } from "lucide-react";
@@ -76,6 +77,7 @@ function PoleBar({ label, value, pct, color, sub }: { label: string; value: stri
 
 export default function SEOReportPage() {
   const { range } = useDateRange();
+  const reportRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<GSCData | null>(null);
   const [ga4, setGa4] = useState<GA4Data | null>(null);
   const [monthly, setMonthly] = useState<MonthlyData["months"]>([]);
@@ -201,7 +203,7 @@ export default function SEOReportPage() {
   const posGaugeVal = Math.max(0, Math.min(100, ((11 - k.avgPosition) / 10) * 100));
 
   return (
-    <div className="space-y-4">
+    <div ref={reportRef} className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -211,10 +213,16 @@ export default function SEOReportPage() {
           </div>
           <p className="text-[14px] text-[#A1A1AA] ml-9">{data.site} · {range.label} · GSC + GA4 · Generated {generatedAt}</p>
         </div>
-        <ExportButton
-          onExportCSV={() => exportToCSV(`skylitee-seo-report-${range.from}`, buildSections())}
-          onExportPDF={() => exportToPDF(`skylitee-seo-report-${range.from}`, "SEO Report", `${data.site} · ${range.label}`, buildSections())}
-        />
+        <div data-html2canvas-ignore="true">
+          <ExportButton
+            onExportCSV={() => exportToCSV(`skylitee-seo-report-${range.from}`, buildSections())}
+            onExportPDF={() => reportRef.current ? exportElementToPDF(reportRef.current, `skylitee-seo-report-${range.from}`, {
+              reportTitle: "SEO Report",
+              subtitle: `${data.site} · ${range.label}`,
+              branding: { brandName: "Skylitee", color: "#4285F4" },
+            }) : Promise.resolve()}
+          />
+        </div>
       </div>
 
       {/* KPI strip */}
