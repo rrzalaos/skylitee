@@ -8,8 +8,14 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
   const { shop, token } = session;
 
+  // ?refresh=1 forces a live pull from Shopify (the page's "Refresh" button); otherwise we
+  // serve the short cache — this endpoint paginates the FULL customer base (~250/page), so
+  // re-pulling on every open would be slow and risk Shopify rate limits.
+  const refresh = req.nextUrl.searchParams.get("refresh") === "1";
   const cacheKey = `cache:${shop}:customers`;
-  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  if (!refresh) {
+    try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  }
 
   // Paginate through the FULL customer base — not just the first 250 — so totals,
   // LTV, repeat rate and city splits reflect every customer.
@@ -44,7 +50,8 @@ export async function GET(req: NextRequest) {
   const result = {
     kpis: { totalCustomers, repeat, oneTime, avgLTV: Math.round(avgLTV), newThisMonth },
     topCities,
+    fetchedAt: new Date().toISOString(),
   };
-  kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});
+  kv.set(cacheKey, result, { ex: 600 }).catch(() => {}); // 10-minute cache
   return NextResponse.json(result);
 }

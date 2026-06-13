@@ -8,6 +8,7 @@ import { formatINR } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
 import { useDateRange } from "@/lib/date-range-context";
+import { RefreshCw } from "lucide-react";
 
 type Mode = "all" | "period";
 
@@ -28,17 +29,20 @@ export default function CustomersPage() {
 
   const [allData, setAllData] = useState<AllTimeData | null>(null);
   const [loadingAll, setLoadingAll] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [periodData, setPeriodData] = useState<PeriodData | null>(null);
   const [loadingPeriod, setLoadingPeriod] = useState(false);
 
-  // All-time base — fetched once (lifetime data, not affected by the date range).
-  useEffect(() => {
-    fetch("/api/shopify/customers")
+  // All-time base — lifetime data, served from a short cache. `refresh` forces a live pull.
+  const loadAll = (refresh = false) => {
+    if (refresh) setRefreshing(true); else setLoadingAll(true);
+    fetch(`/api/shopify/customers${refresh ? "?refresh=1" : ""}`)
       .then(r => r.json())
       .then(d => { if (d.kpis) setAllData(d); })
-      .finally(() => setLoadingAll(false));
-  }, []);
+      .finally(() => { setLoadingAll(false); setRefreshing(false); });
+  };
+  useEffect(() => { loadAll(); }, []);
 
   // Period view — refetched whenever the range changes, only while that tab is active.
   useEffect(() => {
@@ -124,11 +128,23 @@ export default function CustomersPage() {
           </div>
           <p className="text-[15px] text-[#686864] mt-0.5">
             {mode === "all"
-              ? <>Lifetime customer data from Shopify · auto-synced every 30 min <span className="text-[#a3a39e]">(not affected by the date range)</span></>
+              ? <>Lifetime customer data from Shopify · cached up to 10 min <span className="text-[#a3a39e]">(not affected by the date range — hit Refresh for live)</span></>
               : <>Customers who ordered during <span className="font-medium text-[#181816]">{range.label}</span> · change the date range up top</>}
           </p>
         </div>
-        <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
+        <div className="flex items-center gap-2">
+          {mode === "all" && (
+            <button
+              onClick={() => loadAll(true)}
+              disabled={refreshing}
+              title="Pull the latest customer data live from Shopify"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          )}
+          <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
+        </div>
       </div>
 
       {/* Mode toggle */}
