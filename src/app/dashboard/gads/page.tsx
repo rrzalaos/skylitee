@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Megaphone } from "lucide-react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis,
   Tooltip as RTooltip, ResponsiveContainer, CartesianGrid, Legend,
