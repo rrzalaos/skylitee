@@ -3,6 +3,7 @@ import { Gauge, Donut } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, MousePointerClick, Eye, Users, IndianRupee, Target, BarChart3, Globe, Activity } from "lucide-react";
 import type { GSCData, GA4Data, MonthlyMonth, GA4MonthlyMonth } from "./types";
+import { buildGscRows, buildGa4Rows, MonthwiseTable } from "./monthwise";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 const num = (n: number) => n.toLocaleString("en-IN");
@@ -110,26 +111,9 @@ export function PrintableSEO({ data, ga4, monthly, ga4Monthly, site, rangeLabel,
 
   const monthlyChart = monthly.map(m => ({ label: m.label.replace(/ \d{4}$/, ""), Clicks: m.clicks, Impressions: m.impressions }));
 
-  // Month-wise progress — merge GSC monthly (clicks/impr/ctr/position) with GA4 monthly organic
-  // sessions (ym "YYYYMM" → "YYYY-MM"). MoM = latest month vs previous.
-  const gaMoByYm = new Map(ga4Monthly.map(m => [`${m.ym.slice(0, 4)}-${m.ym.slice(4, 6)}`, m]));
-  const hasGaMonthly = ga4Monthly.length > 0;
-  const mwHeaders = monthly.map(m => m.label.replace(/(\w+) (\d{4})/, (_, mon, yr) => `${mon} '${yr.slice(2)}`));
-  const mom = (vals: (number | null)[], lowerBetter: boolean) => {
-    const clean = vals.filter((v): v is number => v != null);
-    if (clean.length < 2) return null;
-    const cur = clean[clean.length - 1], prev = clean[clean.length - 2];
-    if (prev === 0) return null;
-    const pct = Math.round(((cur - prev) / Math.abs(prev)) * 100);
-    return { pct, better: lowerBetter ? pct < 0 : pct > 0, up: pct >= 0 };
-  };
-  const mwRows: { key: string; fmt: (v: number) => string; vals: (number | null)[]; lowerBetter: boolean; accent?: string }[] = [
-    { key: "Clicks", fmt: num, vals: monthly.map(m => m.clicks), lowerBetter: false, accent: "#4285F4" },
-    { key: "Impressions", fmt: num, vals: monthly.map(m => m.impressions), lowerBetter: false },
-    { key: "CTR", fmt: v => `${v}%`, vals: monthly.map(m => m.ctr), lowerBetter: false },
-    { key: "Avg Position", fmt: v => v.toFixed(1), vals: monthly.map(m => m.position), lowerBetter: true },
-    ...(hasGaMonthly ? [{ key: "Organic Sessions", fmt: num, vals: monthly.map(m => gaMoByYm.get(m.ym)?.organic ?? null), lowerBetter: false, accent: "#F97316" }] : []),
-  ];
+  // Month-wise progress tables (Search Console + Analytics), built from the shared module.
+  const gscRows = buildGscRows(monthly);
+  const ga4Rows = buildGa4Rows(ga4Monthly);
 
   const maxBucket = Math.max(1, ...data.positionBuckets.map(x => x.clicks));
   const maxCountry = Math.max(1, ...data.countries.map(c => c.clicks));
@@ -227,37 +211,18 @@ export function PrintableSEO({ data, ga4, monthly, ga4Monthly, site, rangeLabel,
           </Section>
         </div>
 
-        {/* Month-wise progress */}
+        {/* Month-wise progress — note + two tables */}
+        {(monthly.length >= 2 || ga4Monthly.length >= 2) && (
+          <p className="text-[12px] text-[#71717A] -mb-1">Month-wise progress · <span className="text-[#16A34A] font-semibold">green</span> = improved vs prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (Avg Position &amp; Bounce Rate inverted — lower is better). Latest month may be partial.</p>
+        )}
         {monthly.length >= 2 && (
-          <Section title="Month-wise Progress" color="#0EA5E9" icon={<Activity size={16} />} right={`last ${monthly.length} months · vs previous`}>
-            <p className="text-[13px] text-[#71717A] mb-3">Period-over-period view of your search KPIs. <span className="text-[#16A34A] font-semibold">Green</span> = improved vs the prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (for Avg Position, lower is better so a drop shows green). The latest month may be partial.</p>
-            <table className="w-full">
-              <thead>
-                <tr style={{ background: "#0EA5E9" }}>
-                  <th className={th}>KPI</th>
-                  {mwHeaders.map(h => <th key={h} className={th} style={{ textAlign: "right" }}>{h}</th>)}
-                  <th className={th} style={{ textAlign: "right" }}>MoM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mwRows.map((row, ri) => {
-                  const m = mom(row.vals, row.lowerBetter);
-                  return (
-                    <tr key={row.key} style={{ background: ri % 2 ? "#F0F9FF" : "#fff" }}>
-                      <td className={`${td} font-bold`} style={{ color: row.accent ?? "#27272A" }}>{row.key}</td>
-                      {row.vals.map((v, ci) => (
-                        <td key={ci} className={`${td} text-right tabular-nums ${ci === row.vals.length - 1 ? "font-extrabold" : "text-[#3F3F46]"}`}>{v == null ? "—" : row.fmt(v)}</td>
-                      ))}
-                      <td className={`${td} text-right font-extrabold`}>
-                        {m ? (
-                          <span style={{ color: m.pct === 0 ? "#A1A1AA" : m.better ? "#16A34A" : "#DC2626" }}>{m.up ? "▲" : "▼"} {Math.abs(m.pct)}%</span>
-                        ) : <span className="text-[#A1A1AA]">—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <Section title="Search Console — Month-wise" color="#4285F4" icon={<Search size={16} />} right={`last ${monthly.length} months`}>
+            <MonthwiseTable headers={monthly.map(m => m.label)} rows={gscRows} accent="#4285F4" zebra="#F0F6FF" print />
+          </Section>
+        )}
+        {ga4Monthly.length >= 2 && (
+          <Section title="Analytics — Month-wise" color="#F97316" icon={<Activity size={16} />} right={`last ${ga4Monthly.length} months`}>
+            <MonthwiseTable headers={ga4Monthly.map(m => m.label)} rows={ga4Rows} accent="#F97316" zebra="#FFF7ED" print />
           </Section>
         )}
 

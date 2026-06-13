@@ -7,6 +7,7 @@ import { exportToCSV } from "@/lib/export";
 import { exportElementToPDF } from "@/lib/export-visual";
 import { PrintableSEO } from "./PrintableSEO";
 import type { GSCData, GA4Data, MonthlyMonth, GA4MonthlyMonth } from "./types";
+import { buildGscRows, buildGa4Rows, MonthwiseTable } from "./monthwise";
 import { Donut, Gauge } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, TrendingUp, MousePointerClick, Eye, Users, IndianRupee, Filter } from "lucide-react";
@@ -290,6 +291,23 @@ export default function SEOReportPage() {
           <p className="text-[13px] text-[#A1A1AA] mt-3 leading-relaxed">Non-branded clicks are <strong>new customers discovering you</strong>; branded clicks are people already looking for your name.</p>
         </Card>
       </div>
+
+      {/* Month-wise progress tables */}
+      {(monthly.length >= 2 || ga4Monthly.length >= 2) && (
+        <p className="text-[13px] text-[#A1A1AA] -mb-1">Month-wise progress · <span className="text-[#16A34A] font-semibold">green</span> = improved vs prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (Avg Position &amp; Bounce Rate inverted — lower is better). Latest month may be partial.</p>
+      )}
+      {monthly.length >= 2 && (
+        <Card>
+          <CardHeader title="Search Console — Month-wise" right={`last ${monthly.length} months`} />
+          <MonthwiseTable headers={monthly.map(m => m.label)} rows={buildGscRows(monthly)} />
+        </Card>
+      )}
+      {ga4Monthly.length >= 2 && (
+        <Card>
+          <CardHeader title="Analytics — Month-wise" right={`last ${ga4Monthly.length} months`} />
+          <MonthwiseTable headers={ga4Monthly.map(m => m.label)} rows={buildGa4Rows(ga4Monthly)} />
+        </Card>
+      )}
 
       {/* Signals */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
