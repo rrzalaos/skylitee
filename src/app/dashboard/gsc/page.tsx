@@ -46,7 +46,15 @@ function shortUrl(url: string) {
   return url.replace(/^https?:\/\/[^/]+/, "").replace(/^$/, "/") || "/";
 }
 
-type Tab = "overview" | "keywords" | "pages" | "devices" | "countries" | "sitemap";
+type Tab = "overview" | "keywords" | "pages" | "devices" | "countries" | "sitemap" | "monthly";
+
+interface GscMonthRow { ym: string; label: string; clicks: number; impressions: number; ctr: number; position: number }
+const GSC_MONTHLY_KPIS: { key: keyof GscMonthRow; label: string; fmt: (v: number) => string; higher: boolean }[] = [
+  { key: "clicks", label: "Clicks", fmt: v => v.toLocaleString("en-IN"), higher: true },
+  { key: "impressions", label: "Impressions", fmt: v => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : `${v}`, higher: true },
+  { key: "ctr", label: "CTR", fmt: v => `${v}%`, higher: true },
+  { key: "position", label: "Avg. Position", fmt: v => `${v}`, higher: false },
+];
 
 export default function GSCPage() {
   const { range } = useDateRange();
@@ -54,6 +62,9 @@ export default function GSCPage() {
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
+  const [months, setMonths] = useState(6);
+  const [monthly, setMonthly] = useState<GscMonthRow[] | null>(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -66,6 +77,16 @@ export default function GSCPage() {
       })
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  // Month-wise — lazy load on tab open / window change.
+  useEffect(() => {
+    if (tab !== "monthly") return;
+    setMonthlyLoading(true);
+    fetch(`/api/gsc/monthly?months=${months}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setMonthly(d.months ?? []); })
+      .finally(() => setMonthlyLoading(false));
+  }, [tab, months]);
 
   if (loading) return <div className="text-[16px] text-[#A1A1AA] dark:text-[#71717A] py-16 text-center">Loading Search Console data…</div>;
 
@@ -89,6 +110,7 @@ export default function GSCPage() {
     { key: "devices", label: "Devices" },
     { key: "countries", label: "Countries" },
     { key: "sitemap", label: `Sitemap${data.sitemaps.length > 0 ? ` (${data.sitemaps.length})` : ""}` },
+    { key: "monthly", label: "Month-wise" },
   ];
 
   const maxClicks = Math.max(...(data.devices ?? []).map(d => d.clicks), 1);
@@ -547,6 +569,80 @@ export default function GSCPage() {
             </a>. The GSC API does not expose crawl error lists.
           </div>
         </div>
+      )}
+
+      {/* ── MONTH-WISE ── */}
+      {tab === "monthly" && (
+        <Card>
+          <CardHeader
+            title="Month-wise search performance"
+            right={
+              <div className="flex items-center gap-1.5 text-[14px]">
+                <span className="text-[#A1A1AA]">Last</span>
+                <select value={months} onChange={e => setMonths(parseInt(e.target.value, 10))}
+                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2 py-1 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#4285F4]">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n} month{n > 1 ? "s" : ""}</option>)}
+                </select>
+              </div>
+            }
+          />
+          {monthlyLoading ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">Loading month-wise data…</div>
+          ) : !monthly || monthly.length === 0 ? (
+            <div className="text-[15px] text-[#71717A] py-10 text-center">No monthly data for this window.</div>
+          ) : (
+            <>
+              {monthly.length > 1 && (
+                <div className="h-56 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthly.map(m => ({ label: m.label, Clicks: m.clicks, Impressions: m.impressions }))} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.5} vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <YAxis yAxisId="l" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 12, fill: "#A1A1AA" }} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 13, borderRadius: 12, border: "1px solid #E5E5E5" }} />
+                      <Line yAxisId="l" type="monotone" dataKey="Clicks" stroke="#4285F4" strokeWidth={2.5} dot={false} />
+                      <Line yAxisId="r" type="monotone" dataKey="Impressions" stroke="#F97316" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-[14px] border-collapse min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-black/[0.08] dark:border-white/[0.08]">
+                      <th className="text-left py-2 px-2 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider sticky left-0 bg-white dark:bg-[#171717]">KPI</th>
+                      {monthly.map(m => <th key={m.ym} className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{m.label}</th>)}
+                      {monthly.length > 1 && <th className="text-right py-2 px-3 text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider">MoM</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {GSC_MONTHLY_KPIS.map(row => {
+                      const last = monthly[monthly.length - 1];
+                      const prev = monthly[monthly.length - 2];
+                      const cur = last[row.key] as number;
+                      const pv = prev ? (prev[row.key] as number) : undefined;
+                      const mom = pv && pv !== 0 ? ((cur - pv) / pv) * 100 : null;
+                      const good = mom === null ? null : (row.higher ? mom >= 0 : mom <= 0);
+                      return (
+                        <tr key={row.key} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C]">
+                          <td className="py-2 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] sticky left-0 bg-white dark:bg-[#171717]">{row.label}</td>
+                          {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums dark:text-[#F4F4F5]">{row.fmt(m[row.key] as number)}</td>)}
+                          {monthly.length > 1 && (
+                            <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[13px] text-[#A1A1AA] mt-2">MoM = latest month ({monthly[monthly.length - 1]?.label}) vs previous. Green = better (for Avg. Position, lower is better so a drop is green). Position is impression-weighted. The current month is partial; GSC also lags ~3 days.</p>
+            </>
+          )}
+        </Card>
       )}
     </div>
   );
