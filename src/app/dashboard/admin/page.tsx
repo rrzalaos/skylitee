@@ -8,6 +8,7 @@ import {
   Search, UserX, UserCheck, ShieldCheck,
   Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
   Tag, Plus, Trash2, ToggleLeft, ToggleRight, KeyRound, Gift,
+  Store, ChevronRight, Calendar,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -129,7 +130,34 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
   );
 }
 
-type AdminTab = "overview" | "users" | "analytics" | "coupons";
+type AdminTab = "overview" | "stores" | "users" | "analytics" | "coupons";
+
+type StoreRole = "owner" | "admin" | "marketing" | "view_only";
+interface AdminStore {
+  shop: string;
+  brand: string | null;
+  owner: { name: string; email: string } | null;
+  users: { name: string; email: string; role: StoreRole; status: "active" | "pending" }[];
+  userCount: number;
+  connections: { shopify: boolean; meta: boolean; ga4: boolean; gsc: boolean };
+  plan: string;
+  grant: { code: string; kind: "free" | "discount"; discountPct: number; expiresAt: string | null } | null;
+  connectedAt: string | null;
+}
+
+// "2y 3mo", "5mo 12d", "23 days" — compact age from a connect date to now.
+function ageSince(iso: string | null): string {
+  if (!iso) return "—";
+  const then = new Date(iso), now = new Date();
+  let months = (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth());
+  if (now.getDate() < then.getDate()) months--;
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  const days = Math.max(0, Math.floor((now.getTime() - then.getTime()) / 86_400_000));
+  if (years > 0) return `${years}y${remMonths > 0 ? ` ${remMonths}mo` : ""}`;
+  if (months > 0) return `${months}mo`;
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
 
 export default function AdminPage() {
   const [authed, setAuthed]       = useState(false);
@@ -137,6 +165,9 @@ export default function AdminPage() {
   const [pinError, setPinError]   = useState(false);
   const [tab, setTab]             = useState<AdminTab>("overview");
   const [users, setUsers]         = useState<AdminUser[]>([]);
+  const [stores, setStores]       = useState<AdminStore[]>([]);
+  const [storesLoading, setStoresLoading] = useState(false);
+  const [expandedStore, setExpandedStore] = useState<string | null>(null);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -223,6 +254,22 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab === "coupons") loadCoupons();
   }, [tab, loadCoupons]);
+
+  const loadStores = useCallback(async () => {
+    setStoresLoading(true);
+    try {
+      const res = await fetch("/api/admin/stores");
+      if (res.ok) {
+        const data = await res.json() as { stores: AdminStore[] };
+        setStores(data.stores ?? []);
+      }
+    } catch { /* ignore */ }
+    setStoresLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === "stores") loadStores();
+  }, [tab, loadStores]);
 
   const doLogin = () => {
     if (pin === ADMIN_PIN) {
@@ -429,6 +476,7 @@ export default function AdminPage() {
 
   const tabs: { key: AdminTab; label: string; icon: React.ElementType }[] = [
     { key: "overview",  label: "Overview",            icon: LayoutDashboard },
+    { key: "stores",    label: `Stores (${stores.length})`, icon: Store     },
     { key: "users",     label: `Users (${users.length})`, icon: Users       },
     { key: "analytics", label: "Analytics",           icon: BarChart2       },
     { key: "coupons",   label: `Coupons (${coupons.length})`, icon: Tag     },
@@ -565,6 +613,122 @@ export default function AdminPage() {
               </table>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* ── STORES ── */}
+      {tab === "stores" && (
+        <div className="space-y-3">
+          <div>
+            <h3 className="text-[15px] font-bold dark:text-[#F4F4F5]">Connected Stores</h3>
+            <p className="text-[13px] text-[#A1A1AA]">Each store, who has access, what it&apos;s connected to, its access code and how long it&apos;s been live.</p>
+          </div>
+
+          {storesLoading ? (
+            <Card><div className="py-10 text-center text-[13px] text-[#A1A1AA]">Loading stores…</div></Card>
+          ) : stores.length === 0 ? (
+            <Card><div className="py-10 text-center text-[13px] text-[#A1A1AA]">No stores yet.</div></Card>
+          ) : stores.map(s => {
+            const conns: { label: string; on: boolean; color: string }[] = [
+              { label: "Shopify", on: s.connections.shopify, color: "#96BF48" },
+              { label: "Meta",    on: s.connections.meta,    color: "#1877F2" },
+              { label: "GA4",     on: s.connections.ga4,     color: "#E37400" },
+              { label: "GSC",     on: s.connections.gsc,     color: "#34A853" },
+            ];
+            const roleBadge = (role: StoreRole) => {
+              const map: Record<StoreRole, string> = {
+                owner:      "bg-[#FFF7ED] text-[#EA580C]",
+                admin:      "bg-[#EFF6FF] text-[#1D4ED8]",
+                marketing:  "bg-[#FDF2F8] text-[#BE185D]",
+                view_only:  "bg-[#F5F5F4] text-[#71717A]",
+              };
+              return map[role];
+            };
+            const expanded = expandedStore === s.shop;
+            return (
+              <Card key={s.shop}>
+                {/* Header */}
+                <div className="flex items-start justify-between flex-wrap gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-[14px] text-[#18181B] dark:text-[#F4F4F5]">{s.shop}</span>
+                      {s.brand && <span className="text-[12px] text-[#A1A1AA]">· {s.brand}</span>}
+                      <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full",
+                        s.plan === "growth" ? "bg-[#F0FDF4] text-[#15803D]" : "bg-[#F5F5F4] text-[#71717A]")}>
+                        {s.plan === "growth" ? "Pro" : "Free"}
+                      </span>
+                    </div>
+                    <div className="text-[12px] text-[#A1A1AA] mt-0.5">
+                      Owner: <span className="font-semibold text-[#52525B] dark:text-[#A1A1AA]">{s.owner?.name ?? "—"}</span>
+                      {s.owner?.email && <span className="text-[#A1A1AA]"> · {s.owner.email}</span>}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="flex items-center gap-1 text-[12px] text-[#71717A] dark:text-[#A1A1AA] justify-end">
+                      <Calendar size={11} />
+                      {s.connectedAt
+                        ? new Date(s.connectedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                        : "—"}
+                    </div>
+                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ageSince(s.connectedAt)} ago</div>
+                  </div>
+                </div>
+
+                {/* Connections + access code */}
+                <div className="flex items-center justify-between flex-wrap gap-3 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {conns.map(c => (
+                      <span key={c.label}
+                        className={cn("inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg",
+                          c.on ? "text-[#18181B] dark:text-[#F4F4F5] bg-[#F5F5F4] dark:bg-[#262626]" : "text-[#C4C4C8] dark:text-[#555] bg-transparent")}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.on ? c.color : "#D4D4D8" }} />
+                        {c.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-[12px]">
+                    {s.grant ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Tag size={11} className="text-[#F97316]" />
+                        <span className="font-mono font-bold text-[#F97316]">{s.grant.code}</span>
+                        <span className="text-[#A1A1AA]">
+                          ({s.grant.kind === "free" ? "Free" : `${s.grant.discountPct}% off`}
+                          {s.grant.expiresAt ? ` · till ${new Date(s.grant.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}` : " · forever"})
+                        </span>
+                      </span>
+                    ) : <span className="text-[#A1A1AA]">No access code</span>}
+                  </div>
+                </div>
+
+                {/* Users with access (expandable) */}
+                <button
+                  onClick={() => setExpandedStore(expanded ? null : s.shop)}
+                  className="flex items-center gap-1.5 mt-3 text-[12px] font-semibold text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors"
+                >
+                  <ChevronRight size={13} className={cn("transition-transform", expanded && "rotate-90")} />
+                  {s.userCount} user{s.userCount === 1 ? "" : "s"} with access
+                </button>
+                {expanded && (
+                  <div className="mt-2 space-y-1.5 pl-5">
+                    {s.users.map(u => (
+                      <div key={u.email} className="flex items-center justify-between gap-2 text-[12px]">
+                        <div className="min-w-0">
+                          <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{u.name}</span>
+                          <span className="text-[#A1A1AA]"> · {u.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {u.status === "pending" && <span className="text-[11px] text-[#B45309] bg-[#FFFBEB] px-1.5 py-0.5 rounded-full font-semibold">pending</span>}
+                          <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full capitalize", roleBadge(u.role))}>
+                            {u.role.replace("_", " ")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 

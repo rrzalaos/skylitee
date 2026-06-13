@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
       if (session?.email) {
         await addShopToUser(session.email, shop);
         await updateSessionShop(sessionToken, shop);
+        // Record connect date + owner once (first connector), for the admin store view.
+        if (!(await shopKv.getConnectedAt(shop))) {
+          await shopKv.setConnectedAt(shop, new Date().toISOString());
+          await shopKv.setOwner(shop, session.email);
+        }
       }
     }
 

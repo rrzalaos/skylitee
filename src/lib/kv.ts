@@ -130,6 +130,13 @@ export const shopKv = {
   getTz: (shop: string) => kvGet<string>(`shop:${shop}:tz`),
   setTz: (shop: string, v: string) => kvSet(`shop:${shop}:tz`, v, 7 * 24 * 60 * 60),
 
+  // When the store first connected Shopify, and the owner who connected it (the account
+  // that ran OAuth). Set once on connect — used by the admin store view for age & ownership.
+  getConnectedAt: (shop: string) => kvGet<string>(`shop:${shop}:connected_at`),
+  setConnectedAt: (shop: string, v: string) => kvSet(`shop:${shop}:connected_at`, v),
+  getOwner: (shop: string) => kvGet<string>(`shop:${shop}:owner`),
+  setOwner: (shop: string, v: string) => kvSet(`shop:${shop}:owner`, v),
+
   // Team members per shop
   getTeam: (shop: string) => kvGet<TeamMember[]>(`shop:${shop}:team`),
   setTeam: (shop: string, v: TeamMember[]) => kvSet(`shop:${shop}:team`, v),
