@@ -5,33 +5,13 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV } from "@/lib/export";
 import { exportElementToPDF } from "@/lib/export-visual";
+import { PrintableSEO } from "./PrintableSEO";
+import type { GSCData, GA4Data, MonthlyMonth } from "./types";
 import { Donut, Gauge } from "@/components/ui/charts";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { CheckCircle2, AlertTriangle, XCircle, Search, TrendingUp, MousePointerClick, Eye, Users, IndianRupee, Filter } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-interface GSCData {
-  site: string;
-  period: { startDate: string; endDate: string };
-  kpis: { clicks: number; impressions: number; ctr: number; avgPosition: number };
-  keywords: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
-  pages: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
-  devices: { device: string; clicks: number; impressions: number; ctr: number }[];
-  countries: { country: string; clicks: number; impressions: number; ctr: number }[];
-  daily: { date: string; clicks: number; impressions: number }[];
-  branded: { brandLabel: string; brandedClicks: number; brandedImpr: number; nonBrandedClicks: number; nonBrandedImpr: number };
-  positionBuckets: { label: string; clicks: number; impressions: number; keywords: number }[];
-}
-
-interface GA4Data {
-  organic: { sessions: number; users: number; bounceRate: number; avgSessionSec: number; purchases: number; revenue: number; engagementRate: number } | null;
-  organicLandingPages: { page: string; sessions: number; bounceRate: number; purchases: number; revenue: number }[];
-}
-
-interface MonthlyData {
-  months: { ym: string; label: string; clicks: number; impressions: number; ctr: number; position: number }[];
-}
 
 function shortUrl(url: string) {
   return url.replace(/^https?:\/\/[^/]+/, "").replace(/^$/, "/") || "/";
@@ -77,10 +57,10 @@ function PoleBar({ label, value, pct, color, sub }: { label: string; value: stri
 
 export default function SEOReportPage() {
   const { range } = useDateRange();
-  const reportRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<GSCData | null>(null);
   const [ga4, setGa4] = useState<GA4Data | null>(null);
-  const [monthly, setMonthly] = useState<MonthlyData["months"]>([]);
+  const [monthly, setMonthly] = useState<MonthlyMonth[]>([]);
   const [loading, setLoading] = useState(true);
   const [notConnected, setNotConnected] = useState(false);
   const generatedAt = new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -203,7 +183,8 @@ export default function SEOReportPage() {
   const posGaugeVal = Math.max(0, Math.min(100, ((11 - k.avgPosition) / 10) * 100));
 
   return (
-    <div ref={reportRef} className="space-y-4">
+    <>
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -216,7 +197,7 @@ export default function SEOReportPage() {
         <div data-html2canvas-ignore="true">
           <ExportButton
             onExportCSV={() => exportToCSV(`skylitee-seo-report-${range.from}`, buildSections())}
-            onExportPDF={() => reportRef.current ? exportElementToPDF(reportRef.current, `skylitee-seo-report-${range.from}`, {
+            onExportPDF={() => printRef.current ? exportElementToPDF(printRef.current, `skylitee-seo-report-${range.from}`, {
               reportTitle: "SEO Report",
               subtitle: `${data.site} · ${range.label}`,
               branding: { brandName: "Skylitee", color: "#4285F4" },
@@ -462,5 +443,11 @@ export default function SEOReportPage() {
 
       <p className="text-[12px] text-[#A1A1AA] text-center pt-2">GSC reflects Google Search (≈3-day lag, Pacific Time). GA4 organic = Organic Search channel only. Branded split inferred from the &quot;{b.brandLabel}&quot; domain term.</p>
     </div>
+
+    {/* Off-screen, PDF-optimized layout — captured for the PDF export (bigger fonts, color, dense). */}
+    <div ref={printRef} aria-hidden style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+      <PrintableSEO data={data} ga4={ga4} monthly={monthly} site={data.site} rangeLabel={range.label} generatedAt={generatedAt} />
+    </div>
+    </>
   );
 }
