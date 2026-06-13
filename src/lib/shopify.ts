@@ -91,6 +91,23 @@ export async function shopifyPost<T = unknown>(
   return res.json();
 }
 
+export async function shopifyDelete(
+  shop: string,
+  accessToken: string,
+  path: string
+): Promise<boolean> {
+  const res = await fetch(shopifyApiUrl(shop, path), {
+    method: "DELETE",
+    headers: {
+      "X-Shopify-Access-Token": accessToken,
+      "Content-Type": "application/json",
+    },
+  });
+  rotateTokenIfNeeded(shop, res);
+  // 200/404 both mean "no longer active" — treat as success.
+  return res.ok || res.status === 404;
+}
+
 export function buildAuthUrl(shop: string, state: string): string {
   const appUrl = process.env.SHOPIFY_APP_URL!;
   const params = new URLSearchParams({

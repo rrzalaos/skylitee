@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
-import { couponKv, Coupon } from "@/lib/kv";
+import { couponKv, Coupon, CouponKind, DurationType, normalizeCoupon } from "@/lib/kv";
 
 async function checkAdmin(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -11,7 +11,7 @@ async function checkAdmin(req: NextRequest): Promise<boolean> {
 
 export async function GET(req: NextRequest) {
   if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  const coupons = await couponKv.listAll();
+  const coupons = (await couponKv.listAll()).map(normalizeCoupon);
   coupons.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return NextResponse.json({ coupons });
 }
@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as {
     code: string;
+    kind: CouponKind;
     discountPct: number;
+    durationType: DurationType;
+    durationValue: number;
     maxUses: number;
     expiresAt: string | null;
   };
@@ -30,9 +33,21 @@ export async function POST(req: NextRequest) {
   if (!normalized || normalized.length < 3) {
     return NextResponse.json({ error: "Code must be at least 3 characters (letters & numbers only)" }, { status: 400 });
   }
-  if (body.discountPct < 1 || body.discountPct > 100) {
-    return NextResponse.json({ error: "Discount must be between 1% and 100%" }, { status: 400 });
+
+  const kind: CouponKind = body.kind === "discount" ? "discount" : "free";
+  // Free codes are 100% off; discount codes need a real 1–99 percentage.
+  const discountPct = kind === "free" ? 100 : Math.round(body.discountPct);
+  if (kind === "discount" && (discountPct < 1 || discountPct > 99)) {
+    return NextResponse.json({ error: "Discount must be between 1% and 99%" }, { status: 400 });
   }
+
+  const durationType: DurationType =
+    body.durationType === "days" || body.durationType === "months" ? body.durationType : "forever";
+  const durationValue = durationType === "forever" ? 0 : Math.round(body.durationValue);
+  if (durationType !== "forever" && (!durationValue || durationValue < 1)) {
+    return NextResponse.json({ error: "Duration must be at least 1" }, { status: 400 });
+  }
+
   if (body.maxUses < 0) {
     return NextResponse.json({ error: "Max uses must be 0 or more" }, { status: 400 });
   }
@@ -42,7 +57,10 @@ export async function POST(req: NextRequest) {
 
   const coupon: Coupon = {
     code: normalized,
-    discountPct: body.discountPct,
+    kind,
+    discountPct,
+    durationType,
+    durationValue,
     maxUses: body.maxUses,
     usedCount: 0,
     expiresAt: body.expiresAt || null,

@@ -13,8 +13,10 @@ export default function PricingPage() {
 }
 
 interface CouponResult {
+  kind: "free" | "discount";
   discountPct: number;
   finalPrice: number;
+  benefit: string;
 }
 
 function PricingContent() {
@@ -30,6 +32,10 @@ function PricingContent() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
 
+  // Access state — drives the "your access ended" / "discount ended" banners
+  const [revertPending, setRevertPending] = useState(false);
+  const [accessEnded, setAccessEnded] = useState(false);
+
   const plan = PLANS[0];
   const errorParam = searchParams.get("error");
   const subscribed = searchParams.get("subscribed");
@@ -37,7 +43,12 @@ function PricingContent() {
   useEffect(() => {
     fetch("/api/billing/status")
       .then(r => r.json())
-      .then(d => setCurrentPlan(d.plan ?? null))
+      .then(d => {
+        setCurrentPlan(d.plan ?? null);
+        setRevertPending(!!d.discountRevertPending);
+        // An expired grant (no active access, not a brand-new store) → access lapsed.
+        setAccessEnded(!d.hasAccess && !!d.grant);
+      })
       .catch(() => {});
   }, []);
 
@@ -57,9 +68,9 @@ function PricingContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: couponCode, action: "validate" }),
       });
-      const data = await res.json() as { valid?: boolean; discountPct?: number; finalPrice?: number; error?: string };
+      const data = await res.json() as { valid?: boolean; kind?: "free" | "discount"; discountPct?: number; finalPrice?: number; benefit?: string; error?: string };
       if (data.valid) {
-        setCouponResult({ discountPct: data.discountPct!, finalPrice: data.finalPrice! });
+        setCouponResult({ kind: data.kind!, discountPct: data.discountPct!, finalPrice: data.finalPrice!, benefit: data.benefit ?? "" });
       } else {
         const msg = data.error === "not_connected"
         ? "Please connect your Shopify store first (Settings → Connections)"
@@ -76,8 +87,8 @@ function PricingContent() {
     setLoading(true);
     setError(null);
 
-    // 100% off — bypass Shopify billing entirely
-    if (couponResult?.discountPct === 100) {
+    // Free code — bypass Shopify billing entirely
+    if (couponResult?.kind === "free") {
       try {
         const res = await fetch("/api/billing/coupon", {
           method: "POST",
@@ -121,7 +132,8 @@ function PricingContent() {
     }
   }
 
-  const isActive = currentPlan === plan.id;
+  // Stored plan can still read "growth" after a grant expires — treat lapsed access as inactive.
+  const isActive = currentPlan === plan.id && !revertPending && !accessEnded;
 
   const displayPrice = couponResult
     ? couponResult.finalPrice
@@ -129,7 +141,7 @@ function PricingContent() {
 
   const btnLabel = loading
     ? "Redirecting to Shopify…"
-    : couponResult?.discountPct === 100
+    : couponResult?.kind === "free"
       ? "Get Free Access"
       : couponResult
         ? `Subscribe at $${couponResult.finalPrice}/mo`
@@ -164,6 +176,20 @@ function PricingContent() {
       {error && (
         <div className="w-full max-w-md mb-6 bg-[#FEF2F2] dark:bg-[#2D0A0A] border border-[#EF4444]/30 rounded-2xl px-4 py-3 text-[13px] text-[#991B1B] dark:text-[#FCA5A5] font-semibold">
           {error}
+        </div>
+      )}
+
+      {/* Discount window ended — must re-subscribe at full price */}
+      {revertPending && (
+        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[13px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
+          Your discounted pricing period has ended. Re-subscribe at the full ${plan.price}/mo to keep your access.
+        </div>
+      )}
+
+      {/* Free/trial access ended */}
+      {accessEnded && !revertPending && (
+        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[13px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
+          Your free access period has ended. Subscribe below to continue using Skylitee.
         </div>
       )}
 
@@ -202,7 +228,7 @@ function PricingContent() {
         {couponResult && (
           <div className="flex items-center gap-2 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-xl px-3 py-2 mb-5 text-[12px] font-bold text-[#15803D] dark:text-[#4ADE80]">
             <Tag size={11} />
-            Coupon applied — {couponResult.discountPct}% off
+            Code applied — {couponResult.benefit || (couponResult.kind === "free" ? "Free access" : `${couponResult.discountPct}% off`)}
             <button
               className="ml-auto text-[#A1A1AA] hover:text-[#EF4444] text-[11px] font-semibold"
               onClick={() => { setCouponResult(null); setCouponCode(""); setCouponOpen(false); }}

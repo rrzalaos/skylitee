@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthorizedShop } from "@/lib/session";
-import { shopKv, couponKv } from "@/lib/kv";
+import { shopKv, couponKv, Grant, normalizeCoupon, computeGrantExpiry, describeBenefit } from "@/lib/kv";
 import { PLANS } from "@/lib/billing";
 
 function isCouponValid(coupon: { active: boolean; expiresAt: string | null; maxUses: number; usedCount: number }): boolean {
@@ -29,22 +29,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "You have already used this coupon" }, { status: 400 });
   }
 
+  const norm = normalizeCoupon(coupon);
   const basePrice = PLANS[0].price;
-  const finalPrice = coupon.discountPct === 100
+  const finalPrice = norm.kind === "free"
     ? 0
-    : parseFloat((basePrice * (1 - coupon.discountPct / 100)).toFixed(2));
+    : parseFloat((basePrice * (1 - norm.discountPct / 100)).toFixed(2));
+  const benefit = describeBenefit(norm);
 
   if (action === "validate") {
-    return NextResponse.json({ valid: true, discountPct: coupon.discountPct, finalPrice });
+    return NextResponse.json({
+      valid: true,
+      kind: norm.kind,
+      discountPct: norm.discountPct,
+      finalPrice,
+      durationType: norm.durationType,
+      durationValue: norm.durationValue,
+      benefit,
+    });
   }
 
-  // apply — only valid for 100% off (free access, bypasses Shopify billing)
-  if (coupon.discountPct !== 100) {
-    return NextResponse.json({ error: "This coupon applies a partial discount — please proceed through the subscription flow" }, { status: 400 });
+  // apply — only free codes are granted here (they bypass Shopify billing).
+  // Discount codes must run through the subscription flow (Shopify charge).
+  if (norm.kind !== "free") {
+    return NextResponse.json({ error: "This code applies a discount — please proceed through the subscription flow" }, { status: 400 });
   }
+
+  const grant: Grant = {
+    couponCode: norm.code,
+    kind: "free",
+    discountPct: 100,
+    startedAt: new Date().toISOString(),
+    expiresAt: computeGrantExpiry(norm.durationType, norm.durationValue),
+  };
 
   await Promise.allSettled([
     shopKv.setPlan(shop, "growth"),
+    shopKv.setGrant(shop, grant),
     couponKv.set(normalized, {
       ...coupon,
       usedCount: coupon.usedCount + 1,

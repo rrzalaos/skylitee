@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { DateRangeProvider } from "@/lib/date-range-context";
@@ -8,11 +8,20 @@ import { Eye, X } from "lucide-react";
 
 interface ImpersonateData { id: string; name: string; brand: string; }
 
+// Pages a gated (unsubscribed / expired) user may still reach — to subscribe or connect.
+function isExemptPath(pathname: string): boolean {
+  return pathname.startsWith("/dashboard/pricing") || pathname.startsWith("/dashboard/connections");
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [impersonate, setImpersonate] = useState<ImpersonateData | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(true);
+  const [accessChecked, setAccessChecked] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const raw = localStorage.getItem("skylitee-impersonate");
@@ -21,8 +30,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetch("/api/auth/me")
       .then(r => r.json())
       .then(d => { if (d.isAdmin) setIsAdmin(true); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setAdminChecked(true));
+
+    fetch("/api/billing/status")
+      .then(r => r.json())
+      .then(d => setHasAccess(!!d.hasAccess))
+      .catch(() => setHasAccess(true)) // never lock someone out on a network blip
+      .finally(() => setAccessChecked(true));
   }, []);
+
+  // Access gate: send subscribers-only pages to the plans screen when access has lapsed.
+  // Admins and impersonation sessions bypass entirely.
+  const exempt = isExemptPath(pathname);
+  const gated = adminChecked && accessChecked && !isAdmin && !impersonate && !exempt && !hasAccess;
+
+  useEffect(() => {
+    if (gated) router.replace("/dashboard/pricing");
+  }, [gated, router]);
 
   const exitImpersonate = () => {
     localStorage.removeItem("skylitee-impersonate");
@@ -55,7 +80,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-5">
-            {children}
+            {gated ? (
+              <div className="h-full flex items-center justify-center text-[13px] text-[#71717A] dark:text-[#A1A1AA]">
+                Redirecting to plans…
+              </div>
+            ) : children}
           </main>
         </div>
       </div>

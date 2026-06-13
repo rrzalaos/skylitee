@@ -1,14 +1,58 @@
 import { kv } from "@vercel/kv";
 
+export type CouponKind = "free" | "discount";
+export type DurationType = "days" | "months" | "forever";
+
 export interface Coupon {
   code: string;
-  discountPct: number;      // 1–100
-  maxUses: number;          // 0 = unlimited
+  kind?: CouponKind;            // "free" (100% off) | "discount" (partial). Absent on legacy coupons — derive from discountPct.
+  discountPct: number;          // 1–100
+  durationType?: DurationType;  // how long the benefit lasts once redeemed. Absent on legacy coupons → treat as "forever".
+  durationValue?: number;       // e.g. 14 (days) or 3 (months); ignored when durationType is "forever"
+  maxUses: number;              // 0 = unlimited
   usedCount: number;
-  expiresAt: string | null; // ISO date or null
+  expiresAt: string | null;     // last day the code can be CLAIMED (ISO date or null)
   createdAt: string;
   active: boolean;
-  redemptions: string[];    // shops that redeemed
+  redemptions: string[];        // shops that redeemed
+}
+
+// Per-shop access grant — the benefit a redeemed coupon (or admin comp) confers.
+export interface Grant {
+  couponCode: string;           // source code, or "ADMIN" for a hand-granted comp
+  kind: CouponKind;
+  discountPct: number;
+  startedAt: string;            // ISO
+  expiresAt: string | null;     // ISO end of benefit window; null = forever
+}
+
+// Normalize a coupon read from KV so legacy records have the new fields.
+export function normalizeCoupon(c: Coupon): Required<Pick<Coupon, "kind" | "durationType" | "durationValue">> & Coupon {
+  return {
+    ...c,
+    kind: c.kind ?? (c.discountPct >= 100 ? "free" : "discount"),
+    durationType: c.durationType ?? "forever",
+    durationValue: c.durationValue ?? 0,
+  };
+}
+
+// Compute the ISO end of a benefit window given a duration, starting now (or from a base date).
+export function computeGrantExpiry(durationType: DurationType, durationValue: number, from: Date = new Date()): string | null {
+  if (durationType === "forever") return null;
+  const d = new Date(from);
+  if (durationType === "days") d.setDate(d.getDate() + durationValue);
+  else if (durationType === "months") d.setMonth(d.getMonth() + durationValue);
+  return d.toISOString();
+}
+
+// Plain-English description of what a coupon/grant gives (e.g. "50% off for 3 months").
+export function describeBenefit(opts: { kind: CouponKind; discountPct: number; durationType: DurationType; durationValue: number }): string {
+  const what = opts.kind === "free" ? "Free" : `${opts.discountPct}% off`;
+  if (opts.durationType === "forever") return `${what} forever`;
+  const unit = opts.durationType === "days"
+    ? (opts.durationValue === 1 ? "day" : "days")
+    : (opts.durationValue === 1 ? "month" : "months");
+  return `${what} for ${opts.durationValue} ${unit}`;
 }
 
 // Gracefully no-ops if KV env vars are not set (local dev without KV)
@@ -69,6 +113,12 @@ export const shopKv = {
   setPlan:      (shop: string, v: string) => kvSet(`shop:${shop}:plan`, v),
   getChargeId:  (shop: string) => kvGet<string>(`shop:${shop}:charge_id`),
   setChargeId:  (shop: string, v: string) => kvSet(`shop:${shop}:charge_id`, v),
+  delChargeId:  (shop: string) => kvDel(`shop:${shop}:charge_id`),
+
+  // Access grant (free/discount benefit window from a redeemed coupon or admin comp)
+  getGrant: (shop: string) => kvGet<Grant>(`shop:${shop}:grant`),
+  setGrant: (shop: string, v: Grant) => kvSet(`shop:${shop}:grant`, v),
+  delGrant: (shop: string) => kvDel(`shop:${shop}:grant`),
 
   // Pending coupon code (stored during discounted Shopify billing flow, 1-hour TTL)
   getPendingCoupon: (shop: string) => kvGet<string>(`shop:${shop}:pending_coupon`),
@@ -93,6 +143,7 @@ export const shopKv = {
       `shop:${shop}:meta_ad_account`,
       `shop:${shop}:plan`,
       `shop:${shop}:charge_id`,
+      `shop:${shop}:grant`,
       `shop:${shop}:team`,
     ];
     await Promise.allSettled(keys.map(k => kvDel(k)));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, updateUser, hashPassword, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
+import { shopKv, Grant, DurationType, computeGrantExpiry } from "@/lib/kv";
 
 export async function PATCH(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -10,7 +11,13 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  const body = await req.json() as { email: string; action: "disable" | "enable" | "reset-password"; newPassword?: string };
+  const body = await req.json() as {
+    email: string;
+    action: "disable" | "enable" | "reset-password" | "grant-access" | "revoke-access";
+    newPassword?: string;
+    durationType?: DurationType;
+    durationValue?: number;
+  };
   const { email, action } = body;
   if (!email || !action) return NextResponse.json({ error: "email and action required" }, { status: 400 });
 
@@ -23,6 +30,32 @@ export async function PATCH(req: NextRequest) {
     }
     target.passwordHash = hashPassword(body.newPassword);
     await updateUser(target);
+    return NextResponse.json({ ok: true });
+  }
+
+  // Comp a client: write a free access grant directly on their store (no code needed).
+  if (action === "grant-access") {
+    const shop = target.shops[0];
+    if (!shop) return NextResponse.json({ error: "User has no connected store" }, { status: 400 });
+    const durationType: DurationType =
+      body.durationType === "days" || body.durationType === "months" ? body.durationType : "forever";
+    const durationValue = durationType === "forever" ? 0 : Math.max(1, Math.round(body.durationValue ?? 1));
+    const grant: Grant = {
+      couponCode: "ADMIN",
+      kind: "free",
+      discountPct: 100,
+      startedAt: new Date().toISOString(),
+      expiresAt: computeGrantExpiry(durationType, durationValue),
+    };
+    await Promise.allSettled([shopKv.setGrant(shop, grant), shopKv.setPlan(shop, "growth")]);
+    return NextResponse.json({ ok: true, grant });
+  }
+
+  // Remove a comp: clear the grant and reset to free.
+  if (action === "revoke-access") {
+    const shop = target.shops[0];
+    if (!shop) return NextResponse.json({ error: "User has no connected store" }, { status: 400 });
+    await Promise.allSettled([shopKv.delGrant(shop), shopKv.setPlan(shop, "free")]);
     return NextResponse.json({ ok: true });
   }
 

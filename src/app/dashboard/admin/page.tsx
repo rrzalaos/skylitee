@@ -7,7 +7,7 @@ import {
   Users, BarChart2, LayoutDashboard,
   Search, UserX, UserCheck, ShieldCheck,
   Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
-  Tag, Plus, Trash2, ToggleLeft, ToggleRight, KeyRound,
+  Tag, Plus, Trash2, ToggleLeft, ToggleRight, KeyRound, Gift,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,15 +33,36 @@ interface StoreStats {
   error: boolean;
 }
 
+type CouponKind = "free" | "discount";
+type DurationType = "days" | "months" | "forever";
+
 interface Coupon {
   code: string;
+  kind?: CouponKind;
   discountPct: number;
+  durationType?: DurationType;
+  durationValue?: number;
   maxUses: number;
   usedCount: number;
   expiresAt: string | null;
   createdAt: string;
   active: boolean;
   redemptions: string[];
+}
+
+const PRO_PRICE = 29;
+
+// What a code gives, in plain English — e.g. "Free for 14 days", "50% off for 3 months".
+function describeBenefit(c: Coupon): string {
+  const kind: CouponKind = c.kind ?? (c.discountPct >= 100 ? "free" : "discount");
+  const durationType: DurationType = c.durationType ?? "forever";
+  const durationValue = c.durationValue ?? 0;
+  const what = kind === "free" ? "Free" : `${c.discountPct}% off`;
+  if (durationType === "forever") return `${what} · forever`;
+  const unit = durationType === "days"
+    ? (durationValue === 1 ? "day" : "days")
+    : (durationValue === 1 ? "month" : "months");
+  return `${what} · ${durationValue} ${unit}`;
 }
 
 const ADMIN_PIN = "TempPwd@#2026";
@@ -123,6 +144,8 @@ export default function AdminPage() {
   const [loginAsLoading, setLoginAsLoading] = useState<string | null>(null);
   const [resetTarget, setResetTarget] = useState<string | null>(null); // email of user being reset
   const [resetPassword, setResetPassword] = useState("");
+  const [grantTarget, setGrantTarget] = useState<string | null>(null); // email of user being comped
+  const [grantBusy, setGrantBusy] = useState(false);
   const [storeStats, setStoreStats] = useState<Record<string, StoreStats>>({});
 
   // Coupons state
@@ -130,7 +153,10 @@ export default function AdminPage() {
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCode, setNewCode] = useState("");
-  const [newDiscount, setNewDiscount] = useState(100);
+  const [newKind, setNewKind] = useState<CouponKind>("free");
+  const [newDiscount, setNewDiscount] = useState(50);
+  const [newDurationType, setNewDurationType] = useState<DurationType>("days");
+  const [newDurationValue, setNewDurationValue] = useState(14);
   const [newMaxUses, setNewMaxUses] = useState(1);
   const [newExpiry, setNewExpiry] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
@@ -243,6 +269,42 @@ export default function AdminPage() {
     }
   };
 
+  const giveAccess = async (durationType: DurationType, durationValue: number) => {
+    if (!grantTarget) return;
+    setGrantBusy(true);
+    const res = await fetch("/api/admin/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: grantTarget, action: "grant-access", durationType, durationValue }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string };
+    setGrantBusy(false);
+    if (data.ok) {
+      showToast(`Access granted to ${grantTarget}.`);
+      setGrantTarget(null);
+    } else {
+      showToast(data.error ?? "Could not grant access.");
+    }
+  };
+
+  const revokeAccess = async () => {
+    if (!grantTarget) return;
+    setGrantBusy(true);
+    const res = await fetch("/api/admin/user", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: grantTarget, action: "revoke-access" }),
+    });
+    const data = await res.json() as { ok?: boolean; error?: string };
+    setGrantBusy(false);
+    if (data.ok) {
+      showToast(`Access removed for ${grantTarget}.`);
+      setGrantTarget(null);
+    } else {
+      showToast(data.error ?? "Could not remove access.");
+    }
+  };
+
   const loginAs = async (email: string) => {
     setLoginAsLoading(email);
     try {
@@ -293,7 +355,10 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: newCode,
+          kind: newKind,
           discountPct: newDiscount,
+          durationType: newDurationType,
+          durationValue: newDurationValue,
           maxUses: newMaxUses,
           expiresAt: newExpiry || null,
         }),
@@ -303,10 +368,13 @@ export default function AdminPage() {
         setCoupons(prev => [data.coupon!, ...prev]);
         setShowCreateForm(false);
         setNewCode("");
-        setNewDiscount(100);
+        setNewKind("free");
+        setNewDiscount(50);
+        setNewDurationType("days");
+        setNewDurationValue(14);
         setNewMaxUses(1);
         setNewExpiry("");
-        showToast("Coupon created.");
+        showToast("Access code created.");
       } else {
         setCreateError(data.error ?? "Failed to create coupon");
       }
@@ -314,6 +382,16 @@ export default function AdminPage() {
       setCreateError("Network error.");
     }
     setCreateLoading(false);
+  };
+
+  const applyPreset = (preset: "trial" | "freeClient" | "discountClient") => {
+    if (preset === "trial") {
+      setNewKind("free"); setNewDurationType("days"); setNewDurationValue(14); setNewMaxUses(0);
+    } else if (preset === "freeClient") {
+      setNewKind("free"); setNewDurationType("forever"); setNewMaxUses(1);
+    } else {
+      setNewKind("discount"); setNewDiscount(50); setNewDurationType("months"); setNewDurationValue(3); setNewMaxUses(1);
+    }
   };
 
   const deleteCoupon = async (code: string) => {
@@ -584,14 +662,23 @@ export default function AdminPage() {
                             {u.disabled ? <><UserCheck size={10} /> Restore</> : <><UserX size={10} /> Suspend</>}
                           </button>
                         </td>
-                        {/* Reset Password */}
+                        {/* Reset Password + Give access */}
                         <td className="py-3 pr-3">
-                          <button
-                            onClick={() => { setResetTarget(u.email); setResetPassword(""); }}
-                            title={`Reset password for ${u.name}`}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] hover:bg-[#FFEDD5] transition-colors">
-                            <KeyRound size={10} /> Reset
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => { setResetTarget(u.email); setResetPassword(""); }}
+                              title={`Reset password for ${u.name}`}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] hover:bg-[#FFEDD5] transition-colors">
+                              <KeyRound size={10} /> Reset
+                            </button>
+                            <button
+                              onClick={() => setGrantTarget(u.email)}
+                              disabled={!u.shops[0]}
+                              title={u.shops[0] ? `Give free access to ${u.name}` : "No connected store"}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[15px] font-bold bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                              <Gift size={10} /> Access
+                            </button>
+                          </div>
                         </td>
                         {/* Login As */}
                         <td className="py-3">
@@ -690,30 +777,48 @@ export default function AdminPage() {
           {/* Header + Create button */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h3 className="text-[15px] font-bold dark:text-[#F4F4F5]">Coupon Codes</h3>
-              <p className="text-[13px] text-[#A1A1AA]">Generate discount codes for clients</p>
+              <h3 className="text-[15px] font-bold dark:text-[#F4F4F5]">Access Codes</h3>
+              <p className="text-[13px] text-[#A1A1AA]">Free trials, comped clients & discount codes</p>
             </div>
             <button
               onClick={() => setShowCreateForm(v => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"
             >
-              <Plus size={12} /> Generate Coupon
+              <Plus size={12} /> New Code
             </button>
           </div>
 
           {/* Create form */}
           {showCreateForm && (
             <Card>
-              <div className="text-[14px] font-bold dark:text-[#F4F4F5] mb-4">New Coupon</div>
+              <div className="text-[14px] font-bold dark:text-[#F4F4F5] mb-1">New Access Code</div>
+
+              {/* Quick-start presets */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {([
+                  { id: "trial" as const, label: "Trial · Free 14d" },
+                  { id: "freeClient" as const, label: "Free client" },
+                  { id: "discountClient" as const, label: "Discount client" },
+                ]).map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => applyPreset(p.id)}
+                    className="px-2.5 py-1 rounded-lg text-[12px] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] hover:bg-[#FFEDD5] dark:hover:bg-[#3A2410] transition-colors"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Code */}
-                <div>
-                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Coupon Code</label>
+                <div className="sm:col-span-2">
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Code</label>
                   <div className="flex gap-2">
                     <input
                       value={newCode}
                       onChange={e => setNewCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                      placeholder="e.g. RRAHI2025"
+                      placeholder="e.g. AGENCY30"
                       maxLength={20}
                       className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] font-mono uppercase"
                     />
@@ -726,27 +831,82 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Discount % */}
-                <div>
-                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">
-                    Discount — {newDiscount}% off
-                    {newDiscount === 100 && <span className="ml-1 text-[#22C55E]">(Free access)</span>}
-                  </label>
-                  <input
-                    type="range"
-                    min={1}
-                    max={100}
-                    value={newDiscount}
-                    onChange={e => setNewDiscount(Number(e.target.value))}
-                    className="w-full accent-[#F97316]"
-                  />
-                  <div className="flex justify-between text-[11px] text-[#A1A1AA] mt-0.5">
-                    <span>1%</span>
-                    <span className="text-[#F97316] font-bold">
-                      ${((29 * (1 - newDiscount / 100))).toFixed(2)}/mo
-                      {newDiscount === 100 && " · FREE"}
-                    </span>
-                    <span>100%</span>
+                {/* What it gives */}
+                <div className="sm:col-span-2">
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1.5">What it gives</label>
+                  <div className="flex gap-2 mb-2">
+                    {([
+                      { id: "free" as const, label: "Free access" },
+                      { id: "discount" as const, label: "Discount" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setNewKind(opt.id)}
+                        className={cn(
+                          "flex-1 py-2 rounded-xl text-[13px] font-bold border transition-colors",
+                          newKind === opt.id
+                            ? "bg-[#F97316] text-white border-[#F97316]"
+                            : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-black/[0.06] dark:border-white/[0.06] hover:border-[#F97316]"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {newKind === "discount" && (
+                    <>
+                      <input
+                        type="range"
+                        min={1}
+                        max={99}
+                        value={newDiscount}
+                        onChange={e => setNewDiscount(Number(e.target.value))}
+                        className="w-full accent-[#F97316]"
+                      />
+                      <div className="flex justify-between text-[11px] text-[#A1A1AA] mt-0.5">
+                        <span>1%</span>
+                        <span className="text-[#F97316] font-bold">
+                          {newDiscount}% off · ${(PRO_PRICE * (1 - newDiscount / 100)).toFixed(2)}/mo
+                        </span>
+                        <span>99%</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* How long */}
+                <div className="sm:col-span-2">
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1.5">How long</label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex gap-2">
+                      {([
+                        { id: "days" as const, label: "Days" },
+                        { id: "months" as const, label: "Months" },
+                        { id: "forever" as const, label: "Forever" },
+                      ]).map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setNewDurationType(opt.id)}
+                          className={cn(
+                            "px-3 py-2 rounded-xl text-[13px] font-bold border transition-colors",
+                            newDurationType === opt.id
+                              ? "bg-[#F97316] text-white border-[#F97316]"
+                              : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-black/[0.06] dark:border-white/[0.06] hover:border-[#F97316]"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {newDurationType !== "forever" && (
+                      <input
+                        type="number"
+                        min={1}
+                        value={newDurationValue}
+                        onChange={e => setNewDurationValue(Math.max(1, Number(e.target.value)))}
+                        className="w-24 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -762,9 +922,9 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* Expiry */}
+                {/* Claim deadline */}
                 <div>
-                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Expiry Date (optional)</label>
+                  <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-1">Claimable until (optional)</label>
                   <input
                     type="date"
                     value={newExpiry}
@@ -772,6 +932,18 @@ export default function AdminPage() {
                     className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]"
                   />
                 </div>
+              </div>
+
+              {/* Live preview */}
+              <div className="mt-3 bg-[#FAFAF9] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[12px] text-[#52525B] dark:text-[#A1A1AA]">
+                <span className="font-mono font-bold text-[#F97316]">{newCode || "CODE"}</span>
+                {" → "}
+                {newKind === "free" ? "Free" : `${newDiscount}% off`}
+                {newDurationType === "forever"
+                  ? " forever"
+                  : ` for ${newDurationValue} ${newDurationType}`}
+                {" · "}
+                {newMaxUses === 0 ? "unlimited stores" : `up to ${newMaxUses} store${newMaxUses === 1 ? "" : "s"}`}
               </div>
 
               {createError && (
@@ -785,7 +957,7 @@ export default function AdminPage() {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors disabled:opacity-50"
                 >
                   {createLoading ? <RefreshCw size={11} className="animate-spin" /> : <Plus size={11} />}
-                  Create Coupon
+                  Create Code
                 </button>
                 <button
                   onClick={() => { setShowCreateForm(false); setCreateError(null); }}
@@ -808,7 +980,7 @@ export default function AdminPage() {
                 <table className="w-full text-[13px] min-w-[700px]">
                   <thead>
                     <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                      {["Code", "Discount", "Uses", "Expires", "Status", "Actions"].map(h => (
+                      {["Code", "Gives", "Uses", "Claim by", "Status", "Actions"].map(h => (
                         <th key={h} className="text-left text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide py-2.5 pr-4 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -824,13 +996,10 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="py-3 pr-4 font-bold dark:text-[#F4F4F5]">
-                            {c.discountPct}% off
-                            {c.discountPct === 100 && (
-                              <span className="ml-1 text-[#22C55E] font-semibold text-[11px]">FREE</span>
-                            )}
-                            {c.discountPct < 100 && (
+                            {describeBenefit(c)}
+                            {(c.kind ?? (c.discountPct >= 100 ? "free" : "discount")) === "discount" && (
                               <div className="text-[11px] text-[#A1A1AA] font-normal">
-                                ${(29 * (1 - c.discountPct / 100)).toFixed(2)}/mo
+                                ${(PRO_PRICE * (1 - c.discountPct / 100)).toFixed(2)}/mo
                               </div>
                             )}
                           </td>
@@ -873,6 +1042,57 @@ export default function AdminPage() {
               </div>
             )}
           </Card>
+        </div>
+      )}
+
+      {/* Give Access modal */}
+      {grantTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-black/[0.06] dark:border-white/[0.06]">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-[#F0FDF4] dark:bg-[#052E16] rounded-xl flex items-center justify-center shrink-0">
+                <Gift size={14} className="text-[#16A34A]" />
+              </div>
+              <div>
+                <div className="text-[14px] font-bold dark:text-[#F4F4F5]">Give Free Access</div>
+                <div className="text-[12px] text-[#A1A1AA] truncate max-w-[220px]">{grantTarget}</div>
+              </div>
+            </div>
+            <label className="text-[12px] font-semibold text-[#A1A1AA] uppercase tracking-wide block mb-2">For how long</label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {([
+                { label: "Forever", type: "forever" as DurationType, value: 0 },
+                { label: "3 months", type: "months" as DurationType, value: 3 },
+                { label: "1 month", type: "months" as DurationType, value: 1 },
+                { label: "14 days", type: "days" as DurationType, value: 14 },
+              ]).map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => giveAccess(opt.type, opt.value)}
+                  disabled={grantBusy}
+                  className="py-2.5 rounded-xl text-[13px] font-bold bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052E16] hover:bg-[#DCFCE7] transition-colors disabled:opacity-50"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={revokeAccess}
+                disabled={grantBusy}
+                className="flex-1 py-2.5 rounded-xl text-[13px] font-bold bg-[#FEF2F2] text-[#DC2626] dark:bg-[#2D0A0A] hover:bg-[#FEE2E2] transition-colors disabled:opacity-50"
+              >
+                Remove access
+              </button>
+              <button
+                onClick={() => setGrantTarget(null)}
+                disabled={grantBusy}
+                className="px-4 py-2.5 rounded-xl text-[13px] font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
