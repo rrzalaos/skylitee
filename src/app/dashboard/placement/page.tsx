@@ -100,18 +100,85 @@ function buildPlacementInsights(placements: Placement[], totalSpend: number): PI
 
 function barColor(roas: number) { return roas >= 3 ? "#16A34A" : roas >= 1.5 ? "#94A3B8" : roas > 0 ? "#EF4444" : "#FB923C"; }
 
+// Surface the winning / working segment within a breakdown (age, gender, time, device) and
+// flag any budget drain. dimWord reads naturally per dimension ("age group", "audience"…).
+function buildBucketInsights(buckets: BBucket[], dimWord: string): PInsight[] {
+  const out: PInsight[] = [];
+  const spending = buckets.filter(b => b.spend > 0);
+  const total = spending.reduce((s, b) => s + b.spend, 0);
+  if (spending.length === 0 || total <= 0) return out;
+
+  const share = (b: BBucket) => (b.spend / total) * 100;
+  const withRoas = spending.filter(b => b.roas > 0);
+
+  // Winner — best ROAS, preferring buckets with a meaningful spend share
+  const best = [...withRoas].filter(b => share(b) >= 5).sort((a, b) => b.roas - a.roas)[0]
+    ?? [...withRoas].sort((a, b) => b.roas - a.roas)[0];
+  if (best && best.roas >= 2) {
+    out.push({ good: true, title: `${best.label} is your winning ${dimWord} — ROAS ${best.roas}x`, body: `Best return (${best.roas}× on ${share(best).toFixed(0)}% of budget${best.purchases > 0 ? `, ${best.purchases} orders` : ""}). This is working — push more budget toward this ${dimWord} to scale efficiently.` });
+  }
+
+  // Best converter — highest click→order rate, if it isn't already the ROAS winner
+  const conv = spending.filter(b => b.convRate > 0).sort((a, b) => b.convRate - a.convRate)[0];
+  if (conv && conv.convRate >= 1 && (!best || conv.label !== best.label)) {
+    out.push({ good: true, title: `${conv.label} converts best — ${conv.convRate}% click→order`, body: `Highest conversion rate of any ${dimWord}. Visitors from this ${dimWord} are the most likely to buy — prioritise it in your targeting.` });
+  }
+
+  // Strongest engagement — CTR star, if distinct from the above
+  const ctrStar = spending.filter(b => b.ctr >= 1.5 && b.clicks > 0).sort((a, b) => b.ctr - a.ctr)[0];
+  if (ctrStar && (!best || ctrStar.label !== best.label) && (!conv || ctrStar.label !== conv.label)) {
+    out.push({ good: true, title: `${ctrStar.label} engages most — CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates with this ${dimWord} — keep serving it here.` });
+  }
+
+  // Budget drain — big spend share but ROAS below the 1.5x line
+  const drain = spending.filter(b => share(b) >= 15 && b.roas > 0 && b.roas < 1.5).sort((a, b) => b.spend - a.spend)[0];
+  if (drain) {
+    out.push({ good: false, title: `${drain.label} is draining budget — ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5× line while eating a big share of budget. Cut spend on this ${dimWord} and move it to ${best ? best.label : "your best segment"}.` });
+  }
+
+  return out.slice(0, 5);
+}
+
 // Generic breakdown view (Age / Gender / Time / Device) — Spend chart + full metric table.
-function BreakdownView({ title, dimLabel, buckets, cur }: { title: string; dimLabel: string; buckets: BBucket[]; cur: string }) {
+function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: string; dimLabel: string; dimWord: string; buckets: BBucket[]; cur: string }) {
   const fmt = (n: number) => n.toLocaleString("en-IN");
   const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   if (!buckets || buckets.length === 0) return (
     <Card><CardHeader title={title} /><div className="text-[13px] text-[#A1A1AA] py-10 text-center">No {dimLabel.toLowerCase()} data from Meta for this period.</div></Card>
   );
+  const insights = buildBucketInsights(buckets, dimWord);
+  const attention = insights.filter(i => !i.good);
+  const working = insights.filter(i => i.good);
   const vertical = buckets.length > 10; // hourly (24 buckets) reads better as columns
   const chartData = buckets.map(b => ({ label: b.label, spend: b.spend, roas: b.roas }));
   const cols = ["Spend", "Spend%", "ROAS", "Orders", "Cost/Order", "Revenue", "Impr", "Reach", "CPM", "CTR", "Clicks", "CPC", "LP Views", "Cost/LPV", "Conv%"];
   return (
     <>
+      {insights.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader title="What's Working & What's Not" right={`by ${dimLabel.toLowerCase()}`} />
+          <div className="space-y-2">
+            {attention.map((i, idx) => (
+              <div key={`a${idx}`} className="border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl p-3">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <AlertTriangle size={13} className="text-[#EF4444] shrink-0" />
+                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                </div>
+                <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+              </div>
+            ))}
+            {working.map((i, idx) => (
+              <div key={`w${idx}`} className="border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl p-3">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
+                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                </div>
+                <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
       <Card className="mb-4">
         <CardHeader title={`Spend by ${dimLabel}`} right="Bar colour = ROAS · green ≥3× · red <1.5×" />
         <div className="h-56">
@@ -308,10 +375,10 @@ export default function PlacementPage() {
         ))}
       </div>
 
-      {tab === "age" && <BreakdownView title="Performance by Age" dimLabel="Age" buckets={data.breakdowns?.age ?? []} cur={cur} />}
-      {tab === "gender" && <BreakdownView title="Performance by Gender" dimLabel="Gender" buckets={data.breakdowns?.gender ?? []} cur={cur} />}
-      {tab === "time" && <BreakdownView title="Performance by Time of Day" dimLabel="Hour" buckets={data.breakdowns?.hourly ?? []} cur={cur} />}
-      {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
+      {tab === "age" && <BreakdownView title="Performance by Age" dimLabel="Age" dimWord="age group" buckets={data.breakdowns?.age ?? []} cur={cur} />}
+      {tab === "gender" && <BreakdownView title="Performance by Gender" dimLabel="Gender" dimWord="audience" buckets={data.breakdowns?.gender ?? []} cur={cur} />}
+      {tab === "time" && <BreakdownView title="Performance by Time of Day" dimLabel="Hour" dimWord="time slot" buckets={data.breakdowns?.hourly ?? []} cur={cur} />}
+      {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" dimWord="device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
 
       {tab === "placement" && (<>
       {/* Platform group summary */}
