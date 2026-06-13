@@ -44,7 +44,7 @@ interface Coupon {
   redemptions: string[];
 }
 
-const ADMIN_PIN = "skylitee2026";
+const ADMIN_PIN = "TempPwd@#2026";
 
 function PlatformDots({ c }: { c: AdminUser["connections"] }) {
   const dots = [
