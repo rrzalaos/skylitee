@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetch, ShopifyProduct, ShopifyOrder } from "@/lib/shopify";
+import { shopifyFetch, fetchOrdersInRange, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -8,15 +8,15 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
   const { shop, token } = session;
 
-  const cacheKey = `cache:${shop}:products`;
+  const cacheKey = `cache:${shop}:products:v2`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [{ products }, { orders }] = await Promise.all([
+  const [{ products }, orders] = await Promise.all([
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
-    shopifyFetch<{ orders: ShopifyOrder[] }>(shop, token, `/orders.json?status=any&created_at_min=${monthStart}&limit=250&fields=line_items`),
+    fetchOrdersInRange(shop, token, monthStart),
   ]);
 
   // Build sales map from orders
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     o.line_items.forEach(item => {
       if (!salesMap[item.product_id]) salesMap[item.product_id] = { qty: 0, revenue: 0 };
       salesMap[item.product_id].qty += item.quantity;
-      salesMap[item.product_id].revenue += parseFloat(item.price) * item.quantity;
+      salesMap[item.product_id].revenue += parseFloat(item.price) * item.quantity - parseFloat(item.total_discount ?? "0");
     });
   });
 

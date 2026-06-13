@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetch } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
-interface LineItem { product_id: number; title: string; quantity: number; price: string; sku?: string }
-interface Order {
-  id: number; name?: string; total_price: string; created_at: string;
-  financial_status: string; payment_gateway: string;
-  customer?: { orders_count: number };
-  line_items: LineItem[];
-  shipping_address?: { city: string; province: string };
-}
+type Order = ShopifyOrder;
 
 function isCod(o: Order) {
   const gw = o.payment_gateway?.toLowerCase() ?? "";
@@ -27,21 +20,17 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:sales:v2:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const periodStart = fromParam ? new Date(fromParam + "T00:00:00.000Z") : new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = toParam ? new Date(toParam + "T23:59:59.999Z") : now;
   const days = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
 
-  const fields = "id,name,total_price,created_at,financial_status,payment_gateway,customer,line_items,shipping_address";
-  const { orders } = await shopifyFetch<{ orders: Order[] }>(
-    shop, token,
-    `/orders.json?status=any&created_at_min=${periodStart.toISOString()}&created_at_max=${periodEnd.toISOString()}&limit=250&fields=${fields}`
-  );
+  const orders = await fetchOrdersInRange(shop, token, periodStart.toISOString(), periodEnd.toISOString());
 
   /* ── KPIs ── */
-  const grossSales = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
+  const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
   const aov = totalOrders ? grossSales / totalOrders : 0;
   const newCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) === 1).length;
@@ -58,7 +47,8 @@ export async function GET(req: NextRequest) {
       const key = item.title;
       if (!productMap[key]) productMap[key] = { name: item.title, qty: 0, revenue: 0 };
       productMap[key].qty += item.quantity;
-      productMap[key].revenue += parseFloat(item.price) * item.quantity;
+      // Subtract line-level discounts so product revenue reconciles with order totals.
+      productMap[key].revenue += parseFloat(item.price) * item.quantity - parseFloat(item.total_discount ?? "0");
       totalItems += item.quantity;
     });
   });
@@ -75,7 +65,7 @@ export async function GET(req: NextRequest) {
   orders.forEach(o => {
     const city = o.shipping_address?.city?.trim();
     const state = o.shipping_address?.province?.trim();
-    const rev = parseFloat(o.total_price);
+    const rev = orderRevenue(o);
     if (city) {
       cityMap[city] = cityMap[city] ?? { orders: 0, revenue: 0 };
       cityMap[city].orders++; cityMap[city].revenue += rev;
@@ -97,7 +87,7 @@ export async function GET(req: NextRequest) {
     .slice(0, 20)
     .map(o => ({
       name: o.name ?? `#${o.id}`,
-      total: Math.round(parseFloat(o.total_price)),
+      total: Math.round(orderRevenue(o)),
       status: o.financial_status,
       gateway: o.payment_gateway ?? "",
       city: o.shipping_address?.city ?? "",

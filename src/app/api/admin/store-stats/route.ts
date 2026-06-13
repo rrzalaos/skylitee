@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
-import { shopifyFetch } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue } from "@/lib/shopify";
 
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
 }
-
-interface Order { total_price: string; payment_gateway: string; }
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -34,12 +32,9 @@ export async function GET(req: NextRequest) {
   const to = now.toISOString();
 
   try {
-    const { orders } = await shopifyFetch<{ orders: Order[] }>(
-      shop, sToken,
-      `/orders.json?status=any&created_at_min=${from}&created_at_max=${to}&limit=250&fields=total_price,payment_gateway`
-    );
+    const orders = await fetchOrdersInRange(shop, sToken, from, to);
 
-    const revenue = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
+    const revenue = orders.reduce((s, o) => s + orderRevenue(o), 0);
     const ordersCount = orders.length;
     const aov = ordersCount ? Math.round(revenue / ordersCount) : 0;
     const codOrders = orders.filter(o => {

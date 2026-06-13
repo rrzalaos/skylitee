@@ -102,13 +102,16 @@ export default function GA4Page() {
   const channelColors: ("green" | "blue" | "amber" | "purple" | "teal")[] = ["green", "blue", "amber", "purple", "teal"];
   const dailyFormatted = (data.daily ?? []).map(d => ({ ...d, label: d.date.slice(4).replace(/(\d{2})(\d{2})/, "$1/$2") }));
 
-  const returningUsers = data.kpis.users - data.kpis.newUsers;
-  const totalPurchases = data.channels.reduce((s, c) => s + c.purchases, 0);
-  const totalRevenue = data.channels.reduce((s, c) => s + c.revenue, 0);
-  const topChannel = [...data.channels].sort((a, b) => b.sessions - a.sessions)[0];
-
   const newRow = data.newVsReturning.find(r => r.type === "new");
   const retRow = data.newVsReturning.find(r => r.type === "returning");
+
+  // Returning users from GA4's own new-vs-returning report (subtraction can go negative).
+  const returningUsers = retRow?.users ?? Math.max(0, data.kpis.users - data.kpis.newUsers);
+  // Totals from the dimensionless ecommerce report — channel rows are capped at 10 and
+  // summing them under-reports vs GA4. Fall back to the channel sum only if ecom is missing.
+  const totalPurchases = data.ecommerce?.purchases ?? data.channels.reduce((s, c) => s + c.purchases, 0);
+  const totalRevenue = data.ecommerce?.revenue ?? data.channels.reduce((s, c) => s + c.revenue, 0);
+  const topChannel = [...data.channels].sort((a, b) => b.sessions - a.sessions)[0];
 
   function buildSections() {
     if (!data) return [];

@@ -45,13 +45,13 @@ function parseNextLink(link: string | null): string | null {
 // Follows Shopify cursor pagination (Link header) and returns every page concatenated.
 // `path` is the first-page path (include limit + fields); subsequent pages follow the
 // full URL Shopify returns in the Link header. `key` is the JSON array key, e.g. "customers".
-// maxPages bounds the loop (40 × 250 = 10,000 records) so a huge store can't hang the request.
+// maxPages bounds the loop (100 × 250 = 25,000 records) so a huge store can't hang the request.
 export async function shopifyFetchAll<T = unknown>(
   shop: string,
   accessToken: string,
   path: string,
   key: string,
-  maxPages = 40
+  maxPages = 100
 ): Promise<T[]> {
   let url: string | null = shopifyApiUrl(shop, path);
   const all: T[] = [];
@@ -137,16 +137,52 @@ export async function exchangeCodeForToken(shop: string, code: string): Promise<
 
 export interface ShopifyOrder {
   id: number;
+  name?: string;
   total_price: string;
+  current_total_price?: string;   // live order total — reflects refunds & edits (matches Shopify "Total sales")
   subtotal_price: string;
   total_discounts: string;
   created_at: string;
+  cancelled_at?: string | null;
+  test?: boolean;
   financial_status: string;
   fulfillment_status: string | null;
   payment_gateway: string;
   customer?: { id: number; orders_count: number; total_spent: string };
-  line_items: { product_id: number; title: string; quantity: number; price: string }[];
+  line_items: { product_id: number; title: string; quantity: number; price: string; total_discount?: string }[];
   shipping_address?: { city: string; province: string };
+}
+
+// Field set covering every Shopify route. Must include cancelled_at/test/financial_status
+// (for filtering) and current_total_price (for refund-aware revenue) or the helpers below break.
+export const ORDER_FIELDS =
+  "id,name,total_price,current_total_price,subtotal_price,total_discounts,created_at,cancelled_at,test,financial_status,fulfillment_status,payment_gateway,customer,line_items,shipping_address";
+
+// A real, counted sale: Shopify excludes test orders, cancelled orders, and voided ones
+// from its sales reports — so we must too, or our totals run higher than the admin.
+export function isRealOrder(o: ShopifyOrder): boolean {
+  return !o.cancelled_at && !o.test && o.financial_status !== "voided";
+}
+
+// Order revenue matching Shopify "Total sales": current_total_price stays in sync as the
+// order is refunded or edited; total_price is the frozen creation-time value (ignores refunds).
+export function orderRevenue(o: ShopifyOrder): number {
+  return parseFloat(o.current_total_price ?? o.total_price ?? "0");
+}
+
+// Fetch EVERY real order in a window (paginated past the 250/page limit, test/cancelled/
+// voided filtered out). `fromISO` required; `toISO` optional. Use this everywhere instead of
+// a one-page shopifyFetch so stores with >250 orders aren't silently undercounted.
+export async function fetchOrdersInRange(
+  shop: string,
+  accessToken: string,
+  fromISO: string,
+  toISO?: string,
+): Promise<ShopifyOrder[]> {
+  const max = toISO ? `&created_at_max=${encodeURIComponent(toISO)}` : "";
+  const path = `/orders.json?status=any&created_at_min=${encodeURIComponent(fromISO)}${max}&limit=250&fields=${ORDER_FIELDS}`;
+  const orders = await shopifyFetchAll<ShopifyOrder>(shop, accessToken, path, "orders", 100);
+  return orders.filter(isRealOrder);
 }
 
 export interface ShopifyProduct {

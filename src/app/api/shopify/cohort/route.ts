@@ -1,36 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { shopifyApiUrl } from "@/lib/shopify";
+import { shopifyFetchAll, isRealOrder, orderRevenue, ShopifyOrder, ORDER_FIELDS } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
-type RawOrder = {
-  id: number;
-  customer?: { id: number };
-  created_at: string;
-  total_price: string;
-};
-
-async function fetchAllOrders(shop: string, token: string): Promise<RawOrder[]> {
-  const headers = { "X-Shopify-Access-Token": token, "Content-Type": "application/json" };
-  const all: RawOrder[] = [];
-
-  let path = `/orders.json?limit=250&status=any&fields=id,customer,created_at,total_price`;
-
-  for (let i = 0; i < 10; i++) {
-    const res = await fetch(shopifyApiUrl(shop, path), { headers });
-    if (!res.ok) break;
-
-    const data = await res.json() as { orders: RawOrder[] };
-    all.push(...data.orders);
-
-    if (data.orders.length < 250) break;
-
-    const link = res.headers.get("Link") ?? "";
-    const match = link.match(/<[^>]+[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/);
-    if (!match) break;
-    path = `/orders.json?limit=250&page_info=${match[1]}`;
-  }
-
-  return all;
+// Cohorts need each customer's FULL order history (to find their true first order), so we
+// fetch all-time rather than a window — but paginated (up to 25k orders) and filtered to
+// real sales, instead of the old hand-rolled 10-page (2,500-order) cap that truncated.
+async function fetchAllOrders(shop: string, token: string): Promise<ShopifyOrder[]> {
+  const orders = await shopifyFetchAll<ShopifyOrder>(
+    shop, token,
+    `/orders.json?limit=250&status=any&fields=${ORDER_FIELDS}`,
+    "orders",
+  );
+  return orders.filter(isRealOrder);
 }
 
 function monthKey(date: Date): string {
@@ -60,7 +41,7 @@ export async function GET(req: NextRequest) {
   for (const o of rawOrders) {
     if (!o.customer?.id) continue;
     const entry = customerOrders.get(o.customer.id) ?? [];
-    entry.push({ date: new Date(o.created_at), price: parseFloat(o.total_price) });
+    entry.push({ date: new Date(o.created_at), price: orderRevenue(o) });
     customerOrders.set(o.customer.id, entry);
   }
 

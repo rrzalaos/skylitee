@@ -80,8 +80,8 @@ export async function GET(req: NextRequest) {
 
   const [overviewRes, campaignInsightsRes, dailyRes, campaignsMetaRes] = await Promise.all([
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${overviewFields}&time_range=${timeRange}&action_attribution_windows=${attrWindows}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${campaignFields}&time_range=${timeRange}&level=campaign&limit=20&action_attribution_windows=${attrWindows}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks,actions,action_values&time_range=${timeRange}&time_increment=1&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${campaignFields}&time_range=${timeRange}&level=campaign&limit=500&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=spend,impressions,clicks,actions,action_values&time_range=${timeRange}&time_increment=1&limit=1000&action_attribution_windows=${attrWindows}&access_token=${token}`),
     fetch(`https://graph.facebook.com/v19.0/${adAccountId}/campaigns?fields=id,name,status,objective&limit=50&access_token=${token}`),
   ]);
 

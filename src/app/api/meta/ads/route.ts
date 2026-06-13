@@ -185,8 +185,8 @@ export async function GET(req: NextRequest) {
   ].join(",");
 
   const [insightsRes, adsRes] = await Promise.all([
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=50&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bid,name,thumbnail_url,image_url,object_type,call_to_action_type,video_id,object_story_spec%7Blink_data%7Bmessage,name,description,picture,link,call_to_action,child_attachments%7D,video_data%7Bmessage,title,image_url,video_id,call_to_action%7D,photo_data%7Bimage_url%7D%7D,asset_feed_spec%7Bimages,videos,bodies,titles,descriptions,call_to_action_types%7D%7D,campaign%7Bobjective%7D&limit=100&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=200&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bid,name,thumbnail_url,image_url,object_type,call_to_action_type,video_id,object_story_spec%7Blink_data%7Bmessage,name,description,picture,link,call_to_action,child_attachments%7D,video_data%7Bmessage,title,image_url,video_id,call_to_action%7D,photo_data%7Bimage_url%7D%7D,asset_feed_spec%7Bimages,videos,bodies,titles,descriptions,call_to_action_types%7D%7D,campaign%7Bobjective%7D&limit=200&access_token=${token}`),
   ]);
 
   const [insightsData, adsData] = await Promise.all([

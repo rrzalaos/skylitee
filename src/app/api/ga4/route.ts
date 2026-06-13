@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
       body: JSON.stringify({ dateRanges, dimensions, metrics, limit }),
     });
     const json = await res.json() as { rows?: GA4Row[]; error?: unknown };
+    // Throw on API errors (quota/permission/invalid metric) so this report resolves to null
+    // via Promise.allSettled instead of being read as real "zero" data.
+    if (!res.ok || json.error) throw new Error(`GA4 report failed: ${res.status}`);
     return json;
   };
 

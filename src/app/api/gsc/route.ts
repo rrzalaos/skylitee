@@ -23,13 +23,18 @@ export async function GET(req: NextRequest) {
     ? savedSite
     : sites[0].siteUrl;
 
+  // GSC data lags ~2-3 days. Defaulting the end date to "today" pulls in empty/partial
+  // days, so our totals read LOWER than the GSC dashboard (which shows the last stable
+  // window). Anchor the default end 3 days back. `dataState: "final"` (below) further
+  // guarantees only finalized days count, regardless of the dates requested.
   const now = new Date();
-  const defaultEnd = now.toISOString().split("T")[0];
-  const defaultStart = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const lagEnd = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const defaultEnd = lagEnd.toISOString().split("T")[0];
+  const defaultStart = new Date(lagEnd.getTime() - 27 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const startDate = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const endDate = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:gsc:${startDate}:${endDate}`;
+  const cacheKey = `cache:${shop}:gsc:v2:${startDate}:${endDate}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const query = (extra: object) =>
@@ -38,17 +43,18 @@ export async function GET(req: NextRequest) {
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate, endDate, ...extra }),
+        // type:"web" + dataState:"final" match the GSC dashboard's default, stable view.
+        body: JSON.stringify({ startDate, endDate, type: "web", dataState: "final", ...extra }),
       }
     );
 
   const [totalsRes, keywordsRes, pagesRes, devicesRes, countriesRes, dailyRes, sitemapsRes] =
     await Promise.all([
       query({ rowLimit: 1 }),
-      query({ dimensions: ["query"], rowLimit: 50 }),
-      query({ dimensions: ["page"], rowLimit: 20 }),
+      query({ dimensions: ["query"], rowLimit: 1000 }),
+      query({ dimensions: ["page"], rowLimit: 1000 }),
       query({ dimensions: ["device"], rowLimit: 10 }),
-      query({ dimensions: ["country"], rowLimit: 15 }),
+      query({ dimensions: ["country"], rowLimit: 50 }),
       query({ dimensions: ["date"], rowLimit: 90 }),
       fetch(
         `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
@@ -137,14 +143,15 @@ export async function GET(req: NextRequest) {
       ctr: ctrPct,
       avgPosition: avgPos,
     },
-    keywords: kwRows.map(r => ({
+    // Counts above use the full row set; the UI only shows the top rows, so trim the payload.
+    keywords: kwRows.slice(0, 50).map(r => ({
       query: r.keys?.[0] ?? "",
       clicks: r.clicks,
       impressions: r.impressions,
       ctr: +(r.ctr * 100).toFixed(1),
       position: +r.position.toFixed(1),
     })),
-    pages: pageRows.map(r => ({
+    pages: pageRows.slice(0, 20).map(r => ({
       page: r.keys?.[0] ?? "",
       clicks: r.clicks,
       impressions: r.impressions,

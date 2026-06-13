@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetchAll, ShopifyOrder } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 // Period-scoped customer intelligence: built from ORDERS placed inside the selected
@@ -21,27 +21,23 @@ export async function GET(req: NextRequest) {
     : new Date(now.getFullYear(), now.getMonth(), 1);
   const periodEnd = toParam ? new Date(toParam + "T23:59:59.999Z") : now;
 
-  const cacheKey = `cache:${shop}:customers:period:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:customers:period:v2:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  // Pull every order in the window (paginate, don't cap at 250).
-  const orders = await shopifyFetchAll<ShopifyOrder>(
-    shop, token,
-    `/orders.json?status=any&created_at_min=${periodStart.toISOString()}&created_at_max=${periodEnd.toISOString()}&limit=250&fields=id,total_price,created_at,customer,shipping_address`,
-    "orders"
-  );
+  // Pull every real order in the window (paginated; test/cancelled/voided excluded).
+  const orders = await fetchOrdersInRange(shop, token, periodStart.toISOString(), periodEnd.toISOString());
 
   // Dedupe to unique customers who bought in the window.
   const byCustomer = new Map<number, { ordersCount: number; spent: number; city?: string }>();
   let revenue = 0;
   for (const o of orders) {
-    revenue += parseFloat(o.total_price);
+    revenue += orderRevenue(o);
     const cid = o.customer?.id;
     if (cid == null) continue;
     const prev = byCustomer.get(cid);
     byCustomer.set(cid, {
       ordersCount: o.customer?.orders_count ?? prev?.ordersCount ?? 1,
-      spent: (prev?.spent ?? 0) + parseFloat(o.total_price),
+      spent: (prev?.spent ?? 0) + orderRevenue(o),
       city: o.shipping_address?.city ?? prev?.city,
     });
   }

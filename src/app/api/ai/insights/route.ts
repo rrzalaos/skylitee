@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { shopifyFetch, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetch, fetchOrdersInRange, orderRevenue, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
-interface Order { total_price: string; payment_gateway?: string; customer?: { orders_count: number }; }
 interface Customer { orders_count: number; total_spent: string; }
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -17,13 +16,13 @@ export async function GET(req: NextRequest) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const days = now.getDate();
 
-  const [{ orders }, { products }, { customers }] = await Promise.all([
-    shopifyFetch<{ orders: Order[] }>(shop, token, `/orders.json?status=any&created_at_min=${monthStart}&limit=250&fields=id,total_price,payment_gateway,customer`),
+  const [orders, { products }, { customers }] = await Promise.all([
+    fetchOrdersInRange(shop, token, monthStart),
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
     shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
   ]);
 
-  const grossSales = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
+  const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
   const aov = totalOrders ? Math.round(grossSales / totalOrders) : 0;
   const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;

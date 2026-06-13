@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { shopifyFetch, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetch, fetchOrdersInRange, orderRevenue, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
-interface OrderItem { product_id: number; quantity: number; price: string; }
-interface Order { total_price: string; payment_gateway?: string; customer?: { orders_count: number }; line_items: OrderItem[]; }
 interface Customer { orders_count: number; total_spent: string; created_at: string; }
 
 export async function GET(req: NextRequest) {
@@ -15,13 +13,13 @@ export async function GET(req: NextRequest) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const days = now.getDate();
 
-  const [{ orders }, { products }, { customers }] = await Promise.all([
-    shopifyFetch<{ orders: Order[] }>(shop, token, `/orders.json?status=any&created_at_min=${monthStart}&limit=250&fields=id,total_price,payment_gateway,customer,line_items`),
+  const [orders, { products }, { customers }] = await Promise.all([
+    fetchOrdersInRange(shop, token, monthStart),
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
     shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
   ]);
 
-  const grossSales = orders.reduce((s, o) => s + parseFloat(o.total_price), 0);
+  const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
   const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
   const codPct = totalOrders ? Math.round((codOrders / totalOrders) * 100) : 0;
