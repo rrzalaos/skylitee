@@ -4,7 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { NotConnected } from "@/components/ui/not-connected";
 import { useDateRange } from "@/lib/date-range-context";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Trophy, Wallet, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -25,8 +25,10 @@ interface Placement {
   purchaseValue: number;
   atc: number;
   lpv: number;
+  leads: number;
   roas: number;
   cac: number;
+  costPerLead: number;
   lpRatio: number;
 }
 
@@ -34,8 +36,8 @@ interface BBucket {
   key: string; label: string; sort: number;
   spend: number; impressions: number; reach: number; clicks: number;
   ctr: number; cpc: number; cpm: number;
-  purchases: number; purchaseValue: number; atc: number; lpv: number;
-  roas: number; cac: number; lpRatio: number; costPerLpv: number; convRate: number; spendPct: number;
+  purchases: number; purchaseValue: number; atc: number; lpv: number; leads: number;
+  roas: number; cac: number; costPerLead: number; lpRatio: number; costPerLpv: number; convRate: number; spendPct: number;
 }
 
 interface PlacementData {
@@ -100,6 +102,70 @@ function buildPlacementInsights(placements: Placement[], totalSpend: number): PI
 
 function barColor(roas: number) { return roas >= 3 ? "#16A34A" : roas >= 1.5 ? "#94A3B8" : roas > 0 ? "#EF4444" : "#FB923C"; }
 
+interface WinnerItem { label: string; purchases: number; leads: number; purchaseValue: number; spend: number; }
+
+// Headline "who wins" banner for the top of each tab — answers the plain question:
+// which segment drives the most orders (or leads, for a leads account) and the most spend.
+// Outcome auto-switches to leads when the account books more leads than orders.
+function WinnerHeadline({ items, dimWord, cur }: { items: WinnerItem[]; dimWord: string; cur: string }) {
+  const live = items.filter(i => i.spend > 0);
+  if (live.length === 0) return null;
+  const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
+  const totalLeads = live.reduce((s, i) => s + (i.leads || 0), 0);
+  const totalOrders = live.reduce((s, i) => s + (i.purchases || 0), 0);
+  const totalSpend = live.reduce((s, i) => s + i.spend, 0);
+  if (totalLeads + totalOrders === 0) return null; // nothing has converted yet
+
+  const useLeads = totalLeads > totalOrders;
+  const outVal = (i: WinnerItem) => (useLeads ? (i.leads || 0) : (i.purchases || 0));
+  const outNoun = useLeads ? "leads" : "orders";
+  const totalOut = useLeads ? totalLeads : totalOrders;
+
+  const topOut = [...live].sort((a, b) => outVal(b) - outVal(a))[0];
+  const topSpend = [...live].sort((a, b) => b.spend - a.spend)[0];
+  const outPct = totalOut > 0 ? Math.round(outVal(topOut) / totalOut * 100) : 0;
+  const spendPct = totalSpend > 0 ? Math.round(topSpend.spend / totalSpend * 100) : 0;
+
+  // Best value-for-money: highest ROAS (sales) or lowest cost-per-lead (leads), needs ≥2 results
+  const withResult = live.filter(i => outVal(i) >= 2);
+  const efficient = useLeads
+    ? [...withResult].sort((a, b) => (a.spend / (a.leads || 1)) - (b.spend / (b.leads || 1)))[0]
+    : [...withResult].filter(i => i.spend > 0).sort((a, b) => (b.purchaseValue / b.spend) - (a.purchaseValue / a.spend))[0];
+  const effSub = efficient
+    ? useLeads
+      ? `${fmtC(efficient.spend / (efficient.leads || 1))} per lead`
+      : `${+(efficient.purchaseValue / efficient.spend).toFixed(1)}x ROAS`
+    : "";
+
+  const tiles = [
+    { icon: Trophy, accent: "#16A34A", bg: "from-[#F0FDF4] to-white dark:from-[#052E16] dark:to-[#0A0A0A]", label: `Most ${outNoun}`, value: topOut.label, sub: `${outVal(topOut).toLocaleString("en-IN")} ${outNoun} · ${outPct}% of all ${outNoun}` },
+    { icon: Wallet, accent: "#F97316", bg: "from-[#FFF7ED] to-white dark:from-[#2A1505] dark:to-[#0A0A0A]", label: "Most spend", value: topSpend.label, sub: `${fmtC(topSpend.spend)} · ${spendPct}% of budget` },
+    ...(efficient ? [{ icon: Target, accent: "#7C3AED", bg: "from-[#FAF5FF] to-white dark:from-[#1E0A2E] dark:to-[#0A0A0A]", label: "Best value", value: efficient.label, sub: effSub }] : []),
+  ];
+
+  return (
+    <div className={cn("grid gap-2.5 mb-4", tiles.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2")}>
+      {tiles.map((t, i) => {
+        const Icon = t.icon;
+        return (
+          <div key={i} className={cn("relative rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-4 shadow-sm overflow-hidden bg-gradient-to-br", t.bg)}>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Icon size={14} style={{ color: t.accent }} className="shrink-0" />
+              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: t.accent }}>{t.label}</span>
+            </div>
+            <div className="text-[19px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight">{t.value}</div>
+            <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-1">{t.sub}</div>
+          </div>
+        );
+      })}
+      <div className="col-span-full text-[11px] text-[#A1A1AA] -mt-1">
+        Winner by {dimWord}. {useLeads ? "Showing leads — your account books more leads than orders." : "Showing orders."}
+      </div>
+    </div>
+  );
+}
+
 // Surface the winning / working segment within a breakdown (age, gender, time, device) and
 // flag any budget drain. dimWord reads naturally per dimension ("age group", "audience"…).
 function buildBucketInsights(buckets: BBucket[], dimWord: string): PInsight[] {
@@ -154,6 +220,7 @@ function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: stri
   const cols = ["Spend", "Spend%", "ROAS", "Orders", "Cost/Order", "Revenue", "Impr", "Reach", "CPM", "CTR", "Clicks", "CPC", "LP Views", "Cost/LPV", "Conv%"];
   return (
     <>
+      <WinnerHeadline items={buckets} dimWord={dimWord} cur={cur} />
       {insights.length > 0 && (
         <Card className="mb-4">
           <CardHeader title="What's Working & What's Not" right={`by ${dimLabel.toLowerCase()}`} />
@@ -328,16 +395,23 @@ export default function PlacementPage() {
     const ps = data.placements.filter(p => p.group === g);
     const spend = ps.reduce((s, p) => s + p.spend, 0);
     const purchases = ps.reduce((s, p) => s + p.purchases, 0);
+    const leads = ps.reduce((s, p) => s + (p.leads || 0), 0);
     const purchaseValue = ps.reduce((s, p) => s + p.purchaseValue, 0);
     return {
       group: g,
       spend: +spend.toFixed(2),
       purchases,
+      leads,
       purchaseValue: +purchaseValue.toFixed(2),
       roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
       pct: data.totalSpend > 0 ? +(spend / data.totalSpend * 100).toFixed(1) : 0,
     };
   }).filter(g => g.spend > 0);
+
+  // Headline winner for the Placement tab, by platform (Facebook / Instagram / …)
+  const platformWinnerItems: WinnerItem[] = groupData.map(g => ({
+    label: g.group, purchases: g.purchases, leads: g.leads, purchaseValue: g.purchaseValue, spend: g.spend,
+  }));
 
   const chartData = sorted.slice(0, 10).map(p => ({
     label: p.label.replace("Facebook ", "FB ").replace("Instagram ", "IG "),
@@ -381,6 +455,8 @@ export default function PlacementPage() {
       {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" dimWord="device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
 
       {tab === "placement" && (<>
+      {/* Headline winner — which platform drives the most orders/leads & spend */}
+      <WinnerHeadline items={platformWinnerItems} dimWord="platform" cur={cur} />
       {/* Platform group summary */}
       {groupData.length > 0 && (
         <div className={cn("grid gap-2.5 mb-4", groupData.length === 4 ? "grid-cols-4" : groupData.length === 3 ? "grid-cols-3" : groupData.length === 2 ? "grid-cols-2" : "grid-cols-1")}>

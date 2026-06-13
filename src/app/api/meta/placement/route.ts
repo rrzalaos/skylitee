@@ -44,6 +44,20 @@ function actVal(arr: ActionEntry[] | undefined, type: string): number {
   return parseFloat(arr?.find(a => a.action_type === type)?.value ?? "0");
 }
 
+// Lead = whatever result a leads campaign was optimized for (instant form, website pixel,
+// messaging/WhatsApp/IG DM, call, registration). Mirrors /api/meta — scan by name pattern
+// and take the largest single value rather than summing grouped+individual variants.
+const LEAD_ACTION_PATTERNS = ["lead", "messaging_conversation_started", "total_messaging_connection", "messaging_first_reply", "complete_registration", "click_to_call"];
+function leadCount(arr: ActionEntry[] | undefined): number {
+  if (!arr) return 0;
+  let max = 0;
+  for (const a of arr) {
+    const t = a.action_type.toLowerCase();
+    if (LEAD_ACTION_PATTERNS.some(p => t.includes(p))) max = Math.max(max, Math.round(parseFloat(a.value) || 0));
+  }
+  return max;
+}
+
 function friendlyLabel(platform: string, position: string): string {
   const p = platform.toLowerCase();
   const pos = position.toLowerCase();
@@ -94,6 +108,7 @@ function bucketFromRow(row: BreakdownRow, key: string, label: string, sort: numb
   const atc = Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart"));
   const clicks = parseInt(row.clicks ?? "0");
   const lpv = actInt(row.actions, "landing_page_view");
+  const leads = leadCount(row.actions);
   return {
     key, label, sort,
     spend: +spend.toFixed(2),
@@ -107,8 +122,10 @@ function bucketFromRow(row: BreakdownRow, key: string, label: string, sort: numb
     purchaseValue: +purchaseValue.toFixed(2),
     atc,
     lpv,
+    leads,
     roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
     cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
+    costPerLead: leads > 0 ? +(spend / leads).toFixed(2) : 0,
     lpRatio: clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0,
     costPerLpv: lpv > 0 ? +(spend / lpv).toFixed(2) : 0,
     convRate: clicks > 0 ? +(purchases / clicks * 100).toFixed(2) : 0,
@@ -192,6 +209,7 @@ export async function GET(req: NextRequest) {
     const atc = Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart"));
     const clicks = parseInt(row.clicks ?? "0");
     const lpv = actInt(row.actions, "landing_page_view");
+    const leads = leadCount(row.actions);
     return {
       platform: row.publisher_platform ?? "",
       position: row.platform_position ?? "",
@@ -208,8 +226,10 @@ export async function GET(req: NextRequest) {
       purchaseValue: +purchaseValue.toFixed(2),
       atc,
       lpv,
+      leads,
       roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
       cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
+      costPerLead: leads > 0 ? +(spend / leads).toFixed(2) : 0,
       lpRatio: clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0,
     };
   }).sort((a, b) => b.spend - a.spend);
