@@ -5,12 +5,23 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDateRange } from "@/lib/date-range-context";
 import { formatINR, formatNumber } from "@/lib/utils";
-import { Image as ImageIcon, Images, Video, LayoutGrid, TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Image as ImageIcon, Images, Video, Film, Play, MousePointerClick, LayoutGrid, TrendingUp, AlertTriangle, Info } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { exportToCSV, exportToPDF } from "@/lib/export";
 
 type Objective = "SALES" | "TRAFFIC" | "AWARENESS" | "ENGAGEMENT" | "LEADS" | "APP" | "OTHER";
+
+interface ParsedCreative {
+  type: "image" | "carousel" | "video" | "unknown";
+  images: string[];
+  videoThumb: string | null;
+  videoId: string | null;
+  cta: string | null;
+  primaryText: string | null;
+  headline: string | null;
+  description: string | null;
+}
 
 interface AdCreative {
   id: string;
@@ -19,6 +30,7 @@ interface AdCreative {
   thumbnail: string | null;
   objectType: string | null;
   format: "image" | "video" | "carousel";
+  creative: ParsedCreative;
   objective: Objective;
   spend: number;
   impressions: number;
@@ -111,6 +123,53 @@ function scoreColor(score: number) {
   return "bg-[#d94040]";
 }
 
+// CTA enum (SHOP_NOW / WHATSAPP_MESSAGE / …) → human label.
+function ctaLabel(cta: string | null): string | null {
+  if (!cta) return null;
+  const special: Record<string, string> = {
+    WHATSAPP_MESSAGE: "WhatsApp", MESSAGE_PAGE: "Send Message", LEARN_MORE: "Learn More",
+    SHOP_NOW: "Shop Now", SIGN_UP: "Sign Up", SUBSCRIBE: "Subscribe", BOOK_TRAVEL: "Book Now",
+    GET_QUOTE: "Get Quote", CONTACT_US: "Contact Us", CALL_NOW: "Call Now", ORDER_NOW: "Order Now",
+    DOWNLOAD: "Download", GET_OFFER: "Get Offer", APPLY_NOW: "Apply Now", BUY_NOW: "Buy Now",
+  };
+  return special[cta] ?? cta.split("_").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+}
+
+// Render the actual creative — full-res image, all carousel frames, or video thumb with a
+// play overlay — instead of the low-res square thumbnail. Mirrors the Meta drill-down.
+function CreativeMedia({ c }: { c: ParsedCreative }) {
+  const placeholder = (Icon: typeof ImageIcon, label: string) => (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#1877F2] opacity-50">
+      <Icon size={28} /><span className="text-[12px] font-medium">{label}</span>
+    </div>
+  );
+  if (c.type === "video") {
+    if (c.videoThumb) return (
+      <div className="relative w-full h-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={c.videoThumb} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="w-11 h-11 rounded-full bg-black/55 flex items-center justify-center"><Play size={20} className="text-white ml-0.5" fill="white" /></div>
+        </div>
+      </div>
+    );
+    return placeholder(Film, "Video");
+  }
+  if (c.type === "carousel" && c.images.length > 0) {
+    return (
+      <div className="flex h-full gap-1 overflow-x-auto snap-x">
+        {c.images.map((src, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={i} src={src} alt="" className="h-full aspect-square object-cover snap-start shrink-0" />
+        ))}
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  if (c.images.length > 0) return <img src={c.images[0]} alt="" className="w-full h-full object-cover" />;
+  return placeholder(ImageIcon, "No preview");
+}
+
 function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
   const sig = SIGNAL_STYLES[ad.signal];
   const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
@@ -118,20 +177,13 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
   const view = objectiveView(ad, fmt);
   const FmtIcon = ad.format === "video" ? Video : ad.format === "carousel" ? Images : ImageIcon;
   const fmtLabel = ad.format === "video" ? "Video" : ad.format === "carousel" ? "Carousel" : "Image";
+  const cta = ctaLabel(ad.creative.cta);
 
   return (
     <div className="bg-white border border-black/[0.09] rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
-      {/* Thumbnail */}
-      <div className="relative h-36 bg-[#f0f5ff] flex items-center justify-center">
-        {ad.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={ad.thumbnail} alt={ad.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex flex-col items-center gap-1.5 text-[#1877F2] opacity-50">
-            <FmtIcon size={32} />
-            <span className="text-[13px]">{fmtLabel}</span>
-          </div>
-        )}
+      {/* Creative preview — real image / carousel / video */}
+      <div className="relative h-44 bg-[#f0f5ff]">
+        <CreativeMedia c={ad.creative} />
         {/* Signal badge */}
         <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[12px] font-semibold ${sig.bg} ${sig.text}`}>
           {sig.label}
@@ -151,9 +203,22 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
 
       <div className="p-3">
         {/* Ad name */}
-        <div className="text-[14px] font-semibold text-[#181816] truncate mb-2" title={ad.name}>
+        <div className="text-[14px] font-semibold text-[#181816] truncate" title={ad.name}>
           {ad.name}
         </div>
+
+        {/* Ad copy — what the ad actually says */}
+        {cta && (
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-[#1877F2] bg-[#eff6ff] px-2 py-0.5 rounded-full">
+            <MousePointerClick size={11} /> {cta}
+          </span>
+        )}
+        {ad.creative.headline && (
+          <div className="text-[13px] font-semibold text-[#181816] mt-1.5 line-clamp-1" title={ad.creative.headline}>{ad.creative.headline}</div>
+        )}
+        {ad.creative.primaryText ? (
+          <p className="text-[12px] text-[#686864] mt-1 mb-2 leading-snug line-clamp-2" title={ad.creative.primaryText}>{ad.creative.primaryText}</p>
+        ) : <div className="mb-2" />}
 
         {/* Score bar */}
         <div className="mb-3">

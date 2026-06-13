@@ -20,35 +20,78 @@ interface AdInsightRow {
   video_thruplay_watched_actions?: ActionEntry[];
 }
 
+interface CTA { type?: string }
+interface ChildAttachment { image_url?: string; name?: string; description?: string; link?: string; call_to_action?: CTA }
+interface LinkData { message?: string; name?: string; description?: string; picture?: string; link?: string; call_to_action?: CTA; child_attachments?: ChildAttachment[] }
+interface VideoData { message?: string; title?: string; image_url?: string; video_id?: string; call_to_action?: CTA }
+interface ObjectStorySpec { link_data?: LinkData; video_data?: VideoData; photo_data?: { image_url?: string } }
+interface AssetFeedSpec {
+  images?: { url?: string; hash?: string }[];
+  videos?: { video_id?: string; thumbnail_url?: string }[];
+  bodies?: { text?: string }[]; titles?: { text?: string }[]; descriptions?: { text?: string }[];
+  call_to_action_types?: string[];
+}
+interface Creative {
+  id?: string; name?: string; thumbnail_url?: string; image_url?: string;
+  object_type?: string; call_to_action_type?: string; video_id?: string;
+  object_story_spec?: ObjectStorySpec; asset_feed_spec?: AssetFeedSpec;
+}
+
 interface AdRow {
   id: string;
   name: string;
   status: string;
-  creative?: {
-    thumbnail_url?: string;
-    object_type?: string;
-    image_url?: string;
-    video_id?: string;
-    object_story_spec?: {
-      video_data?: unknown;
-      link_data?: { child_attachments?: unknown[] };
-    };
-    asset_feed_spec?: { videos?: unknown[]; images?: unknown[] };
-  };
+  creative?: Creative;
   campaign?: { objective?: string };
 }
 
-export type CreativeFormat = "image" | "video" | "carousel";
-// Work out the creative format from the creative spec: a video_id / video_data / video
-// asset → Video; >1 carousel child or >1 feed image → Carousel; otherwise a single Image.
-function detectFormat(c: AdRow["creative"]): CreativeFormat {
-  if (!c) return "image";
-  const ot = (c.object_type ?? "").toUpperCase();
-  if (c.video_id || c.object_story_spec?.video_data || (c.asset_feed_spec?.videos?.length ?? 0) > 0 || ot === "VIDEO") return "video";
-  const childCount = c.object_story_spec?.link_data?.child_attachments?.length ?? 0;
-  const feedImages = c.asset_feed_spec?.images?.length ?? 0;
-  if (childCount > 1 || feedImages > 1) return "carousel";
-  return "image";
+export interface ParsedCreative {
+  type: "image" | "carousel" | "video" | "unknown";
+  images: string[];
+  videoThumb: string | null;
+  videoId: string | null;
+  cta: string | null;
+  primaryText: string | null;
+  headline: string | null;
+  description: string | null;
+}
+
+// Parse the full creative spec into usable media + copy. Mirrors /api/meta/drilldown so the
+// Creative Studio shows the same real creative (full-res image / all carousel frames / video
+// thumb) and the ad copy (primary text, headline, CTA) instead of just a low-res thumbnail.
+function parseCreative(cr: Creative | undefined): ParsedCreative {
+  const oss = cr?.object_story_spec;
+  const afs = cr?.asset_feed_spec;
+  const ld = oss?.link_data;
+  const vd = oss?.video_data;
+
+  const cta = cr?.call_to_action_type ?? ld?.call_to_action?.type ?? vd?.call_to_action?.type
+    ?? ld?.child_attachments?.[0]?.call_to_action?.type ?? afs?.call_to_action_types?.[0] ?? null;
+  const primaryText = ld?.message ?? vd?.message ?? afs?.bodies?.[0]?.text ?? null;
+  const headline = ld?.name ?? vd?.title ?? afs?.titles?.[0]?.text ?? null;
+  const description = ld?.description ?? afs?.descriptions?.[0]?.text ?? null;
+
+  const children = ld?.child_attachments ?? [];
+  const isCarousel = children.length > 1;
+  const videoId = cr?.video_id ?? vd?.video_id ?? afs?.videos?.[0]?.video_id ?? null;
+  const isVideo = !isCarousel && (cr?.object_type === "VIDEO" || !!vd || !!videoId || (afs?.videos?.length ?? 0) > 0);
+
+  let type: ParsedCreative["type"] = "unknown";
+  let images: string[] = [];
+  let videoThumb: string | null = null;
+
+  if (isCarousel) {
+    type = "carousel";
+    images = children.map(c => c.image_url).filter((u): u is string => !!u);
+  } else if (isVideo) {
+    type = "video";
+    videoThumb = vd?.image_url ?? afs?.videos?.[0]?.thumbnail_url ?? cr?.image_url ?? cr?.thumbnail_url ?? null;
+  } else {
+    const img = cr?.image_url ?? ld?.picture ?? oss?.photo_data?.image_url ?? afs?.images?.[0]?.url ?? cr?.thumbnail_url ?? null;
+    if (img) { type = "image"; images = [img]; }
+  }
+
+  return { type, images, videoThumb, videoId, cta, primaryText, headline, description };
 }
 
 function actVal(arr: ActionEntry[] | undefined, type: string): number {
@@ -153,7 +196,7 @@ export async function GET(req: NextRequest) {
 
   const [insightsRes, adsRes] = await Promise.all([
     fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=50&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bthumbnail_url,object_type,image_url,video_id,object_story_spec%7Bvideo_data,link_data%7Bchild_attachments%7D%7D,asset_feed_spec%7Bvideos,images%7D%7D,campaign%7Bobjective%7D&limit=100&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bid,name,thumbnail_url,image_url,object_type,call_to_action_type,video_id,object_story_spec%7Blink_data%7Bmessage,name,description,picture,link,call_to_action,child_attachments%7D,video_data%7Bmessage,title,image_url,video_id,call_to_action%7D,photo_data%7Bimage_url%7D%7D,asset_feed_spec%7Bimages,videos,bodies,titles,descriptions,call_to_action_types%7D%7D,campaign%7Bobjective%7D&limit=100&access_token=${token}`),
   ]);
 
   const [insightsData, adsData] = await Promise.all([
@@ -163,14 +206,14 @@ export async function GET(req: NextRequest) {
 
   if (insightsData.error) return NextResponse.json({ error: insightsData.error.message }, { status: 400 });
 
-  const thumbnailMap = new Map<string, { thumbnail?: string; objectType?: string; status?: string; objective?: string; format?: CreativeFormat }>();
+  const creativeMap = new Map<string, { thumbnail?: string; objectType?: string; status?: string; objective?: string; creative: ParsedCreative }>();
   for (const ad of adsData.data ?? []) {
-    thumbnailMap.set(ad.id, {
+    creativeMap.set(ad.id, {
       thumbnail: ad.creative?.thumbnail_url ?? ad.creative?.image_url,
       objectType: ad.creative?.object_type,
       status: ad.status,
       objective: ad.campaign?.objective,
-      format: detectFormat(ad.creative),
+      creative: parseCreative(ad.creative),
     });
   }
 
@@ -208,7 +251,8 @@ export async function GET(req: NextRequest) {
     const thumbStopRatio = impressions > 0 ? +(videoViews3s / impressions * 100).toFixed(1) : 0;
     const holdRatio = videoViews3s > 0 ? +(thruplay / videoViews3s * 100).toFixed(1) : 0;
 
-    const creativeInfo = thumbnailMap.get(adId);
+    const creativeInfo = creativeMap.get(adId);
+    const parsed = creativeInfo?.creative ?? { type: "unknown" as const, images: [], videoThumb: null, videoId: null, cta: null, primaryText: null, headline: null, description: null };
     const objective = normalizeObj(creativeInfo?.objective ?? "");
     const scoreInputs: ScoreInputs = { obj: objective, roas, ctr, freq, cpl: costPerLead, leads, cpm, cpc, costPerVisit, lpv, clicks };
     const score = computeScore(scoreInputs);
@@ -220,7 +264,8 @@ export async function GET(req: NextRequest) {
       status: creativeInfo?.status ?? "UNKNOWN",
       thumbnail: creativeInfo?.thumbnail ?? null,
       objectType: creativeInfo?.objectType ?? null,
-      format: creativeInfo?.format ?? "image",
+      format: parsed.type === "unknown" ? "image" : parsed.type,
+      creative: parsed,
       objective,
       spend: +spend.toFixed(2),
       impressions,
