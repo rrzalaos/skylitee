@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { NotConnected } from "@/components/ui/not-connected";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDateRange } from "@/lib/date-range-context";
 import { formatINR, formatNumber } from "@/lib/utils";
-import { Image as ImageIcon, Images, Video, Film, Play, MousePointerClick, LayoutGrid, TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Image as ImageIcon, Images, Video, Film, Play, MousePointerClick, LayoutGrid, TrendingUp, AlertTriangle, Info, X } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -170,7 +171,7 @@ function CreativeMedia({ c }: { c: ParsedCreative }) {
   return placeholder(ImageIcon, "No preview");
 }
 
-function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
+function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: string; onOpen: () => void }) {
   const sig = SIGNAL_STYLES[ad.signal];
   const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
   const obj = OBJ_META[ad.objective] ?? OBJ_META.OTHER;
@@ -180,7 +181,9 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
   const cta = ctaLabel(ad.creative.cta);
 
   return (
-    <div className="bg-white border border-black/[0.09] rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+    <div onClick={onOpen} role="button" tabIndex={0}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      className="bg-white border border-black/[0.09] rounded-xl overflow-hidden hover:shadow-md hover:border-black/[0.15] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1877F2]/40">
       {/* Creative preview — real image / carousel / video */}
       <div className="relative h-44 bg-[#f0f5ff]">
         <CreativeMedia c={ad.creative} />
@@ -270,6 +273,99 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
   );
 }
 
+// Full-size preview — the complete creative + all the ad copy, opened by clicking a card.
+function CreativeModal({ ad, currency, onClose }: { ad: AdCreative; currency: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
+
+  const c = ad.creative;
+  const obj = OBJ_META[ad.objective] ?? OBJ_META.OTHER;
+  const cta = ctaLabel(c.cta);
+  const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
+  const fmtC = (n: number) => `${currency === "INR" ? "₹" : "$"}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const stats: { label: string; value: string }[] = [
+    { label: "Spend", value: fmtC(ad.spend) },
+    ...objectiveView(ad, fmt).tiles,
+    { label: "Impressions", value: ad.impressions.toLocaleString("en-IN") },
+    { label: "Clicks", value: ad.clicks.toLocaleString("en-IN") },
+    { label: "CPC", value: fmtC(ad.cpc) },
+    { label: "CPM", value: fmtC(ad.cpm) },
+    ...(ad.format === "video" && ad.thumbStopRatio > 0 ? [{ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` }] : []),
+    ...(ad.format === "video" && ad.holdRatio > 0 ? [{ label: "Hold", value: `${ad.holdRatio}%` }] : []),
+  ];
+
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between p-4 border-b border-black/[0.06] sticky top-0 bg-white z-10">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`px-2 py-0.5 rounded-full text-[12px] font-semibold ${obj.cls}`}>{obj.label}</span>
+              <span className="text-[12px] text-[#9e9e9a] capitalize">{ad.format}</span>
+            </div>
+            <h3 className="text-[16px] font-semibold text-[#181816] truncate" title={ad.name}>{ad.name}</h3>
+          </div>
+          <button onClick={onClose} className="shrink-0 p-1.5 rounded-lg hover:bg-[#f0f0ee] text-[#686864]"><X size={18} /></button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-0">
+          {/* Creative */}
+          <div className="bg-[#0c0c0c] flex items-center justify-center min-h-[260px] md:min-h-[420px] p-2">
+            {c.type === "carousel" && c.images.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto snap-x w-full h-full items-center">
+                {c.images.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={src} alt="" className="max-h-[400px] rounded-lg object-contain snap-center shrink-0" />
+                ))}
+              </div>
+            ) : c.type === "video" && c.videoThumb ? (
+              <a href={c.videoId ? `https://www.facebook.com/watch/?v=${c.videoId}` : undefined} target="_blank" rel="noreferrer" className="relative block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.videoThumb} alt="" className="max-h-[420px] rounded-lg object-contain" />
+                <div className="absolute inset-0 flex items-center justify-center"><div className="w-14 h-14 rounded-full bg-black/55 flex items-center justify-center"><Play size={26} className="text-white ml-1" fill="white" /></div></div>
+              </a>
+            ) : c.images.length > 0 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.images[0]} alt="" className="max-h-[420px] rounded-lg object-contain" />
+            ) : (
+              <div className="text-[#686864] text-[13px]">No preview available</div>
+            )}
+          </div>
+
+          {/* Copy + metrics */}
+          <div className="p-4">
+            {cta && (
+              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1877F2] bg-[#eff6ff] px-2.5 py-1 rounded-full mb-3">
+                <MousePointerClick size={12} /> {cta}
+              </span>
+            )}
+            <div className="space-y-3 text-[13px]">
+              {c.primaryText && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#181816] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
+              {c.headline && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Headline</div><p className="text-[#181816] font-semibold">{c.headline}</p></div>)}
+              {c.description && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Description</div><p className="text-[#686864]">{c.description}</p></div>)}
+              {!c.primaryText && !c.headline && !c.description && (<p className="text-[#9e9e9a]">No ad copy returned for this creative.</p>)}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-black/[0.06]">
+              {stats.map(s => (
+                <div key={s.label} className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] text-[#9e9e9a] uppercase tracking-wide">{s.label}</span>
+                  <span className="text-[13px] font-semibold text-[#181816] tabular-nums truncate">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function CreativePage() {
   const { range } = useDateRange();
   const [checking, setChecking] = useState(true);
@@ -278,6 +374,7 @@ export default function CreativePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "scale" | "keep" | "refresh" | "pause">("all");
+  const [selected, setSelected] = useState<AdCreative | null>(null);
 
   useEffect(() => {
     fetch("/api/meta/accounts")
@@ -461,9 +558,11 @@ export default function CreativePage() {
           {/* Creative grid */}
           <div className="grid grid-cols-3 gap-2">
             {filtered.map(ad => (
-              <CreativeCard key={ad.id} ad={ad} currency={currency} />
+              <CreativeCard key={ad.id} ad={ad} currency={currency} onOpen={() => setSelected(ad)} />
             ))}
           </div>
+
+          {selected && <CreativeModal ad={selected} currency={currency} onClose={() => setSelected(null)} />}
 
           {filtered.length === 0 && (
             <Card>
