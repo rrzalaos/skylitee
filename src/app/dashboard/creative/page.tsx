@@ -141,7 +141,7 @@ function ctaLabel(cta: string | null): string | null {
 function CreativeMedia({ c }: { c: ParsedCreative }) {
   const placeholder = (Icon: typeof ImageIcon, label: string) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#1877F2] opacity-50">
-      <Icon size={28} /><span className="text-[12px] font-medium">{label}</span>
+      <Icon size={28} /><span className="text-[14px] font-medium">{label}</span>
     </div>
   );
   if (c.type === "video") {
@@ -188,50 +188,50 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
       <div className="relative h-44 bg-[#f0f5ff]">
         <CreativeMedia c={ad.creative} />
         {/* Signal badge */}
-        <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[12px] font-semibold ${sig.bg} ${sig.text}`}>
+        <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[14px] font-semibold ${sig.bg} ${sig.text}`}>
           {sig.label}
         </div>
         {/* Objective + status badges */}
         <div className="absolute top-2 left-2 flex items-center gap-1.5">
-          <div className={`px-2 py-0.5 rounded-full text-[12px] font-semibold ${obj.cls}`}>{obj.label}</div>
+          <div className={`px-2 py-0.5 rounded-full text-[14px] font-semibold ${obj.cls}`}>{obj.label}</div>
           {ad.status === "PAUSED" && (
-            <div className="px-2 py-0.5 rounded-full text-[12px] font-medium bg-black/40 text-white">Paused</div>
+            <div className="px-2 py-0.5 rounded-full text-[14px] font-medium bg-black/40 text-white">Paused</div>
           )}
         </div>
         {/* Creative format badge */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium bg-black/55 text-white backdrop-blur-sm">
+        <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[14px] font-medium bg-black/55 text-white backdrop-blur-sm">
           <FmtIcon size={11} /> {fmtLabel}
         </div>
       </div>
 
       <div className="p-3">
         {/* Ad name */}
-        <div className="text-[14px] font-semibold text-[#181816] truncate" title={ad.name}>
+        <div className="text-[16px] font-semibold text-[#181816] truncate" title={ad.name}>
           {ad.name}
         </div>
 
         {/* Ad copy — what the ad actually says */}
         {cta && (
-          <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-[#1877F2] bg-[#eff6ff] px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[13px] font-bold text-[#1877F2] bg-[#eff6ff] px-2 py-0.5 rounded-full">
             <MousePointerClick size={11} /> {cta}
           </span>
         )}
         {ad.creative.headline && (
-          <div className="text-[13px] font-semibold text-[#181816] mt-1.5 line-clamp-1" title={ad.creative.headline}>{ad.creative.headline}</div>
+          <div className="text-[15px] font-semibold text-[#181816] mt-1.5 line-clamp-1" title={ad.creative.headline}>{ad.creative.headline}</div>
         )}
         {ad.creative.primaryText ? (
-          <p className="text-[12px] text-[#686864] mt-1 mb-2 leading-snug line-clamp-2" title={ad.creative.primaryText}>{ad.creative.primaryText}</p>
+          <p className="text-[14px] text-[#686864] mt-1 mb-2 leading-snug line-clamp-2" title={ad.creative.primaryText}>{ad.creative.primaryText}</p>
         ) : <div className="mb-2" />}
 
         {/* Score bar */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <Tooltip content={`Creative Score (0–100): 40% efficiency on this ad's objective (${obj.label}), 30% CTR engagement, 30% freshness (low frequency).`} side="top" maxWidth={240}>
-              <span className="text-[13px] text-[#686864] inline-flex items-center gap-1 cursor-help">
+              <span className="text-[15px] text-[#686864] inline-flex items-center gap-1 cursor-help">
                 Creative Score <Info size={11} className="text-[#9e9e9a]" />
               </span>
             </Tooltip>
-            <span className="text-[14px] font-semibold text-[#181816]">{ad.score}/100</span>
+            <span className="text-[16px] font-semibold text-[#181816]">{ad.score}/100</span>
           </div>
           <div className="h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${scoreColor(ad.score)}`} style={{ width: `${ad.score}%` }} />
@@ -242,20 +242,20 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
         <div className="grid grid-cols-3 gap-1.5 mb-2">
           {view.tiles.map(s => (
             <div key={s.label} className="text-center bg-[#f7f7f5] rounded-lg py-1.5">
-              <div className="text-[14px] font-semibold text-[#181816]">{s.value}</div>
-              <div className="text-[12px] text-[#9e9e9a]">{s.label}</div>
+              <div className="text-[16px] font-semibold text-[#181816]">{s.value}</div>
+              <div className="text-[14px] text-[#9e9e9a]">{s.label}</div>
             </div>
           ))}
         </div>
 
-        <div className="flex items-center justify-between text-[13px] text-[#686864] border-t border-black/[0.06] pt-2">
+        <div className="flex items-center justify-between text-[15px] text-[#686864] border-t border-black/[0.06] pt-2">
           <span>Spend: <span className="font-medium text-[#181816]">{fmt(ad.spend)}</span></span>
           <span>{view.footer}</span>
         </div>
 
         {/* Video metrics if applicable */}
         {ad.format === "video" && (ad.thumbStopRatio > 0 || ad.holdRatio > 0) && (
-          <div className="flex gap-3 mt-2 text-[12px] text-[#9e9e9a]">
+          <div className="flex gap-3 mt-2 text-[14px] text-[#9e9e9a]">
             <span>Thumb stop: <span className="text-[#181816] font-medium">{ad.thumbStopRatio}%</span></span>
             <span>Hold: <span className="text-[#181816] font-medium">{ad.holdRatio}%</span></span>
           </div>
@@ -263,7 +263,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
 
         {/* Fatigue warning */}
         {ad.frequency >= 2.5 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[12px] text-[#d94040] bg-[#fce8e8] rounded-lg px-2 py-1">
+          <div className="mt-2 flex items-center gap-1.5 text-[14px] text-[#d94040] bg-[#fce8e8] rounded-lg px-2 py-1">
             <AlertTriangle size={11} />
             Frequency {ad.frequency.toFixed(1)} — creative fatigue risk
           </div>
@@ -304,10 +304,10 @@ function CreativeModal({ ad, currency, onClose }: { ad: AdCreative; currency: st
         <div className="flex items-start justify-between p-4 border-b border-black/[0.06] sticky top-0 bg-white z-10">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className={`px-2 py-0.5 rounded-full text-[12px] font-semibold ${obj.cls}`}>{obj.label}</span>
-              <span className="text-[12px] text-[#9e9e9a] capitalize">{ad.format}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[14px] font-semibold ${obj.cls}`}>{obj.label}</span>
+              <span className="text-[14px] text-[#9e9e9a] capitalize">{ad.format}</span>
             </div>
-            <h3 className="text-[16px] font-semibold text-[#181816] truncate" title={ad.name}>{ad.name}</h3>
+            <h3 className="text-[18px] font-semibold text-[#181816] truncate" title={ad.name}>{ad.name}</h3>
           </div>
           <button onClick={onClose} className="shrink-0 p-1.5 rounded-lg hover:bg-[#f0f0ee] text-[#686864]"><X size={18} /></button>
         </div>
@@ -332,29 +332,29 @@ function CreativeModal({ ad, currency, onClose }: { ad: AdCreative; currency: st
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.images[0]} alt="" className="max-h-[420px] rounded-lg object-contain" />
             ) : (
-              <div className="text-[#686864] text-[13px]">No preview available</div>
+              <div className="text-[#686864] text-[15px]">No preview available</div>
             )}
           </div>
 
           {/* Copy + metrics */}
           <div className="p-4">
             {cta && (
-              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1877F2] bg-[#eff6ff] px-2.5 py-1 rounded-full mb-3">
+              <span className="inline-flex items-center gap-1 text-[14px] font-bold text-[#1877F2] bg-[#eff6ff] px-2.5 py-1 rounded-full mb-3">
                 <MousePointerClick size={12} /> {cta}
               </span>
             )}
-            <div className="space-y-3 text-[13px]">
-              {c.primaryText && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#181816] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
-              {c.headline && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Headline</div><p className="text-[#181816] font-semibold">{c.headline}</p></div>)}
-              {c.description && (<div><div className="text-[11px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Description</div><p className="text-[#686864]">{c.description}</p></div>)}
+            <div className="space-y-3 text-[15px]">
+              {c.primaryText && (<div><div className="text-[13px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#181816] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
+              {c.headline && (<div><div className="text-[13px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Headline</div><p className="text-[#181816] font-semibold">{c.headline}</p></div>)}
+              {c.description && (<div><div className="text-[13px] font-bold text-[#9e9e9a] uppercase tracking-wider mb-1">Description</div><p className="text-[#686864]">{c.description}</p></div>)}
               {!c.primaryText && !c.headline && !c.description && (<p className="text-[#9e9e9a]">No ad copy returned for this creative.</p>)}
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-black/[0.06]">
               {stats.map(s => (
                 <div key={s.label} className="flex items-baseline justify-between gap-2">
-                  <span className="text-[11px] text-[#9e9e9a] uppercase tracking-wide">{s.label}</span>
-                  <span className="text-[13px] font-semibold text-[#181816] tabular-nums truncate">{s.value}</span>
+                  <span className="text-[13px] text-[#9e9e9a] uppercase tracking-wide">{s.label}</span>
+                  <span className="text-[15px] font-semibold text-[#181816] tabular-nums truncate">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -487,13 +487,13 @@ export default function CreativePage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Creative Studio</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">AI creative scoring · fatigue detection · performance ranking</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">AI creative scoring · fatigue detection · performance ranking</p>
         </div>
         {ads.length > 0 && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}
       </div>
 
       {checking ? (
-        <div className="text-[15px] text-[#686864] py-16 text-center">Loading…</div>
+        <div className="text-[17px] text-[#686864] py-16 text-center">Loading…</div>
       ) : !connected ? (
         <NotConnected
           platform="meta"
@@ -501,12 +501,12 @@ export default function CreativePage() {
           description="Connect Meta to analyse creative fatigue, score your ad creatives 0–100, and get AI-powered recommendations on what to refresh or scale."
         />
       ) : loading ? (
-        <div className="text-[15px] text-[#686864] py-16 text-center">Loading creative data…</div>
+        <div className="text-[17px] text-[#686864] py-16 text-center">Loading creative data…</div>
       ) : error ? (
-        <div className="text-[15px] text-[#d94040] py-16 text-center">{error}</div>
+        <div className="text-[17px] text-[#d94040] py-16 text-center">{error}</div>
       ) : !ads.length ? (
         <Card>
-          <div className="py-12 text-center text-[15px] text-[#686864]">
+          <div className="py-12 text-center text-[17px] text-[#686864]">
             No ads with spend found in this date range.
           </div>
         </Card>
@@ -526,7 +526,7 @@ export default function CreativePage() {
               },
             ].map(k => (
               <div key={k.label} className={`bg-white border rounded-xl p-3.5 ${k.warn ? "border-[#d94040]/30" : "border-black/[0.09]"}`}>
-                <div className="text-[15px] text-[#686864] mb-1.5 flex items-center gap-1 font-medium">
+                <div className="text-[17px] text-[#686864] mb-1.5 flex items-center gap-1 font-medium">
                   {k.icon} {k.label}
                 </div>
                 <div className={`text-2xl font-semibold ${k.warn && fatigueCount > 0 ? "text-[#d94040]" : "text-[#181816]"}`}>{k.value}</div>
@@ -543,7 +543,7 @@ export default function CreativePage() {
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-[14px] font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-[16px] font-medium transition-colors ${
                     filter === f
                       ? (sig ? `${sig.bg} ${sig.text}` : "bg-[#181816] text-white")
                       : "bg-[#f7f7f5] text-[#686864] hover:bg-[#eeeeec]"
@@ -566,14 +566,14 @@ export default function CreativePage() {
 
           {filtered.length === 0 && (
             <Card>
-              <div className="py-10 text-center text-[15px] text-[#686864]">
+              <div className="py-10 text-center text-[17px] text-[#686864]">
                 No creatives in this category.
               </div>
             </Card>
           )}
 
           {/* Legend */}
-          <div className="mt-3 flex items-center gap-4 text-[13px] text-[#9e9e9a]">
+          <div className="mt-3 flex items-center gap-4 text-[15px] text-[#9e9e9a]">
             <span className="font-medium text-[#686864]">Score guide:</span>
             {[
               { color: "bg-[#17a773]", label: "75–100 Scale" },
@@ -589,7 +589,7 @@ export default function CreativePage() {
           </div>
 
           {/* How Creative Score is calculated */}
-          <div className="mt-3 bg-[#f7f7f5] rounded-xl p-3.5 text-[13px] text-[#686864] leading-relaxed">
+          <div className="mt-3 bg-[#f7f7f5] rounded-xl p-3.5 text-[15px] text-[#686864] leading-relaxed">
             <div className="font-semibold text-[#181816] mb-1.5 flex items-center gap-1.5">
               <Info size={13} className="text-[#9e9e9a]" /> How the Creative Score works
             </div>

@@ -26,10 +26,10 @@ export function InsightCard({ title, body, type = "default", action }: InsightCa
       "bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-r-xl p-3 mb-2 border-l-[3px]",
       borderColors[type]
     )}>
-      <div className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{title}</div>
-      <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{body}</div>
+      <div className="text-[16px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{title}</div>
+      <div className="text-[15px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{body}</div>
       {action && (
-        <div className="text-[13px] text-[#F97316] font-semibold mt-1.5 cursor-pointer flex items-center gap-1">→ {action}</div>
+        <div className="text-[15px] text-[#F97316] font-semibold mt-1.5 cursor-pointer flex items-center gap-1">→ {action}</div>
       )}
     </div>
   );

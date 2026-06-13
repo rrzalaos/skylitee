@@ -33,17 +33,17 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-7">
           {links.map(l => (
-            <Link key={l.href} href={l.href} className={`text-[15px] font-medium transition-colors hover:text-[#F97316] ${scrolled ? "text-[#52525B]" : "text-white/85"}`}>
+            <Link key={l.href} href={l.href} className={`text-[17px] font-medium transition-colors hover:text-[#F97316] ${scrolled ? "text-[#52525B]" : "text-white/85"}`}>
               {l.label}
             </Link>
           ))}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/dashboard" className={`px-4 py-2.5 text-[14px] font-semibold rounded-lg transition-colors border ${scrolled ? "border-black/[0.12] text-[#52525B] hover:text-[#18181B] hover:border-black/[0.25]" : "border-white/30 text-white/85 hover:text-white hover:border-white/60"}`}>
+          <Link href="/dashboard" className={`px-4 py-2.5 text-[16px] font-semibold rounded-lg transition-colors border ${scrolled ? "border-black/[0.12] text-[#52525B] hover:text-[#18181B] hover:border-black/[0.25]" : "border-white/30 text-white/85 hover:text-white hover:border-white/60"}`}>
             Login
           </Link>
-          <Link href="/signup" className="px-5 py-2.5 bg-[#F97316] hover:bg-[#EA580C] text-white text-[14px] font-bold rounded-lg transition-all shadow-[0_0_16px_rgba(249,115,22,0.35)] hover:shadow-[0_0_24px_rgba(249,115,22,0.5)] hover:-translate-y-0.5">
+          <Link href="/signup" className="px-5 py-2.5 bg-[#F97316] hover:bg-[#EA580C] text-white text-[16px] font-bold rounded-lg transition-all shadow-[0_0_16px_rgba(249,115,22,0.35)] hover:shadow-[0_0_24px_rgba(249,115,22,0.5)] hover:-translate-y-0.5">
             Install Free →
           </Link>
         </div>
@@ -56,14 +56,14 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden bg-white border-t border-black/[0.06] px-5 py-5 flex flex-col gap-4 shadow-lg">
           {links.map(l => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-[16px] font-medium text-[#52525B] hover:text-[#F97316] py-1">
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-[18px] font-medium text-[#52525B] hover:text-[#F97316] py-1">
               {l.label}
             </Link>
           ))}
-          <Link href="/dashboard" onClick={() => setOpen(false)} className="px-4 py-3 border border-black/[0.12] text-[#52525B] text-[15px] font-semibold rounded-lg text-center">
+          <Link href="/dashboard" onClick={() => setOpen(false)} className="px-4 py-3 border border-black/[0.12] text-[#52525B] text-[17px] font-semibold rounded-lg text-center">
             Login
           </Link>
-          <Link href="/signup" onClick={() => setOpen(false)} className="px-4 py-3 bg-[#F97316] text-white text-[15px] font-bold rounded-lg text-center">
+          <Link href="/signup" onClick={() => setOpen(false)} className="px-4 py-3 bg-[#F97316] text-white text-[17px] font-bold rounded-lg text-center">
             Install Free →
           </Link>
         </div>

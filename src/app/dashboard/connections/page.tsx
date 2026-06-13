@@ -252,7 +252,7 @@ function ConnectionsContent() {
     <div>
       <div className="mb-3">
         <h2 className="text-lg font-semibold">Platform Connections</h2>
-        <p className="text-[15px] text-[#686864] mt-0.5">Manage integrations · GSC and GA4 can be on different Google accounts</p>
+        <p className="text-[17px] text-[#686864] mt-0.5">Manage integrations · GSC and GA4 can be on different Google accounts</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -264,21 +264,21 @@ function ConnectionsContent() {
                 {p.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[14px] font-semibold text-[#181816]">{p.name}</div>
-                <div className={`text-[13px] mt-0.5 ${p.status === "connected" ? "text-[#0d6b4f]" : "text-[#686864]"}`}>
+                <div className="text-[16px] font-semibold text-[#181816]">{p.name}</div>
+                <div className={`text-[15px] mt-0.5 ${p.status === "connected" ? "text-[#0d6b4f]" : "text-[#686864]"}`}>
                   {p.status === "connected" ? "✓" : "○"} {p.detail}
                 </div>
               </div>
               <div className="flex gap-1.5 shrink-0">
                 {p.status === "connected" ? (
                   <>
-                    <span className="px-3 py-1.5 rounded-lg text-[14px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
+                    <span className="px-3 py-1.5 rounded-lg text-[16px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
                       Connected
                     </span>
                     {p.disconnectFn && (
                       <button
                         onClick={p.disconnectFn}
-                        className="px-2.5 py-1.5 rounded-lg text-[14px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
+                        className="px-2.5 py-1.5 rounded-lg text-[16px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
                       >
                         Disconnect
                       </button>
@@ -287,14 +287,14 @@ function ConnectionsContent() {
                 ) : p.href ? (
                   <a
                     href={p.href}
-                    className="px-3 py-1.5 rounded-lg text-[14px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors whitespace-nowrap"
+                    className="px-3 py-1.5 rounded-lg text-[16px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors whitespace-nowrap"
                   >
                     Connect Now
                   </a>
                 ) : (
                   <button
                     onClick={() => showToast("Coming soon")}
-                    className="px-3 py-1.5 rounded-lg text-[14px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-[16px] font-medium bg-[#17a773] text-white border border-[#17a773] hover:bg-[#0d6b4f] transition-colors"
                   >
                     Connect Now
                   </button>
@@ -307,15 +307,15 @@ function ConnectionsContent() {
           {gscConnected && gscSites.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
                   <Search size={11} className="text-[#4285F4]" /> Search Console — select site
                 </div>
-                {gscSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+                {gscSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
               <select
                 value={selectedGsc}
                 onChange={e => { setSelectedGsc(e.target.value); setGscSaved(false); }}
-                className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                className="w-full text-[17px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
               >
                 {gscSites.map(s => (
                   <option key={s.url} value={s.url}>{s.url}</option>
@@ -324,7 +324,7 @@ function ConnectionsContent() {
               <button
                 onClick={saveGscSite}
                 disabled={saving || gscSaved}
-                className="w-full py-2 bg-[#4285F4] text-white rounded-lg text-[14px] font-semibold hover:bg-[#3367d6] disabled:opacity-50 transition-colors"
+                className="w-full py-2 bg-[#4285F4] text-white rounded-lg text-[16px] font-semibold hover:bg-[#3367d6] disabled:opacity-50 transition-colors"
               >
                 {saving ? "Saving..." : gscSaved ? "✓ Saved — change dropdown to update" : "Save GSC Site"}
               </button>
@@ -335,15 +335,15 @@ function ConnectionsContent() {
           {ga4Connected && ga4Properties.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
                   <BarChart2 size={11} className="text-[#E37400]" /> Analytics GA4 — select property
                 </div>
-                {ga4Saved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+                {ga4Saved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
               <select
                 value={selectedGa4}
                 onChange={e => { setSelectedGa4(e.target.value); setGa4Saved(false); }}
-                className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                className="w-full text-[17px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
               >
                 {ga4Properties.map(p => {
                     const numericId = p.id.replace("properties/", "");
@@ -357,7 +357,7 @@ function ConnectionsContent() {
               <button
                 onClick={saveGa4Property}
                 disabled={saving || ga4Saved}
-                className="w-full py-2 bg-[#E37400] text-white rounded-lg text-[14px] font-semibold hover:bg-[#c85f00] disabled:opacity-50 transition-colors"
+                className="w-full py-2 bg-[#E37400] text-white rounded-lg text-[16px] font-semibold hover:bg-[#c85f00] disabled:opacity-50 transition-colors"
               >
                 {saving ? "Saving..." : ga4Saved ? "✓ Saved — change dropdown to update" : "Save GA4 Property"}
               </button>
@@ -368,19 +368,19 @@ function ConnectionsContent() {
           {gadsConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
                   <Megaphone size={11} className="text-[#34A853]" /> Google Ads — select account
                 </div>
-                {gadsSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+                {gadsSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
               {gadsError === "dev_token" ? (
-                <div className="text-[13px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
-                  Add <code className="font-mono text-[12px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables to enable Google Ads.
+                <div className="text-[15px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
+                  Add <code className="font-mono text-[14px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables to enable Google Ads.
                 </div>
               ) : (gadsError === "test_token" || (gadsError && gadsCustomers.length === 0)) ? (
                 /* Test token mode — auto-detect blocked, allow manual entry */
                 <div className="space-y-2">
-                  <div className="text-[13px] text-[#7a5a00] bg-[#fffbe6] border border-[#ffe58f] rounded-lg px-3 py-2.5">
+                  <div className="text-[15px] text-[#7a5a00] bg-[#fffbe6] border border-[#ffe58f] rounded-lg px-3 py-2.5">
                     <div className="font-semibold mb-0.5">Developer token in test mode</div>
                     <div>Google is reviewing your token (1–3 business days). Meanwhile, enter your Customer ID manually — find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
                   </div>
@@ -389,19 +389,19 @@ function ConnectionsContent() {
                     value={selectedGads}
                     onChange={e => { setSelectedGads(e.target.value); setGadsSaved(false); }}
                     placeholder="e.g. 4017892231 (remove hyphens)"
-                    className="w-full text-[14px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
+                    className="w-full text-[16px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white"
                   />
-                  {gadsSaved && <div className="text-[13px] text-[#0d6b4f]">✓ Saved Customer ID: {selectedGads}</div>}
+                  {gadsSaved && <div className="text-[15px] text-[#0d6b4f]">✓ Saved Customer ID: {selectedGads}</div>}
                   <button
                     onClick={saveGadsCustomer}
                     disabled={saving || !selectedGads || gadsSaved}
-                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[14px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
+                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[16px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
                   >
                     {saving ? "Saving..." : gadsSaved ? "✓ Saved — type new ID to update" : "Save Customer ID"}
                   </button>
                 </div>
               ) : gadsCustomers.length === 0 ? (
-                <div className="text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-3 py-2.5">
+                <div className="text-[15px] text-[#686864] bg-[#f7f7f5] rounded-lg px-3 py-2.5">
                   No Google Ads accounts found. Make sure you are an admin of a Google Ads account.
                 </div>
               ) : (
@@ -409,7 +409,7 @@ function ConnectionsContent() {
                   <select
                     value={selectedGads}
                     onChange={e => { setSelectedGads(e.target.value); setGadsSaved(false); }}
-                    className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                    className="w-full text-[17px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
                   >
                     {gadsCustomers.map(a => (
                       <option key={a.id} value={a.id}>{a.name} · ID {a.id} ({a.currency})</option>
@@ -418,7 +418,7 @@ function ConnectionsContent() {
                   <button
                     onClick={saveGadsCustomer}
                     disabled={saving || gadsSaved}
-                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[14px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
+                    className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[16px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
                   >
                     {saving ? "Saving..." : gadsSaved ? "✓ Saved — change dropdown to update" : "Save Google Ads Account"}
                   </button>
@@ -431,13 +431,13 @@ function ConnectionsContent() {
           {metaConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[14px] font-semibold text-[#181816] flex items-center gap-1.5">
+                <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
                   <Share2 size={11} className="text-[#1877F2]" /> Meta — select ad account
                 </div>
-                {metaSaved && <span className="text-[13px] text-[#0d6b4f]">✓ Saved</span>}
+                {metaSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
               {metaAccounts.length === 0 ? (
-                <div className="text-[13px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
+                <div className="text-[15px] text-[#a05a00] bg-[#fff3e0] border border-[#ffcc80] rounded-lg px-3 py-2.5">
                   No ad accounts found under this Meta account. Make sure you are an admin of a Meta Business ad account.
                 </div>
               ) : (
@@ -445,7 +445,7 @@ function ConnectionsContent() {
                   <select
                     value={selectedMeta}
                     onChange={e => { setSelectedMeta(e.target.value); setMetaSaved(false); }}
-                    className="w-full text-[15px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
+                    className="w-full text-[17px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
                   >
                     {metaAccounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name} — {a.id} ({a.currency})</option>
@@ -454,7 +454,7 @@ function ConnectionsContent() {
                   <button
                     onClick={saveMetaAccount}
                     disabled={saving || metaSaved}
-                    className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
+                    className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[16px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
                   >
                     {saving ? "Saving..." : metaSaved ? "✓ Saved — change dropdown to update" : "Save Ad Account"}
                   </button>
@@ -478,9 +478,9 @@ function ConnectionsContent() {
                 <div key={i} className="p-3 bg-[#f7f7f5] rounded-lg">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className={`w-2 h-2 rounded-full ${p.status ? "bg-[#17a773]" : "bg-[#d94040]"}`} />
-                    <span className="text-[14px] font-semibold text-[#181816]">{p.label}</span>
+                    <span className="text-[16px] font-semibold text-[#181816]">{p.label}</span>
                   </div>
-                  <div className="text-[13px] text-[#686864]">{p.detail}</div>
+                  <div className="text-[15px] text-[#686864]">{p.detail}</div>
                 </div>
               ))}
             </div>
@@ -488,7 +488,7 @@ function ConnectionsContent() {
 
           <Card>
             <CardHeader title="Multi-account Google support" />
-            <div className="bg-[#e4eef9] rounded-lg p-3 text-[13px] text-[#0a3d7a] space-y-1.5 mb-2">
+            <div className="bg-[#e4eef9] rounded-lg p-3 text-[15px] text-[#0a3d7a] space-y-1.5 mb-2">
               {[
                 "Search Console and GA4 connect independently",
                 "Each can use a completely different Google account",
@@ -502,7 +502,7 @@ function ConnectionsContent() {
               ))}
             </div>
             {(!metaConnected || !gadsConnected) && (
-              <div className="bg-[#fce8e8] rounded-lg p-3 text-[13px] text-[#6e1c1c] border border-[#f5a0a0]">
+              <div className="bg-[#fce8e8] rounded-lg p-3 text-[15px] text-[#6e1c1c] border border-[#f5a0a0]">
                 <div className="flex items-center gap-1.5 font-semibold mb-1">
                   <XCircle size={12} />
                   {!metaConnected && !gadsConnected ? "Meta & Google Ads not connected" :
@@ -516,7 +516,7 @@ function ConnectionsContent() {
       </div>
 
       {toastMsg && (
-        <div className="fixed bottom-4 right-4 bg-[#18181e] text-white px-3.5 py-2 rounded-lg text-[14px] font-medium z-50 shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-[#18181e] text-white px-3.5 py-2 rounded-lg text-[16px] font-medium z-50 shadow-lg">
           ✓ {toastMsg}
         </div>
       )}
@@ -526,7 +526,7 @@ function ConnectionsContent() {
 
 export default function ConnectionsPage() {
   return (
-    <Suspense fallback={<div className="text-[15px] text-[#686864] py-8 text-center">Loading...</div>}>
+    <Suspense fallback={<div className="text-[17px] text-[#686864] py-8 text-center">Loading...</div>}>
       <ConnectionsContent />
     </Suspense>
   );

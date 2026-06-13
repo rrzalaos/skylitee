@@ -80,17 +80,17 @@ export default function GeoPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Geo Performance</h2>
-            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">{range.label}</span>
+            <span className="text-[13px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">{range.label}</span>
           </div>
-          <p className="text-[15px] text-[#686864] mt-0.5">City-level revenue &amp; buyers from Shopify · change the date range up top</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">City-level revenue &amp; buyers from Shopify · change the date range up top</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={revenueByCity.length === 0} />
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real geo data...</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">Loading real geo data...</div>
       ) : revenueByCity.length === 0 ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">No geo data for {range.label} — orders need shipping addresses to show city data.</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">No geo data for {range.label} — orders need shipping addresses to show city data.</div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
@@ -108,11 +108,11 @@ export default function GeoPage() {
             <Card>
               <CardHeader title="City performance" right={`By revenue · ${range.label}`} />
               <div className="overflow-x-auto">
-                <table className="w-full text-[15px] border-collapse">
+                <table className="w-full text-[17px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["City", "Revenue", "Buyers", "Revenue share"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -127,7 +127,7 @@ export default function GeoPage() {
                             <div className="flex-1 h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
                               <div className="h-full bg-[#17a773] rounded-full" style={{ width: `${Math.round((g.revenue / totalRevenue) * 100)}%` }} />
                             </div>
-                            <span className="text-[13px] text-[#686864] w-8 text-right">{Math.round((g.revenue / totalRevenue) * 100)}%</span>
+                            <span className="text-[15px] text-[#686864] w-8 text-right">{Math.round((g.revenue / totalRevenue) * 100)}%</span>
                           </div>
                         </td>
                       </tr>

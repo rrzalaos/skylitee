@@ -48,15 +48,15 @@ function Field({ label, hint, value, onChange, type = "text", placeholder = "", 
 }) {
   return (
     <div>
-      <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">{label}</label>
-      {hint && <div className="text-[11px] text-[#A1A1AA] mb-1">{hint}</div>}
+      <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">{label}</label>
+      {hint && <div className="text-[13px] text-[#A1A1AA] mb-1">{hint}</div>}
       <input
         type={type} value={value}
         onChange={e => onChange?.(e.target.value)}
         readOnly={readOnly}
         placeholder={placeholder}
         className={cn(
-          "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none transition-all",
+          "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none transition-all",
           readOnly ? "cursor-not-allowed text-[#A1A1AA]" : "focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30"
         )}
       />
@@ -70,11 +70,11 @@ function Select({ label, hint, value, onChange, options }: {
 }) {
   return (
     <div>
-      <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">{label}</label>
-      {hint && <div className="text-[11px] text-[#A1A1AA] mb-1">{hint}</div>}
+      <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">{label}</label>
+      {hint && <div className="text-[13px] text-[#A1A1AA] mb-1">{hint}</div>}
       <select
         value={value} onChange={e => onChange(e.target.value)}
-        className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] transition-all appearance-none"
+        className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] transition-all appearance-none"
       >
         <option value="">— Select —</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -199,14 +199,14 @@ function AdminProfile() {
     }
   };
 
-  const inputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
-  const labelCls = "text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5";
+  const inputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
+  const labelCls = "text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5";
 
   return (
     <div className="max-w-xl space-y-4">
       <div>
         <h2 className="text-lg font-bold dark:text-[#F4F4F5]">My Profile</h2>
-        <p className="text-[13px] text-[#A1A1AA] mt-0.5">Admin account settings</p>
+        <p className="text-[15px] text-[#A1A1AA] mt-0.5">Admin account settings</p>
       </div>
 
       <Card>
@@ -227,7 +227,7 @@ function AdminProfile() {
         </div>
         <div className="flex justify-end mt-4">
           <button onClick={saveProfile}
-            className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+            className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
             {saved ? "✓ Saved!" : "Save"}
           </button>
         </div>
@@ -252,12 +252,12 @@ function AdminProfile() {
               onKeyDown={e => e.key === "Enter" && changePassword()}
               placeholder="••••••••" className={inputCls} />
           </div>
-          {pwError && <div className="text-[12px] text-[#EF4444]">{pwError}</div>}
-          {pwSuccess && <div className="text-[12px] text-[#22C55E] font-semibold">✓ Password changed successfully!</div>}
+          {pwError && <div className="text-[14px] text-[#EF4444]">{pwError}</div>}
+          {pwSuccess && <div className="text-[14px] text-[#22C55E] font-semibold">✓ Password changed successfully!</div>}
         </div>
         <div className="flex justify-end mt-4">
           <button onClick={changePassword} disabled={pwLoading}
-            className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[13px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
+            className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[15px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
             {pwLoading ? "Saving…" : "Change Password"}
           </button>
         </div>
@@ -314,7 +314,7 @@ export default function ProfilePage() {
     }
   };
 
-  const pwInputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
+  const pwInputCls = "w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all";
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -405,7 +405,7 @@ export default function ProfilePage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  if (isAdmin === null) return <div className="text-[13px] text-[#A1A1AA] p-4">Loading…</div>;
+  if (isAdmin === null) return <div className="text-[15px] text-[#A1A1AA] p-4">Loading…</div>;
   if (isAdmin) return <AdminProfile />;
 
   const completion = calcCompletion(data);
@@ -423,21 +423,21 @@ export default function ProfilePage() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Profile & Account</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">Your account details, brand info, and team access</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Your account details, brand info, and team access</p>
         </div>
         <div className="flex items-center gap-2 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl px-3 py-2">
           <div className="w-20 h-1.5 bg-[#E5E5E5] dark:bg-[#262626] rounded-full overflow-hidden">
             <div className="h-full bg-[#F97316] rounded-full transition-all" style={{ width: `${completion}%` }} />
           </div>
-          <span className="text-[12px] font-bold text-[#F97316]">{completion}%</span>
-          <span className="text-[11px] text-[#A1A1AA]">complete</span>
+          <span className="text-[14px] font-bold text-[#F97316]">{completion}%</span>
+          <span className="text-[13px] text-[#A1A1AA]">complete</span>
         </div>
       </div>
 
       {completion < 80 && (
         <div className="flex items-start gap-2 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/20 rounded-xl p-3 mb-4">
           <Info size={13} className="text-[#F97316] shrink-0 mt-0.5" />
-          <div className="text-[12px] text-[#EA580C] dark:text-[#FB923C]">
+          <div className="text-[14px] text-[#EA580C] dark:text-[#FB923C]">
             <span className="font-bold">Complete your profile for smarter AI insights.</span>
             {" "}The more we know about your brand, audience, and goals — the better our recommendations. You&apos;re {completion}% done.
           </div>
@@ -451,7 +451,7 @@ export default function ProfilePage() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
+                "flex items-center gap-1.5 px-4 py-2.5 text-[15px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
                 tab === t.key
                   ? "border-[#F97316] text-[#F97316]"
                   : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -474,9 +474,9 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex-1">
-                <div className="text-[15px] font-bold dark:text-[#F4F4F5]">{data.fullName || "Your Name"}</div>
-                <div className="text-[12px] text-[#A1A1AA]">{data.email || "your@email.com"}</div>
-                <div className="text-[12px] text-[#A1A1AA] mt-0.5">{data.city || "City"}</div>
+                <div className="text-[17px] font-bold dark:text-[#F4F4F5]">{data.fullName || "Your Name"}</div>
+                <div className="text-[14px] text-[#A1A1AA]">{data.email || "your@email.com"}</div>
+                <div className="text-[14px] text-[#A1A1AA] mt-0.5">{data.city || "City"}</div>
               </div>
             </div>
             <div className="mt-3">
@@ -493,11 +493,11 @@ export default function ProfilePage() {
               <Field label="Mobile number" type="tel" value={data.mobile} onChange={set("mobile")} placeholder="+91 98765 43210" />
               <Field label="City" value={data.city} onChange={set("city")} placeholder="Ahmedabad" />
               <div className="col-span-2">
-                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">Short bio</label>
+                <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">Short bio</label>
                 <textarea
                   value={data.bio} onChange={e => set("bio")(e.target.value)}
                   rows={2} placeholder="D2C brand founder · print-on-demand · Ahmedabad"
-                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] resize-none"
+                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] resize-none"
                 />
               </div>
             </div>
@@ -507,24 +507,24 @@ export default function ProfilePage() {
             <CardHeader title={<span className="flex items-center gap-1.5"><Lock size={13} className="text-[#A1A1AA]" /> Password & Security</span>} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
               <div>
-                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Current password</label>
+                <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Current password</label>
                 <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="••••••••" className={pwInputCls} />
               </div>
               <div>
-                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">New password</label>
+                <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">New password</label>
                 <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="••••••••" className={pwInputCls} />
               </div>
               <div>
-                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Confirm new password</label>
+                <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-1">Confirm new password</label>
                 <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && changePassword()} placeholder="••••••••" className={pwInputCls} />
               </div>
             </div>
-            {pwError && <div className="text-[12px] text-[#EF4444] mt-2">{pwError}</div>}
-            {pwSuccess && <div className="text-[12px] text-[#22C55E] font-semibold mt-2">✓ Password changed successfully!</div>}
+            {pwError && <div className="text-[14px] text-[#EF4444] mt-2">{pwError}</div>}
+            {pwSuccess && <div className="text-[14px] text-[#22C55E] font-semibold mt-2">✓ Password changed successfully!</div>}
             <div className="flex justify-end mt-4">
               <button onClick={changePassword} disabled={pwLoading}
-                className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[13px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
+                className="px-5 py-2.5 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-xl text-[15px] font-bold hover:opacity-80 transition-opacity disabled:opacity-50">
                 {pwLoading ? "Saving…" : "Change Password"}
               </button>
             </div>
@@ -532,7 +532,7 @@ export default function ProfilePage() {
 
           <div className="flex justify-end gap-2">
             <button onClick={saveProfile}
-              className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+              className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
               {saved ? "✓ Saved!" : "Save Profile"}
             </button>
           </div>
@@ -544,7 +544,7 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div className="flex items-start gap-2 bg-[#EFF6FF] dark:bg-[#0D1E3D] border border-[#93C5FD]/30 rounded-xl p-3">
             <Info size={13} className="text-[#3B82F6] shrink-0 mt-0.5" />
-            <div className="text-[12px] text-[#1E40AF] dark:text-[#93C5FD]">
+            <div className="text-[14px] text-[#1E40AF] dark:text-[#93C5FD]">
               <span className="font-bold">These details power your AI recommendations.</span>
               {" "}When we know your product category, audience, and revenue scale — the AI gives you industry-specific benchmarks.
             </div>
@@ -616,11 +616,11 @@ export default function ProfilePage() {
               <Field label="Facebook page URL" value={data.facebook} onChange={set("facebook")} placeholder="facebook.com/yourbrand" />
               <Field label="GST number" hint="Optional — for GST-inclusive P&L" value={data.gstNumber} onChange={set("gstNumber")} placeholder="22AAAAA0000A1Z5" />
               <div className="col-span-2">
-                <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">Business address</label>
+                <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">Business address</label>
                 <textarea
                   value={data.address} onChange={e => set("address")(e.target.value)}
                   rows={2} placeholder="123, Business Park, Ahmedabad - 380001, Gujarat"
-                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] resize-none"
+                  className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] resize-none"
                 />
               </div>
             </div>
@@ -641,7 +641,7 @@ export default function ProfilePage() {
                   monthlyRevenueRange: "Revenue range", website: "Website",
                 };
                 return (
-                  <div key={k} className="flex items-center gap-1.5 text-[12px]">
+                  <div key={k} className="flex items-center gap-1.5 text-[14px]">
                     <CheckCircle2 size={12} className={filled ? "text-[#22C55E]" : "text-[#E5E5E5] dark:text-[#333]"} />
                     <span className={filled ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#A1A1AA]"}>{labels[k]}</span>
                   </div>
@@ -652,7 +652,7 @@ export default function ProfilePage() {
 
           <div className="flex justify-end">
             <button onClick={saveProfile}
-              className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+              className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
               {saved ? "✓ Saved!" : "Save Brand Details"}
             </button>
           </div>
@@ -670,43 +670,43 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3">
                 <Avatar photoUrl={data.photoUrl} name={meName || "Owner"} size={40} />
                 <div>
-                  <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{meName || "Account Owner"} <span className="text-[11px] text-[#A1A1AA] font-normal">(you)</span></div>
-                  <div className="text-[11px] text-[#A1A1AA]">{meEmail || "—"}</div>
+                  <div className="text-[15px] font-semibold dark:text-[#F4F4F5]">{meName || "Account Owner"} <span className="text-[13px] text-[#A1A1AA] font-normal">(you)</span></div>
+                  <div className="text-[13px] text-[#A1A1AA]">{meEmail || "—"}</div>
                 </div>
               </div>
-              <span className="flex items-center gap-1 text-[11px] font-bold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] px-2.5 py-1 rounded-full">
+              <span className="flex items-center gap-1 text-[13px] font-bold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] px-2.5 py-1 rounded-full">
                 <Crown size={10} /> Owner
               </span>
             </div>
 
             {/* Team members */}
             {teamLoading ? (
-              <div className="py-4 text-center text-[12px] text-[#A1A1AA]">Loading…</div>
+              <div className="py-4 text-center text-[14px] text-[#A1A1AA]">Loading…</div>
             ) : teamMembers.map(m => (
               <div key={m.email} className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
                 <div className="flex items-center gap-3">
                   <Avatar photoUrl="" name={m.email} size={40} />
                   <div>
-                    <div className="text-[13px] font-semibold dark:text-[#F4F4F5]">{m.email}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">Added {new Date(m.addedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+                    <div className="text-[15px] font-semibold dark:text-[#F4F4F5]">{m.email}</div>
+                    <div className="text-[13px] text-[#A1A1AA]">Added {new Date(m.addedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {(m.status ?? "active") === "pending" ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D] px-2 py-0.5 rounded-full">
+                    <span className="flex items-center gap-1 text-[12px] font-bold bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D] px-2 py-0.5 rounded-full">
                       <Clock size={9} /> Pending
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-bold bg-[#F0FDF4] dark:bg-[#052E16] text-[#166534] dark:text-[#4ADE80] px-2 py-0.5 rounded-full">
+                    <span className="flex items-center gap-1 text-[12px] font-bold bg-[#F0FDF4] dark:bg-[#052E16] text-[#166534] dark:text-[#4ADE80] px-2 py-0.5 rounded-full">
                       <CheckCircle2 size={9} /> Active
                     </span>
                   )}
-                  <span className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full", ROLE_COLORS[m.role] ?? ROLE_COLORS.view_only)}>
+                  <span className={cn("text-[13px] font-bold px-2.5 py-1 rounded-full", ROLE_COLORS[m.role] ?? ROLE_COLORS.view_only)}>
                     {ROLE_LABELS[m.role] ?? m.role}
                   </span>
                   <button
                     onClick={() => removeMember(m.email)}
-                    className="text-[11px] text-[#EF4444] hover:text-[#DC2626] font-semibold px-2 py-1 rounded-lg hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] transition-colors"
+                    className="text-[13px] text-[#EF4444] hover:text-[#DC2626] font-semibold px-2 py-1 rounded-lg hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] transition-colors"
                   >
                     Remove
                   </button>
@@ -716,27 +716,27 @@ export default function ProfilePage() {
 
             {/* Add member form */}
             <div className="pt-4 mt-1 border-t border-black/[0.06] dark:border-white/[0.06]">
-              <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Add Team Member</div>
+              <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Add Team Member</div>
               <div className="flex gap-2 flex-wrap">
                 <input
                   type="email" value={addEmail} onChange={e => setAddEmail(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && addMember()}
                   placeholder="colleague@email.com"
-                  className="flex-1 min-w-[180px] bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all"
+                  className="flex-1 min-w-[180px] bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] placeholder-[#A1A1AA] outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]/30 transition-all"
                 />
                 <select value={addRole} onChange={e => setAddRole(e.target.value)}
-                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] appearance-none cursor-pointer">
+                  className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] appearance-none cursor-pointer">
                   <option value="admin">Admin</option>
                   <option value="marketing">Marketing</option>
                   <option value="view_only">View Only</option>
                 </select>
                 <button onClick={addMember} disabled={addLoading}
-                  className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50 whitespace-nowrap">
+                  className="px-4 py-2 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors disabled:opacity-50 whitespace-nowrap">
                   {addLoading ? "Adding…" : "+ Add"}
                 </button>
               </div>
-              {addError && <div className="text-[12px] text-[#EF4444] mt-2">{addError}</div>}
-              <div className="text-[11px] text-[#A1A1AA] mt-2 flex items-start gap-1.5">
+              {addError && <div className="text-[14px] text-[#EF4444] mt-2">{addError}</div>}
+              <div className="text-[13px] text-[#A1A1AA] mt-2 flex items-start gap-1.5">
                 <Info size={11} className="shrink-0 mt-0.5" />
                 They will receive a notification and must accept before getting store access. Status shows Pending until accepted.
               </div>
@@ -752,11 +752,11 @@ export default function ProfilePage() {
                   <div key={r.role} className={cn("rounded-xl p-3 border border-black/[0.06] dark:border-white/[0.06]", r.bg)}>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Icon size={13} className={r.color} />
-                      <span className={cn("text-[12px] font-bold", r.color)}>{r.role}</span>
+                      <span className={cn("text-[14px] font-bold", r.color)}>{r.role}</span>
                     </div>
                     <ul className="space-y-1">
                       {r.permissions.map((p, i) => (
-                        <li key={i} className="flex items-start gap-1 text-[11px] text-[#52525B] dark:text-[#A1A1AA]">
+                        <li key={i} className="flex items-start gap-1 text-[13px] text-[#52525B] dark:text-[#A1A1AA]">
                           <ChevronRight size={10} className="shrink-0 mt-0.5" />{p}
                         </li>
                       ))}
@@ -775,7 +775,7 @@ export default function ProfilePage() {
                 { icon: "📊", text: "Add a business partner as Admin — they get full data access but you stay as the controlling Owner." },
                 { icon: "🔒", text: "Your Shopify token and Meta credentials stay protected — team members access through Skylitee, not your accounts directly." },
               ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 text-[12px] text-[#52525B] dark:text-[#A1A1AA] py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
+                <div key={i} className="flex items-start gap-2 text-[14px] text-[#52525B] dark:text-[#A1A1AA] py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                   <span className="text-base">{item.icon}</span>
                   <span>{item.text}</span>
                 </div>
@@ -789,15 +789,15 @@ export default function ProfilePage() {
       {tab === "logs" && (
         <div className="space-y-4">
           <Card>
-            <CardHeader title="Activity Log" right={<span className="text-[11px] text-[#A1A1AA]">{logs.length} events</span>} />
+            <CardHeader title="Activity Log" right={<span className="text-[13px] text-[#A1A1AA]">{logs.length} events</span>} />
 
             {logsLoading ? (
-              <div className="py-6 text-center text-[12px] text-[#A1A1AA]">Loading…</div>
+              <div className="py-6 text-center text-[14px] text-[#A1A1AA]">Loading…</div>
             ) : logs.length === 0 ? (
               <div className="py-8 text-center">
                 <Activity size={24} className="text-[#E5E5E5] dark:text-[#333] mx-auto mb-2" />
-                <div className="text-[13px] text-[#A1A1AA]">No activity recorded yet</div>
-                <div className="text-[11px] text-[#C4C4C0] mt-0.5">Logins, team changes and invite actions appear here</div>
+                <div className="text-[15px] text-[#A1A1AA]">No activity recorded yet</div>
+                <div className="text-[13px] text-[#C4C4C0] mt-0.5">Logins, team changes and invite actions appear here</div>
               </div>
             ) : (
               <div className="mt-2">
@@ -821,7 +821,7 @@ export default function ProfilePage() {
                       <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot[log.type] ?? "bg-[#A1A1AA]"}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          <span className={`text-[12px] font-bold px-1.5 py-0.5 rounded-full ${
                             log.type === "login" ? "bg-[#EFF6FF] dark:bg-[#0D1E3D] text-[#3B82F6]" :
                             log.type === "invite_accepted" ? "bg-[#F0FDF4] dark:bg-[#052E16] text-[#22C55E]" :
                             log.type === "invite_declined" || log.type === "member_removed" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A] text-[#EF4444]" :
@@ -829,12 +829,12 @@ export default function ProfilePage() {
                           }`}>
                             {label[log.type] ?? log.type}
                           </span>
-                          <span className="text-[12px] text-[#18181B] dark:text-[#F4F4F5] font-medium truncate">{log.detail}</span>
+                          <span className="text-[14px] text-[#18181B] dark:text-[#F4F4F5] font-medium truncate">{log.detail}</span>
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className="text-[11px] text-[#A1A1AA]">{log.userEmail}</span>
+                          <span className="text-[13px] text-[#A1A1AA]">{log.userEmail}</span>
                           <span className="text-[#E5E5E5] dark:text-[#333]">·</span>
-                          <span className="text-[11px] text-[#A1A1AA]">
+                          <span className="text-[13px] text-[#A1A1AA]">
                             {new Date(log.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>

@@ -21,8 +21,8 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn" | "bad"
   return (
     <div className={cn("flex items-start gap-3 rounded-xl border p-3", s.bg)}>
       {s.icon}
-      <div><div className={cn("text-[12px] font-bold", s.label)}>{metric}: {value}</div>
-        <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div></div>
+      <div><div className={cn("text-[14px] font-bold", s.label)}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div></div>
     </div>
   );
 }
@@ -48,11 +48,11 @@ export default function PerformanceReportPage() {
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-20 text-center">Loading performance data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-20 text-center">Loading performance data…</div>;
   if (!sales) return (
     <div className="text-center py-16">
-      <p className="text-[14px] text-[#71717A] mb-3">Could not load performance data.</p>
-      <Link href="/dashboard/connections" className="text-[#F97316] font-semibold text-[13px]">Check Shopify connection →</Link>
+      <p className="text-[16px] text-[#71717A] mb-3">Could not load performance data.</p>
+      <Link href="/dashboard/connections" className="text-[#F97316] font-semibold text-[15px]">Check Shopify connection →</Link>
     </div>
   );
 
@@ -116,7 +116,7 @@ export default function PerformanceReportPage() {
             <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Performance Marketing</h1>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{range.label} · Generated {generatedAt}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{range.label} · Generated {generatedAt}</p>
         </div>
         <ExportButton
           onExportCSV={() => exportToCSV(`skylitee-performance-${range.from}`, buildSections())}
@@ -133,7 +133,7 @@ export default function PerformanceReportPage() {
           { label: "Meta Spend", value: m ? formatINR(m.spend) : "—", icon: <Megaphone size={13} className="text-[#A1A1AA]" /> },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
             <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
           </div>
         ))}
@@ -143,11 +143,11 @@ export default function PerformanceReportPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
           <CardHeader title="✅ What's Working" />
-          <div className="space-y-2">{working.length === 0 ? <p className="text-[13px] text-[#A1A1AA]">Connect Meta Ads for performance signals.</p> : working.map((s, i) => <Signal key={i} type="good" {...s} />)}</div>
+          <div className="space-y-2">{working.length === 0 ? <p className="text-[15px] text-[#A1A1AA]">Connect Meta Ads for performance signals.</p> : working.map((s, i) => <Signal key={i} type="good" {...s} />)}</div>
         </Card>
         <Card>
           <CardHeader title="⚠️ Needs Attention" />
-          <div className="space-y-2">{attention.length === 0 ? <p className="text-[13px] text-[#A1A1AA]">No major issues detected.</p> : attention.map((s, i) => <Signal key={i} {...s} />)}</div>
+          <div className="space-y-2">{attention.length === 0 ? <p className="text-[15px] text-[#A1A1AA]">No major issues detected.</p> : attention.map((s, i) => <Signal key={i} {...s} />)}</div>
         </Card>
       </div>
 
@@ -155,8 +155,8 @@ export default function PerformanceReportPage() {
       <Card>
         <CardHeader title="Channel Attribution" right="Orders & Revenue by source" />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Channel","Orders","Revenue","Ad Spend","ROAS","CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
+          <table className="w-full text-[14px]">
+            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Channel","Orders","Revenue","Ad Spend","ROAS","CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
             <tbody>
               {[
                 { ch: "Shopify Total", icon: <ShoppingCart size={10} className="text-[#F97316]" />, orders: s.totalOrders, revenue: formatINR(s.grossSales), spend: "—", roas: "—", ctr: "—" },
@@ -184,20 +184,20 @@ export default function PerformanceReportPage() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl p-3 text-center border border-[#FED7AA]">
               <div className="text-[28px] font-black text-[#F97316]">{s.prepaidOrders}</div>
-              <div className="text-[11px] text-[#A1A1AA]">Prepaid</div>
-              <div className="text-[13px] font-bold text-[#EA580C]">{100 - codPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">Prepaid</div>
+              <div className="text-[15px] font-bold text-[#EA580C]">{100 - codPct}%</div>
             </div>
             <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] rounded-xl p-3 text-center border border-[#FCD34D]">
               <div className="text-[28px] font-black text-[#EAB308]">{s.codOrders}</div>
-              <div className="text-[11px] text-[#A1A1AA]">COD</div>
-              <div className="text-[13px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">COD</div>
+              <div className="text-[15px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
             </div>
           </div>
           <div className="h-2 flex rounded-full overflow-hidden mb-3">
             <div className="bg-[#F97316]" style={{ width: `${100 - codPct}%` }} />
             <div className="bg-[#EAB308]" style={{ width: `${codPct}%` }} />
           </div>
-          {codPct > 50 && <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5 text-[11px] text-[#92400E] dark:text-[#FCD34D]">High COD ratio — offer Rs.75 prepaid discount to reduce RTO risk.</div>}
+          {codPct > 50 && <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D]">High COD ratio — offer Rs.75 prepaid discount to reduce RTO risk.</div>}
         </Card>
 
         {m && (
@@ -213,8 +213,8 @@ export default function PerformanceReportPage() {
               ].map(step => (
                 <div key={step.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[12px] font-semibold dark:text-[#F4F4F5]">{step.label}</span>
-                    <span className="text-[14px] font-black" style={{ color: step.color }}>{step.value.toLocaleString("en-IN")}</span>
+                    <span className="text-[14px] font-semibold dark:text-[#F4F4F5]">{step.label}</span>
+                    <span className="text-[16px] font-black" style={{ color: step.color }}>{step.value.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${step.pct}%`, backgroundColor: step.color, opacity: 0.75 }} />
@@ -231,13 +231,13 @@ export default function PerformanceReportPage() {
         <Card>
           <CardHeader title="Campaign Performance" right={`${meta.campaigns.length} campaigns`} />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
-              <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Campaign", "Status", "Spend", "ROAS", "Orders"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
+            <table className="w-full text-[14px]">
+              <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Campaign", "Status", "Spend", "ROAS", "Orders"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
               <tbody>
                 {meta.campaigns.sort((a, b) => b.roas - a.roas).map((c, i) => (
                   <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                     <td className="py-2 px-2 font-medium dark:text-[#F4F4F5] max-w-[200px]"><div className="truncate">{c.name}</div></td>
-                    <td className="py-2 px-2"><span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", c.status === "ACTIVE" ? "bg-[#FFF7ED] text-[#EA580C]" : "bg-[#F5F5F4] text-[#71717A]")}>{c.status}</span></td>
+                    <td className="py-2 px-2"><span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold", c.status === "ACTIVE" ? "bg-[#FFF7ED] text-[#EA580C]" : "bg-[#F5F5F4] text-[#71717A]")}>{c.status}</span></td>
                     <td className="py-2 px-2 font-semibold">{formatINR(c.spend)}</td>
                     <td className="py-2 px-2"><span className={cn("font-black", c.roas >= 3 ? "text-[#22C55E]" : c.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{c.roas}x</span></td>
                     <td className="py-2 px-2">{c.purchases}</td>

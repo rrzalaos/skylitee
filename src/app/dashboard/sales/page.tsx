@@ -158,11 +158,11 @@ export default function SalesPage() {
     );
   }
 
-  if (loading) return <div className="flex items-center justify-center py-24 text-[13px] text-[#A1A1AA]">Loading sales data…</div>;
+  if (loading) return <div className="flex items-center justify-center py-24 text-[15px] text-[#A1A1AA]">Loading sales data…</div>;
   if (!sales) return (
     <div className="text-center py-16">
-      <p className="text-[14px] text-[#71717A] mb-2">Could not load sales data.</p>
-      <Link href="/dashboard/connections" className="text-[13px] text-[#F97316] font-semibold underline">Check Shopify connection →</Link>
+      <p className="text-[16px] text-[#71717A] mb-2">Could not load sales data.</p>
+      <Link href="/dashboard/connections" className="text-[15px] text-[#F97316] font-semibold underline">Check Shopify connection →</Link>
     </div>
   );
 
@@ -188,7 +188,7 @@ export default function SalesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sales Report</h2>
-          <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {sales.period.days} days · Live</p>
+          <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · {sales.period.days} days · Live</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
@@ -210,7 +210,7 @@ export default function SalesPage() {
 
         {/* Channel Attribution */}
         <Card className="col-span-1 lg:col-span-2">
-          <CardHeader title="Channel Attribution" right={<span className="text-[11px] text-[#A1A1AA]">Meta + Organic = Shopify total</span>} />
+          <CardHeader title="Channel Attribution" right={<span className="text-[13px] text-[#A1A1AA]">Meta + Organic = Shopify total</span>} />
 
           {/* Channel mini-cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
@@ -218,16 +218,16 @@ export default function SalesPage() {
               <div key={ch.label} className={cn("rounded-2xl p-3 border border-black/[0.04] dark:border-white/[0.04]", ch.bg)}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <ch.icon size={11} className={ch.color} />
-                  <span className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wide truncate">{ch.label}</span>
+                  <span className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide truncate">{ch.label}</span>
                 </div>
-                <div className="text-[16px] font-black text-[#18181B] dark:text-[#F4F4F5]">
-                  {ch.revenue !== null ? formatINR(ch.revenue) : <span className="text-[#A1A1AA] text-[13px]">—</span>}
+                <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">
+                  {ch.revenue !== null ? formatINR(ch.revenue) : <span className="text-[#A1A1AA] text-[15px]">—</span>}
                 </div>
-                <div className="text-[11px] text-[#A1A1AA]">{ch.orders !== null ? `${ch.orders} orders` : <Link href="/dashboard/connections" className="text-[#F97316] font-semibold">Connect →</Link>}</div>
+                <div className="text-[13px] text-[#A1A1AA]">{ch.orders !== null ? `${ch.orders} orders` : <Link href="/dashboard/connections" className="text-[#F97316] font-semibold">Connect →</Link>}</div>
                 {ch.spend !== null && (
                   <div className="mt-1.5 pt-1.5 border-t border-black/[0.06] dark:border-white/[0.06] space-y-0.5">
-                    <div className="text-[10px] text-[#A1A1AA]">Spend: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{formatINR(ch.spend)}</span></div>
-                    {ch.roas !== null && <div className="text-[10px] text-[#A1A1AA]">ROAS: <span className={cn("font-black", ch.roas >= 3 ? "text-[#22C55E]" : ch.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{ch.roas}x</span></div>}
+                    <div className="text-[12px] text-[#A1A1AA]">Spend: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{formatINR(ch.spend)}</span></div>
+                    {ch.roas !== null && <div className="text-[12px] text-[#A1A1AA]">ROAS: <span className={cn("font-black", ch.roas >= 3 ? "text-[#22C55E]" : ch.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{ch.roas}x</span></div>}
                   </div>
                 )}
               </div>
@@ -235,11 +235,11 @@ export default function SalesPage() {
           </div>
 
           {/* Channel table */}
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["Channel", "Orders", "Revenue", "Ad Spend", "ROAS", "CTR"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -275,20 +275,20 @@ export default function SalesPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-2xl p-3 text-center border border-[#FED7AA] dark:border-[#7C2D12]">
                 <div className="text-[28px] font-black text-[#F97316]">{sales.kpis.prepaidOrders}</div>
-                <div className="text-[11px] text-[#A1A1AA] mt-0.5">Prepaid</div>
-                <div className="text-[12px] font-bold text-[#EA580C]">{prepaidPct}%</div>
+                <div className="text-[13px] text-[#A1A1AA] mt-0.5">Prepaid</div>
+                <div className="text-[14px] font-bold text-[#EA580C]">{prepaidPct}%</div>
               </div>
               <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] rounded-2xl p-3 text-center border border-[#FCD34D] dark:border-[#92400E]">
                 <div className="text-[28px] font-black text-[#EAB308]">{sales.kpis.codOrders}</div>
-                <div className="text-[11px] text-[#A1A1AA] mt-0.5">COD</div>
-                <div className="text-[12px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
+                <div className="text-[13px] text-[#A1A1AA] mt-0.5">COD</div>
+                <div className="text-[14px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
               </div>
             </div>
             <div className="h-2 flex rounded-full overflow-hidden">
               <div className="bg-[#F97316]" style={{ width: `${prepaidPct}%` }} />
               <div className="bg-[#EAB308]" style={{ width: `${codPct}%` }} />
             </div>
-            <div className="flex justify-between text-[11px]">
+            <div className="flex justify-between text-[13px]">
               <span className="flex items-center gap-1 text-[#A1A1AA]"><span className="w-2 h-2 rounded-full bg-[#F97316]" /> Prepaid</span>
               <span className="flex items-center gap-1 text-[#A1A1AA]"><span className="w-2 h-2 rounded-full bg-[#EAB308]" /> COD</span>
             </div>
@@ -300,13 +300,13 @@ export default function SalesPage() {
                 { label: "Total orders", value: sales.kpis.totalOrders },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between">
-                  <span className="text-[12px] text-[#A1A1AA]">{row.label}</span>
-                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{row.value}</span>
+                  <span className="text-[14px] text-[#A1A1AA]">{row.label}</span>
+                  <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{row.value}</span>
                 </div>
               ))}
             </div>
             {codPct > 50 && (
-              <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] dark:border-[#92400E] rounded-xl p-2.5 text-[11px] text-[#92400E] dark:text-[#FCD34D] leading-relaxed">
+              <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] dark:border-[#92400E] rounded-xl p-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D] leading-relaxed">
                 High COD ratio — consider a ₹75 prepaid discount to shift buyers and reduce return risk.
               </div>
             )}
@@ -318,11 +318,11 @@ export default function SalesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
           <CardHeader title="Top 5 Products by Qty" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Package size={11} /> Units sold</span>} />
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["#", "Product", "Qty", "Revenue"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -330,7 +330,7 @@ export default function SalesPage() {
               {sales.topByQty.map((p, i) => (
                 <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                   <td className="py-2 px-2">
-                    <span className={cn("w-5 h-5 rounded-full text-[10px] font-black inline-flex items-center justify-center",
+                    <span className={cn("w-5 h-5 rounded-full text-[12px] font-black inline-flex items-center justify-center",
                       i === 0 ? "bg-[#F97316] text-white" : i === 1 ? "bg-[#FED7AA] text-[#EA580C]" : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#A1A1AA]"
                     )}>{i + 1}</span>
                   </td>
@@ -345,11 +345,11 @@ export default function SalesPage() {
 
         <Card>
           <CardHeader title="Top 5 Products by Revenue" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><TrendingUp size={11} /> Best earners</span>} />
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["#", "Product", "Revenue", "Qty"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -357,7 +357,7 @@ export default function SalesPage() {
               {sales.topByRevenue.map((p, i) => (
                 <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                   <td className="py-2 px-2">
-                    <span className={cn("w-5 h-5 rounded-full text-[10px] font-black inline-flex items-center justify-center",
+                    <span className={cn("w-5 h-5 rounded-full text-[12px] font-black inline-flex items-center justify-center",
                       i === 0 ? "bg-[#F97316] text-white" : i === 1 ? "bg-[#FED7AA] text-[#EA580C]" : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#A1A1AA]"
                     )}>{i + 1}</span>
                   </td>
@@ -376,21 +376,21 @@ export default function SalesPage() {
 
         {/* Conversion Funnel */}
         <Card>
-          <CardHeader title="Conversion Funnel" right={<span className="text-[11px] text-[#A1A1AA]">{metaConnected && ga4Connected ? "Meta + GA4" : metaConnected ? "Meta" : ga4Connected ? "GA4" : "Connect platforms"}</span>} />
+          <CardHeader title="Conversion Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{metaConnected && ga4Connected ? "Meta + GA4" : metaConnected ? "Meta" : ga4Connected ? "GA4" : "Connect platforms"}</span>} />
           <div className="space-y-2 mb-3">
             {funnel.map((step) => (
               <div key={step.label} className={cn("rounded-xl p-2.5", step.color === "#EF4444" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "bg-[#F5F5F4] dark:bg-[#1C1C1C]")}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</span>
+                  <span className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[#A1A1AA]">{step.source}</span>
-                    <span className="text-[14px] font-black" style={{ color: step.color }}>{step.value.toLocaleString("en-IN")}</span>
+                    <span className="text-[12px] text-[#A1A1AA]">{step.source}</span>
+                    <span className="text-[16px] font-black" style={{ color: step.color }}>{step.value.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
                 <div className="h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${step.barPct}%`, backgroundColor: step.color, opacity: 0.75 }} />
                 </div>
-                <div className="text-[10px] text-[#A1A1AA] mt-0.5 text-right">{step.barPct}%</div>
+                <div className="text-[12px] text-[#A1A1AA] mt-0.5 text-right">{step.barPct}%</div>
               </div>
             ))}
           </div>
@@ -403,8 +403,8 @@ export default function SalesPage() {
                 { label: "Impressions", value: (meta.impressions >= 1000 ? `${(meta.impressions / 1000).toFixed(0)}k` : meta.impressions.toString()) },
               ].map(kpi => (
                 <div key={kpi.label} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2">
-                  <div className="text-[12px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
+                  <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
+                  <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
                 </div>
               ))}
             </div>
@@ -417,8 +417,8 @@ export default function SalesPage() {
                 { label: "Avg session", value: ga4.avgSessionMin ?? "—" },
               ].map(kpi => (
                 <div key={kpi.label} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2">
-                  <div className="text-[12px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
+                  <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
+                  <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
                 </div>
               ))}
             </div>
@@ -429,30 +429,30 @@ export default function SalesPage() {
         <Card>
           <CardHeader title="Top Cities & States" right={<MapPin size={12} className="text-[#A1A1AA]" />} />
           <div className="mb-4">
-            <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em] mb-2">Cities by Revenue</div>
+            <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em] mb-2">Cities by Revenue</div>
             {sales.topCities.slice(0, 6).map((c, i) => {
               const maxRev = sales.topCities[0]?.revenue ?? 1;
               return (
                 <div key={c.city} className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[10px] text-[#A1A1AA] w-3 text-right shrink-0">{i + 1}</span>
-                  <span className="text-[12px] font-medium text-[#18181B] dark:text-[#F4F4F5] w-24 shrink-0 truncate">{c.city}</span>
+                  <span className="text-[12px] text-[#A1A1AA] w-3 text-right shrink-0">{i + 1}</span>
+                  <span className="text-[14px] font-medium text-[#18181B] dark:text-[#F4F4F5] w-24 shrink-0 truncate">{c.city}</span>
                   <div className="flex-1 h-1.5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-full overflow-hidden">
                     <div className="h-full bg-[#F97316] rounded-full" style={{ width: `${Math.round((c.revenue / maxRev) * 100)}%`, opacity: 1 - i * 0.12 }} />
                   </div>
-                  <span className="text-[11px] text-[#A1A1AA] w-12 text-right shrink-0">{c.orders}ord</span>
-                  <span className="text-[11px] font-semibold text-[#18181B] dark:text-[#F4F4F5] w-20 text-right shrink-0">{formatINR(c.revenue)}</span>
+                  <span className="text-[13px] text-[#A1A1AA] w-12 text-right shrink-0">{c.orders}ord</span>
+                  <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] w-20 text-right shrink-0">{formatINR(c.revenue)}</span>
                 </div>
               );
             })}
           </div>
           {sales.topStates.length > 0 && (
             <>
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em] mb-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">States by Orders</div>
-              <table className="w-full text-[12px]">
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em] mb-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">States by Orders</div>
+              <table className="w-full text-[14px]">
                 <thead>
                   <tr className="border-b border-black/[0.04] dark:border-white/[0.04]">
                     {["State", "Orders", "Revenue"].map(h => (
-                      <th key={h} className="text-left py-1 px-1 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                      <th key={h} className="text-left py-1 px-1 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -473,13 +473,13 @@ export default function SalesPage() {
 
       {/* SKU Performance */}
       <Card>
-        <CardHeader title="SKU Performance" right={<span className="text-[11px] text-[#A1A1AA]">Avg {sales.kpis.avgItemsPerOrder} items/order · {sales.allBySku.length} products sold</span>} />
+        <CardHeader title="SKU Performance" right={<span className="text-[13px] text-[#A1A1AA]">Avg {sales.kpis.avgItemsPerOrder} items/order · {sales.allBySku.length} products sold</span>} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["#", "Product Name", "Qty Sold", "Revenue", "% of Sales"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -510,13 +510,13 @@ export default function SalesPage() {
 
       {/* Recent Orders */}
       <Card>
-        <CardHeader title="Recent Orders" right={<span className="text-[11px] text-[#A1A1AA]">Last {sales.recentOrders.length} orders</span>} />
+        <CardHeader title="Recent Orders" right={<span className="text-[13px] text-[#A1A1AA]">Last {sales.recentOrders.length} orders</span>} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["Order", "Date", "Amount", "Payment", "City", "Status"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -527,13 +527,13 @@ export default function SalesPage() {
                   <td className="py-2 px-2 text-[#A1A1AA]">{o.date}</td>
                   <td className="py-2 px-2 font-bold text-[#F97316]">{formatINR(o.total)}</td>
                   <td className="py-2 px-2">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold",
+                    <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold",
                       o.isCod ? "bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D]" : "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C]"
                     )}>{o.isCod ? "COD" : "Prepaid"}</span>
                   </td>
                   <td className="py-2 px-2 text-[#71717A]">{o.city || "—"}</td>
                   <td className="py-2 px-2">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold capitalize",
+                    <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold capitalize",
                       o.status === "paid" ? "bg-[#F0FDF4] dark:bg-[#052E16] text-[#166534] dark:text-[#4ADE80]" :
                       o.status === "pending" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D]" :
                       "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A]"

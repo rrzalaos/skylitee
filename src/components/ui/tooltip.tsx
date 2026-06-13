@@ -26,7 +26,7 @@ export function Tooltip({ children, content, side = "right", maxWidth = 220 }: {
     ? createPortal(
         <span
           className={cn(
-            "fixed z-[9999] bg-[#18181B] text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl pointer-events-none leading-relaxed",
+            "fixed z-[9999] bg-[#18181B] text-white text-[13px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl pointer-events-none leading-relaxed",
             side === "right"  && "-translate-y-1/2",
             side === "left"   && "-translate-y-1/2 -translate-x-full",
             side === "top"    && "-translate-x-1/2 -translate-y-full",

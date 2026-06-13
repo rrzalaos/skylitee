@@ -98,7 +98,7 @@ export default function CohortPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold dark:text-[#F4F4F5]">Cohort Analysis</h2>
-          <p className="text-[15px] text-[#686864] dark:text-[#A1A1AA] mt-0.5">
+          <p className="text-[17px] text-[#686864] dark:text-[#A1A1AA] mt-0.5">
             Customer retention curves by acquisition month — real Shopify data
           </p>
         </div>
@@ -106,11 +106,11 @@ export default function CohortPage() {
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] dark:text-[#A1A1AA] py-12 text-center">
+        <div className="text-[17px] text-[#686864] dark:text-[#A1A1AA] py-12 text-center">
           Loading cohort data from Shopify…
         </div>
       ) : !data ? (
-        <div className="text-[15px] text-[#d94040] py-12 text-center">
+        <div className="text-[17px] text-[#d94040] py-12 text-center">
           Could not load cohort data. Check Shopify connection.
         </div>
       ) : (
@@ -118,11 +118,11 @@ export default function CohortPage() {
           <Card className="mb-2">
             <CardHeader title="Retention cohort matrix" right="% of customers who purchased again in that month" />
             <div className="overflow-x-auto">
-              <table className="w-full text-[15px] border-collapse min-w-[560px]">
+              <table className="w-full text-[17px] border-collapse min-w-[560px]">
                 <thead>
                   <tr className="border-b border-black/[0.09] dark:border-white/[0.06]">
                     {["Cohort", "Customers", "Month 0", "Month 1", "Month 2", "Month 3", "Month 4", "Month 5"].map((h) => (
-                      <th key={h} className="text-left py-1.5 px-2 text-[14px] font-semibold text-[#686864] dark:text-[#A1A1AA]">
+                      <th key={h} className="text-left py-1.5 px-2 text-[16px] font-semibold text-[#686864] dark:text-[#A1A1AA]">
                         {h}
                       </th>
                     ))}
@@ -137,7 +137,7 @@ export default function CohortPage() {
                       </td>
                       {row.retention.map((val, j) => (
                         <td key={j} className="py-1 px-1">
-                          <div className={`text-center px-2 py-1 rounded text-[13px] ${retentionColor(val)}`}>
+                          <div className={`text-center px-2 py-1 rounded text-[15px] ${retentionColor(val)}`}>
                             {val !== null ? `${val}%` : "—"}
                           </div>
                         </td>
@@ -179,7 +179,7 @@ export default function CohortPage() {
             <Card>
               <CardHeader title="Revenue by cohort" right="Cumulative" />
               {data.revenueByMonth.length === 0 ? (
-                <div className="text-[15px] text-[#686864] dark:text-[#A1A1AA] py-4 text-center">
+                <div className="text-[17px] text-[#686864] dark:text-[#A1A1AA] py-4 text-center">
                   No revenue data available yet
                 </div>
               ) : (

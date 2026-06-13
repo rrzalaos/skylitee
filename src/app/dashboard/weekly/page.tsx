@@ -156,46 +156,46 @@ export default function WeeklyPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Weekly Digest</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">Week of <span className="font-medium text-[#181816]">{thisW.label}</span> vs previous week · {metaConnected ? "Shopify + Meta live" : "Shopify live"}</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">Week of <span className="font-medium text-[#181816]">{thisW.label}</span> vs previous week · {metaConnected ? "Shopify + Meta live" : "Shopify live"}</p>
         </div>
         <ExportButton onExportCSV={handleCSV} onExportPDF={handlePDF} disabled={loading || !s} />
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-12 text-center">Loading weekly data…</div>
+        <div className="text-[17px] text-[#686864] py-12 text-center">Loading weekly data…</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           <div>
             {/* Headline */}
             <div className="bg-[#e0f5ee] border border-[#9FE1CB] rounded-xl px-3.5 py-3 mb-2">
-              <div className="text-[14px] font-semibold text-[#064d38] mb-1.5 flex items-center gap-1.5">✨ This week&apos;s headline</div>
-              <div className="text-[15px] font-medium text-[#0d6b4f] leading-relaxed">{headline}</div>
+              <div className="text-[16px] font-semibold text-[#064d38] mb-1.5 flex items-center gap-1.5">✨ This week&apos;s headline</div>
+              <div className="text-[17px] font-medium text-[#0d6b4f] leading-relaxed">{headline}</div>
             </div>
 
             {/* This week vs last week */}
             <Card className="mb-2">
-              <CardHeader title="This week vs last week" right={<span className="text-[13px] text-[#9e9e9a]">{thisW.label}</span>} />
+              <CardHeader title="This week vs last week" right={<span className="text-[15px] text-[#9e9e9a]">{thisW.label}</span>} />
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {tiles.map((t, i) => (
                   <div key={i} className={`text-center p-2.5 rounded-lg ${t.bg}`}>
                     <div className={`text-lg font-semibold ${t.color}`}>{t.value}</div>
-                    <div className="text-[13px] text-[#686864] mt-0.5">{t.label}</div>
-                    <div className="text-[12px] text-[#9e9e9a]">{t.sub}</div>
+                    <div className="text-[15px] text-[#686864] mt-0.5">{t.label}</div>
+                    <div className="text-[14px] text-[#9e9e9a]">{t.sub}</div>
                   </div>
                 ))}
               </div>
               {blendedRoas !== null && m && (
-                <p className="text-[12px] text-[#9e9e9a] mt-2">Blended ROAS = store revenue ÷ ad spend (the real payback). Meta ROAS only counts Meta-attributed sales, so it&apos;s usually lower than reality but ignores organic/repeat.</p>
+                <p className="text-[14px] text-[#9e9e9a] mt-2">Blended ROAS = store revenue ÷ ad spend (the real payback). Meta ROAS only counts Meta-attributed sales, so it&apos;s usually lower than reality but ignores organic/repeat.</p>
               )}
             </Card>
 
             {/* Campaigns this week */}
             {metaConnected && campaigns.length > 0 && (
               <Card>
-                <CardHeader title="Campaigns this week" right={<span className="text-[13px] text-[#9e9e9a]">{campaigns.length} active</span>} />
+                <CardHeader title="Campaigns this week" right={<span className="text-[15px] text-[#9e9e9a]">{campaigns.length} active</span>} />
                 <div className="space-y-1.5">
                   {campaigns.slice(0, 6).map(c => (
-                    <div key={c.id} className="flex items-center justify-between text-[14px]">
+                    <div key={c.id} className="flex items-center justify-between text-[16px]">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.status === "ACTIVE" ? "bg-[#17a773]" : "bg-[#9e9e9a]"}`} />
                         <span className="text-[#686864] truncate">{c.name}</span>
@@ -219,10 +219,10 @@ export default function WeeklyPage() {
               <CardHeader title="This week's action items" right={<Badge variant="amber">{actionItems.length} priority tasks</Badge>} />
               {actionItems.map((a, i) => (
                 <div key={i} className="flex items-start gap-2.5 p-2.5 bg-[#f7f7f5] rounded-lg mb-1.5 last:mb-0">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] text-white font-semibold shrink-0 ${a.color}`}>{i + 1}</div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] text-white font-semibold shrink-0 ${a.color}`}>{i + 1}</div>
                   <div>
-                    <div className="text-[14px] font-semibold text-[#181816]">{a.title}</div>
-                    <div className="text-[15px] text-[#686864] mt-0.5">{a.sub}</div>
+                    <div className="text-[16px] font-semibold text-[#181816]">{a.title}</div>
+                    <div className="text-[17px] text-[#686864] mt-0.5">{a.sub}</div>
                   </div>
                 </div>
               ))}
@@ -230,26 +230,26 @@ export default function WeeklyPage() {
 
             {/* Forecast */}
             <Card>
-              <CardHeader title="Next week forecast" right={<span className="text-[13px] text-[#9e9e9a]">conservative</span>} />
+              <CardHeader title="Next week forecast" right={<span className="text-[15px] text-[#9e9e9a]">conservative</span>} />
               {s ? (
                 <>
                   <div className="space-y-2">
                     {fc.map((f, i) => (
                       <div key={i} className="flex items-center justify-between">
-                        <span className="text-[14px] text-[#686864] w-20">{f.label}</span>
+                        <span className="text-[16px] text-[#686864] w-20">{f.label}</span>
                         <div className="flex-1 mx-2 h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
                           <div className={`h-full ${f.color}`} style={{ width: "82%" }} />
                         </div>
-                        <span className="text-[14px] font-semibold text-[#181816] w-20 text-right">{f.val}</span>
+                        <span className="text-[16px] font-semibold text-[#181816] w-20 text-right">{f.val}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 text-[13px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
+                  <div className="mt-2 text-[15px] text-[#686864] bg-[#f7f7f5] rounded-lg px-2.5 py-1.5">
                     Revenue/orders +5%, ad spend +10% on this week&apos;s actuals. A planning estimate, not a guarantee.
                   </div>
                 </>
               ) : (
-                <div className="text-[15px] text-[#9e9e9a] py-4 text-center">Connect Shopify to see a forecast.</div>
+                <div className="text-[17px] text-[#9e9e9a] py-4 text-center">Connect Shopify to see a forecast.</div>
               )}
             </Card>
           </div>

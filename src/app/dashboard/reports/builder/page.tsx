@@ -166,12 +166,12 @@ export default function ReportBuilderPage() {
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
             <FileText size={18} className="text-[#F97316]" /> Custom Report Builder
           </h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">Pick blocks, set a date range, brand it, and generate a PDF.</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Pick blocks, set a date range, brand it, and generate a PDF.</p>
         </div>
         <button
           onClick={generate}
           disabled={generating}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors disabled:opacity-60"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors disabled:opacity-60"
         >
           {generating ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
           {generating ? "Generating…" : "Generate PDF"}
@@ -179,7 +179,7 @@ export default function ReportBuilderPage() {
       </div>
 
       {msg && (
-        <div className={cn("rounded-xl px-4 py-2.5 text-[13px] font-semibold flex items-center gap-2",
+        <div className={cn("rounded-xl px-4 py-2.5 text-[15px] font-semibold flex items-center gap-2",
           msg.kind === "ok" ? "bg-[#F0FDF4] text-[#15803D]" : "bg-[#FEF2F2] text-[#991B1B]")}>
           {msg.kind === "ok" ? <Check size={14} /> : <X size={14} />}{msg.text}
         </div>
@@ -189,15 +189,15 @@ export default function ReportBuilderPage() {
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Report title</label>
+            <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Report title</label>
             <input value={branding.reportTitle} onChange={e => setBranding(b => ({ ...b, reportTitle: e.target.value }))}
               placeholder="Performance Report"
-              className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+              className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
           </div>
           <div>
-            <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Date range</label>
+            <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Date range</label>
             <select value={preset} onChange={e => setPreset(e.target.value as DatePreset)}
-              className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]">
+              className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]">
               {PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
           </div>
@@ -205,13 +205,13 @@ export default function ReportBuilderPage() {
             {preset === "custom" ? (
               <>
                 <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-                  className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-2 py-2 text-[12px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+                  className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-2 py-2 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
                 <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-                  className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-2 py-2 text-[12px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+                  className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-2 py-2 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
               </>
             ) : (
               <button onClick={() => setShowBranding(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors w-full justify-center">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors w-full justify-center">
                 <Palette size={13} /> White-label branding
               </button>
             )}
@@ -222,32 +222,32 @@ export default function ReportBuilderPage() {
         {(showBranding || preset === "custom") && (
           <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Brand name</label>
+              <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Brand name</label>
               <input value={branding.brandName} onChange={e => setBranding(b => ({ ...b, brandName: e.target.value }))}
                 placeholder="Skylitee"
-                className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+                className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Client name</label>
+              <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Client name</label>
               <input value={branding.clientName} onChange={e => setBranding(b => ({ ...b, clientName: e.target.value }))}
                 placeholder="Client / store name"
-                className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+                className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Accent color</label>
+              <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Accent color</label>
               <input type="color" value={branding.color} onChange={e => setBranding(b => ({ ...b, color: e.target.value }))}
                 className="w-full h-[38px] bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-1 cursor-pointer" />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Logo</label>
+              <label className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide block mb-1">Logo</label>
               {branding.logoDataUrl ? (
                 <div className="flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={branding.logoDataUrl} alt="logo" className="h-[38px] w-auto max-w-[80px] object-contain rounded-lg border border-black/[0.06]" />
-                  <button onClick={() => setBranding(b => ({ ...b, logoDataUrl: "" }))} className="text-[12px] text-[#EF4444] font-semibold">Remove</button>
+                  <button onClick={() => setBranding(b => ({ ...b, logoDataUrl: "" }))} className="text-[14px] text-[#EF4444] font-semibold">Remove</button>
                 </div>
               ) : (
-                <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors cursor-pointer">
+                <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors cursor-pointer">
                   <ImageIcon size={13} /> Upload
                   <input type="file" accept="image/*" onChange={onLogo} className="hidden" />
                 </label>
@@ -259,9 +259,9 @@ export default function ReportBuilderPage() {
         {/* Templates */}
         {templates.length > 0 && (
           <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] font-semibold text-[#A1A1AA]">Templates:</span>
+            <span className="text-[14px] font-semibold text-[#A1A1AA]">Templates:</span>
             {templates.map(t => (
-              <span key={t.id} className="inline-flex items-center gap-1 bg-[#F5F5F4] dark:bg-[#262626] rounded-lg pl-2.5 pr-1 py-1 text-[12px]">
+              <span key={t.id} className="inline-flex items-center gap-1 bg-[#F5F5F4] dark:bg-[#262626] rounded-lg pl-2.5 pr-1 py-1 text-[14px]">
                 <button onClick={() => loadTemplate(t)} className="font-semibold text-[#18181B] dark:text-[#F4F4F5] hover:text-[#F97316]">{t.name}</button>
                 <button onClick={() => deleteTemplate(t.id)} className="text-[#A1A1AA] hover:text-[#EF4444] p-0.5"><Trash2 size={11} /></button>
               </span>
@@ -274,17 +274,17 @@ export default function ReportBuilderPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* LEFT — add blocks */}
         <Card>
-          <div className="text-[14px] font-bold dark:text-[#F4F4F5] mb-3">Add blocks</div>
+          <div className="text-[16px] font-bold dark:text-[#F4F4F5] mb-3">Add blocks</div>
           <div className="space-y-4">
             {REPORT_GROUPS.map(g => (
               <div key={g.id}>
-                <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">{g.label}</div>
+                <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">{g.label}</div>
                 <div className="space-y-1">
                   {g.blocks.map(b => {
                     const on = selected.includes(b.id);
                     return (
                       <button key={b.id} onClick={() => toggle(b.id)}
-                        className={cn("w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[13px] transition-colors",
+                        className={cn("w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[15px] transition-colors",
                           on ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C]" : "hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] text-[#52525B] dark:text-[#A1A1AA]")}>
                         <span className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0",
                           on ? "bg-[#F97316] border-[#F97316]" : "border-black/20 dark:border-white/20")}>
@@ -303,18 +303,18 @@ export default function ReportBuilderPage() {
         {/* RIGHT — your report */}
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[14px] font-bold dark:text-[#F4F4F5]">Your report ({selected.length})</div>
+            <div className="text-[16px] font-bold dark:text-[#F4F4F5]">Your report ({selected.length})</div>
             <div className="flex items-center gap-1.5">
               <input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
-                className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[12px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] w-32" />
+                className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] w-32" />
               <button onClick={saveTemplate} disabled={saving}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-50">
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[14px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-50">
                 <Save size={12} /> Save
               </button>
             </div>
           </div>
           {selected.length === 0 ? (
-            <div className="py-12 text-center text-[13px] text-[#A1A1AA]">
+            <div className="py-12 text-center text-[15px] text-[#A1A1AA]">
               <Plus size={20} className="mx-auto mb-2 opacity-40" />
               Select blocks on the left — they&apos;ll appear here in order.
             </div>
@@ -322,8 +322,8 @@ export default function ReportBuilderPage() {
             <div className="space-y-1.5">
               {selected.map((id, i) => (
                 <div key={id} className="flex items-center gap-2 bg-[#FAFAF9] dark:bg-[#1C1C1C] rounded-lg px-2.5 py-2">
-                  <span className="text-[11px] font-bold text-[#A1A1AA] w-5">{i + 1}</span>
-                  <span className="flex-1 text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{BLOCK_BY_ID[id]?.label ?? id}</span>
+                  <span className="text-[13px] font-bold text-[#A1A1AA] w-5">{i + 1}</span>
+                  <span className="flex-1 text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{BLOCK_BY_ID[id]?.label ?? id}</span>
                   <button onClick={() => move(id, -1)} disabled={i === 0} className="text-[#A1A1AA] hover:text-[#F97316] disabled:opacity-30"><ChevronUp size={15} /></button>
                   <button onClick={() => move(id, 1)} disabled={i === selected.length - 1} className="text-[#A1A1AA] hover:text-[#F97316] disabled:opacity-30"><ChevronDown size={15} /></button>
                   <button onClick={() => toggle(id)} className="text-[#A1A1AA] hover:text-[#EF4444]"><X size={14} /></button>

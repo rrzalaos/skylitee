@@ -114,9 +114,9 @@ export default function InsightsReportPage() {
           <div className="flex items-center gap-2 mb-1">
             <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center"><Sparkles size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">AI Insights</h1>
-            <span className="px-2 py-0.5 bg-[#FFF7ED] text-[#EA580C] border border-[#FED7AA] rounded-full text-[10px] font-bold">Powered by Claude</span>
+            <span className="px-2 py-0.5 bg-[#FFF7ED] text-[#EA580C] border border-[#FED7AA] rounded-full text-[12px] font-bold">Powered by Claude</span>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{range.label}{generatedAt ? ` · Generated ${generatedAt}` : ""}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{range.label}{generatedAt ? ` · Generated ${generatedAt}` : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           {report && (
@@ -129,7 +129,7 @@ export default function InsightsReportPage() {
             onClick={generateReport}
             disabled={loading}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-[15px] font-semibold transition-all",
               loading
                 ? "bg-[#F5F5F4] text-[#A1A1AA] cursor-not-allowed"
                 : "bg-[#F97316] text-white hover:bg-[#EA580C]"
@@ -146,13 +146,13 @@ export default function InsightsReportPage() {
         <Card>
           <div className="py-10 text-center">
             <Sparkles size={36} className="text-[#F97316] mx-auto mb-4" />
-            <h2 className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Get AI-powered business insights</h2>
-            <p className="text-[13px] text-[#71717A] max-w-md mx-auto mb-6 leading-relaxed">
+            <h2 className="text-[18px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Get AI-powered business insights</h2>
+            <p className="text-[15px] text-[#71717A] max-w-md mx-auto mb-6 leading-relaxed">
               Claude analyses your Shopify, Meta Ads, Google Search Console, and GA4 data together to identify what&apos;s working, what needs fixing, and your highest-impact next steps.
             </p>
             <button
               onClick={generateReport}
-              className="px-6 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold hover:bg-[#EA580C]"
+              className="px-6 py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-semibold hover:bg-[#EA580C]"
             >
               <span className="flex items-center gap-2"><Sparkles size={13} />Generate AI Insights</span>
             </button>
@@ -167,15 +167,15 @@ export default function InsightsReportPage() {
             <div className="flex justify-center mb-4">
               <div className="w-10 h-10 border-2 border-[#F97316] border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Analysing your data…</p>
-            <p className="text-[12px] text-[#A1A1AA]">Claude is reviewing all your platform data and generating insights. This takes 10–20 seconds.</p>
+            <p className="text-[16px] font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Analysing your data…</p>
+            <p className="text-[14px] text-[#A1A1AA]">Claude is reviewing all your platform data and generating insights. This takes 10–20 seconds.</p>
           </div>
         </Card>
       )}
 
       {/* Error */}
       {error && !loading && (
-        <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl p-4 text-[13px] text-[#991B1B]">
+        <div className="bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl p-4 text-[15px] text-[#991B1B]">
           {error}
         </div>
       )}
@@ -186,31 +186,31 @@ export default function InsightsReportPage() {
           {/* Score + Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-5 flex flex-col items-center justify-center text-center">
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-2">Overall Score</div>
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-2">Overall Score</div>
               <div className="text-[56px] font-black leading-none" style={{ color: scoreColor(report.overallScore) }}>{report.overallScore}</div>
-              <div className="text-[13px] font-bold mt-1" style={{ color: scoreColor(report.overallScore) }}>{report.scoreLabel}</div>
+              <div className="text-[15px] font-bold mt-1" style={{ color: scoreColor(report.overallScore) }}>{report.scoreLabel}</div>
               {platforms && (
                 <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                   {Object.entries(platforms).map(([k, v]) => v && (
-                    <span key={k} className="px-2 py-0.5 bg-[#F5F5F4] dark:bg-[#262626] text-[#71717A] text-[10px] rounded-full font-semibold uppercase">{k}</span>
+                    <span key={k} className="px-2 py-0.5 bg-[#F5F5F4] dark:bg-[#262626] text-[#71717A] text-[12px] rounded-full font-semibold uppercase">{k}</span>
                   ))}
                 </div>
               )}
             </div>
             <div className="md:col-span-2 bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-5">
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-2">Executive Summary</div>
-              <p className="text-[14px] text-[#18181B] dark:text-[#F4F4F5] leading-relaxed">{report.executiveSummary}</p>
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-2">Executive Summary</div>
+              <p className="text-[16px] text-[#18181B] dark:text-[#F4F4F5] leading-relaxed">{report.executiveSummary}</p>
               {report.channelSummary && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="bg-[#F0FDF4] dark:bg-[#052E16]/30 rounded-xl p-2.5 border border-[#86EFAC]">
-                    <div className="text-[10px] font-bold text-[#16A34A] uppercase mb-0.5">Best Channel</div>
-                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{report.channelSummary.bestChannel}</div>
-                    <div className="text-[11px] text-[#52525B] dark:text-[#A1A1AA]">{report.channelSummary.bestChannelReason}</div>
+                    <div className="text-[12px] font-bold text-[#16A34A] uppercase mb-0.5">Best Channel</div>
+                    <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{report.channelSummary.bestChannel}</div>
+                    <div className="text-[13px] text-[#52525B] dark:text-[#A1A1AA]">{report.channelSummary.bestChannelReason}</div>
                   </div>
                   <div className="bg-[#FEF2F2] dark:bg-[#2D0A0A]/30 rounded-xl p-2.5 border border-[#FCA5A5]">
-                    <div className="text-[10px] font-bold text-[#991B1B] uppercase mb-0.5">Needs Work</div>
-                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{report.channelSummary.weakestChannel}</div>
-                    <div className="text-[11px] text-[#52525B] dark:text-[#A1A1AA]">{report.channelSummary.weakestChannelReason}</div>
+                    <div className="text-[12px] font-bold text-[#991B1B] uppercase mb-0.5">Needs Work</div>
+                    <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{report.channelSummary.weakestChannel}</div>
+                    <div className="text-[13px] text-[#52525B] dark:text-[#A1A1AA]">{report.channelSummary.weakestChannelReason}</div>
                   </div>
                 </div>
               )}
@@ -226,8 +226,8 @@ export default function InsightsReportPage() {
                   <div key={i} className="flex items-start gap-3 bg-[#F0FDF4] dark:bg-[#052E16]/40 border border-[#86EFAC] rounded-xl p-3">
                     <CheckCircle2 size={14} className="text-[#16A34A] shrink-0 mt-0.5" />
                     <div>
-                      <div className="text-[12px] font-bold text-[#166534] dark:text-[#4ADE80]">{w.metric}: {w.value}</div>
-                      <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{w.insight}</div>
+                      <div className="text-[14px] font-bold text-[#166534] dark:text-[#4ADE80]">{w.metric}: {w.value}</div>
+                      <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{w.insight}</div>
                     </div>
                   </div>
                 ))}
@@ -242,10 +242,10 @@ export default function InsightsReportPage() {
                     <AlertTriangle size={14} className={cn("shrink-0 mt-0.5", n.severity === "high" ? "text-[#DC2626]" : "text-[#D97706]")} />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className={cn("text-[12px] font-bold", n.severity === "high" ? "text-[#991B1B] dark:text-[#FCA5A5]" : "text-[#92400E] dark:text-[#FCD34D]")}>{n.metric}: {n.value}</span>
-                        <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold border", severityBadge[n.severity])}>{n.severity}</span>
+                        <span className={cn("text-[14px] font-bold", n.severity === "high" ? "text-[#991B1B] dark:text-[#FCA5A5]" : "text-[#92400E] dark:text-[#FCD34D]")}>{n.metric}: {n.value}</span>
+                        <span className={cn("px-1.5 py-0.5 rounded text-[12px] font-bold border", severityBadge[n.severity])}>{n.severity}</span>
                       </div>
-                      <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{n.insight}</div>
+                      <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{n.insight}</div>
                     </div>
                   </div>
                 ))}
@@ -260,15 +260,15 @@ export default function InsightsReportPage() {
               {report.recommendations.map((r, i) => (
                 <div key={i} className="flex items-start gap-3 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3">
                   <div className="w-5 h-5 bg-[#F97316] rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-black text-white">{i + 1}</span>
+                    <span className="text-[12px] font-black text-white">{i + 1}</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{r.action}</span>
-                      <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold border", r.priority === "high" ? "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]" : "bg-[#F5F5F4] text-[#52525B] border-[#E5E5E5]")}>{r.priority} priority</span>
-                      <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold border", effortBadge[r.effort])}>{r.effort} effort</span>
+                      <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{r.action}</span>
+                      <span className={cn("px-1.5 py-0.5 rounded text-[12px] font-bold border", r.priority === "high" ? "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]" : "bg-[#F5F5F4] text-[#52525B] border-[#E5E5E5]")}>{r.priority} priority</span>
+                      <span className={cn("px-1.5 py-0.5 rounded text-[12px] font-bold border", effortBadge[r.effort])}>{r.effort} effort</span>
                     </div>
-                    <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{r.why}</div>
+                    <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{r.why}</div>
                   </div>
                 </div>
               ))}
@@ -283,8 +283,8 @@ export default function InsightsReportPage() {
                 <div key={i} className="flex items-center gap-3 bg-[#FFF7ED] dark:bg-[#2A1A0E]/50 border border-[#FED7AA] rounded-xl p-3">
                   <Target size={14} className="text-[#F97316] shrink-0" />
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black text-[#A1A1AA]">#{i + 1}</span>
-                    <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p}</span>
+                    <span className="text-[13px] font-black text-[#A1A1AA]">#{i + 1}</span>
+                    <span className="text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p}</span>
                   </div>
                 </div>
               ))}
@@ -292,7 +292,7 @@ export default function InsightsReportPage() {
           </Card>
 
           {/* Powered by note */}
-          <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA]">
+          <div className="flex items-center gap-2 text-[13px] text-[#A1A1AA]">
             <Lightbulb size={11} />
             <span>AI analysis generated by Claude (Anthropic). Data reflects the selected date range. Regenerate after updating platform data for fresh insights.</span>
           </div>

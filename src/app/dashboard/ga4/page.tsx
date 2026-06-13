@@ -38,11 +38,11 @@ function FunnelStep({ label, count, rate, rateLabel }: {
 }) {
   return (
     <div className="flex flex-col items-center text-center flex-1 min-w-0">
-      <div className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-[12px] text-[#A1A1AA] font-bold uppercase tracking-wider mb-1">{label}</div>
       <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{count.toLocaleString("en-IN")}</div>
       {rate !== undefined && (
         <div className={cn(
-          "text-[10px] mt-0.5 px-1.5 py-0.5 rounded-full font-bold",
+          "text-[12px] mt-0.5 px-1.5 py-0.5 rounded-full font-bold",
           rate >= 60 ? "bg-[#FFF7ED] text-[#EA580C] dark:bg-[#2A1A0E] dark:text-[#FB923C]"
             : rate >= 30 ? "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]"
             : "bg-[#FEF2F2] text-[#991B1B] dark:bg-[#2D0A0A] dark:text-[#FCA5A5]"
@@ -71,20 +71,20 @@ export default function GA4Page() {
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading GA4 data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Loading GA4 data…</div>;
 
   if (notConnected) return (
     <div className="text-center py-20">
       <BarChart3 size={32} className="text-[#A1A1AA] mx-auto mb-3" />
-      <h2 className="text-[16px] font-bold mb-1 dark:text-[#F4F4F5]">Google Analytics 4 not connected</h2>
-      <p className="text-[13px] text-[#71717A] mb-4">Connect to see sessions, users, traffic sources, ecommerce funnel and geo data.</p>
-      <Link href="/api/auth/google?service=ga4" className="px-5 py-2.5 bg-[#4285F4] text-white rounded-xl text-[13px] font-semibold hover:bg-[#3367d6] transition-colors">
+      <h2 className="text-[18px] font-bold mb-1 dark:text-[#F4F4F5]">Google Analytics 4 not connected</h2>
+      <p className="text-[15px] text-[#71717A] mb-4">Connect to see sessions, users, traffic sources, ecommerce funnel and geo data.</p>
+      <Link href="/api/auth/google?service=ga4" className="px-5 py-2.5 bg-[#4285F4] text-white rounded-xl text-[15px] font-semibold hover:bg-[#3367d6] transition-colors">
         Connect GA4 →
       </Link>
     </div>
   );
 
-  if (!data) return <div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load GA4 data.</div>;
+  if (!data) return <div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load GA4 data.</div>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -198,7 +198,7 @@ export default function GA4Page() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Google Analytics 4</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">{data.property} · {data.period.startDate} → {data.period.endDate}</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">{data.property} · {data.period.startDate} → {data.period.endDate}</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
       </div>
@@ -217,21 +217,21 @@ export default function GA4Page() {
       {topChannel && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
           <div className="col-span-1 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-2xl p-3.5">
-            <div className="text-[11px] font-bold text-[#15803D] dark:text-[#86EFAC] uppercase tracking-wider mb-1">Top Traffic Channel</div>
+            <div className="text-[13px] font-bold text-[#15803D] dark:text-[#86EFAC] uppercase tracking-wider mb-1">Top Traffic Channel</div>
             <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{topChannel.channel}</div>
-            <div className="text-[12px] text-[#71717A]">{topChannel.sessions.toLocaleString()} sessions · {Math.round(topChannel.sessions / Math.max(data.kpis.sessions, 1) * 100)}% of total</div>
+            <div className="text-[14px] text-[#71717A]">{topChannel.sessions.toLocaleString()} sessions · {Math.round(topChannel.sessions / Math.max(data.kpis.sessions, 1) * 100)}% of total</div>
           </div>
           {totalPurchases > 0 && (
             <div className="col-span-1 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/30 rounded-2xl p-3.5">
-              <div className="text-[11px] font-bold text-[#EA580C] dark:text-[#FB923C] uppercase tracking-wider mb-1">Total GA4 Purchases</div>
+              <div className="text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C] uppercase tracking-wider mb-1">Total GA4 Purchases</div>
               <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{totalPurchases.toLocaleString("en-IN")}</div>
-              <div className="text-[12px] text-[#71717A]">Revenue: {formatINR(Math.round(totalRevenue))}</div>
+              <div className="text-[14px] text-[#71717A]">Revenue: {formatINR(Math.round(totalRevenue))}</div>
             </div>
           )}
           <div className="col-span-1 bg-[#EFF6FF] dark:bg-[#0D1E3D] border border-[#93C5FD]/30 rounded-2xl p-3.5">
-            <div className="text-[11px] font-bold text-[#1E40AF] dark:text-[#93C5FD] uppercase tracking-wider mb-1">New vs Returning</div>
+            <div className="text-[13px] font-bold text-[#1E40AF] dark:text-[#93C5FD] uppercase tracking-wider mb-1">New vs Returning</div>
             <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{data.kpis.users > 0 ? Math.round(data.kpis.newUsers / data.kpis.users * 100) : 0}% new</div>
-            <div className="text-[12px] text-[#71717A]">{data.kpis.newUsers.toLocaleString()} new · {returningUsers.toLocaleString()} returning</div>
+            <div className="text-[14px] text-[#71717A]">{data.kpis.newUsers.toLocaleString()} new · {returningUsers.toLocaleString()} returning</div>
           </div>
         </div>
       )}
@@ -241,7 +241,7 @@ export default function GA4Page() {
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={cn(
-              "px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
+              "px-4 py-2 text-[15px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key
                 ? "border-[#4285F4] text-[#4285F4]"
                 : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -283,11 +283,11 @@ export default function GA4Page() {
           </Card>
           <Card>
             <CardHeader title="Top pages" right="By views" />
-            <table className="w-full text-[13px] border-collapse">
+            <table className="w-full text-[15px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Page", "Views", "Sessions", "Bounce"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -297,7 +297,7 @@ export default function GA4Page() {
                     <td className="py-2 px-2 max-w-[200px] truncate font-medium text-[#4285F4]">{p.page}</td>
                     <td className="py-2 px-2 font-semibold dark:text-[#F4F4F5]">{p.views.toLocaleString("en-IN")}</td>
                     <td className="py-2 px-2 text-[#71717A]">{p.sessions.toLocaleString("en-IN")}</td>
-                    <td className={cn("py-2 px-2 font-medium text-[13px]",
+                    <td className={cn("py-2 px-2 font-medium text-[15px]",
                       p.bounceRate > 70 ? "text-[#EF4444]" : p.bounceRate > 50 ? "text-[#EAB308]" : "text-[#22C55E]"
                     )}>{p.bounceRate}%</td>
                   </tr>
@@ -322,11 +322,11 @@ export default function GA4Page() {
                 />
               ))}
             </div>
-            <table className="w-full text-[13px] border-collapse">
+            <table className="w-full text-[15px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Channel", "Sessions", "Users", "% of Traffic", "Purchases", "Revenue"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -355,15 +355,15 @@ export default function GA4Page() {
                     "rounded-xl p-4 border",
                     i === 0 ? "bg-[#EFF6FF] dark:bg-[#0D1E3D] border-[#93C5FD]/30" : "bg-[#FFF7ED] dark:bg-[#2A1A0E] border-[#F97316]/30"
                   )}>
-                    <div className={cn("text-[11px] font-bold uppercase tracking-wider mb-1",
+                    <div className={cn("text-[13px] font-bold uppercase tracking-wider mb-1",
                       i === 0 ? "text-[#1E40AF] dark:text-[#93C5FD]" : "text-[#EA580C] dark:text-[#FB923C]"
                     )}>
                       {row.type === "new" ? "New Users" : "Returning Users"}
                     </div>
                     <div className="text-[24px] font-black dark:text-[#F4F4F5]">{row.users.toLocaleString("en-IN")}</div>
-                    <div className="text-[12px] text-[#71717A] mt-1">{row.sessions.toLocaleString()} sessions</div>
+                    <div className="text-[14px] text-[#71717A] mt-1">{row.sessions.toLocaleString()} sessions</div>
                     {row.purchases > 0 && (
-                      <div className="text-[12px] font-semibold text-[#F97316] mt-1">
+                      <div className="text-[14px] font-semibold text-[#F97316] mt-1">
                         {row.purchases} purchases · {formatINR(Math.round(row.revenue))}
                       </div>
                     )}
@@ -381,8 +381,8 @@ export default function GA4Page() {
           {!data.ecommerce || data.ecommerce.itemsViewed === 0 ? (
             <Card>
               <div className="py-10 text-center">
-                <div className="text-[13px] font-semibold dark:text-[#F4F4F5] mb-1">No ecommerce data available</div>
-                <div className="text-[12px] text-[#71717A]">Make sure GA4 ecommerce tracking (view_item, add_to_cart, begin_checkout, purchase) is set up on your store.</div>
+                <div className="text-[15px] font-semibold dark:text-[#F4F4F5] mb-1">No ecommerce data available</div>
+                <div className="text-[14px] text-[#71717A]">Make sure GA4 ecommerce tracking (view_item, add_to_cart, begin_checkout, purchase) is set up on your store.</div>
               </div>
             </Card>
           ) : (
@@ -394,21 +394,21 @@ export default function GA4Page() {
                   <FunnelStep label="Items Viewed" count={data.ecommerce.itemsViewed} />
                   <div className="flex flex-col items-center justify-center mt-5 shrink-0">
                     <ArrowRight size={12} className="text-[#D4D4D4]" />
-                    <div className={cn("text-[10px] font-bold mt-0.5",
+                    <div className={cn("text-[12px] font-bold mt-0.5",
                       data.ecommerce.atcRate >= 12 ? "text-[#F97316]" : data.ecommerce.atcRate >= 7 ? "text-[#EAB308]" : "text-[#EF4444]"
                     )}>{data.ecommerce.atcRate}%</div>
                   </div>
                   <FunnelStep label="Add to Cart" count={data.ecommerce.itemsAddedToCart} rate={data.ecommerce.atcRate} rateLabel="ATC" />
                   <div className="flex flex-col items-center justify-center mt-5 shrink-0">
                     <ArrowRight size={12} className="text-[#D4D4D4]" />
-                    <div className={cn("text-[10px] font-bold mt-0.5",
+                    <div className={cn("text-[12px] font-bold mt-0.5",
                       data.ecommerce.checkoutRate >= 60 ? "text-[#F97316]" : data.ecommerce.checkoutRate >= 40 ? "text-[#EAB308]" : "text-[#EF4444]"
                     )}>{data.ecommerce.checkoutRate}%</div>
                   </div>
                   <FunnelStep label="Checkout" count={data.ecommerce.itemsCheckedOut} rate={data.ecommerce.checkoutRate} rateLabel="Chk" />
                   <div className="flex flex-col items-center justify-center mt-5 shrink-0">
                     <ArrowRight size={12} className="text-[#D4D4D4]" />
-                    <div className={cn("text-[10px] font-bold mt-0.5",
+                    <div className={cn("text-[12px] font-bold mt-0.5",
                       data.ecommerce.purchaseRate >= 50 ? "text-[#F97316]" : data.ecommerce.purchaseRate >= 30 ? "text-[#EAB308]" : "text-[#EF4444]"
                     )}>{data.ecommerce.purchaseRate}%</div>
                   </div>
@@ -421,9 +421,9 @@ export default function GA4Page() {
                     { label: "AOV", value: data.ecommerce.purchases > 0 ? formatINR(Math.round(data.ecommerce.revenue / data.ecommerce.purchases)) : "—", sub: "Avg order value" },
                   ].map(item => (
                     <div key={item.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 text-center">
-                      <div className="text-[11px] text-[#A1A1AA] mb-1">{item.label}</div>
+                      <div className="text-[13px] text-[#A1A1AA] mb-1">{item.label}</div>
                       <div className="text-[18px] font-black text-[#F97316]">{item.value}</div>
-                      <div className="text-[11px] text-[#A1A1AA]">{item.sub}</div>
+                      <div className="text-[13px] text-[#A1A1AA]">{item.sub}</div>
                     </div>
                   ))}
                 </div>
@@ -434,11 +434,11 @@ export default function GA4Page() {
                 <Card>
                   <CardHeader title="Ecommerce by Product" right="Item-level funnel" />
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[13px] border-collapse">
+                    <table className="w-full text-[15px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                           {["Product", "Viewed", "Add to Cart", "Checkout", "Purchased", "Revenue"].map(h => (
-                            <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -449,7 +449,7 @@ export default function GA4Page() {
                             <td className="py-2 px-2 text-[#71717A]">{item.viewed.toLocaleString("en-IN")}</td>
                             <td className="py-2 px-2 text-[#71717A]">
                               {item.addedToCart.toLocaleString("en-IN")}
-                              {item.viewed > 0 && <span className="text-[10px] text-[#F97316] ml-1">({Math.round(item.addedToCart / item.viewed * 100)}%)</span>}
+                              {item.viewed > 0 && <span className="text-[12px] text-[#F97316] ml-1">({Math.round(item.addedToCart / item.viewed * 100)}%)</span>}
                             </td>
                             <td className="py-2 px-2 text-[#71717A]">{item.checkedOut.toLocaleString("en-IN")}</td>
                             <td className="py-2 px-2 font-semibold text-[#F97316]">{item.purchased.toLocaleString("en-IN")}</td>
@@ -477,12 +477,12 @@ export default function GA4Page() {
                 {data.newVsReturning.map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                     <div>
-                      <div className="text-[13px] font-semibold capitalize dark:text-[#F4F4F5]">{row.type === "new" ? "New Users" : "Returning Users"}</div>
-                      <div className="text-[11px] text-[#71717A]">{row.sessions.toLocaleString()} sessions</div>
+                      <div className="text-[15px] font-semibold capitalize dark:text-[#F4F4F5]">{row.type === "new" ? "New Users" : "Returning Users"}</div>
+                      <div className="text-[13px] text-[#71717A]">{row.sessions.toLocaleString()} sessions</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[16px] font-black dark:text-[#F4F4F5]">{row.users.toLocaleString("en-IN")}</div>
-                      {row.purchases > 0 && <div className="text-[11px] text-[#F97316]">{row.purchases} purchases</div>}
+                      <div className="text-[18px] font-black dark:text-[#F4F4F5]">{row.users.toLocaleString("en-IN")}</div>
+                      {row.purchases > 0 && <div className="text-[13px] text-[#F97316]">{row.purchases} purchases</div>}
                     </div>
                   </div>
                 ))}
@@ -500,11 +500,11 @@ export default function GA4Page() {
                   />
                 ))}
               </div>
-              <table className="w-full text-[13px] border-collapse">
+              <table className="w-full text-[15px] border-collapse">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["Device", "Sessions", "Users"].map(h => (
-                      <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                      <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -531,11 +531,11 @@ export default function GA4Page() {
                 />
               ))}
             </div>
-            <table className="w-full text-[13px] border-collapse">
+            <table className="w-full text-[15px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Country", "Sessions", "Users"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -559,7 +559,7 @@ export default function GA4Page() {
           <Card>
             <CardHeader title="Top Cities" right="By sessions" />
             {data.cities.length === 0 ? (
-              <div className="text-[13px] text-[#71717A] py-6 text-center">No city data available</div>
+              <div className="text-[15px] text-[#71717A] py-6 text-center">No city data available</div>
             ) : (
               <>
                 <div className="space-y-1.5 py-2 mb-3">
@@ -571,11 +571,11 @@ export default function GA4Page() {
                     />
                   ))}
                 </div>
-                <table className="w-full text-[13px] border-collapse">
+                <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                       {["City", "Sessions", "Users"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -595,7 +595,7 @@ export default function GA4Page() {
           <Card>
             <CardHeader title="Top States / Regions" right="By sessions" />
             {data.regions.length === 0 ? (
-              <div className="text-[13px] text-[#71717A] py-6 text-center">No region data available</div>
+              <div className="text-[15px] text-[#71717A] py-6 text-center">No region data available</div>
             ) : (
               <>
                 <div className="space-y-1.5 py-2 mb-3">
@@ -607,11 +607,11 @@ export default function GA4Page() {
                     />
                   ))}
                 </div>
-                <table className="w-full text-[13px] border-collapse">
+                <table className="w-full text-[15px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                       {["State / Region", "Sessions", "Users"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -636,14 +636,14 @@ export default function GA4Page() {
         <Card>
           <CardHeader title="Landing pages" right="First page of each session" />
           {(data.landingPages ?? []).length === 0 ? (
-            <div className="text-[13px] text-[#71717A] py-6 text-center">No landing page data</div>
+            <div className="text-[15px] text-[#71717A] py-6 text-center">No landing page data</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] border-collapse">
+              <table className="w-full text-[15px] border-collapse">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["Landing Page", "Sessions", "New Users", "Bounce Rate"].map(h => (
-                      <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
+                      <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>

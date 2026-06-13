@@ -34,7 +34,7 @@ export default function AnomalyPage() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Anomaly Feed</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">Real-time signals from your Shopify store</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Real-time signals from your Shopify store</p>
         </div>
         <div className="flex items-center gap-2.5">
           {/* Stat pills */}
@@ -46,7 +46,7 @@ export default function AnomalyPage() {
             ].map(s => (
               <div key={s.label} className={`text-center px-4 py-2 rounded-xl border ${s.bg} ${s.border}`}>
                 <div className={`text-xl font-black ${s.text}`}>{loading ? "—" : s.value}</div>
-                <div className="text-[11px] text-[#A1A1AA] mt-0.5 font-medium">{s.label}</div>
+                <div className="text-[13px] text-[#A1A1AA] mt-0.5 font-medium">{s.label}</div>
               </div>
             ))}
           </div>
@@ -58,11 +58,11 @@ export default function AnomalyPage() {
       </div>
 
       {loading ? (
-        <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Analysing your store data...</div>
+        <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Analysing your store data...</div>
       ) : !data ? (
         <div className="text-center py-16">
-          <p className="text-[14px] text-[#71717A] mb-3">Could not load — check Shopify connection</p>
-          <Link href="/dashboard/connections" className="text-[13px] text-[#F97316] font-semibold underline">Go to Connections →</Link>
+          <p className="text-[16px] text-[#71717A] mb-3">Could not load — check Shopify connection</p>
+          <Link href="/dashboard/connections" className="text-[15px] text-[#F97316] font-semibold underline">Go to Connections →</Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
@@ -71,7 +71,7 @@ export default function AnomalyPage() {
             {data.critical.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="text-[11px] font-bold text-[#DC2626] dark:text-[#FCA5A5] uppercase tracking-[0.1em]">Critical — action needed now</div>
+                  <div className="text-[13px] font-bold text-[#DC2626] dark:text-[#FCA5A5] uppercase tracking-[0.1em]">Critical — action needed now</div>
                   <div className="flex-1 h-px bg-[#FCA5A5] dark:bg-[#991B1B] opacity-40" />
                 </div>
                 {data.critical.map((a, i) => (
@@ -80,8 +80,8 @@ export default function AnomalyPage() {
                       <AlertCircle size={14} className="text-[#DC2626] dark:text-[#FCA5A5]" />
                     </div>
                     <div>
-                      <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                      <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                      <div className="text-[15px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -91,7 +91,7 @@ export default function AnomalyPage() {
             {data.warnings.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-3 mt-4">
-                  <div className="text-[11px] font-bold text-[#92400E] dark:text-[#FCD34D] uppercase tracking-[0.1em]">Warnings — monitor closely</div>
+                  <div className="text-[13px] font-bold text-[#92400E] dark:text-[#FCD34D] uppercase tracking-[0.1em]">Warnings — monitor closely</div>
                   <div className="flex-1 h-px bg-[#FCD34D] dark:bg-[#92400E] opacity-40" />
                 </div>
                 {data.warnings.map((a, i) => (
@@ -100,8 +100,8 @@ export default function AnomalyPage() {
                       <AlertTriangle size={14} className="text-[#EAB308] dark:text-[#FCD34D]" />
                     </div>
                     <div>
-                      <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                      <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
+                      <div className="text-[15px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -113,8 +113,8 @@ export default function AnomalyPage() {
                 <div className="w-12 h-12 bg-white dark:bg-[#3D2810] rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#FED7AA] dark:border-[#7C2D12]">
                   <CheckCircle2 size={22} className="text-[#F97316]" />
                 </div>
-                <div className="text-[15px] font-bold text-[#EA580C] dark:text-[#FB923C]">All clear!</div>
-                <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1">No critical issues or warnings detected.</div>
+                <div className="text-[17px] font-bold text-[#EA580C] dark:text-[#FB923C]">All clear!</div>
+                <div className="text-[15px] text-[#71717A] dark:text-[#A1A1AA] mt-1">No critical issues or warnings detected.</div>
               </div>
             )}
           </div>
@@ -124,7 +124,7 @@ export default function AnomalyPage() {
             {data.positive.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em]">Positive signals</div>
+                  <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-[0.1em]">Positive signals</div>
                   <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
                 </div>
                 {data.positive.map((a, i) => (
@@ -136,8 +136,8 @@ export default function AnomalyPage() {
                       }
                     </div>
                     <div>
-                      <div className={`text-[14px] font-bold ${i === 0 ? "text-[#EA580C] dark:text-[#FB923C]" : "text-[#18181B] dark:text-[#F4F4F5]"}`}>{a.title}</div>
-                      <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
+                      <div className={`text-[16px] font-bold ${i === 0 ? "text-[#EA580C] dark:text-[#FB923C]" : "text-[#18181B] dark:text-[#F4F4F5]"}`}>{a.title}</div>
+                      <div className="text-[15px] text-[#71717A] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -155,14 +155,14 @@ export default function AnomalyPage() {
                   { label: "Projected monthly", value: `₹${data.summary.projectedMonthly.toLocaleString("en-IN")}`, warn: false },
                 ].map(row => (
                   <div key={row.label} className="flex items-center justify-between">
-                    <span className="text-[13px] text-[#71717A] dark:text-[#A1A1AA]">{row.label}</span>
-                    <span className={`text-[13px] font-bold ${row.warn ? "text-[#EF4444]" : "text-[#18181B] dark:text-[#F4F4F5]"}`}>{row.value}</span>
+                    <span className="text-[15px] text-[#71717A] dark:text-[#A1A1AA]">{row.label}</span>
+                    <span className={`text-[15px] font-bold ${row.warn ? "text-[#EF4444]" : "text-[#18181B] dark:text-[#F4F4F5]"}`}>{row.value}</span>
                   </div>
                 ))}
               </div>
             </Card>
 
-            <div className="mt-3 text-[12px] text-[#A1A1AA] leading-relaxed bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 border border-black/[0.04] dark:border-white/[0.04]">
+            <div className="mt-3 text-[14px] text-[#A1A1AA] leading-relaxed bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 border border-black/[0.04] dark:border-white/[0.04]">
               <strong className="text-[#71717A] dark:text-[#A1A1AA]">About anomaly detection:</strong> Signals are computed from live Shopify data — stock levels, order patterns, COD ratio, and repeat behaviour. Connect Meta Ads and GA4 to unlock ROAS and traffic anomaly alerts.
             </div>
           </div>

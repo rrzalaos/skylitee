@@ -56,7 +56,7 @@ export default function AttributionPage() {
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  if (loading) return <div className="flex items-center justify-center py-24 text-[13px] text-[#A1A1AA]">Loading attribution data…</div>;
+  if (loading) return <div className="flex items-center justify-center py-24 text-[15px] text-[#A1A1AA]">Loading attribution data…</div>;
 
   if (!metaOk && !ga4Ok) {
     return (
@@ -64,9 +64,9 @@ export default function AttributionPage() {
         <div className="w-12 h-12 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-2xl flex items-center justify-center mx-auto mb-3">
           <Target size={20} className="text-[#A1A1AA]" />
         </div>
-        <p className="text-[14px] font-semibold text-[#71717A] mb-1">Connect a platform to see attribution</p>
-        <p className="text-[13px] text-[#A1A1AA] max-w-sm mx-auto mb-4">Attribution uses Meta Ads + GA4 + Shopify to show which channels drive your revenue.</p>
-        <Link href="/dashboard/connections" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+        <p className="text-[16px] font-semibold text-[#71717A] mb-1">Connect a platform to see attribution</p>
+        <p className="text-[15px] text-[#A1A1AA] max-w-sm mx-auto mb-4">Attribution uses Meta Ads + GA4 + Shopify to show which channels drive your revenue.</p>
+        <Link href="/dashboard/connections" className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
           Connect Platforms <ArrowRight size={13} />
         </Link>
       </div>
@@ -129,7 +129,7 @@ export default function AttributionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Channel Attribution</h2>
-          <p className="text-[12px] text-[#A1A1AA] mt-0.5">
+          <p className="text-[14px] text-[#A1A1AA] mt-0.5">
             {range.label} · Last-click model · {[metaOk && "Meta", ga4Ok && "GA4", shopOk && "Shopify"].filter(Boolean).join(" + ")}
           </p>
         </div>
@@ -152,14 +152,14 @@ export default function AttributionPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
         <Card className="col-span-1 lg:col-span-2">
-          <CardHeader title="Channel Breakdown" right={<span className="text-[11px] text-[#A1A1AA]">GA4 last-click · {ga4Channels.length} channels</span>} />
+          <CardHeader title="Channel Breakdown" right={<span className="text-[13px] text-[#A1A1AA]">GA4 last-click · {ga4Channels.length} channels</span>} />
           {!ga4Ok ? (
             <div className="py-8 text-center">
-              <p className="text-[13px] text-[#A1A1AA]">Connect GA4 to see channel breakdown</p>
-              <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold mt-1 inline-block">Connect →</Link>
+              <p className="text-[15px] text-[#A1A1AA]">Connect GA4 to see channel breakdown</p>
+              <Link href="/dashboard/connections" className="text-[14px] text-[#F97316] font-semibold mt-1 inline-block">Connect →</Link>
             </div>
           ) : ga4Channels.length === 0 ? (
-            <div className="py-8 text-center text-[12px] text-[#A1A1AA]">No channel data for this period</div>
+            <div className="py-8 text-center text-[14px] text-[#A1A1AA]">No channel data for this period</div>
           ) : (
             <>
               {/* Stacked bar */}
@@ -176,17 +176,17 @@ export default function AttributionPage() {
                 {ga4Channels.slice(0, 7).map(ch => (
                   <div key={ch.channel} className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CH_COLOR[ch.channel] ?? CH_FALLBACK }} />
-                    <span className="text-[10px] text-[#A1A1AA]">{ch.channel}</span>
+                    <span className="text-[12px] text-[#A1A1AA]">{ch.channel}</span>
                   </div>
                 ))}
               </div>
 
               {/* Table */}
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[14px]">
                 <thead>
                   <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                     {["Channel", "Sessions", "% Sessions", "Purchases", "Revenue"].map(h => (
-                      <th key={h} className="text-left py-1.5 px-1.5 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                      <th key={h} className="text-left py-1.5 px-1.5 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -207,7 +207,7 @@ export default function AttributionPage() {
                             <div className="w-14 h-1.5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-full overflow-hidden">
                               <div className="h-full rounded-full" style={{ width: `${sessPct}%`, backgroundColor: CH_COLOR[ch.channel] ?? CH_FALLBACK }} />
                             </div>
-                            <span className="text-[11px] text-[#A1A1AA]">{sessPct}%</span>
+                            <span className="text-[13px] text-[#A1A1AA]">{sessPct}%</span>
                           </div>
                         </td>
                         <td className="py-2 px-1.5 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{ch.purchases}</td>
@@ -230,15 +230,15 @@ export default function AttributionPage() {
               : "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06]")}>
               <div className="flex items-center gap-2 mb-2">
                 <Share2 size={12} className="text-[#1877F2]" />
-                <span className="text-[11px] font-bold text-[#1877F2]">Meta Paid</span>
-                {metaOk && <span className="ml-auto text-[13px] font-black text-[#1877F2]">{metaPct}%</span>}
+                <span className="text-[13px] font-bold text-[#1877F2]">Meta Paid</span>
+                {metaOk && <span className="ml-auto text-[15px] font-black text-[#1877F2]">{metaPct}%</span>}
               </div>
               <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{metaOk ? formatINR(metaRevenue) : "—"}</div>
               {metaOk && (
                 <div className="mt-1.5 space-y-0.5">
-                  <div className="text-[11px] text-[#A1A1AA]">Spend: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{formatINR(meta!.kpis.spend)}</span></div>
-                  <div className="text-[11px] text-[#A1A1AA]">ROAS: <span className={cn("font-black", meta!.kpis.roas >= 3 ? "text-[#22C55E]" : meta!.kpis.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{meta!.kpis.roas}x</span></div>
-                  <div className="text-[11px] text-[#A1A1AA]">Purchases: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{meta!.kpis.purchases}</span></div>
+                  <div className="text-[13px] text-[#A1A1AA]">Spend: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{formatINR(meta!.kpis.spend)}</span></div>
+                  <div className="text-[13px] text-[#A1A1AA]">ROAS: <span className={cn("font-black", meta!.kpis.roas >= 3 ? "text-[#22C55E]" : meta!.kpis.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{meta!.kpis.roas}x</span></div>
+                  <div className="text-[13px] text-[#A1A1AA]">Purchases: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{meta!.kpis.purchases}</span></div>
                 </div>
               )}
             </div>
@@ -246,13 +246,13 @@ export default function AttributionPage() {
             <div className="rounded-2xl p-3.5 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#BBF7D0] dark:border-[#166534]">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={12} className="text-[#22C55E]" />
-                <span className="text-[11px] font-bold text-[#22C55E]">Organic / Direct</span>
-                {shopOk && <span className="ml-auto text-[13px] font-black text-[#22C55E]">{organicPct}%</span>}
+                <span className="text-[13px] font-bold text-[#22C55E]">Organic / Direct</span>
+                {shopOk && <span className="ml-auto text-[15px] font-black text-[#22C55E]">{organicPct}%</span>}
               </div>
               <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{shopOk ? formatINR(organicRevenue) : "—"}</div>
               {shopOk && (
                 <div className="mt-1.5">
-                  <div className="text-[11px] text-[#A1A1AA]">Est. orders: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{Math.max(0, shopOrders - metaOrders)}</span></div>
+                  <div className="text-[13px] text-[#A1A1AA]">Est. orders: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{Math.max(0, shopOrders - metaOrders)}</span></div>
                 </div>
               )}
             </div>
@@ -264,8 +264,8 @@ export default function AttributionPage() {
                   <div className="bg-[#22C55E] flex-1" />
                 </div>
                 <div className="flex justify-between mt-1.5">
-                  <span className="text-[10px] text-[#A1A1AA] flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#1877F2]" />Paid {metaPct}%</span>
-                  <span className="text-[10px] text-[#A1A1AA] flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#22C55E]" />Organic {organicPct}%</span>
+                  <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#1877F2]" />Paid {metaPct}%</span>
+                  <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#22C55E]" />Organic {organicPct}%</span>
                 </div>
               </div>
             )}
@@ -273,15 +273,15 @@ export default function AttributionPage() {
             {/* Mini Meta funnel rates */}
             {metaOk && (
               <div className="pt-2 border-t border-black/[0.06] dark:border-white/[0.06] space-y-1.5">
-                <div className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-wider">Meta Pixel Rates</div>
+                <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider">Meta Pixel Rates</div>
                 {[
                   { label: "LPV → ATC", value: meta!.kpis.atcRatio },
                   { label: "ATC → Checkout", value: meta!.kpis.checkoutRatio },
                   { label: "Checkout → Purchase", value: meta!.kpis.purchaseRatio },
                 ].map(r => (
                   <div key={r.label} className="flex items-center justify-between">
-                    <span className="text-[11px] text-[#A1A1AA]">{r.label}</span>
-                    <span className={cn("text-[12px] font-bold", r.value >= 50 ? "text-[#22C55E]" : r.value >= 20 ? "text-[#EAB308]" : "text-[#EF4444]")}>{r.value}%</span>
+                    <span className="text-[13px] text-[#A1A1AA]">{r.label}</span>
+                    <span className={cn("text-[14px] font-bold", r.value >= 50 ? "text-[#22C55E]" : r.value >= 20 ? "text-[#EAB308]" : "text-[#EF4444]")}>{r.value}%</span>
                   </div>
                 ))}
               </div>
@@ -306,7 +306,7 @@ export default function AttributionPage() {
         return (
           <Card>
             <CardHeader title="Cross-Platform Conversion Funnel"
-              right={<span className="text-[11px] text-[#A1A1AA]">{[ga4Ok && "GA4", metaOk && "Meta Pixel", shopOk && "Shopify"].filter(Boolean).join(" + ")}</span>} />
+              right={<span className="text-[13px] text-[#A1A1AA]">{[ga4Ok && "GA4", metaOk && "Meta Pixel", shopOk && "Shopify"].filter(Boolean).join(" + ")}</span>} />
             <div className="mt-3 space-y-2">
               {steps.map((step, i) => {
                 const barPct = maxVal > 0 ? Math.round(step.value / maxVal * 100) : 0;
@@ -314,21 +314,21 @@ export default function AttributionPage() {
                 return (
                   <div key={step.label} className="flex items-center gap-3">
                     <div className="w-40 shrink-0">
-                      <div className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</div>
-                      <div className="text-[10px] text-[#A1A1AA]">{step.source}</div>
+                      <div className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</div>
+                      <div className="text-[12px] text-[#A1A1AA]">{step.source}</div>
                     </div>
                     <div className="flex-1 h-5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg overflow-hidden">
                       <div className="h-full rounded-lg flex items-center px-2"
                         style={{ width: `${Math.max(barPct, 3)}%`, backgroundColor: step.color, opacity: 0.85 }}>
-                        <span className="text-[10px] font-bold text-white whitespace-nowrap">
+                        <span className="text-[12px] font-bold text-white whitespace-nowrap">
                           {step.value.toLocaleString("en-IN")}
                         </span>
                       </div>
                     </div>
                     <div className="w-14 text-right shrink-0">
                       {i > 0 && dropOff > 0
-                        ? <span className="text-[11px] text-[#EF4444] font-semibold">-{dropOff}%</span>
-                        : <span className="text-[11px] text-[#A1A1AA]">base</span>}
+                        ? <span className="text-[13px] text-[#EF4444] font-semibold">-{dropOff}%</span>
+                        : <span className="text-[13px] text-[#A1A1AA]">base</span>}
                     </div>
                   </div>
                 );
@@ -343,29 +343,29 @@ export default function AttributionPage() {
 
         {metaOk && (
           <Card>
-            <CardHeader title="Campaign Attribution" right={<span className="text-[11px] text-[#A1A1AA]">{meta!.campaigns.length} campaigns</span>} />
-            <table className="w-full text-[12px] mt-2">
+            <CardHeader title="Campaign Attribution" right={<span className="text-[13px] text-[#A1A1AA]">{meta!.campaigns.length} campaigns</span>} />
+            <table className="w-full text-[14px] mt-2">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Campaign", "Spend", "Purchases", "Revenue", "ROAS"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-1 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-1 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {meta!.campaigns.length === 0 ? (
-                  <tr><td colSpan={5} className="py-6 text-center text-[12px] text-[#A1A1AA]">No campaigns this period</td></tr>
+                  <tr><td colSpan={5} className="py-6 text-center text-[14px] text-[#A1A1AA]">No campaigns this period</td></tr>
                 ) : meta!.campaigns.slice(0, 8).map(c => (
                   <tr key={c.id} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
                     <td className="py-2 px-1 max-w-[160px]">
                       <div className="truncate font-medium text-[#18181B] dark:text-[#F4F4F5]">{c.name}</div>
-                      <div className="text-[10px] text-[#A1A1AA] capitalize">{c.status.toLowerCase()} · {c.atc} ATC</div>
+                      <div className="text-[12px] text-[#A1A1AA] capitalize">{c.status.toLowerCase()} · {c.atc} ATC</div>
                     </td>
                     <td className="py-2 px-1 text-[#A1A1AA]">{formatINR(c.spend)}</td>
                     <td className="py-2 px-1 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{c.purchases}</td>
                     <td className="py-2 px-1 font-semibold text-[#F97316]">{formatINR(c.purchaseValue)}</td>
                     <td className="py-2 px-1">
-                      <span className={cn("font-black text-[13px]",
+                      <span className={cn("font-black text-[15px]",
                         c.roas >= 3 ? "text-[#22C55E]" : c.roas >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>
                         {c.roas}x
                       </span>
@@ -379,7 +379,7 @@ export default function AttributionPage() {
 
         {ga4Ok && ga4?.ecommerce && ga4.ecommerce.itemsViewed > 0 && (
           <Card>
-            <CardHeader title="GA4 Ecommerce Funnel" right={<span className="text-[11px] text-[#A1A1AA]">Native GA4 tracking</span>} />
+            <CardHeader title="GA4 Ecommerce Funnel" right={<span className="text-[13px] text-[#A1A1AA]">Native GA4 tracking</span>} />
             <div className="mt-3 space-y-3">
               {[
                 { label: "Items Viewed", value: ga4.ecommerce.itemsViewed, color: "#6366F1", rate: "" },
@@ -392,10 +392,10 @@ export default function AttributionPage() {
                   <div key={step.label}>
                     <div className="flex items-center justify-between mb-1">
                       <div>
-                        <span className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</span>
-                        {step.rate && <span className="text-[10px] text-[#A1A1AA] ml-2">{step.rate}</span>}
+                        <span className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{step.label}</span>
+                        {step.rate && <span className="text-[12px] text-[#A1A1AA] ml-2">{step.rate}</span>}
                       </div>
-                      <span className="text-[14px] font-black" style={{ color: step.color }}>
+                      <span className="text-[16px] font-black" style={{ color: step.color }}>
                         {step.value.toLocaleString("en-IN")}
                       </span>
                     </div>
@@ -413,7 +413,7 @@ export default function AttributionPage() {
       {/* Meta Pixel Detail */}
       {metaOk && (
         <Card>
-          <CardHeader title="Meta Pixel Detail" right={<span className="text-[11px] text-[#A1A1AA]">7d click · 1d view attribution window</span>} />
+          <CardHeader title="Meta Pixel Detail" right={<span className="text-[13px] text-[#A1A1AA]">7d click · 1d view attribution window</span>} />
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-2">
             {[
               { label: "Impressions", value: (meta!.kpis.impressions / 1000).toFixed(0) + "k" },
@@ -426,8 +426,8 @@ export default function AttributionPage() {
               { label: "Purchases", value: meta!.kpis.purchases.toLocaleString("en-IN") },
             ].map(kpi => (
               <div key={kpi.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
-                <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
-                <div className="text-[10px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
+                <div className="text-[16px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
+                <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
               </div>
             ))}
           </div>

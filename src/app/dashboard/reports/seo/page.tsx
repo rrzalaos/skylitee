@@ -33,8 +33,8 @@ function SignalCard({ type, metric, value, detail }: { type: "good" | "warn" | "
     <div className={cn("flex items-start gap-3 rounded-xl border p-3", styles.bg, styles.border)}>
       <div className="mt-0.5 shrink-0">{styles.icon}</div>
       <div>
-        <div className={cn("text-[12px] font-bold", styles.label)}>{metric}: {value}</div>
-        <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
+        <div className={cn("text-[14px] font-bold", styles.label)}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
       </div>
     </div>
   );
@@ -77,15 +77,15 @@ export default function SEOReportPage() {
     ];
   }
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-20 text-center">Loading SEO data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-20 text-center">Loading SEO data…</div>;
   if (notConnected) return (
     <div className="text-center py-20">
       <Search size={32} className="text-[#A1A1AA] mx-auto mb-3" />
-      <h2 className="text-[16px] font-bold mb-2 dark:text-[#F4F4F5]">Google Search Console not connected</h2>
-      <Link href="/api/auth/google?service=gsc" className="px-5 py-2.5 bg-[#4285F4] text-white rounded-xl text-[13px] font-semibold">Connect Search Console →</Link>
+      <h2 className="text-[18px] font-bold mb-2 dark:text-[#F4F4F5]">Google Search Console not connected</h2>
+      <Link href="/api/auth/google?service=gsc" className="px-5 py-2.5 bg-[#4285F4] text-white rounded-xl text-[15px] font-semibold">Connect Search Console →</Link>
     </div>
   );
-  if (!data) return <div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load SEO data.</div>;
+  if (!data) return <div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load SEO data.</div>;
 
   const k = data.kpis;
   const ctrGood = k.ctr >= 2;
@@ -117,7 +117,7 @@ export default function SEOReportPage() {
             <div className="w-7 h-7 bg-[#4285F4] rounded-lg flex items-center justify-center"><Search size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">SEO Report</h1>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{data.site} · {range.label} · Generated {generatedAt}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{data.site} · {range.label} · Generated {generatedAt}</p>
         </div>
         <ExportButton
           onExportCSV={() => exportToCSV(`skylitee-seo-report-${range.from}`, buildSections())}
@@ -134,7 +134,7 @@ export default function SEOReportPage() {
           { label: "Avg Position", value: k.avgPosition.toFixed(1), icon: <Search size={14} className={posGood ? "text-[#22C55E]" : "text-[#EAB308]"} />, good: posGood },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
             <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
           </div>
         ))}
@@ -145,14 +145,14 @@ export default function SEOReportPage() {
         <Card>
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
-            {workingSignals.length === 0 ? <p className="text-[13px] text-[#A1A1AA]">Connect GSC and build traffic first.</p>
+            {workingSignals.length === 0 ? <p className="text-[15px] text-[#A1A1AA]">Connect GSC and build traffic first.</p>
               : workingSignals.map((s, i) => <SignalCard key={i} type="good" metric={s.metric} value={s.value} detail={s.detail} />)}
           </div>
         </Card>
         <Card>
           <CardHeader title="⚠️ Needs Attention" />
           <div className="space-y-2">
-            {attentionSignals.length === 0 ? <p className="text-[13px] text-[#A1A1AA]">No major issues detected.</p>
+            {attentionSignals.length === 0 ? <p className="text-[15px] text-[#A1A1AA]">No major issues detected.</p>
               : attentionSignals.map((s, i) => <SignalCard key={i} type={s.type} metric={s.metric} value={s.value} detail={s.detail} />)}
           </div>
         </Card>
@@ -162,9 +162,9 @@ export default function SEOReportPage() {
       <Card>
         <CardHeader title="Top Keywords" right={`${data.keywords.length} total`} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-              {["Keyword", "Clicks", "Impressions", "CTR", "Position"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}
+              {["Keyword", "Clicks", "Impressions", "CTR", "Position"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}
             </tr></thead>
             <tbody>
               {data.keywords.slice(0, 20).map((kw, i) => (
@@ -173,7 +173,7 @@ export default function SEOReportPage() {
                   <td className="py-2 px-2 font-bold text-[#4285F4]">{kw.clicks}</td>
                   <td className="py-2 px-2 text-[#A1A1AA]">{kw.impressions.toLocaleString("en-IN")}</td>
                   <td className="py-2 px-2"><span className={cn("font-bold", kw.ctr >= 2 ? "text-[#22C55E]" : kw.ctr >= 1 ? "text-[#EAB308]" : "text-[#EF4444]")}>{kw.ctr}%</span></td>
-                  <td className="py-2 px-2"><span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", kw.position <= 10 ? "bg-[#F0FDF4] text-[#166534] dark:bg-[#052E16] dark:text-[#4ADE80]" : kw.position <= 20 ? "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]" : "bg-[#F5F5F4] text-[#71717A] dark:bg-[#262626]")}>{kw.position.toFixed(1)}</span></td>
+                  <td className="py-2 px-2"><span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold", kw.position <= 10 ? "bg-[#F0FDF4] text-[#166534] dark:bg-[#052E16] dark:text-[#4ADE80]" : kw.position <= 20 ? "bg-[#FFFBEB] text-[#92400E] dark:bg-[#2D1C00] dark:text-[#FCD34D]" : "bg-[#F5F5F4] text-[#71717A] dark:bg-[#262626]")}>{kw.position.toFixed(1)}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -185,9 +185,9 @@ export default function SEOReportPage() {
       <Card>
         <CardHeader title="Top Pages" right={`${data.pages.length} pages`} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-              {["Page URL", "Clicks", "Impressions", "CTR", "Position"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}
+              {["Page URL", "Clicks", "Impressions", "CTR", "Position"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}
             </tr></thead>
             <tbody>
               {data.pages.slice(0, 15).map((p, i) => (
@@ -208,15 +208,15 @@ export default function SEOReportPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
           <CardHeader title="Devices" />
-          <table className="w-full text-[12px]">
-            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Device", "Clicks", "Impressions", "CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
+          <table className="w-full text-[14px]">
+            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Device", "Clicks", "Impressions", "CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
             <tbody>{data.devices.map((d, i) => <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0"><td className="py-2 px-2 font-medium capitalize dark:text-[#F4F4F5]">{d.device}</td><td className="py-2 px-2 font-bold text-[#4285F4]">{d.clicks}</td><td className="py-2 px-2 text-[#A1A1AA]">{d.impressions.toLocaleString("en-IN")}</td><td className="py-2 px-2">{d.ctr}%</td></tr>)}</tbody>
           </table>
         </Card>
         <Card>
           <CardHeader title="Top Countries" />
-          <table className="w-full text-[12px]">
-            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Country", "Clicks", "Impressions", "CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
+          <table className="w-full text-[14px]">
+            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Country", "Clicks", "Impressions", "CTR"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
             <tbody>{data.countries.slice(0, 8).map((c, i) => <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0"><td className="py-2 px-2 font-medium dark:text-[#F4F4F5]">{c.country}</td><td className="py-2 px-2 font-bold text-[#4285F4]">{c.clicks}</td><td className="py-2 px-2 text-[#A1A1AA]">{c.impressions.toLocaleString("en-IN")}</td><td className="py-2 px-2">{c.ctr}%</td></tr>)}</tbody>
           </table>
         </Card>

@@ -33,8 +33,8 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn"; metric
     <div className={cn("flex items-start gap-3 rounded-xl border p-3", s.bg)}>
       {s.icon}
       <div>
-        <div className={cn("text-[12px] font-bold", s.label)}>{metric}: {value}</div>
-        <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
+        <div className={cn("text-[14px] font-bold", s.label)}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
       </div>
     </div>
   );
@@ -58,11 +58,11 @@ export default function FinancialReportPage() {
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-20 text-center">Loading financial data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-20 text-center">Loading financial data…</div>;
   if (!sales) return (
     <div className="text-center py-16">
-      <p className="text-[14px] text-[#71717A] mb-3">Could not load financial data.</p>
-      <Link href="/dashboard/connections" className="text-[#16A34A] font-semibold text-[13px]">Check Shopify connection →</Link>
+      <p className="text-[16px] text-[#71717A] mb-3">Could not load financial data.</p>
+      <Link href="/dashboard/connections" className="text-[#16A34A] font-semibold text-[15px]">Check Shopify connection →</Link>
     </div>
   );
 
@@ -130,7 +130,7 @@ export default function FinancialReportPage() {
             <div className="w-7 h-7 bg-[#16A34A] rounded-lg flex items-center justify-center"><DollarSign size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Financial P&amp;L</h1>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{range.label} · Generated {generatedAt}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{range.label} · Generated {generatedAt}</p>
         </div>
         <ExportButton
           onExportCSV={() => exportToCSV(`skylitee-financial-${range.from}`, buildSections())}
@@ -141,7 +141,7 @@ export default function FinancialReportPage() {
       {/* COGS disclaimer */}
       <div className="flex items-start gap-2.5 bg-[#EFF6FF] dark:bg-[#1E3A5F]/30 border border-[#BFDBFE] rounded-xl p-3">
         <Info size={14} className="text-[#3B82F6] shrink-0 mt-0.5" />
-        <p className="text-[12px] text-[#1D4ED8] dark:text-[#93C5FD]">This report shows <strong>revenue vs. ad spend</strong>. COGS, fulfillment costs, and returns are not included — consult your accountant for a full profit and loss statement.</p>
+        <p className="text-[14px] text-[#1D4ED8] dark:text-[#93C5FD]">This report shows <strong>revenue vs. ad spend</strong>. COGS, fulfillment costs, and returns are not included — consult your accountant for a full profit and loss statement.</p>
       </div>
 
       {/* KPI strip */}
@@ -153,9 +153,9 @@ export default function FinancialReportPage() {
           { label: "AOV", value: formatINR(s.aov), icon: <ShoppingCart size={13} className="text-[#A1A1AA]" />, sub: `${days} day period` },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
             <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
-            <div className="text-[11px] text-[#A1A1AA] mt-0.5">{item.sub}</div>
+            <div className="text-[13px] text-[#A1A1AA] mt-0.5">{item.sub}</div>
           </div>
         ))}
       </div>
@@ -166,7 +166,7 @@ export default function FinancialReportPage() {
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
             {working.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">No strong signals — connect Shopify to load revenue data.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals — connect Shopify to load revenue data.</p>
               : working.map((s, i) => <Signal key={i} type="good" {...s} />)}
           </div>
         </Card>
@@ -174,7 +174,7 @@ export default function FinancialReportPage() {
           <CardHeader title="⚠️ Needs Attention" />
           <div className="space-y-2">
             {attention.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">No major financial issues detected.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No major financial issues detected.</p>
               : attention.map((s, i) => <Signal key={i} type="warn" {...s} />)}
           </div>
         </Card>
@@ -193,8 +193,8 @@ export default function FinancialReportPage() {
               return (
                 <div key={row.label}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] font-semibold dark:text-[#F4F4F5]">{row.label}</span>
-                    <span className="text-[12px] font-bold" style={{ color: row.color }}>{formatINR(row.revenue)} ({pct}%)</span>
+                    <span className="text-[14px] font-semibold dark:text-[#F4F4F5]">{row.label}</span>
+                    <span className="text-[14px] font-bold" style={{ color: row.color }}>{formatINR(row.revenue)} ({pct}%)</span>
                   </div>
                   <div className="h-2 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: row.color }} />
@@ -210,20 +210,20 @@ export default function FinancialReportPage() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-[#F0FDF4] dark:bg-[#052E16]/30 rounded-xl p-3 text-center border border-[#86EFAC]">
               <div className="text-[28px] font-black text-[#22C55E]">{s.prepaidOrders}</div>
-              <div className="text-[11px] text-[#A1A1AA]">Prepaid</div>
-              <div className="text-[13px] font-bold text-[#16A34A]">{100 - codPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">Prepaid</div>
+              <div className="text-[15px] font-bold text-[#16A34A]">{100 - codPct}%</div>
             </div>
             <div className="bg-[#FFFBEB] dark:bg-[#2D1C00]/30 rounded-xl p-3 text-center border border-[#FCD34D]">
               <div className="text-[28px] font-black text-[#EAB308]">{s.codOrders}</div>
-              <div className="text-[11px] text-[#A1A1AA]">COD</div>
-              <div className="text-[13px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">COD</div>
+              <div className="text-[15px] font-bold text-[#92400E] dark:text-[#FCD34D]">{codPct}%</div>
             </div>
           </div>
           <div className="h-2 flex rounded-full overflow-hidden">
             <div className="bg-[#22C55E]" style={{ width: `${100 - codPct}%` }} />
             <div className="bg-[#EAB308]" style={{ width: `${codPct}%` }} />
           </div>
-          {codPct > 50 && <p className="mt-2.5 text-[11px] text-[#92400E] dark:text-[#FCD34D] bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5">High COD rate risks RTO losses — offer a small prepaid discount to shift preference.</p>}
+          {codPct > 50 && <p className="mt-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D] bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5">High COD rate risks RTO losses — offer a small prepaid discount to shift preference.</p>}
         </Card>
       </div>
 
@@ -232,11 +232,11 @@ export default function FinancialReportPage() {
         <Card>
           <CardHeader title="Top Products by Revenue" right={`${skus.length} SKUs total`} />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[14px]">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Product", "Qty Sold", "Revenue", "Avg Price", "Revenue Share"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -277,7 +277,7 @@ export default function FinancialReportPage() {
             { label: "Daily Net", value: formatINR(Math.round((s.grossSales - adSpend) / days)), color: netRevenue >= 0 ? "#22C55E" : "#EF4444" },
           ].map(item => (
             <div key={item.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 text-center">
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">{item.label}</div>
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">{item.label}</div>
               <div className="text-[18px] font-black" style={{ color: item.color }}>{item.value}</div>
             </div>
           ))}

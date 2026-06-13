@@ -26,10 +26,10 @@ function PaceBar({ label, current, target, projected, unit = "₹" }: {
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{label}</span>
+        <span className="text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{label}</span>
         <div className="flex items-center gap-2">
-          <span className="text-[12px] text-[#A1A1AA]">{fmt(current)} / {fmt(target)}</span>
-          <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full",
+          <span className="text-[14px] text-[#A1A1AA]">{fmt(current)} / {fmt(target)}</span>
+          <span className={cn("text-[13px] font-bold px-2 py-0.5 rounded-full",
             pct >= 100 ? "bg-[#F0FDF4] text-[#166534]" :
             onTrack ? "bg-[#FFF7ED] text-[#EA580C]" :
             "bg-[#FEF2F2] text-[#DC2626]"
@@ -43,12 +43,12 @@ function PaceBar({ label, current, target, projected, unit = "₹" }: {
         )}
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-[11px] text-[#A1A1AA]">
+        <span className="text-[13px] text-[#A1A1AA]">
           Projected: <span className={cn("font-semibold", onTrack ? "text-[#22C55E]" : "text-[#EF4444]")}>{fmt(projected)}</span>
         </span>
         {onTrack
-          ? <span className="text-[11px] text-[#22C55E] font-semibold flex items-center gap-0.5"><CheckCircle2 size={10} /> On track</span>
-          : <span className="text-[11px] text-[#EF4444] font-semibold flex items-center gap-0.5"><XCircle size={10} /> Behind pace</span>}
+          ? <span className="text-[13px] text-[#22C55E] font-semibold flex items-center gap-0.5"><CheckCircle2 size={10} /> On track</span>
+          : <span className="text-[13px] text-[#EF4444] font-semibold flex items-center gap-0.5"><XCircle size={10} /> Behind pace</span>}
       </div>
     </div>
   );
@@ -181,14 +181,14 @@ export default function GoalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Monthly Goals</h2>
-          <p className="text-[12px] text-[#A1A1AA] mt-0.5">
+          <p className="text-[14px] text-[#A1A1AA] mt-0.5">
             {now.toLocaleString("default", { month: "long", year: "numeric" })} · Day {dayOfMonth} of {daysInMonth} · {daysLeft} days left
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <div className="text-[11px] text-[#A1A1AA]">Month progress</div>
-            <div className="text-[14px] font-black text-[#F97316]">{monthPct}%</div>
+            <div className="text-[13px] text-[#A1A1AA]">Month progress</div>
+            <div className="text-[16px] font-black text-[#F97316]">{monthPct}%</div>
           </div>
           <div className="w-12 h-12 relative">
             <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
@@ -210,7 +210,7 @@ export default function GoalsPage() {
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Lightbulb size={13} className="text-[#F97316]" />
-                <span className="text-[12px] font-bold text-[#EA580C] uppercase tracking-[0.1em]">{lmMonthName} Actuals — use as baseline</span>
+                <span className="text-[14px] font-bold text-[#EA580C] uppercase tracking-[0.1em]">{lmMonthName} Actuals — use as baseline</span>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 {[
@@ -221,8 +221,8 @@ export default function GoalsPage() {
                   ...(lastMonth.spend !== null ? [{ label: "Ad Spend", value: formatINR(lastMonth.spend) }] : []),
                 ].map(item => (
                   <div key={item.label}>
-                    <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{item.label}</div>
-                    <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
+                    <div className="text-[12px] text-[#A1A1AA] uppercase tracking-wide">{item.label}</div>
+                    <div className="text-[16px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
                   </div>
                 ))}
               </div>
@@ -235,7 +235,7 @@ export default function GoalsPage() {
                 { label: "+30%", mult: 1.3 },
               ].map(btn => (
                 <button key={btn.label} onClick={() => applyLastMonth(btn.mult)}
-                  className="px-2.5 py-1.5 bg-white dark:bg-[#171717] border border-[#FED7AA] dark:border-[#7C2D12] rounded-xl text-[12px] font-bold text-[#EA580C] dark:text-[#FB923C] hover:bg-[#F97316] hover:text-white hover:border-[#F97316] transition-all">
+                  className="px-2.5 py-1.5 bg-white dark:bg-[#171717] border border-[#FED7AA] dark:border-[#7C2D12] rounded-xl text-[14px] font-bold text-[#EA580C] dark:text-[#FB923C] hover:bg-[#F97316] hover:text-white hover:border-[#F97316] transition-all">
                   {btn.label}
                 </button>
               ))}
@@ -250,7 +250,7 @@ export default function GoalsPage() {
         {/* Goal Configuration */}
         <Card>
           <CardHeader title="Set Monthly Goals" right={
-            <span className="text-[11px] text-[#A1A1AA]">{now.toLocaleString("default", { month: "short", year: "numeric" })}</span>
+            <span className="text-[13px] text-[#A1A1AA]">{now.toLocaleString("default", { month: "short", year: "numeric" })}</span>
           } />
 
           <div className="space-y-3">
@@ -263,8 +263,8 @@ export default function GoalsPage() {
             ].map(field => (
               <div key={field.label}>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[12px] font-semibold text-[#71717A] dark:text-[#A1A1AA]">{field.label}</label>
-                  {field.hint && <span className="text-[10px] text-[#A1A1AA]">{field.hint}</span>}
+                  <label className="text-[14px] font-semibold text-[#71717A] dark:text-[#A1A1AA]">{field.label}</label>
+                  {field.hint && <span className="text-[12px] text-[#A1A1AA]">{field.hint}</span>}
                 </div>
                 <input
                   type={field.type}
@@ -272,7 +272,7 @@ export default function GoalsPage() {
                   value={field.value || ""}
                   placeholder="0"
                   onChange={e => field.set(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316] transition-colors"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316] transition-colors"
                 />
               </div>
             ))}
@@ -280,38 +280,38 @@ export default function GoalsPage() {
 
           <div className="flex gap-2 mt-4">
             <button onClick={() => { setSalesTarget(0); setRoasTarget(2.0); setAovTarget(0); setOrdersTarget(0); setSpendBudget(0); }}
-              className="px-3 py-2 border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-[12px] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
+              className="px-3 py-2 border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-[14px] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
               Reset
             </button>
             <button onClick={saveGoals}
-              className="flex-1 py-2 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+              className="flex-1 py-2 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
               Save Goals
             </button>
           </div>
           {toast && (
-            <div className="mt-2 text-[12px] text-[#EA580C] bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl px-3 py-2 font-semibold">{toast}</div>
+            <div className="mt-2 text-[14px] text-[#EA580C] bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-xl px-3 py-2 font-semibold">{toast}</div>
           )}
         </Card>
 
         {/* Pace Tracker */}
         <Card>
           <CardHeader title="Pace Tracker" right={
-            <span className="flex items-center gap-1 text-[11px] text-[#A1A1AA]">
+            <span className="flex items-center gap-1 text-[13px] text-[#A1A1AA]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" /> Live
             </span>
           } />
 
           {loadingCurrent ? (
-            <div className="text-[12px] text-[#A1A1AA] py-6 text-center">Loading live data…</div>
+            <div className="text-[14px] text-[#A1A1AA] py-6 text-center">Loading live data…</div>
           ) : !current ? (
-            <div className="text-[12px] text-[#A1A1AA] py-6 text-center">Connect Shopify to track pace</div>
+            <div className="text-[14px] text-[#A1A1AA] py-6 text-center">Connect Shopify to track pace</div>
           ) : (
             <>
               {/* Day progress */}
               <div className="mb-4 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 flex items-center gap-3">
                 <Clock size={14} className="text-[#A1A1AA] shrink-0" />
                 <div className="flex-1">
-                  <div className="flex justify-between text-[12px] mb-1">
+                  <div className="flex justify-between text-[14px] mb-1">
                     <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Day {dayOfMonth} of {daysInMonth}</span>
                     <span className="text-[#A1A1AA]">{daysLeft} days left</span>
                   </div>
@@ -319,7 +319,7 @@ export default function GoalsPage() {
                     <div className="h-full bg-[#F97316] rounded-full" style={{ width: `${monthPct}%` }} />
                   </div>
                 </div>
-                <span className="text-[12px] font-black text-[#F97316] shrink-0">{monthPct}%</span>
+                <span className="text-[14px] font-black text-[#F97316] shrink-0">{monthPct}%</span>
               </div>
 
               {/* Projection highlight */}
@@ -332,16 +332,16 @@ export default function GoalsPage() {
                 )}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[11px] text-[#A1A1AA] uppercase tracking-wide mb-0.5">Projected end-of-month</div>
+                      <div className="text-[13px] text-[#A1A1AA] uppercase tracking-wide mb-0.5">Projected end-of-month</div>
                       <div className={cn("text-[20px] font-black", paceColor)}>{formatINR(projSales)}</div>
-                      <div className="text-[11px] text-[#A1A1AA]">vs target {formatINR(salesTarget)}</div>
+                      <div className="text-[13px] text-[#A1A1AA]">vs target {formatINR(salesTarget)}</div>
                     </div>
                     <div className="text-right">
                       {projSales >= salesTarget
-                        ? <div className="flex items-center gap-1 text-[#22C55E] font-bold text-[12px]"><CheckCircle2 size={14} /> On track!</div>
+                        ? <div className="flex items-center gap-1 text-[#22C55E] font-bold text-[14px]"><CheckCircle2 size={14} /> On track!</div>
                         : <div>
-                            <div className="text-[11px] text-[#A1A1AA]">Need per day</div>
-                            <div className="text-[16px] font-black text-[#EF4444]">{formatINR(dailyNeeded)}</div>
+                            <div className="text-[13px] text-[#A1A1AA]">Need per day</div>
+                            <div className="text-[18px] font-black text-[#EF4444]">{formatINR(dailyNeeded)}</div>
                           </div>
                       }
                     </div>
@@ -372,8 +372,8 @@ export default function GoalsPage() {
                   ...(current.spend !== null ? [{ label: "Spend", value: formatINR(current.spend) }] : []),
                 ].map(kpi => (
                   <div key={kpi.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2 text-center">
-                    <div className="text-[12px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
-                    <div className="text-[10px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
+                    <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
+                    <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
                   </div>
                 ))}
               </div>
@@ -385,13 +385,13 @@ export default function GoalsPage() {
       {/* Goal History */}
       {history.length > 0 && (
         <Card>
-          <CardHeader title="Goal History" right={<span className="text-[11px] text-[#A1A1AA]">{history.length} months saved</span>} />
+          <CardHeader title="Goal History" right={<span className="text-[13px] text-[#A1A1AA]">{history.length} months saved</span>} />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[14px]">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Month", "Sales Target", "Actual Sales", "Achiev.", "Orders Target", "Actual Orders", "ROAS Target", "Actual ROAS"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -408,14 +408,14 @@ export default function GoalsPage() {
                         <div className="flex items-center gap-1.5">
                           {isThisMonth && <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />}
                           {monthLabel(rec.month)}
-                          {isThisMonth && <span className="text-[10px] text-[#EA580C] font-bold bg-[#FFF7ED] dark:bg-transparent px-1 rounded">Live</span>}
+                          {isThisMonth && <span className="text-[12px] text-[#EA580C] font-bold bg-[#FFF7ED] dark:bg-transparent px-1 rounded">Live</span>}
                         </div>
                       </td>
                       <td className="py-2 px-2">{formatINR(rec.salesTarget)}</td>
                       <td className="py-2 px-2 font-semibold">{actualSales !== undefined ? formatINR(actualSales) : <span className="text-[#A1A1AA]">—</span>}</td>
                       <td className="py-2 px-2">
                         {achPct !== null ? (
-                          <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black",
+                          <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-black",
                             achPct >= 100 ? "bg-[#F0FDF4] text-[#166534]" :
                             achPct >= 80 ? "bg-[#FFF7ED] text-[#EA580C]" :
                             "bg-[#FEF2F2] text-[#DC2626]"

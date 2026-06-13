@@ -101,13 +101,13 @@ export default function ProductsPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Product Analytics</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">Shopify · live inventory & sales · {range.label}</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">Shopify · live inventory & sales · {range.label}</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={products.length === 0} />
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">Loading real product data...</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">Loading real product data...</div>
       ) : (
         <>
           {/* KPI row */}
@@ -144,7 +144,7 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Revenue by product" right={range.label} />
               {withSales.length === 0 ? (
-                <div className="text-[15px] text-[#686864] py-6 text-center">No sales in {range.label.toLowerCase()}</div>
+                <div className="text-[17px] text-[#686864] py-6 text-center">No sales in {range.label.toLowerCase()}</div>
               ) : (
                 <>
                   {withSales.slice(0, 8).map((p, i) => (
@@ -170,11 +170,11 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Inventory & demand forecast" right={`Based on ${range.label.toLowerCase()}`} />
               <div className="overflow-x-auto">
-                <table className="w-full text-[15px] border-collapse">
+                <table className="w-full text-[17px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["Product", "Stock", "Sold/day", "Days left", "Action"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -205,15 +205,15 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Dead stock — capital locked" right={`${formatINR(stats?.deadStockValue ?? 0)} in ${stats?.deadStockCount ?? 0} products`} />
               {deadStock.length === 0 ? (
-                <div className="text-[15px] text-[#686864] py-6 text-center">No dead stock — everything moved in {range.label.toLowerCase()}.</div>
+                <div className="text-[17px] text-[#686864] py-6 text-center">No dead stock — everything moved in {range.label.toLowerCase()}.</div>
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[15px] border-collapse">
+                    <table className="w-full text-[17px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.09]">
                           {["Product", "Stock", "Capital locked"].map(h => (
-                            <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                            <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -236,15 +236,15 @@ export default function ProductsPage() {
             <Card>
               <CardHeader title="Lost sales — out of stock" right="Were selling, now 0 stock" />
               {(stats?.oosBestsellers?.length ?? 0) === 0 ? (
-                <div className="text-[15px] text-[#686864] py-6 text-center">No bestsellers are out of stock. 👍</div>
+                <div className="text-[17px] text-[#686864] py-6 text-center">No bestsellers are out of stock. 👍</div>
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[15px] border-collapse">
+                    <table className="w-full text-[17px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.09]">
                           {["Product", "Units sold", "Revenue"].map(h => (
-                            <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                            <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                           ))}
                         </tr>
                       </thead>

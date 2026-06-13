@@ -202,8 +202,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <div className="px-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2.5">
         <SkyLiteeLogo size={28} />
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Sky Litee</div>
-          <div className="text-[11px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
+          <div className="text-[17px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Sky Litee</div>
+          <div className="text-[13px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
         </div>
         <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] shrink-0">
           <X size={16} className="text-[#71717A]" />
@@ -222,7 +222,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 allShops.length > 1 ? "hover:bg-[#EBEBEB] dark:hover:bg-[#262626] cursor-pointer" : "cursor-default"
               )}
             >
-              <span className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
+              <span className="text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{shopName}</span>
               {allShops.length > 1 && (
                 <ChevronDown size={10} className={cn("text-[#A1A1AA] shrink-0 transition-transform", showShopMenu ? "rotate-180" : "")} />
               )}
@@ -238,7 +238,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                       window.location.reload();
                     }}
                     className={cn(
-                      "w-full text-left px-3 py-2 text-[13px] transition-colors",
+                      "w-full text-left px-3 py-2 text-[15px] transition-colors",
                       s.replace(".myshopify.com", "") === shopName
                         ? "font-semibold text-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]"
                         : "text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#F5F5F4] dark:hover:bg-[#262626]"
@@ -268,7 +268,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           /* Admin-only navigation — no user analytics */
           <div className="px-2 pt-2 space-y-0.5">
             <div className="px-2 pb-1 pt-1">
-              <span className="text-[10px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em]">Admin</span>
+              <span className="text-[12px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em]">Admin</span>
             </div>
             {[
               { href: "/dashboard/admin", label: "Admin Panel", icon: ShieldCheck },
@@ -278,7 +278,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               return (
                 <Link key={item.href} href={item.href} onClick={onClose}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 text-[13px] transition-all relative cursor-pointer mx-1 rounded-lg",
+                    "flex items-center gap-2 px-3 py-1.5 text-[15px] transition-all relative cursor-pointer mx-1 rounded-lg",
                     isActive
                       ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] font-semibold"
                       : "text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -301,7 +301,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   className="w-full flex items-center justify-between px-3 pt-3 pb-1 group"
                 >
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em] group-hover:text-[#71717A] dark:group-hover:text-[#71717A] transition-colors">
+                    <span className="text-[12px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em] group-hover:text-[#71717A] dark:group-hover:text-[#71717A] transition-colors">
                       {section.label}
                     </span>
                     <Tooltip content={section.tooltip} side="right" maxWidth={220}>
@@ -332,7 +332,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 text-[13px] transition-all relative cursor-pointer mx-1 rounded-lg",
+                          "flex items-center gap-2 px-3 py-1.5 text-[15px] transition-all relative cursor-pointer mx-1 rounded-lg",
                           isActive
                             ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] font-semibold"
                             : "text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -342,7 +342,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         <Icon size={13} className="shrink-0" />
                         <span className="flex-1 truncate">{item.label}</span>
                         {item.badge && (
-                          <span className={cn("text-[11px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color])}>
+                          <span className={cn("text-[13px] px-1.5 py-px rounded-full font-semibold", badgeStyles[item.badge.color])}>
                             {item.badge.text}
                           </span>
                         )}
@@ -358,7 +358,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-2.5 border-t border-black/[0.06] dark:border-white/[0.06] text-[12px] text-[#A1A1AA]">
+      <div className="px-3 py-2.5 border-t border-black/[0.06] dark:border-white/[0.06] text-[14px] text-[#A1A1AA]">
         {isAdmin ? (
           <div className="flex items-center gap-1.5 text-[#F97316] font-semibold">
             <ShieldCheck size={11} />

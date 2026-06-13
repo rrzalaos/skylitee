@@ -147,7 +147,7 @@ export default function SalesAnalysisPage() {
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sales Analysis</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">Store vs Meta vs Google vs Organic · by day / week / month · {range.label}</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Store vs Meta vs Google vs Organic · by day / week / month · {range.label}</p>
         </div>
         <ExportButton onExportCSV={() => exportToCSV("skylitee-sales-analysis", buildSections())} onExportPDF={() => exportToPDF("skylitee-sales-analysis", "Sales Analysis", `${range.label}`, buildSections())} disabled={loading || buckets.length === 0} />
       </div>
@@ -156,17 +156,17 @@ export default function SalesAnalysisPage() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] p-0.5">
           {SOURCES.map(s => (
-            <button key={s.id} onClick={() => setSource(s.id)} className={cn("px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors", source === s.id ? "bg-white dark:bg-[#262626] text-[#F97316] shadow-sm" : "text-[#71717A] dark:text-[#A1A1AA]")}>{s.label}</button>
+            <button key={s.id} onClick={() => setSource(s.id)} className={cn("px-3 py-1.5 rounded-lg text-[15px] font-semibold transition-colors", source === s.id ? "bg-white dark:bg-[#262626] text-[#F97316] shadow-sm" : "text-[#71717A] dark:text-[#A1A1AA]")}>{s.label}</button>
           ))}
         </div>
         <div className="inline-flex rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] p-0.5">
           {(["daily", "weekly", "monthly"] as Freq[]).map(f => (
-            <button key={f} onClick={() => setFreq(f)} className={cn("px-3 py-1.5 rounded-lg text-[13px] font-semibold capitalize transition-colors", freq === f ? "bg-white dark:bg-[#262626] text-[#F97316] shadow-sm" : "text-[#71717A] dark:text-[#A1A1AA]")}>{f}</button>
+            <button key={f} onClick={() => setFreq(f)} className={cn("px-3 py-1.5 rounded-lg text-[15px] font-semibold capitalize transition-colors", freq === f ? "bg-white dark:bg-[#262626] text-[#F97316] shadow-sm" : "text-[#71717A] dark:text-[#A1A1AA]")}>{f}</button>
           ))}
         </div>
       </div>
 
-      {loading ? <div className="py-12 text-center text-[13px] text-[#A1A1AA]">Loading…</div> : (
+      {loading ? <div className="py-12 text-center text-[15px] text-[#A1A1AA]">Loading…</div> : (
         <>
           {/* Source summary cards (Store / Meta / Google) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -185,8 +185,8 @@ export default function SalesAnalysisPage() {
 
             {/* Meta — objective-aware */}
             <Card>
-              <CardHeader title="Meta Ads" right={<span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8]">{objLabel[dominantObj]}</span>} />
-              {!metaKpis ? <div className="py-6 text-center text-[13px] text-[#A1A1AA]">Not connected</div> : (
+              <CardHeader title="Meta Ads" right={<span className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8]">{objLabel[dominantObj]}</span>} />
+              {!metaKpis ? <div className="py-6 text-center text-[15px] text-[#A1A1AA]">Not connected</div> : (
                 <div className="grid grid-cols-3 gap-2">
                   <Kpi label="Spend" value={formatINR(metaKpis.spend)} />
                   {dominantObj === "LEADS" ? (
@@ -229,7 +229,7 @@ export default function SalesAnalysisPage() {
             {/* Google */}
             <Card>
               <CardHeader title="Google Ads" />
-              {!gadsKpis ? <div className="py-6 text-center text-[13px] text-[#A1A1AA]">Not connected / pending approval</div> : (
+              {!gadsKpis ? <div className="py-6 text-center text-[15px] text-[#A1A1AA]">Not connected / pending approval</div> : (
                 <div className="grid grid-cols-3 gap-2">
                   <Kpi label="Spend" value={formatINR(gadsKpis.spend)} />
                   <Kpi label="Sales" value={formatINR(gadsKpis.conversionValue)} />
@@ -244,11 +244,11 @@ export default function SalesAnalysisPage() {
 
           {/* Period breakdown */}
           <Card>
-            <CardHeader title={`${SOURCES.find(s => s.id === source)!.label} — ${freq} breakdown`} right={<span className="text-[11px] text-[#A1A1AA]">{buckets.length} periods</span>} />
+            <CardHeader title={`${SOURCES.find(s => s.id === source)!.label} — ${freq} breakdown`} right={<span className="text-[13px] text-[#A1A1AA]">{buckets.length} periods</span>} />
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px] min-w-[640px]">
+              <table className="w-full text-[15px] min-w-[640px]">
                 <thead>
-                  <tr className="border-b border-black/[0.08] dark:border-white/[0.08] text-[11px] uppercase tracking-wide text-[#A1A1AA]">
+                  <tr className="border-b border-black/[0.08] dark:border-white/[0.08] text-[13px] uppercase tracking-wide text-[#A1A1AA]">
                     <th className="text-left py-2 pr-3">Period</th>
                     {source !== "organic" && <th className="text-right py-2 px-3">Spend</th>}
                     <th className="text-right py-2 px-3">Sales</th>
@@ -287,24 +287,24 @@ export default function SalesAnalysisPage() {
           {/* Weekday vs Weekend + day-of-week */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <Card>
-              <CardHeader title="Weekdays vs Weekend" right={<span className="text-[11px] text-[#A1A1AA]">{SOURCES.find(s => s.id === source)!.label}</span>} />
+              <CardHeader title="Weekdays vs Weekend" right={<span className="text-[13px] text-[#A1A1AA]">{SOURCES.find(s => s.id === source)!.label}</span>} />
               <div className="grid grid-cols-2 gap-2">
                 {[{ n: "Mon–Fri", d: dow.wk }, { n: "Sat–Sun", d: dow.we }].map(x => (
                   <div key={x.n} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-3">
-                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">{x.n}</div>
+                    <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">{x.n}</div>
                     <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(Math.round(x.d.sales))}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{x.d.orders} orders{source !== "organic" && ` · ${roas(x.d.sales, x.d.spend)} ROAS`}</div>
+                    <div className="text-[13px] text-[#A1A1AA]">{x.d.orders} orders{source !== "organic" && ` · ${roas(x.d.sales, x.d.spend)} ROAS`}</div>
                   </div>
                 ))}
               </div>
             </Card>
             <Card>
-              <CardHeader title="By day of week" right={<span className="text-[11px] text-[#A1A1AA]">find your best day</span>} />
+              <CardHeader title="By day of week" right={<span className="text-[13px] text-[#A1A1AA]">find your best day</span>} />
               <div className="space-y-1">
                 {(() => {
                   const max = Math.max(...dow.ordered.map(d => d.sales), 1);
                   return dow.ordered.map(d => (
-                    <div key={d.name} className="flex items-center gap-2 text-[12px]">
+                    <div key={d.name} className="flex items-center gap-2 text-[14px]">
                       <span className="w-8 text-[#71717A] dark:text-[#A1A1AA]">{d.name}</span>
                       <div className="flex-1 h-4 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded">
                         <div className="h-full rounded bg-[#F97316]" style={{ width: `${Math.round((d.sales / max) * 100)}%` }} />
@@ -318,8 +318,8 @@ export default function SalesAnalysisPage() {
             </Card>
           </div>
 
-          {source === "organic" && <p className="text-[12px] text-[#A1A1AA]">Organic = store sales − Meta-attributed − Google-attributed. No ad spend, so ROAS doesn&apos;t apply. This is the demand you get without paying per click.</p>}
-          {source === "store" && <p className="text-[12px] text-[#A1A1AA]">Store ROAS is <b>blended</b> (all store revenue ÷ total ad spend) — the truest measure of whether your marketing pays back overall.</p>}
+          {source === "organic" && <p className="text-[14px] text-[#A1A1AA]">Organic = store sales − Meta-attributed − Google-attributed. No ad spend, so ROAS doesn&apos;t apply. This is the demand you get without paying per click.</p>}
+          {source === "store" && <p className="text-[14px] text-[#A1A1AA]">Store ROAS is <b>blended</b> (all store revenue ÷ total ad spend) — the truest measure of whether your marketing pays back overall.</p>}
         </>
       )}
     </div>
@@ -329,8 +329,8 @@ export default function SalesAnalysisPage() {
 function Kpi({ label, value, tone }: { label: string; value: string; tone?: "accent" }) {
   return (
     <div>
-      <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{label}</div>
-      <div className={cn("text-[16px] font-black tabular-nums", tone === "accent" ? "text-[#F97316]" : "text-[#18181B] dark:text-[#F4F4F5]")}>{value}</div>
+      <div className="text-[12px] text-[#A1A1AA] uppercase tracking-wide">{label}</div>
+      <div className={cn("text-[18px] font-black tabular-nums", tone === "accent" ? "text-[#F97316]" : "text-[#18181B] dark:text-[#F4F4F5]")}>{value}</div>
     </div>
   );
 }

@@ -64,7 +64,7 @@ function HourTooltip({ active, payload, currency }: { active?: boolean; payload?
   const d: HourRow = payload[0].payload;
   const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
   return (
-    <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[13px]">
+    <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[15px]">
       <div className="font-semibold text-[#181816] mb-1">{d.label}</div>
       <div className="text-[#686864]">Spend: <span className="text-[#181816] font-medium">{fmt(d.spend)}</span></div>
       <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "—"}</span></div>
@@ -80,7 +80,7 @@ function DowTooltip({ active, payload, currency }: { active?: boolean; payload?:
   const d: DowRow = payload[0].payload;
   const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
   return (
-    <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[13px]">
+    <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[15px]">
       <div className="font-semibold text-[#181816] mb-1">{d.label}</div>
       <div className="text-[#686864]">Avg spend/day: <span className="text-[#181816] font-medium">{fmt(d.spendPerDay)}</span></div>
       <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "—"}</span></div>
@@ -196,13 +196,13 @@ export default function TimingPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Time Intelligence</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">Best hours &amp; days to run ads · based on your conversion data</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">Best hours &amp; days to run ads · based on your conversion data</p>
         </div>
         {data && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}
       </div>
 
       {checking ? (
-        <div className="text-[15px] text-[#686864] py-16 text-center">Loading…</div>
+        <div className="text-[17px] text-[#686864] py-16 text-center">Loading…</div>
       ) : !connected ? (
         <NotConnected
           platform="meta"
@@ -210,9 +210,9 @@ export default function TimingPage() {
           description="Connect Meta to see hourly conversion heatmaps and discover the best time windows to maximise your ad budget — day-parting recommendations included."
         />
       ) : loading ? (
-        <div className="text-[15px] text-[#686864] py-16 text-center">Loading timing data…</div>
+        <div className="text-[17px] text-[#686864] py-16 text-center">Loading timing data…</div>
       ) : error ? (
-        <div className="text-[15px] text-[#d94040] py-16 text-center">{error}</div>
+        <div className="text-[17px] text-[#d94040] py-16 text-center">{error}</div>
       ) : !data ? null : (
         <>
           {/* KPI row */}
@@ -238,11 +238,11 @@ export default function TimingPage() {
               },
             ].map(k => (
               <div key={k.label} className="bg-white border border-black/[0.09] rounded-xl p-3.5">
-                <div className="text-[15px] text-[#686864] mb-1.5 flex items-center gap-1 font-medium">
+                <div className="text-[17px] text-[#686864] mb-1.5 flex items-center gap-1 font-medium">
                   {k.icon} {k.label}
                 </div>
                 <div className="text-2xl font-semibold text-[#181816]">{k.value}</div>
-                <div className="text-[14px] text-[#9e9e9a] mt-0.5">{k.sub}</div>
+                <div className="text-[16px] text-[#9e9e9a] mt-0.5">{k.sub}</div>
               </div>
             ))}
           </div>
@@ -252,7 +252,7 @@ export default function TimingPage() {
             <CardHeader
               title="Spend by hour of day"
               right={
-                <div className="flex items-center gap-3 text-[13px]">
+                <div className="flex items-center gap-3 text-[15px]">
                   {[
                     { color: "#17a773", label: "ROAS ≥2×" },
                     { color: "#1877F2", label: "1.5–2×" },
@@ -291,7 +291,7 @@ export default function TimingPage() {
           <div className="grid grid-cols-2 gap-2 mb-3">
             {/* Day of week chart */}
             <Card>
-              <CardHeader title="ROAS by day of week" right={<span className="text-[13px] text-[#9e9e9a]">Avg over period</span>} />
+              <CardHeader title="ROAS by day of week" right={<span className="text-[15px] text-[#9e9e9a]">Avg over period</span>} />
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={data.dayOfWeek} barSize={26} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9e9e9a" }} tickLine={false} axisLine={false} />
@@ -312,16 +312,16 @@ export default function TimingPage() {
 
               {top5Hours.length > 0 && (
                 <div className="mb-3">
-                  <div className="text-[13px] font-semibold text-[#0d6b4f] mb-1.5 flex items-center gap-1">
+                  <div className="text-[15px] font-semibold text-[#0d6b4f] mb-1.5 flex items-center gap-1">
                     <Zap size={11} /> Best performing hours
                   </div>
                   <div className="space-y-1">
                     {top5Hours.map(h => (
-                      <div key={h.hour} className="flex items-center justify-between text-[14px]">
+                      <div key={h.hour} className="flex items-center justify-between text-[16px]">
                         <span className="text-[#686864]">{h.label}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-[#181816] font-medium">{h.purchases} orders</span>
-                          <span className={`text-[13px] font-medium ${h.roas >= 1.5 ? "text-[#0d6b4f]" : "text-[#e89820]"}`}>
+                          <span className={`text-[15px] font-medium ${h.roas >= 1.5 ? "text-[#0d6b4f]" : "text-[#e89820]"}`}>
                             {h.roas > 0 ? `ROAS ${h.roas}×` : "—"}
                           </span>
                         </div>
@@ -333,14 +333,14 @@ export default function TimingPage() {
 
               {worstHours.length > 0 && (
                 <div>
-                  <div className="text-[13px] font-semibold text-[#d94040] mb-1.5">Worst hours (low ROAS, high spend)</div>
+                  <div className="text-[15px] font-semibold text-[#d94040] mb-1.5">Worst hours (low ROAS, high spend)</div>
                   <div className="space-y-1">
                     {worstHours.map(h => (
-                      <div key={h.hour} className="flex items-center justify-between text-[14px]">
+                      <div key={h.hour} className="flex items-center justify-between text-[16px]">
                         <span className="text-[#686864]">{h.label}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-[#181816] font-medium">{fmt(h.spend)}</span>
-                          <span className="text-[13px] text-[#d94040]">
+                          <span className="text-[15px] text-[#d94040]">
                             ROAS {h.roas > 0 ? `${h.roas}×` : "0"}
                           </span>
                         </div>
@@ -351,12 +351,12 @@ export default function TimingPage() {
               )}
 
               {top5Hours.length === 0 && worstHours.length === 0 && (
-                <div className="text-[15px] text-[#9e9e9a] py-4 text-center">
+                <div className="text-[17px] text-[#9e9e9a] py-4 text-center">
                   Not enough purchase data in this date range to show insights.
                 </div>
               )}
 
-              <div className="mt-3 bg-[#f0f5ff] rounded-lg px-3 py-2 text-[13px] text-[#1877F2]">
+              <div className="mt-3 bg-[#f0f5ff] rounded-lg px-3 py-2 text-[15px] text-[#1877F2]">
                 <span className="font-semibold">Day-parting tip:</span> Use Meta Ad Scheduling to cap spend in your lowest-ROAS hours and reallocate budget to peak windows.
               </div>
             </Card>
@@ -364,13 +364,13 @@ export default function TimingPage() {
 
           {/* Spend vs ROAS table */}
           <Card>
-            <CardHeader title="Hourly breakdown" right={<span className="text-[13px] text-[#9e9e9a]">All 24 hours</span>} />
+            <CardHeader title="Hourly breakdown" right={<span className="text-[15px] text-[#9e9e9a]">All 24 hours</span>} />
             <div className="overflow-x-auto">
-              <table className="w-full text-[14px]">
+              <table className="w-full text-[16px]">
                 <thead>
                   <tr className="border-b border-black/[0.06]">
                     {["Hour", "Spend", "Impressions", "Clicks", "CTR", "Purchases", "ROAS"].map(h => (
-                      <th key={h} className="text-left py-2 px-2 text-[13px] text-[#9e9e9a] font-medium first:pl-0">{h}</th>
+                      <th key={h} className="text-left py-2 px-2 text-[15px] text-[#9e9e9a] font-medium first:pl-0">{h}</th>
                     ))}
                   </tr>
                 </thead>

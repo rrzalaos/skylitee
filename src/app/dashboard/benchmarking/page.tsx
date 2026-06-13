@@ -136,7 +136,7 @@ export default function BenchmarkingPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-semibold">Competitor Benchmarking</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">
+          <p className="text-[17px] text-[#686864] mt-0.5">
             Your <span className="font-medium text-[#181816]">live</span> store metrics ({range.label}) vs Indian ethnic-wear D2C category reference averages
           </p>
         </div>
@@ -144,18 +144,18 @@ export default function BenchmarkingPage() {
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-10 text-center">Loading your live metrics…</div>
+        <div className="text-[17px] text-[#686864] py-10 text-center">Loading your live metrics…</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           {/* Key metric comparison */}
           <Card>
             <CardHeader title="Key metric comparison" right="Your store = live" />
             <div className="overflow-x-auto">
-              <table className="w-full text-[15px] border-collapse">
+              <table className="w-full text-[17px] border-collapse">
                 <thead>
                   <tr className="border-b border-black/[0.09]">
                     {["Metric", "Your store", "Category avg", "Top 10%", "Your rank"].map(h => (
-                      <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                      <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -168,37 +168,37 @@ export default function BenchmarkingPage() {
                         <td className="py-1.5 px-1.5 font-bold text-[#181816]">{r.value !== null ? r.def.fmt(r.value) : <span className="text-[#a3a39e] font-normal">connect platform</span>}</td>
                         <td className="py-1.5 px-1.5 text-[#686864]">{r.def.fmt(r.def.avg)}</td>
                         <td className="py-1.5 px-1.5 text-[#686864]">{r.def.fmt(r.def.top10)}{r.def.dir === "lower" ? "↓" : "+"}</td>
-                        <td className="py-2 px-2">{rank ? <Badge variant={rankMeta[rank].variant}>{rankMeta[rank].label}</Badge> : <span className="text-[#a3a39e] text-[13px]">—</span>}</td>
+                        <td className="py-2 px-2">{rank ? <Badge variant={rankMeta[rank].variant}>{rankMeta[rank].label}</Badge> : <span className="text-[#a3a39e] text-[15px]">—</span>}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-            <p className="text-[12px] text-[#a3a39e] mt-2">Category avg / Top 10% are D2C-India reference benchmarks (competitors don&apos;t publish live data). Only &quot;Your store&quot; is live.</p>
+            <p className="text-[14px] text-[#a3a39e] mt-2">Category avg / Top 10% are D2C-India reference benchmarks (competitors don&apos;t publish live data). Only &quot;Your store&quot; is live.</p>
           </Card>
 
           {/* Roadmap generated from gaps */}
           <Card>
             <CardHeader title="90-day improvement roadmap" right="From your gaps" />
             {roadmap.length === 0 ? (
-              <div className="text-[15px] text-[#686864] py-8 text-center">You&apos;re at or above category benchmarks across the board — keep scaling. 🎯</div>
+              <div className="text-[17px] text-[#686864] py-8 text-center">You&apos;re at or above category benchmarks across the board — keep scaling. 🎯</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-[15px] border-collapse">
+                <table className="w-full text-[17px] border-collapse">
                   <thead>
                     <tr className="border-b border-black/[0.09]">
                       {["Action", "Effort", "Expected impact", "P"].map(h => (
-                        <th key={h} className="text-left py-1.5 px-1.5 text-[14px] font-semibold text-[#686864]">{h}</th>
+                        <th key={h} className="text-left py-1.5 px-1.5 text-[16px] font-semibold text-[#686864]">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {roadmap.map((r, i) => (
                       <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
-                        <td className="py-1.5 px-1.5 text-[13px]">{r.action}</td>
+                        <td className="py-1.5 px-1.5 text-[15px]">{r.action}</td>
                         <td className="py-2 px-2"><Badge variant={r.effort === "Low" ? "green" : r.effort === "Med" ? "amber" : "red"}>{r.effort}</Badge></td>
-                        <td className="py-1.5 px-1.5 text-[13px]">{r.impact}</td>
+                        <td className="py-1.5 px-1.5 text-[15px]">{r.impact}</td>
                         <td className="py-2 px-2"><Badge variant={r.priority === "P1" ? "red" : r.priority === "P2" ? "amber" : "blue"}>{r.priority}</Badge></td>
                       </tr>
                     ))}

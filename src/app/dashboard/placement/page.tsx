@@ -152,14 +152,14 @@ function WinnerHeadline({ items, dimWord, cur }: { items: WinnerItem[]; dimWord:
           <div key={i} className={cn("relative rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-4 shadow-sm overflow-hidden bg-gradient-to-br", t.bg)}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <Icon size={14} style={{ color: t.accent }} className="shrink-0" />
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: t.accent }}>{t.label}</span>
+              <span className="text-[13px] font-bold uppercase tracking-wider" style={{ color: t.accent }}>{t.label}</span>
             </div>
             <div className="text-[19px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight">{t.value}</div>
-            <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-1">{t.sub}</div>
+            <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-1">{t.sub}</div>
           </div>
         );
       })}
-      <div className="col-span-full text-[11px] text-[#A1A1AA] -mt-1">
+      <div className="col-span-full text-[13px] text-[#A1A1AA] -mt-1">
         Winner by {dimWord}. {useLeads ? "Showing leads — your account books more leads than orders." : "Showing orders."}
       </div>
     </div>
@@ -210,7 +210,7 @@ function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: stri
   const fmt = (n: number) => n.toLocaleString("en-IN");
   const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   if (!buckets || buckets.length === 0) return (
-    <Card><CardHeader title={title} /><div className="text-[13px] text-[#A1A1AA] py-10 text-center">No {dimLabel.toLowerCase()} data from Meta for this period.</div></Card>
+    <Card><CardHeader title={title} /><div className="text-[15px] text-[#A1A1AA] py-10 text-center">No {dimLabel.toLowerCase()} data from Meta for this period.</div></Card>
   );
   const insights = buildBucketInsights(buckets, dimWord);
   const attention = insights.filter(i => !i.good);
@@ -229,18 +229,18 @@ function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: stri
               <div key={`a${idx}`} className="border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl p-3">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <AlertTriangle size={13} className="text-[#EF4444] shrink-0" />
-                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                  <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
                 </div>
-                <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
               </div>
             ))}
             {working.map((i, idx) => (
               <div key={`w${idx}`} className="border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl p-3">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
-                  <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                  <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
                 </div>
-                <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
               </div>
             ))}
           </div>
@@ -273,11 +273,11 @@ function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: stri
       <Card>
         <CardHeader title={title} right={`${buckets.length} ${dimLabel.toLowerCase()} segments`} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px] border-collapse">
+          <table className="w-full text-[14px] border-collapse">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">{dimLabel}</th>
-                {cols.map(h => <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>)}
+                <th className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">{dimLabel}</th>
+                {cols.map(h => <th key={h} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -332,13 +332,13 @@ export default function PlacementPage() {
   const header = (
     <div className="mb-3">
       <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Ads Placement</h2>
-      <p className="text-[13px] text-[#A1A1AA] mt-0.5">Meta placement intelligence · breakdown by surface</p>
+      <p className="text-[15px] text-[#A1A1AA] mt-0.5">Meta placement intelligence · breakdown by surface</p>
     </div>
   );
 
-  if (loading) return <div>{header}<div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading placement data…</div></div>;
+  if (loading) return <div>{header}<div className="text-[16px] text-[#A1A1AA] py-16 text-center">Loading placement data…</div></div>;
   if (notConnected) return <div>{header}<NotConnected platform="meta" label="Meta Business Suite" description="Connect Meta to see which placements are driving the best ROAS and conversion rates." /></div>;
-  if (!data) return <div>{header}<div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load placement data.</div></div>;
+  if (!data) return <div>{header}<div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load placement data.</div></div>;
 
   const cur = data.currency === "INR" ? "₹" : data.currency === "USD" ? "$" : data.currency + " ";
   const fmt = (n: number) => n.toLocaleString("en-IN");
@@ -425,7 +425,7 @@ export default function PlacementPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Ads Placement</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">
             {data.adAccountName} · {data.period.from} → {data.period.to} · {data.placements.length} placements
           </p>
         </div>
@@ -442,7 +442,7 @@ export default function PlacementPage() {
           { key: "device", label: "Device" },
         ] as { key: PTab; label: string }[]).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn("px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
+            className={cn("px-4 py-2 text-[15px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key ? "border-[#F97316] text-[#F97316]" : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]")}>
             {t.label}
           </button>
@@ -466,17 +466,17 @@ export default function PlacementPage() {
               <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: groupColors[g.group] ?? "#A1A1AA" }} />
               <div className="flex items-center gap-1.5 mb-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: groupColors[g.group] ?? "#A1A1AA" }} />
-                <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{g.group}</div>
-                <div className="ml-auto text-[11px] text-[#A1A1AA] font-medium">{g.pct}% of spend</div>
+                <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{g.group}</div>
+                <div className="ml-auto text-[13px] text-[#A1A1AA] font-medium">{g.pct}% of spend</div>
               </div>
               <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{fmtC(g.spend)}</div>
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="text-[12px] text-[#71717A]">
+                <span className="text-[14px] text-[#71717A]">
                   ROAS: <span className={cn("font-bold", g.roas >= 3 ? "text-[#16A34A]" : g.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
                     {g.roas > 0 ? `${g.roas}x` : "—"}
                   </span>
                 </span>
-                {g.purchases > 0 && <span className="text-[12px] text-[#A1A1AA]">{g.purchases} orders</span>}
+                {g.purchases > 0 && <span className="text-[14px] text-[#A1A1AA]">{g.purchases} orders</span>}
               </div>
             </div>
           ))}
@@ -497,18 +497,18 @@ export default function PlacementPage() {
                 <div key={`a${idx}`} className="border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl p-3">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <AlertTriangle size={13} className="text-[#EF4444] shrink-0" />
-                    <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                    <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
                   </div>
-                  <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                  <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
                 </div>
               ))}
               {working.map((i, idx) => (
                 <div key={`w${idx}`} className="border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl p-3">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
-                    <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
+                    <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{i.title}</span>
                   </div>
-                  <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
+                  <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{i.body}</div>
                 </div>
               ))}
             </div>
@@ -570,7 +570,7 @@ export default function PlacementPage() {
       <Card>
         <CardHeader title={`All Placements (${data.placements.length})`} right={
           <select value={sortBy} onChange={e => setSortBy(e.target.value as keyof Placement)}
-            className="text-[12px] border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 py-1 bg-white dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]">
+            className="text-[14px] border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 py-1 bg-white dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]">
             <option value="spend">Sort: Spend</option>
             <option value="roas">Sort: ROAS</option>
             <option value="purchases">Sort: Orders</option>
@@ -579,14 +579,14 @@ export default function PlacementPage() {
           </select>
         } />
         {data.placements.length === 0 ? (
-          <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No placement data for this period</div>
+          <div className="text-[15px] text-[#A1A1AA] py-6 text-center">No placement data for this period</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-collapse">
+            <table className="w-full text-[14px] border-collapse">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {COLS.map(h => (
-                    <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -635,7 +635,7 @@ export default function PlacementPage() {
             </table>
           </div>
         )}
-        <div className="mt-3 text-[11px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
+        <div className="mt-3 text-[13px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
           Green ROAS = above 3× · Gray = above 1.5× · Red = below 1.5× · Green LP% ≥65% · Amber ≥45% · Red &lt;45%
         </div>
       </Card>

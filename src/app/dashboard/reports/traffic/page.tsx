@@ -32,8 +32,8 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn" | "bad"
     <div className={cn("flex items-start gap-3 rounded-xl border p-3", s.bg)}>
       {s.icon}
       <div>
-        <div className={cn("text-[12px] font-bold", s.label)}>{metric}: {value}</div>
-        <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
+        <div className={cn("text-[14px] font-bold", s.label)}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
       </div>
     </div>
   );
@@ -93,15 +93,15 @@ export default function TrafficReportPage() {
     ];
   }
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-20 text-center">Loading traffic data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-20 text-center">Loading traffic data…</div>;
   if (notConnected) return (
     <div className="text-center py-20">
       <Globe size={32} className="text-[#A1A1AA] mx-auto mb-3" />
-      <h2 className="text-[16px] font-bold mb-2 dark:text-[#F4F4F5]">Google Analytics 4 not connected</h2>
-      <Link href="/api/auth/google?service=ga4" className="px-5 py-2.5 bg-[#22C55E] text-white rounded-xl text-[13px] font-semibold">Connect GA4 →</Link>
+      <h2 className="text-[18px] font-bold mb-2 dark:text-[#F4F4F5]">Google Analytics 4 not connected</h2>
+      <Link href="/api/auth/google?service=ga4" className="px-5 py-2.5 bg-[#22C55E] text-white rounded-xl text-[15px] font-semibold">Connect GA4 →</Link>
     </div>
   );
-  if (!data) return <div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load traffic data.</div>;
+  if (!data) return <div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load traffic data.</div>;
 
   const k = data.kpis;
   const newUserPct = k.users > 0 ? Math.round((k.newUsers / k.users) * 100) : 0;
@@ -136,7 +136,7 @@ export default function TrafficReportPage() {
             <div className="w-7 h-7 bg-[#22C55E] rounded-lg flex items-center justify-center"><Globe size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Traffic Report</h1>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{data.property} · {range.label} · Generated {generatedAt}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{data.property} · {range.label} · Generated {generatedAt}</p>
         </div>
         <ExportButton
           onExportCSV={() => exportToCSV(`skylitee-traffic-report-${range.from}`, buildSections())}
@@ -153,7 +153,7 @@ export default function TrafficReportPage() {
           { label: "Avg Session", value: k.avgSessionMin, icon: <Globe size={13} className="text-[#A1A1AA]" /> },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
             <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
           </div>
         ))}
@@ -165,7 +165,7 @@ export default function TrafficReportPage() {
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
             {working.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">Connect GA4 and build traffic first.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">Connect GA4 and build traffic first.</p>
               : working.map((s, i) => <Signal key={i} type="good" {...s} />)}
           </div>
         </Card>
@@ -173,7 +173,7 @@ export default function TrafficReportPage() {
           <CardHeader title="⚠️ Needs Attention" />
           <div className="space-y-2">
             {attention.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">No major issues detected.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No major issues detected.</p>
               : attention.map((s, i) => <Signal key={i} {...s} />)}
           </div>
         </Card>
@@ -183,11 +183,11 @@ export default function TrafficReportPage() {
       <Card>
         <CardHeader title="Traffic Channels" right={`${data.channels.length} channels`} />
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
               <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                 {["Channel", "Sessions", "Share", "Users", "Purchases"].map(h => (
-                  <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                  <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -229,13 +229,13 @@ export default function TrafficReportPage() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-[#F0FDF4] dark:bg-[#052E16]/30 rounded-xl p-3 text-center border border-[#86EFAC]">
               <div className="text-[28px] font-black text-[#22C55E]">{k.newUsers.toLocaleString("en-IN")}</div>
-              <div className="text-[11px] text-[#A1A1AA]">New Users</div>
-              <div className="text-[13px] font-bold text-[#16A34A]">{newUserPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">New Users</div>
+              <div className="text-[15px] font-bold text-[#16A34A]">{newUserPct}%</div>
             </div>
             <div className="bg-[#EFF6FF] dark:bg-[#1E3A5F]/30 rounded-xl p-3 text-center border border-[#BFDBFE]">
               <div className="text-[28px] font-black text-[#3B82F6]">{(k.users - k.newUsers).toLocaleString("en-IN")}</div>
-              <div className="text-[11px] text-[#A1A1AA]">Returning</div>
-              <div className="text-[13px] font-bold text-[#1D4ED8]">{returningPct}%</div>
+              <div className="text-[13px] text-[#A1A1AA]">Returning</div>
+              <div className="text-[15px] font-bold text-[#1D4ED8]">{returningPct}%</div>
             </div>
           </div>
           <div className="h-2 flex rounded-full overflow-hidden">
@@ -256,8 +256,8 @@ export default function TrafficReportPage() {
               ].map(step => (
                 <div key={step.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] font-semibold dark:text-[#F4F4F5]">{step.label}</span>
-                    <span className="text-[14px] font-black" style={{ color: step.color }}>{step.count.toLocaleString("en-IN")}</span>
+                    <span className="text-[14px] font-semibold dark:text-[#F4F4F5]">{step.label}</span>
+                    <span className="text-[16px] font-black" style={{ color: step.color }}>{step.count.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${Math.min(step.pct, 100)}%`, backgroundColor: step.color, opacity: 0.75 }} />
@@ -273,8 +273,8 @@ export default function TrafficReportPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card>
           <CardHeader title="Top Pages" right={`${data.pages.length} pages`} />
-          <table className="w-full text-[12px]">
-            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Page", "Views", "Bounce"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
+          <table className="w-full text-[14px]">
+            <thead><tr className="border-b border-black/[0.06] dark:border-white/[0.06]">{["Page", "Views", "Bounce"].map(h => <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>)}</tr></thead>
             <tbody>
               {data.pages.slice(0, 8).map((p, i) => (
                 <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
@@ -290,29 +290,29 @@ export default function TrafficReportPage() {
         <Card>
           <CardHeader title="Devices & Locations" />
           <div className="mb-3">
-            <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-2 flex items-center gap-1"><MonitorSmartphone size={10} /> Devices</div>
+            <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-2 flex items-center gap-1"><MonitorSmartphone size={10} /> Devices</div>
             <div className="space-y-1.5">
               {data.devices.map((d, i) => {
                 const pct = k.sessions > 0 ? Math.round((d.sessions / k.sessions) * 100) : 0;
                 return (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-[12px] capitalize w-16 shrink-0 dark:text-[#F4F4F5]">{d.device}</span>
+                    <span className="text-[14px] capitalize w-16 shrink-0 dark:text-[#F4F4F5]">{d.device}</span>
                     <div className="flex-1 h-1.5 bg-black/[0.06] dark:bg-white/[0.06] rounded-full overflow-hidden">
                       <div className="h-full bg-[#22C55E] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[11px] text-[#A1A1AA] w-8 text-right">{pct}%</span>
+                    <span className="text-[13px] text-[#A1A1AA] w-8 text-right">{pct}%</span>
                   </div>
                 );
               })}
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-2 flex items-center gap-1"><MapPin size={10} /> Top Countries</div>
+            <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-2 flex items-center gap-1"><MapPin size={10} /> Top Countries</div>
             <div className="space-y-1">
               {data.countries.slice(0, 5).map((c, i) => (
                 <div key={i} className="flex items-center justify-between">
-                  <span className="text-[12px] dark:text-[#F4F4F5]">{c.country}</span>
-                  <span className="text-[12px] font-bold text-[#22C55E]">{c.sessions.toLocaleString("en-IN")}</span>
+                  <span className="text-[14px] dark:text-[#F4F4F5]">{c.country}</span>
+                  <span className="text-[14px] font-bold text-[#22C55E]">{c.sessions.toLocaleString("en-IN")}</span>
                 </div>
               ))}
             </div>

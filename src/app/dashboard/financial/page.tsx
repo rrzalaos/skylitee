@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { formatINR } from "@/lib/utils";
 import { useDateRange } from "@/lib/date-range-context";
-import { Settings2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
+import { Settings2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, AlertTriangle, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Donut } from "@/components/ui/charts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,14 +56,14 @@ function Row({ label, value, sub, deduct = false, bold = false, separator = fals
       highlight && "bg-[#FFF7ED] dark:bg-[#2A1A0E] -mx-4 px-4 rounded-none"
     )}>
       <div className="min-w-0">
-        <div className={cn("text-[13px]", bold ? "font-semibold text-[#18181B] dark:text-[#F4F4F5]" : "text-[#52525B] dark:text-[#A1A1AA]", muted && "opacity-50")}>
+        <div className={cn("text-[15px]", bold ? "font-semibold text-[#18181B] dark:text-[#F4F4F5]" : "text-[#52525B] dark:text-[#A1A1AA]", muted && "opacity-50")}>
           {label}
         </div>
-        {sub && <div className="text-[11px] text-[#A1A1AA] mt-0.5">{sub}</div>}
+        {sub && <div className="text-[13px] text-[#A1A1AA] mt-0.5">{sub}</div>}
       </div>
       <div className={cn(
-        "text-[13px] font-semibold shrink-0 ml-4",
-        bold ? "text-[15px]" : "",
+        "text-[15px] font-semibold shrink-0 ml-4",
+        bold ? "text-[17px]" : "",
         value === null || muted ? "text-[#A1A1AA]"
           : highlight ? (value >= 0 ? "text-[#F97316]" : "text-[#EF4444]")
           : isNegative && value > 0 ? "text-[#EF4444] dark:text-[#FCA5A5]"
@@ -80,24 +81,24 @@ function InputField({ label, hint, value, onChange, prefix = "₹", suffix = "",
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{label}</label>
-        {isPercent && <span className="text-[12px] font-bold text-[#F97316]">{value}%</span>}
+        <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">{label}</label>
+        {isPercent && <span className="text-[14px] font-bold text-[#F97316]">{value}%</span>}
       </div>
-      <div className="text-[11px] text-[#A1A1AA] mb-1.5">{hint}</div>
+      <div className="text-[13px] text-[#A1A1AA] mb-1.5">{hint}</div>
       {isPercent ? (
         <input type="range" min={min} max={max} step={step} value={value}
           onChange={e => onChange(+e.target.value)}
           className="w-full accent-[#F97316]" />
       ) : (
         <div className="flex items-center gap-1.5 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-2.5 py-1.5">
-          <span className="text-[12px] text-[#A1A1AA]">{prefix}</span>
+          <span className="text-[14px] text-[#A1A1AA]">{prefix}</span>
           <input
             type="number" min={min} step={step} value={value || ""}
             onChange={e => onChange(Math.max(0, +e.target.value))}
             placeholder="0"
-            className="flex-1 bg-transparent text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] outline-none w-full"
+            className="flex-1 bg-transparent text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5] outline-none w-full"
           />
-          {suffix && <span className="text-[12px] text-[#A1A1AA]">{suffix}</span>}
+          {suffix && <span className="text-[14px] text-[#A1A1AA]">{suffix}</span>}
         </div>
       )}
     </div>
@@ -123,8 +124,8 @@ function MarginBar({ segments }: { segments: { label: string; pct: number; color
         {segments.map((s, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div className={cn("w-2.5 h-2.5 rounded-sm shrink-0", s.color)} />
-            <span className="text-[11px] text-[#52525B] dark:text-[#A1A1AA]">{s.label}</span>
-            <span className="text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5] ml-auto">{s.pct.toFixed(1)}%</span>
+            <span className="text-[13px] text-[#52525B] dark:text-[#A1A1AA]">{s.label}</span>
+            <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] ml-auto">{s.pct.toFixed(1)}%</span>
           </div>
         ))}
       </div>
@@ -245,20 +246,20 @@ export default function FinancialPage() {
     { label: profitPct >= 0 ? "Profit" : "Loss", pct: Math.abs(profitPct), color: profitPct >= 0 ? "bg-[#22C55E]" : "bg-[#DC2626]" },
   ].filter(s => s.pct > 0.5);
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading financial data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Loading financial data…</div>;
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold dark:text-[#F4F4F5]">Financial P&amp;L</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">
+          <h2 className="text-lg font-bold dark:text-[#F4F4F5] flex items-center gap-2"><Receipt size={18} className="text-[#F97316]" /> Financial P&amp;L</h2>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">
             {range.from} → {range.to} · Real data from Shopify{metaConnected ? " + Meta" : ""}
           </p>
         </div>
         <button onClick={() => setShowSetup(s => !s)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] border border-[#F97316]/30">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] border border-[#F97316]/30">
           <Settings2 size={13} />
           Your Costs
           {showSetup ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -269,7 +270,7 @@ export default function FinancialPage() {
       {showSetup && (
         <Card className="mb-4 border-[#F97316]/30">
           <CardHeader title="Your cost setup" right="Saved to your browser" />
-          <div className="text-[12px] text-[#A1A1AA] mb-4">
+          <div className="text-[14px] text-[#A1A1AA] mb-4">
             We have your sales, ad spend, and orders from Shopify/Meta. Tell us your costs — we&apos;ll calculate the real profit.
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -322,7 +323,7 @@ export default function FinancialPage() {
             </div>
           </div>
           <button onClick={saveInputs}
-            className="w-full py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-bold hover:bg-[#EA580C] transition-colors">
+            className="w-full py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-bold hover:bg-[#EA580C] transition-colors">
             Save & Calculate P&amp;L
           </button>
         </Card>
@@ -333,8 +334,8 @@ export default function FinancialPage() {
         <div className="flex items-start gap-2 bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#EAB308]/30 rounded-xl p-3 mb-4">
           <AlertTriangle size={14} className="text-[#EAB308] shrink-0 mt-0.5" />
           <div>
-            <div className="text-[12px] font-semibold text-[#92400E] dark:text-[#FCD34D]">Set your costs to get accurate profit numbers</div>
-            <div className="text-[11px] text-[#A1A1AA] mt-0.5">Click &quot;Your Costs&quot; above to enter product cost, shipping, and RTO rate. Without these, profit will show as ₹0 cost.</div>
+            <div className="text-[14px] font-semibold text-[#92400E] dark:text-[#FCD34D]">Set your costs to get accurate profit numbers</div>
+            <div className="text-[13px] text-[#A1A1AA] mt-0.5">Click &quot;Your Costs&quot; above to enter product cost, shipping, and RTO rate. Without these, profit will show as ₹0 cost.</div>
           </div>
         </div>
       )}
@@ -344,13 +345,13 @@ export default function FinancialPage() {
         <Card>
           <CardHeader title="P&L Statement" right={`${range.from} → ${range.to}`} />
 
-          <div className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-2 mb-1">Money In</div>
+          <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-2 mb-1">Money In</div>
           <Row label="Total sales" value={grossSales} bold sub={`${totalOrders} orders · from Shopify`} />
           <Row label="Discounts given to customers" value={discounts} deduct sub="Real from Shopify — coupons, offers applied" />
           <Row label="Refunds paid back" value={refunds} deduct sub="Real from Shopify — orders you refunded" />
           <Row label="What you actually collected" value={netRevenue} bold separator />
 
-          <div className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">What It Cost to Fulfil Orders</div>
+          <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">What It Cost to Fulfil Orders</div>
           <Row
             label="Product / manufacturing cost"
             value={cogsTotal}
@@ -380,7 +381,7 @@ export default function FinancialPage() {
             sub={grossProfit >= 0 ? "Before marketing spend" : "Already in the red before ads"}
           />
 
-          <div className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">Marketing</div>
+          <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">Marketing</div>
           <Row
             label="Meta ad spend"
             value={adSpend}
@@ -392,7 +393,7 @@ export default function FinancialPage() {
 
           {saved.monthlyOverheads > 0 && (
             <>
-              <div className="text-[10px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">Overheads</div>
+              <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">Overheads</div>
               <Row
                 label="Rent, team, tools"
                 value={overheadsForPeriod}
@@ -408,13 +409,13 @@ export default function FinancialPage() {
           )}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-widest text-[#A1A1AA] mb-0.5">
+                <div className="text-[13px] font-bold uppercase tracking-widest text-[#A1A1AA] mb-0.5">
                   {netProfit >= 0 ? "Net Profit" : "Net Loss"}
                 </div>
                 <div className={cn("text-[28px] font-black", netProfit >= 0 ? "text-[#15803D] dark:text-[#86EFAC]" : "text-[#DC2626] dark:text-[#FCA5A5]")}>
                   {netProfit >= 0 ? "" : "−"}{formatINR(Math.abs(netProfit))}
                 </div>
-                <div className="text-[12px] text-[#71717A] mt-0.5">
+                <div className="text-[14px] text-[#71717A] mt-0.5">
                   {netMarginPct >= 0
                     ? `For every ₹100 in sales, you kept ₹${Math.abs(netMarginPct).toFixed(1)}`
                     : `For every ₹100 in sales, you lost ₹${Math.abs(netMarginPct).toFixed(1)}`}
@@ -463,9 +464,9 @@ export default function FinancialPage() {
                 "rounded-2xl p-3 border",
                 s.good ? "bg-[#F0FDF4] dark:bg-[#052E16] border-[#22C55E]/20" : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-[#EF4444]/20"
               )}>
-                <div className="text-[11px] text-[#A1A1AA] mb-0.5">{s.label}</div>
+                <div className="text-[13px] text-[#A1A1AA] mb-0.5">{s.label}</div>
                 <div className={cn("text-[20px] font-black", s.good ? "text-[#15803D] dark:text-[#86EFAC]" : "text-[#DC2626] dark:text-[#FCA5A5]")}>{s.value}</div>
-                <div className="text-[11px] text-[#71717A] mt-0.5">{s.sub}</div>
+                <div className="text-[13px] text-[#71717A] mt-0.5">{s.sub}</div>
               </div>
             ))}
           </div>
@@ -474,7 +475,15 @@ export default function FinancialPage() {
           {grossSales > 0 && (
             <Card>
               <CardHeader title="Where does your ₹100 go?" right="As % of gross sales" />
-              <MarginBar segments={segments} />
+              <div className="grid grid-cols-1 lg:grid-cols-[230px_1fr] gap-5 items-center">
+                <Donut
+                  segments={segments.filter(s => s.pct > 0).map(s => ({ label: s.label, value: s.pct, color: (s.color.match(/#([0-9A-Fa-f]{6})/)?.[0]) ?? "#94A3B8" }))}
+                  centerValue={`${Math.abs(netMarginPct).toFixed(0)}%`}
+                  centerLabel={netProfit >= 0 ? "profit" : "loss"}
+                  size={150}
+                />
+                <MarginBar segments={segments} />
+              </div>
             </Card>
           )}
 
@@ -483,37 +492,37 @@ export default function FinancialPage() {
             <CardHeader title="What this means" />
             <div className="space-y-2.5">
               {netProfit >= 0 && netMarginPct >= 15 && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Healthy business</span> — your margin of {netMarginPct.toFixed(1)}% means you&apos;re covering all costs with a solid buffer. Focus on scaling profitably.
                 </div>
               )}
               {netProfit >= 0 && netMarginPct > 0 && netMarginPct < 15 && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#EAB308] bg-[#FFFBEB] dark:bg-[#2D1C00] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EAB308] bg-[#FFFBEB] dark:bg-[#2D1C00] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#92400E] dark:text-[#FCD34D]">Thin margins</span> — you&apos;re profitable but any spike in ad costs or returns could flip it. The biggest lever is usually reducing RTO or improving ROAS.
                 </div>
               )}
               {netProfit < 0 && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">Currently unprofitable</span> — you&apos;re spending more than you&apos;re making. Don&apos;t increase ad spend yet. First figure out your biggest cost leak above.
                 </div>
               )}
               {rtoTotal > adSpend && rtoTotal > 0 && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">RTO is costing you more than ads</span> — {formatINR(rtoTotal)} lost to returns vs {formatINR(adSpend)} in ads. Add prepaid incentives (discount, free shipping on UPI) to reduce COD %.
                 </div>
               )}
               {meta && beRoas && currentRoas < beRoas && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#EA580C] dark:text-[#FB923C]">Ads not yet profitable</span> — you need {beRoas}x ROAS to break even, currently at {currentRoas}x. Pause low-ROAS campaigns and tighten targeting before scaling.
                 </div>
               )}
               {meta && beRoas && currentRoas >= beRoas && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
                   <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Ads are profitable</span> — your {currentRoas}x ROAS is above the {beRoas}x break-even. You can safely increase spend by 20–30% on winning campaigns.
                 </div>
               )}
               {!inputsConfigured && (
-                <div className="text-[12px] leading-relaxed border-l-[3px] border-l-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-r-xl pl-3 py-2 pr-2 text-[#71717A]">
+                <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-r-xl pl-3 py-2 pr-2 text-[#71717A]">
                   Click &quot;Your Costs&quot; at the top to enter product cost, shipping, and RTO rate. These are required to show accurate profit numbers.
                 </div>
               )}
@@ -542,8 +551,8 @@ export default function FinancialPage() {
                   },
                 ].map((s, i) => (
                   <div key={i} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
-                    <div className="text-[16px] font-black dark:text-[#F4F4F5]">{s.value}</div>
-                    <div className="text-[10px] text-[#A1A1AA] mt-0.5">{s.label}</div>
+                    <div className="text-[18px] font-black dark:text-[#F4F4F5]">{s.value}</div>
+                    <div className="text-[12px] text-[#A1A1AA] mt-0.5">{s.label}</div>
                   </div>
                 ))}
               </div>

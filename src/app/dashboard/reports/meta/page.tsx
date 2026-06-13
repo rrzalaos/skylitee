@@ -39,8 +39,8 @@ function Signal({ type, metric, value, detail }: { type: "good" | "warn" | "bad"
     <div className={cn("flex items-start gap-3 rounded-xl border p-3", s.bg)}>
       {s.icon}
       <div>
-        <div className={cn("text-[12px] font-bold", s.label)}>{metric}: {value}</div>
-        <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
+        <div className={cn("text-[14px] font-bold", s.label)}>{metric}: {value}</div>
+        <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{detail}</div>
       </div>
     </div>
   );
@@ -96,15 +96,15 @@ export default function MetaReportPage() {
     ];
   }
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-20 text-center">Loading Meta Ads data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-20 text-center">Loading Meta Ads data…</div>;
   if (notConnected) return (
     <div className="text-center py-20">
       <BarChart3 size={32} className="text-[#A1A1AA] mx-auto mb-3" />
-      <h2 className="text-[16px] font-bold mb-2 dark:text-[#F4F4F5]">Meta Ads not connected</h2>
-      <Link href="/dashboard/connections" className="px-5 py-2.5 bg-[#1877F2] text-white rounded-xl text-[13px] font-semibold">Connect Meta Ads →</Link>
+      <h2 className="text-[18px] font-bold mb-2 dark:text-[#F4F4F5]">Meta Ads not connected</h2>
+      <Link href="/dashboard/connections" className="px-5 py-2.5 bg-[#1877F2] text-white rounded-xl text-[15px] font-semibold">Connect Meta Ads →</Link>
     </div>
   );
-  if (!data) return <div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load Meta Ads data.</div>;
+  if (!data) return <div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load Meta Ads data.</div>;
 
   const k = data.kpis;
 
@@ -138,7 +138,7 @@ export default function MetaReportPage() {
             <div className="w-7 h-7 bg-[#1877F2] rounded-lg flex items-center justify-center"><BarChart3 size={14} className="text-white" /></div>
             <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Meta Ads Report</h1>
           </div>
-          <p className="text-[12px] text-[#A1A1AA] ml-9">{data.adAccountName} · {range.label} · Generated {generatedAt}</p>
+          <p className="text-[14px] text-[#A1A1AA] ml-9">{data.adAccountName} · {range.label} · Generated {generatedAt}</p>
         </div>
         <ExportButton
           onExportCSV={() => exportToCSV(`skylitee-meta-report-${range.from}`, buildSections())}
@@ -155,7 +155,7 @@ export default function MetaReportPage() {
           { label: "CTR", value: `${k.ctr}%`, icon: <Eye size={13} className={k.ctr >= 1 ? "text-[#22C55E]" : "text-[#EF4444]"} /> },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
             <div className="text-[22px] font-black text-[#18181B] dark:text-[#F4F4F5]">{item.value}</div>
           </div>
         ))}
@@ -167,7 +167,7 @@ export default function MetaReportPage() {
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
             {working.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">No strong signals yet — run campaigns to generate data.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals yet — run campaigns to generate data.</p>
               : working.map((s, i) => <Signal key={i} type="good" {...s} />)}
           </div>
         </Card>
@@ -175,7 +175,7 @@ export default function MetaReportPage() {
           <CardHeader title="⚠️ Needs Attention" />
           <div className="space-y-2">
             {attention.length === 0
-              ? <p className="text-[13px] text-[#A1A1AA]">No major issues detected.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No major issues detected.</p>
               : attention.map((s, i) => <Signal key={i} {...s} />)}
           </div>
         </Card>
@@ -192,9 +192,9 @@ export default function MetaReportPage() {
             { label: "Purchases", value: k.purchases.toLocaleString("en-IN"), color: "#22C55E", sub: formatINR(k.purchaseValue) },
           ].map(step => (
             <div key={step.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 text-center">
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">{step.label}</div>
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">{step.label}</div>
               <div className="text-[20px] font-black" style={{ color: step.color }}>{step.value}</div>
-              <div className="text-[11px] text-[#71717A] mt-0.5">{step.sub}</div>
+              <div className="text-[13px] text-[#71717A] mt-0.5">{step.sub}</div>
             </div>
           ))}
         </div>
@@ -205,8 +205,8 @@ export default function MetaReportPage() {
             { label: "CPC", value: formatINR(k.cpc), warn: false },
           ].map(item => (
             <div key={item.label} className={cn("rounded-xl p-3 border text-center", item.warn ? "bg-[#FFFBEB] border-[#FCD34D]" : "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-transparent")}>
-              <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">{item.label}</div>
-              <div className={cn("text-[16px] font-black", item.warn ? "text-[#92400E] dark:text-[#FCD34D]" : "text-[#18181B] dark:text-[#F4F4F5]")}>{item.value}</div>
+              <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">{item.label}</div>
+              <div className={cn("text-[18px] font-black", item.warn ? "text-[#92400E] dark:text-[#FCD34D]" : "text-[#18181B] dark:text-[#F4F4F5]")}>{item.value}</div>
             </div>
           ))}
         </div>
@@ -215,21 +215,21 @@ export default function MetaReportPage() {
       {/* Summary stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-          <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">Active Campaigns</div>
+          <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">Active Campaigns</div>
           <div className="text-[28px] font-black text-[#1877F2]">{activeCampaigns.length}</div>
-          <div className="text-[12px] text-[#A1A1AA] mt-0.5">of {data.campaigns.length} total</div>
+          <div className="text-[14px] text-[#A1A1AA] mt-0.5">of {data.campaigns.length} total</div>
         </div>
         <div className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-          <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">Best Campaign</div>
+          <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">Best Campaign</div>
           {topCampaign ? <>
-            <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight truncate">{topCampaign.name}</div>
-            <div className="text-[12px] text-[#22C55E] font-bold mt-0.5">{topCampaign.roas}x ROAS · {formatINR(topCampaign.spend)} spend</div>
-          </> : <div className="text-[13px] text-[#A1A1AA]">No campaigns</div>}
+            <div className="text-[16px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight truncate">{topCampaign.name}</div>
+            <div className="text-[14px] text-[#22C55E] font-bold mt-0.5">{topCampaign.roas}x ROAS · {formatINR(topCampaign.spend)} spend</div>
+          </> : <div className="text-[15px] text-[#A1A1AA]">No campaigns</div>}
         </div>
         <div className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
-          <div className="text-[11px] font-bold text-[#A1A1AA] uppercase mb-1">Avg Daily Spend</div>
+          <div className="text-[13px] font-bold text-[#A1A1AA] uppercase mb-1">Avg Daily Spend</div>
           <div className="text-[28px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(Math.round(avgDailySpend))}</div>
-          <div className="text-[12px] text-[#A1A1AA] mt-0.5">over {data.daily.length} days</div>
+          <div className="text-[14px] text-[#A1A1AA] mt-0.5">over {data.daily.length} days</div>
         </div>
       </div>
 
@@ -238,11 +238,11 @@ export default function MetaReportPage() {
         <Card>
           <CardHeader title="Campaign Performance" right={`${data.campaigns.length} campaigns`} />
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[14px]">
               <thead>
                 <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                   {["Campaign", "Status", "Spend", "ROAS", "Orders", "Revenue", "CTR"].map(h => (
-                    <th key={h} className="text-left py-1.5 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase">{h}</th>
+                    <th key={h} className="text-left py-1.5 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -251,7 +251,7 @@ export default function MetaReportPage() {
                   <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C]">
                     <td className="py-2 px-2 font-medium dark:text-[#F4F4F5] max-w-[200px]"><div className="truncate">{c.name}</div></td>
                     <td className="py-2 px-2">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", c.status === "ACTIVE" ? "bg-[#FFF7ED] text-[#EA580C]" : "bg-[#F5F5F4] text-[#71717A]")}>{c.status}</span>
+                      <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold", c.status === "ACTIVE" ? "bg-[#FFF7ED] text-[#EA580C]" : "bg-[#F5F5F4] text-[#71717A]")}>{c.status}</span>
                     </td>
                     <td className="py-2 px-2 font-semibold">{formatINR(c.spend)}</td>
                     <td className="py-2 px-2">

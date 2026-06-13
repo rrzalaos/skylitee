@@ -35,12 +35,12 @@ export function Donut({ segments, centerValue, centerLabel, size = 150 }: { segm
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {centerValue && <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-none">{centerValue}</div>}
-          {centerLabel && <div className="text-[10px] text-[#A1A1AA] mt-0.5">{centerLabel}</div>}
+          {centerLabel && <div className="text-[12px] text-[#A1A1AA] mt-0.5">{centerLabel}</div>}
         </div>
       </div>
       <div className="flex-1 min-w-0 space-y-1.5">
         {segments.map(s => (
-          <div key={s.label} className="flex items-center gap-2 text-[12px]">
+          <div key={s.label} className="flex items-center gap-2 text-[14px]">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
             <span className="text-[#52525B] dark:text-[#A1A1AA] truncate flex-1">{s.label}</span>
             <span className="font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{total > 0 ? `${Math.round((s.value / total) * 100)}%` : "—"}</span>
@@ -67,7 +67,7 @@ export function Gauge({ value, color = "#F97316", centerValue, centerLabel, size
       </ResponsiveContainer>
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
         <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-none">{centerValue ?? `${Math.round(v)}%`}</div>
-        {centerLabel && <div className="text-[10px] text-[#A1A1AA] mt-0.5">{centerLabel}</div>}
+        {centerLabel && <div className="text-[12px] text-[#A1A1AA] mt-0.5">{centerLabel}</div>}
       </div>
     </div>
   );

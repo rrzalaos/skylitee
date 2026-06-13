@@ -20,7 +20,7 @@ Google Ads → if disconnected, show estimated blind spot in ₹. "You're flying
 
 
 Section 5 — Objective Performance Panels
-Unique value: No tool judges each campaign objective by its own KPI. Meta Ads Manager shows ROAS for every campaign including awareness ones. We show:
+Unique value: No tool judges each campaign objective by its owQn KPI. Meta Ads Manager shows ROAS for every campaign including awareness ones. We show:
 Sales panel unique data:
 
 Break-even ROAS (calculated from their COGs, not a generic number)

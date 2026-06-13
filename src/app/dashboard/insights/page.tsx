@@ -53,12 +53,12 @@ export default function InsightsPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">AI Insights</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">Claude AI · analysing your real Shopify data</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">Claude AI · analysing your real Shopify data</p>
         </div>
         <button
           onClick={fetchInsights}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[15px] font-medium border border-[#17a773] text-[#17a773] bg-[#f0faf4] hover:bg-[#e0f5ee] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[17px] font-medium border border-[#17a773] text-[#17a773] bg-[#f0faf4] hover:bg-[#e0f5ee] disabled:opacity-50 transition-colors"
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
@@ -80,8 +80,8 @@ export default function InsightsPage() {
                   { label: "Repeat rate", value: `${metrics.repeatRate}%` },
                 ].map(m => (
                   <div key={m.label} className="bg-[#f7f7f5] rounded-lg p-2.5">
-                    <div className="text-[13px] text-[#686864]">{m.label}</div>
-                    <div className="text-[15px] font-bold text-[#181816] mt-0.5">{m.value}</div>
+                    <div className="text-[15px] text-[#686864]">{m.label}</div>
+                    <div className="text-[17px] font-bold text-[#181816] mt-0.5">{m.value}</div>
                   </div>
                 ))}
               </div>
@@ -93,15 +93,15 @@ export default function InsightsPage() {
             <Card>
               <CardHeader title="Month-end forecast" />
               <div className="bg-[#f7f7f5] rounded-xl p-3.5 mb-2">
-                <div className="flex items-center gap-1.5 text-[14px] text-[#686864] mb-1">
+                <div className="flex items-center gap-1.5 text-[16px] text-[#686864] mb-1">
                   <TrendingUp size={11} /> At current pace
                 </div>
                 <div className="text-2xl font-bold text-[#0d6b4f]">{formatINR(metrics.projectedMonthly)}</div>
-                <div className="text-[15px] text-[#686864] mt-1">
+                <div className="text-[17px] text-[#686864] mt-1">
                   Based on {metrics.days} days of real data
                 </div>
               </div>
-              <Link href="/dashboard/connections" className="block text-[15px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">
+              <Link href="/dashboard/connections" className="block text-[17px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">
                 <span className="font-medium text-[#92400e]">Connect Meta/Google Ads</span> to see ROAS and channel attribution →
               </Link>
             </Card>
@@ -109,38 +109,38 @@ export default function InsightsPage() {
         </div>
 
         <div>
-          <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 flex items-center gap-1.5">
+          <div className="text-[16px] font-semibold text-[#9e9e9a] uppercase tracking-wider pb-1.5 border-b border-black/[0.09] mb-3 flex items-center gap-1.5">
             <Brain size={11} /> Claude AI insights · your actual data
           </div>
 
           {loading && (
-            <div className="flex items-center gap-2 text-[15px] text-[#686864] py-8">
+            <div className="flex items-center gap-2 text-[17px] text-[#686864] py-8">
               <RefreshCw size={13} className="animate-spin text-[#17a773]" />
               Analysing your Shopify data with Claude AI...
             </div>
           )}
 
           {error && (
-            <div className="text-[15px] text-[#d94040] py-4">{error}</div>
+            <div className="text-[17px] text-[#d94040] py-4">{error}</div>
           )}
 
           {!loading && !error && parsedInsights.length === 0 && insights && (
-            <div className="text-[15px] text-[#686864] leading-relaxed bg-[#f7f7f5] rounded-xl p-4 whitespace-pre-wrap">
+            <div className="text-[17px] text-[#686864] leading-relaxed bg-[#f7f7f5] rounded-xl p-4 whitespace-pre-wrap">
               {insights}
             </div>
           )}
 
           {parsedInsights.map((item, i) => (
             <div key={i} className={`border rounded-xl p-4 mb-2.5 ${insightColors[i % insightColors.length]}`}>
-              <div className={`text-[15px] font-semibold mb-1.5 ${titleColors[i % titleColors.length]}`}>
+              <div className={`text-[17px] font-semibold mb-1.5 ${titleColors[i % titleColors.length]}`}>
                 {item.title}
               </div>
-              <div className="text-[15px] text-[#686864] leading-relaxed">{item.body}</div>
+              <div className="text-[17px] text-[#686864] leading-relaxed">{item.body}</div>
             </div>
           ))}
 
           {!loading && !error && (
-            <div className="text-[13px] text-[#9e9e9a] mt-3 flex items-center gap-1">
+            <div className="text-[15px] text-[#9e9e9a] mt-3 flex items-center gap-1">
               <Brain size={10} /> Generated by Claude AI using your live Shopify data
             </div>
           )}

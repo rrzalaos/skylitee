@@ -83,9 +83,9 @@ function StatCard({ label, value, sub, tone = "neutral", spark, sparkColor = "#F
   return (
     <div className="relative bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-3 overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#F97316] via-[#FB923C] to-transparent opacity-80" />
-      <div className="text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-wide">{label}</div>
+      <div className="text-[13px] font-semibold text-[#A1A1AA] uppercase tracking-wide">{label}</div>
       <div className={cn("text-[22px] font-black mt-0.5 leading-none tabular-nums", valColor)}>{value}</div>
-      {sub && <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 leading-snug">{sub}</div>}
+      {sub && <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 leading-snug">{sub}</div>}
       {spark && spark.length > 1 && <div className="mt-2 -mx-1"><Sparkline data={spark} color={sparkColor} height={28} /></div>}
     </div>
   );
@@ -366,18 +366,18 @@ export default function CommandCenterPage() {
           <div className="flex items-center gap-2.5">
             <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
             {loading ? (
-              <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> Loading…</span>
+              <span className="text-[14px] text-[#A1A1AA] flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> Loading…</span>
             ) : connections.shopify ? (
-              <span className="flex items-center gap-1 text-[12px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-0.5 rounded-full font-bold">
+              <span className="flex items-center gap-1 text-[14px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-0.5 rounded-full font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" /> Live · {shopName}
               </span>
             ) : null}
           </div>
-          <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
+          <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
         </div>
         <div className="hidden sm:flex items-center gap-1.5">
           {platforms.map(p => (
-            <div key={p.label} className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border",
+            <div key={p.label} className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[13px] font-semibold border",
               p.connected ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]" : "bg-white dark:bg-[#171717] border-black/[0.04] dark:border-white/[0.04] text-[#A1A1AA]")}>
               <span className={cn("w-1.5 h-1.5 rounded-full", p.connected ? "bg-[#22C55E]" : "bg-[#D4D4D4] dark:bg-[#525252]")} />
               {p.label}
@@ -389,17 +389,17 @@ export default function CommandCenterPage() {
       {/* ── SECTION 1: Active Objectives Strip ── */}
       {activeObjs.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] px-3 py-2.5">
-          <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">You&apos;re running:</span>
+          <span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">You&apos;re running:</span>
           {activeObjs.map(b => {
             const m = OBJ_META[b.obj];
             const result = b.obj === "SALES" ? `${b.roas}x ROAS` : b.obj === "LEADS" ? `${b.leads} leads · ${formatINR(b.cpl)}/lead` : b.obj === "AWARENESS" ? `${(b.impressions / 1000).toFixed(0)}K impressions` : b.obj === "TRAFFIC" ? `${b.clicks.toLocaleString("en-IN")} clicks` : `${formatINR(b.spend)}`;
             return (
-              <span key={b.obj} className={cn("inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full", m.chip)}>
+              <span key={b.obj} className={cn("inline-flex items-center gap-1.5 text-[14px] font-semibold px-2.5 py-1 rounded-full", m.chip)}>
                 <m.icon size={12} /> {m.label} <span className="opacity-70">· {result}</span>
               </span>
             );
           })}
-          <span className="text-[11px] text-[#A1A1AA] ml-auto hidden md:block">Each objective judged by its own KPI — not one blended number</span>
+          <span className="text-[13px] text-[#A1A1AA] ml-auto hidden md:block">Each objective judged by its own KPI — not one blended number</span>
         </div>
       )}
 
@@ -439,15 +439,15 @@ export default function CommandCenterPage() {
       {k && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card>
-            <CardHeader title="Revenue by channel" right={<span className="text-[11px] text-[#A1A1AA]">where sales come from</span>} />
+            <CardHeader title="Revenue by channel" right={<span className="text-[13px] text-[#A1A1AA]">where sales come from</span>} />
             <Donut segments={channelSegments} centerValue={formatINR(k.grossSales)} centerLabel="total" />
           </Card>
           <Card>
-            <CardHeader title="Cash collected" right={<span className="text-[11px] text-[#A1A1AA]">prepaid vs COD</span>} />
+            <CardHeader title="Cash collected" right={<span className="text-[13px] text-[#A1A1AA]">prepaid vs COD</span>} />
             <Donut segments={paySegments} centerValue={`${100 - codPct}%`} centerLabel="prepaid now" />
           </Card>
           <Card>
-            <CardHeader title={salesTarget > 0 ? "Monthly goal pace" : "Month progress"} right={<span className="text-[11px] text-[#A1A1AA]">{salesTarget > 0 ? formatINR(salesTarget) : "this month"}</span>} />
+            <CardHeader title={salesTarget > 0 ? "Monthly goal pace" : "Month progress"} right={<span className="text-[13px] text-[#A1A1AA]">{salesTarget > 0 ? formatINR(salesTarget) : "this month"}</span>} />
             <div className="pt-2">
               <Gauge
                 value={goalPct ?? Math.round(today.getDate() / new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() * 100)}
@@ -456,7 +456,7 @@ export default function CommandCenterPage() {
                 centerLabel={salesTarget > 0 ? "of target" : "of month elapsed"}
               />
               {salesTarget > 0 && k && (
-                <div className="text-center text-[11px] text-[#A1A1AA] mt-1">{formatINR(k.grossSales)} of {formatINR(salesTarget)}{neededPerDay > 0 && <> · need {formatINR(neededPerDay)}/day</>}</div>
+                <div className="text-center text-[13px] text-[#A1A1AA] mt-1">{formatINR(k.grossSales)} of {formatINR(salesTarget)}{neededPerDay > 0 && <> · need {formatINR(neededPerDay)}/day</>}</div>
               )}
             </div>
           </Card>
@@ -468,7 +468,7 @@ export default function CommandCenterPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {sales.count > 0 && (
             <Card>
-              <CardHeader title={<span className="flex items-center gap-1.5"><ShoppingCart size={14} className="text-[#EA580C]" /> Sales objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{sales.count} campaign{sales.count > 1 ? "s" : ""} · {formatINR(sales.spend)}</span>} />
+              <CardHeader title={<span className="flex items-center gap-1.5"><ShoppingCart size={14} className="text-[#EA580C]" /> Sales objective</span>} right={<span className="text-[13px] text-[#A1A1AA]">{sales.count} campaign{sales.count > 1 ? "s" : ""} · {formatINR(sales.spend)}</span>} />
               <div className="flex items-center gap-4">
                 <div className="shrink-0">
                   <Gauge
@@ -477,26 +477,26 @@ export default function CommandCenterPage() {
                     centerValue={`${sales.roas}x`} centerLabel={econ?.breakEvenRoas ? `break-even ${econ.breakEvenRoas}x` : "ROAS"} size={120} />
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <div><div className="text-[11px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
-                  <div><div className="text-[11px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
+                  <div><div className="text-[13px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[12px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
+                  <div><div className="text-[13px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[12px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
                 </div>
               </div>
-              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[13px] text-[#71717A] dark:text-[#A1A1AA]">
                 {econ?.breakEvenRoas && sales.roas >= econ.breakEvenRoas ? `Profitable — acquiring at ${formatINR(blendedCAC)} vs ~${formatINR(ltvEst)} LTV. Room to scale.` : econ?.breakEvenRoas ? `Below break-even (${econ.breakEvenRoas}x) — fix funnel/creative before scaling.` : "Add your costs (Financial P&L) to see real break-even ROAS & profit."}
               </div>
             </Card>
           )}
           {leadsB.count > 0 && (
             <Card>
-              <CardHeader title={<span className="flex items-center gap-1.5"><Target size={14} className="text-[#15803D]" /> Leads objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{leadsB.count} campaign{leadsB.count > 1 ? "s" : ""} · {formatINR(leadsB.spend)}</span>} />
+              <CardHeader title={<span className="flex items-center gap-1.5"><Target size={14} className="text-[#15803D]" /> Leads objective</span>} right={<span className="text-[13px] text-[#A1A1AA]">{leadsB.count} campaign{leadsB.count > 1 ? "s" : ""} · {formatINR(leadsB.spend)}</span>} />
               <Donut
                 segments={[{ label: "WhatsApp / chat", value: waLeads, color: "#22C55E" }, { label: "Form leads", value: formLeads, color: "#3B82F6" }]}
                 centerValue={String(totalLeads)} centerLabel="leads" size={120} />
               <div className="grid grid-cols-2 gap-2 mt-3">
-                <div><div className="text-[11px] text-[#A1A1AA]">Cost / Lead</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">{leadsB.leads} leads</div></div>
-                <div><div className="text-[11px] text-[#A1A1AA]">Pipeline (est.)</div><div className="text-[18px] font-black text-[#15803D]">{formatINR(pipelineEst)}</div><div className="text-[10px] text-[#A1A1AA]">{totalLeads}×{Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV</div></div>
+                <div><div className="text-[13px] text-[#A1A1AA]">Cost / Lead</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"}</div><div className="text-[12px] text-[#A1A1AA]">{leadsB.leads} leads</div></div>
+                <div><div className="text-[13px] text-[#A1A1AA]">Pipeline (est.)</div><div className="text-[18px] font-black text-[#15803D]">{formatINR(pipelineEst)}</div><div className="text-[12px] text-[#A1A1AA]">{totalLeads}×{Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV</div></div>
               </div>
-              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[13px] text-[#71717A] dark:text-[#A1A1AA]">
                 {waPct < 50 ? "WhatsApp leads convert higher than forms — shift creative CTAs to click-to-WhatsApp." : "Strong WhatsApp lead share — keep nurturing chat leads fast (intent fades in hours)."}
               </div>
             </Card>
@@ -508,12 +508,12 @@ export default function CommandCenterPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="col-span-1 lg:col-span-2">
           <Card className="h-full">
-            <CardHeader title="Revenue vs Ad Spend" right={<span className="flex items-center gap-3 text-[11px]">
+            <CardHeader title="Revenue vs Ad Spend" right={<span className="flex items-center gap-3 text-[13px]">
               <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-[#F97316] inline-block" /> Revenue</span>
               {(connections.meta || connections.gads) && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
             </span>} />
-            {loading ? <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">Loading chart…</div>
-              : chartData.length === 0 ? <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">No revenue data for this period</div>
+            {loading ? <div className="h-44 flex items-center justify-center text-[15px] text-[#A1A1AA]">Loading chart…</div>
+              : chartData.length === 0 ? <div className="h-44 flex items-center justify-center text-[15px] text-[#A1A1AA]">No revenue data for this period</div>
               : (
                 <ResponsiveContainer width="100%" height={176}>
                   <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
@@ -527,10 +527,10 @@ export default function CommandCenterPage() {
                 </ResponsiveContainer>
               )}
             <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-1.5 text-[12px] text-[#A1A1AA]"><TrendingUp size={12} className="text-[#F97316]" /> At current pace ({days}d)</div>
+              <div className="flex items-center gap-1.5 text-[14px] text-[#A1A1AA]"><TrendingUp size={12} className="text-[#F97316]" /> At current pace ({days}d)</div>
               <div className="flex items-center gap-3">
-                {(k?.refundedRevenue ?? 0) > 0 && <span className="text-[12px] text-[#A1A1AA]">Returns: <b className="text-[#EF4444]">−{formatINR(k!.refundedRevenue!)}</b></span>}
-                {anomalies && anomalies.summary.projectedMonthly > 0 && <span className="text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C]">{formatINR(anomalies.summary.projectedMonthly)} projected</span>}
+                {(k?.refundedRevenue ?? 0) > 0 && <span className="text-[14px] text-[#A1A1AA]">Returns: <b className="text-[#EF4444]">−{formatINR(k!.refundedRevenue!)}</b></span>}
+                {anomalies && anomalies.summary.projectedMonthly > 0 && <span className="text-[15px] font-bold text-[#EA580C] dark:text-[#FB923C]">{formatINR(anomalies.summary.projectedMonthly)} projected</span>}
               </div>
             </div>
           </Card>
@@ -555,9 +555,9 @@ export default function CommandCenterPage() {
             {!connections.gads && (
               <div className="py-3">
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]" /><span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Google Ads</span></div>
+                  <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]" /><span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Google Ads</span></div>
                 </div>
-                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect — you may be flying blind on spend here →</Link>
+                <Link href="/dashboard/connections" className="text-[14px] text-[#F97316] font-semibold">Connect — you may be flying blind on spend here →</Link>
               </div>
             )}
           </div>
@@ -567,7 +567,7 @@ export default function CommandCenterPage() {
       {/* ── SECTION 6: Cross-platform conversion funnel ── */}
       {funnel && funnel.steps.length >= 3 && (
         <Card>
-          <CardHeader title="Conversion Funnel — ad click to order" right={<span className="text-[11px] text-[#A1A1AA]">Meta → GA4 → Shopify, stitched</span>} />
+          <CardHeader title="Conversion Funnel — ad click to order" right={<span className="text-[13px] text-[#A1A1AA]">Meta → GA4 → Shopify, stitched</span>} />
           <div className="space-y-1.5">
             {funnel.steps.map((s, i) => {
               const top = funnel.steps[0].value || 1;
@@ -577,20 +577,20 @@ export default function CommandCenterPage() {
               const isWorst = funnel.worst.to === s.label && funnel.worst.dropPct > 0;
               return (
                 <div key={s.label} className="flex items-center gap-3">
-                  <div className="w-36 text-[12px] text-[#52525B] dark:text-[#A1A1AA] shrink-0">{s.label}</div>
+                  <div className="w-36 text-[14px] text-[#52525B] dark:text-[#A1A1AA] shrink-0">{s.label}</div>
                   <div className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg h-6 relative overflow-hidden">
                     <div className={cn("h-full rounded-lg", isWorst ? "bg-[#EF4444]" : "bg-[#F97316]")} style={{ width: `${widthPct}%` }} />
-                    <span className="absolute left-2 top-0 h-full flex items-center text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.value.toLocaleString("en-IN")}</span>
+                    <span className="absolute left-2 top-0 h-full flex items-center text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.value.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="w-16 text-right text-[11px] shrink-0">{drop !== null && <span className={drop >= 70 ? "text-[#EF4444] font-bold" : "text-[#A1A1AA]"}>−{drop}%</span>}</div>
+                  <div className="w-16 text-right text-[13px] shrink-0">{drop !== null && <span className={drop >= 70 ? "text-[#EF4444] font-bold" : "text-[#A1A1AA]"}>−{drop}%</span>}</div>
                 </div>
               );
             })}
           </div>
           {funnel.diagnosis && (
             <div className="mt-3 rounded-xl bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[3px] border-l-[#EF4444] p-3">
-              <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Biggest drop: {funnel.worst.dropPct}% between {funnel.worst.from} → {funnel.worst.to}</div>
-              <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{funnel.diagnosis}</div>
+              <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Biggest drop: {funnel.worst.dropPct}% between {funnel.worst.from} → {funnel.worst.to}</div>
+              <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{funnel.diagnosis}</div>
             </div>
           )}
         </Card>
@@ -600,44 +600,44 @@ export default function CommandCenterPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Alerts */}
         <Card>
-          <CardHeader title="Cross-Platform Alerts" right={alerts.length > 0 ? <span className="text-[11px] text-[#EF4444] font-bold bg-[#FEF2F2] px-2 py-0.5 rounded-full">{alerts.length}</span> : <span className="text-[11px] text-[#22C55E] font-bold bg-[#F0FDF4] px-2 py-0.5 rounded-full">All clear</span>} />
-          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Checking…</div>
-            : alerts.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No cross-platform issues detected</div>
+          <CardHeader title="Cross-Platform Alerts" right={alerts.length > 0 ? <span className="text-[13px] text-[#EF4444] font-bold bg-[#FEF2F2] px-2 py-0.5 rounded-full">{alerts.length}</span> : <span className="text-[13px] text-[#22C55E] font-bold bg-[#F0FDF4] px-2 py-0.5 rounded-full">All clear</span>} />
+          {loading ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Checking…</div>
+            : alerts.length === 0 ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">No cross-platform issues detected</div>
             : <div className="space-y-2">{alerts.slice(0, 5).map((a, i) => (
                 <div key={i} className="flex items-start gap-2.5 py-1">
                   <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", a.sev === "danger" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "bg-[#FFFBEB] dark:bg-[#2D1C00]")}>
                     {a.sev === "danger" ? <AlertCircle size={12} className="text-[#EF4444]" /> : <AlertTriangle size={12} className="text-[#EAB308]" />}
                   </div>
-                  <div><div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div><div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.body}</div></div>
+                  <div><div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div><div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.body}</div></div>
                 </div>
               ))}</div>}
-          <Link href="/dashboard/anomaly" className="block mt-3 text-[12px] font-bold text-[#F97316]">View all alerts →</Link>
+          <Link href="/dashboard/anomaly" className="block mt-3 text-[14px] font-bold text-[#F97316]">View all alerts →</Link>
         </Card>
 
         {/* AI Insights */}
         <Card>
           <CardHeader title="AI Insights" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Zap size={11} /> Live</span>} />
-          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing…</div>
-            : insights.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Connect more platforms / set costs for insights</div>
+          {loading ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Computing…</div>
+            : insights.length === 0 ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Connect more platforms / set costs for insights</div>
             : <div className="space-y-2">{insights.map((ins, i) => (
                 <div key={i} className={cn("rounded-xl p-3 border-l-[3px]", ins.type === "positive" ? "bg-[#F0FDF4] dark:bg-[#052E16] border-l-[#22C55E]" : ins.type === "warning" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] border-l-[#EAB308]" : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[#EF4444]")}>
-                  <div className="flex items-center gap-1.5">{ins.type === "positive" ? <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" /> : <AlertTriangle size={13} className={cn("shrink-0", ins.type === "warning" ? "text-[#EAB308]" : "text-[#EF4444]")} />}<div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div></div>
-                  <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{ins.body}</div>
+                  <div className="flex items-center gap-1.5">{ins.type === "positive" ? <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" /> : <AlertTriangle size={13} className={cn("shrink-0", ins.type === "warning" ? "text-[#EAB308]" : "text-[#EF4444]")} />}<div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div></div>
+                  <div className="text-[13px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{ins.body}</div>
                 </div>
               ))}</div>}
         </Card>
 
         {/* Priority Actions */}
         <Card>
-          <CardHeader title="Priority Actions" right={<span className="text-[11px] text-[#A1A1AA]">by ₹ impact</span>} />
-          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing…</div>
-            : actions.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No high-impact actions right now — you&apos;re in good shape.</div>
+          <CardHeader title="Priority Actions" right={<span className="text-[13px] text-[#A1A1AA]">by ₹ impact</span>} />
+          {loading ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Computing…</div>
+            : actions.length === 0 ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">No high-impact actions right now — you&apos;re in good shape.</div>
             : <div className="space-y-2">{actions.map((a, i) => (
                 <div key={i} className="flex items-start gap-2.5 py-1">
-                  <span className="w-5 h-5 rounded-full bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <span className="w-5 h-5 rounded-full bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[13px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                   <div>
-                    <div className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] leading-snug">{a.text}</div>
-                    <div className="text-[10px] text-[#A1A1AA] mt-0.5">{a.impact > 0 ? <span className="text-[#16A34A] font-bold">≈ {formatINR(a.impact)} impact</span> : null} · {a.source}</div>
+                    <div className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] leading-snug">{a.text}</div>
+                    <div className="text-[12px] text-[#A1A1AA] mt-0.5">{a.impact > 0 ? <span className="text-[#16A34A] font-bold">≈ {formatINR(a.impact)} impact</span> : null} · {a.source}</div>
                   </div>
                 </div>
               ))}</div>}
@@ -650,14 +650,14 @@ export default function CommandCenterPage() {
           <Sparkles size={14} className="text-[#F97316]" />
           <input value={chatQ} onChange={e => setChatQ(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI()}
             placeholder="Ask anything — &quot;which city has the worst RTO?&quot;, &quot;which creative should I kill?&quot;"
-            className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
-          <button onClick={askAI} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
+            className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+          <button onClick={askAI} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {quickActions.map(a => (
             <Link key={a.href} href={a.href} className="group flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-[#FAFAF9] dark:bg-[#1C1C1C] hover:border-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-all text-center">
               <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", a.color)}><a.icon size={14} /></div>
-              <div className="text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5] group-hover:text-[#EA580C] leading-tight">{a.label}</div>
+              <div className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5] group-hover:text-[#EA580C] leading-tight">{a.label}</div>
             </Link>
           ))}
         </div>
@@ -673,15 +673,15 @@ function PlatformRow({ name, connected, connectHref, main, mainSub, right, right
   return (
     <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0", !connected && "opacity-60")}>
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", connected ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} /><span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{name}</span></div>
+        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", connected ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} /><span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{name}</span></div>
       </div>
       {connected ? (
         <div className="flex items-center justify-between">
-          <div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{main}</div><div className="text-[11px] text-[#A1A1AA]">{mainSub}</div></div>
-          {right && <div className="text-right"><div className={cn("text-[12px] font-semibold", rightTone === "good" ? "text-[#16A34A]" : rightTone === "warn" ? "text-[#B45309]" : "text-[#52525B] dark:text-[#A1A1AA]")}>{right}</div><div className="text-[11px] text-[#A1A1AA]">{rightSub}</div></div>}
+          <div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{main}</div><div className="text-[13px] text-[#A1A1AA]">{mainSub}</div></div>
+          {right && <div className="text-right"><div className={cn("text-[14px] font-semibold", rightTone === "good" ? "text-[#16A34A]" : rightTone === "warn" ? "text-[#B45309]" : "text-[#52525B] dark:text-[#A1A1AA]")}>{right}</div><div className="text-[13px] text-[#A1A1AA]">{rightSub}</div></div>}
         </div>
       ) : (
-        <Link href={connectHref ?? "/dashboard/connections"} className="text-[12px] text-[#F97316] font-semibold">Connect {name} →</Link>
+        <Link href={connectHref ?? "/dashboard/connections"} className="text-[14px] text-[#F97316] font-semibold">Connect {name} →</Link>
       )}
     </div>
   );

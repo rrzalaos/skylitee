@@ -8,7 +8,8 @@ import { formatINR } from "@/lib/utils";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF } from "@/lib/export";
 import { useDateRange } from "@/lib/date-range-context";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
+import { Donut } from "@/components/ui/charts";
 
 type Mode = "all" | "period";
 
@@ -121,12 +122,12 @@ export default function CustomersPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Customer Intelligence</h2>
-            <span className="text-[11px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Users size={18} className="text-[#F97316]" /> Customer Intelligence</h2>
+            <span className="text-[13px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">
               {mode === "all" ? "All-time" : range.label}
             </span>
           </div>
-          <p className="text-[15px] text-[#686864] mt-0.5">
+          <p className="text-[17px] text-[#686864] mt-0.5">
             {mode === "all"
               ? <>Lifetime customer data from Shopify · cached up to 10 min <span className="text-[#a3a39e]">(not affected by the date range — hit Refresh for live)</span></>
               : <>Customers who ordered during <span className="font-medium text-[#181816]">{range.label}</span> · change the date range up top</>}
@@ -138,7 +139,7 @@ export default function CustomersPage() {
               onClick={() => loadAll(true)}
               disabled={refreshing}
               title="Pull the latest customer data live from Shopify"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-60"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[15px] font-semibold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-60"
             >
               <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> {refreshing ? "Refreshing…" : "Refresh"}
             </button>
@@ -153,7 +154,7 @@ export default function CustomersPage() {
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-[15px] font-medium rounded-md transition-colors ${
               mode === m ? "bg-[#181816] text-white" : "text-[#686864] hover:text-[#181816]"
             }`}
           >
@@ -163,11 +164,11 @@ export default function CustomersPage() {
       </div>
 
       {loading ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">Loading customer data...</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">Loading customer data...</div>
       ) : !data ? (
-        <div className="text-[15px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
+        <div className="text-[17px] text-[#d94040] py-8 text-center">Could not load customer data. Check Shopify connection.</div>
       ) : mode === "period" && periodData && periodData.kpis.activeBuyers === 0 ? (
-        <div className="text-[15px] text-[#686864] py-8 text-center">No customers ordered during {range.label}.</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">No customers ordered during {range.label}.</div>
       ) : mode === "all" && allData ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
@@ -207,18 +208,23 @@ export default function CustomersPage() {
   function renderSegments() {
     const total = mode === "all" ? (allData?.kpis.totalCustomers ?? 0) : (periodData?.kpis.activeBuyers ?? 0);
     const totalLabel = mode === "all" ? `${total.toLocaleString()} total customers` : `${total.toLocaleString()} buyers in ${range.label}`;
+    const donutColors = ["#22C55E", "#F97316", "#3B82F6"];
+    const donutSegments = segments.map((s, i) => ({ label: s.name, value: s.count, color: donutColors[i % donutColors.length] }));
     return (
       <Card className="mb-2">
         <CardHeader title="Customer Segments" right={totalLabel} />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
-          {segments.map(seg => (
-            <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
-              <div className="text-2xl mb-1.5">{seg.icon}</div>
-              <div className="text-[14px] font-semibold text-[#181816]">{seg.name}</div>
-              <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
-              <div className="text-[13px] text-[#686864] mt-1">{seg.desc}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 mt-1 items-center">
+          <Donut segments={donutSegments} centerValue={total.toLocaleString()} centerLabel={mode === "all" ? "customers" : "buyers"} size={150} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {segments.map(seg => (
+              <div key={seg.name} className={`border rounded-xl p-4 text-center ${seg.border}`}>
+                <div className="text-2xl mb-1.5">{seg.icon}</div>
+                <div className="text-[16px] font-semibold text-[#181816]">{seg.name}</div>
+                <div className={`text-2xl font-bold mt-1 ${seg.color}`}>{seg.count.toLocaleString()}</div>
+                <div className="text-[15px] text-[#686864] mt-1">{seg.desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </Card>
     );
@@ -263,7 +269,7 @@ export default function CustomersPage() {
         <Card>
           <CardHeader title={m === "all" ? "Top cities by customers" : "Top cities by buyers"} />
           {topCities.length === 0 ? (
-            <div className="text-[15px] text-[#686864] py-4 text-center">No location data available</div>
+            <div className="text-[17px] text-[#686864] py-4 text-center">No location data available</div>
           ) : (
             topCities.map((c, i) => (
               <BarRow

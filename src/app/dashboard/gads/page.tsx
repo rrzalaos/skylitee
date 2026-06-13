@@ -79,7 +79,7 @@ function GadsContent() {
 
   /* ── Loading ──────────────────────────────────────────────────────── */
   if (loading) return (
-    <div className="flex items-center justify-center py-24 text-[15px] text-[#686864]">
+    <div className="flex items-center justify-center py-24 text-[17px] text-[#686864]">
       <div className="flex items-center gap-2">
         <div className="w-4 h-4 border-2 border-[#34A853] border-t-transparent rounded-full animate-spin" />
         Loading Google Ads data…
@@ -93,12 +93,12 @@ function GadsContent() {
       <Card>
         <div className="p-6 text-center">
           <Megaphone size={32} className="text-[#34A853] mx-auto mb-3" />
-          <div className="text-[17px] font-semibold text-[#181816] mb-1">Google Ads not connected</div>
-          <div className="text-[14px] text-[#686864] mb-4">
+          <div className="text-[19px] font-semibold text-[#181816] mb-1">Google Ads not connected</div>
+          <div className="text-[16px] text-[#686864] mb-4">
             Connect your Google Ads account to track campaign spend, ROAS, and keyword performance.
           </div>
           <a href="/api/auth/google?service=gads"
-            className="inline-block px-5 py-2.5 bg-[#34A853] text-white rounded-xl text-[14px] font-semibold hover:bg-[#2d9248] transition-colors">
+            className="inline-block px-5 py-2.5 bg-[#34A853] text-white rounded-xl text-[16px] font-semibold hover:bg-[#2d9248] transition-colors">
             Connect Google Ads
           </a>
         </div>
@@ -111,12 +111,12 @@ function GadsContent() {
       <Card>
         <div className="p-6 text-center">
           <AlertCircle size={32} className="text-amber-500 mx-auto mb-3" />
-          <div className="text-[17px] font-semibold text-[#181816] mb-1">Select your Google Ads account</div>
-          <div className="text-[14px] text-[#686864] mb-4">
+          <div className="text-[19px] font-semibold text-[#181816] mb-1">Select your Google Ads account</div>
+          <div className="text-[16px] text-[#686864] mb-4">
             Connected — but no account selected. Pick one in Connections.
           </div>
           <a href="/dashboard/connections"
-            className="inline-block px-5 py-2.5 bg-[#34A853] text-white rounded-xl text-[14px] font-semibold hover:bg-[#2d9248] transition-colors">
+            className="inline-block px-5 py-2.5 bg-[#34A853] text-white rounded-xl text-[16px] font-semibold hover:bg-[#2d9248] transition-colors">
             Go to Connections
           </a>
         </div>
@@ -129,9 +129,9 @@ function GadsContent() {
       <Card>
         <div className="p-6 text-center">
           <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
-          <div className="text-[17px] font-semibold text-[#181816] mb-2">Google Ads API not configured</div>
-          <div className="text-[14px] text-[#686864]">
-            Add <code className="bg-[#f5f5f4] px-1 rounded text-[13px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables.
+          <div className="text-[19px] font-semibold text-[#181816] mb-2">Google Ads API not configured</div>
+          <div className="text-[16px] text-[#686864]">
+            Add <code className="bg-[#f5f5f4] px-1 rounded text-[15px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables.
           </div>
         </div>
       </Card>
@@ -147,18 +147,18 @@ function GadsContent() {
               <AlertCircle size={20} className="text-amber-500" />
             </div>
             <div>
-              <div className="text-[16px] font-semibold text-[#181816] mb-1">
+              <div className="text-[18px] font-semibold text-[#181816] mb-1">
                 Token in test mode — data pending
               </div>
-              <div className="text-[14px] text-[#686864] space-y-2">
+              <div className="text-[16px] text-[#686864] space-y-2">
                 <p>Your Google Ads developer token is under review. Google does not allow querying real account data until the token is approved.</p>
                 <p className="font-medium text-[#181816]">What's happening:</p>
-                <ul className="space-y-1 list-disc list-inside text-[13px]">
+                <ul className="space-y-1 list-disc list-inside text-[15px]">
                   <li>OAuth ✓ Connected</li>
                   <li>Customer ID ✓ Saved</li>
                   <li>Data queries ✗ Blocked (test token)</li>
                 </ul>
-                <p className="text-[13px] bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg px-3 py-2 text-[#1b5e20]">
+                <p className="text-[15px] bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg px-3 py-2 text-[#1b5e20]">
                   ✓ Google will email you at <strong>digital@yellowsky.in</strong> once approved (usually 1–3 business days). No action needed — data will auto-load after approval.
                 </p>
               </div>
@@ -174,8 +174,8 @@ function GadsContent() {
       <Card>
         <div className="p-6 text-center">
           <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
-          <div className="text-[17px] font-semibold mb-1">Could not load Google Ads data</div>
-          <div className="text-[14px] text-[#686864]">Check your connection in Settings → Connections.</div>
+          <div className="text-[19px] font-semibold mb-1">Could not load Google Ads data</div>
+          <div className="text-[16px] text-[#686864]">Check your connection in Settings → Connections.</div>
         </div>
       </Card>
     </div>
@@ -206,14 +206,14 @@ function GadsContent() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold">Google Ads</h2>
-          <p className="text-[15px] text-[#686864] mt-0.5">{data.account} · {sym(c)} currency</p>
+          <p className="text-[17px] text-[#686864] mt-0.5">{data.account} · {sym(c)} currency</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <input type="date" value={from} max={to} onChange={e => setFrom(e.target.value)}
-            className="text-[14px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white" />
-          <span className="text-[14px] text-[#686864]">→</span>
+            className="text-[16px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white" />
+          <span className="text-[16px] text-[#686864]">→</span>
           <input type="date" value={to} min={from} max={defTo} onChange={e => setTo(e.target.value)}
-            className="text-[14px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white" />
+            className="text-[16px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white" />
         </div>
       </div>
 
@@ -227,7 +227,7 @@ function GadsContent() {
                 <Icon size={13} className={card.color} />
               </div>
               <div className="text-[18px] font-bold text-[#181816]">{card.value}</div>
-              <div className="text-[12px] text-[#686864] mt-0.5">{card.label}</div>
+              <div className="text-[14px] text-[#686864] mt-0.5">{card.label}</div>
             </div>
           );
         })}
@@ -243,7 +243,7 @@ function GadsContent() {
                 <Icon size={13} className={card.color} />
               </div>
               <div className="text-[18px] font-bold text-[#181816]">{card.value}</div>
-              <div className="text-[12px] text-[#686864] mt-0.5">{card.label}</div>
+              <div className="text-[14px] text-[#686864] mt-0.5">{card.label}</div>
             </div>
           );
         })}
@@ -283,11 +283,11 @@ function GadsContent() {
           <Card>
             <CardHeader title="Campaigns" />
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[15px]">
                 <thead>
                   <tr className="border-b border-black/[0.06]">
                     {["Campaign", "Spend", "ROAS", "Clicks", "CTR", "Conv."].map(h => (
-                      <th key={h} className="text-left py-2 px-2 text-[12px] text-[#686864] font-semibold whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left py-2 px-2 text-[14px] text-[#686864] font-semibold whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -320,11 +320,11 @@ function GadsContent() {
               </div>
             } />
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[15px]">
                 <thead>
                   <tr className="border-b border-black/[0.06]">
                     {["Keyword", "Clicks", "CTR", "CPC", "Conv."].map(h => (
-                      <th key={h} className="text-left py-2 px-2 text-[12px] text-[#686864] font-semibold whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left py-2 px-2 text-[14px] text-[#686864] font-semibold whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -347,7 +347,7 @@ function GadsContent() {
 
       {data.campaigns.length === 0 && data.keywords.length === 0 && (
         <Card>
-          <div className="py-10 text-center text-[14px] text-[#686864]">
+          <div className="py-10 text-center text-[16px] text-[#686864]">
             No campaign data found for this date range. Try a wider date range.
           </div>
         </Card>
@@ -358,7 +358,7 @@ function GadsContent() {
 
 export default function GadsPage() {
   return (
-    <Suspense fallback={<div className="py-16 text-center text-[15px] text-[#686864]">Loading…</div>}>
+    <Suspense fallback={<div className="py-16 text-center text-[17px] text-[#686864]">Loading…</div>}>
       <GadsContent />
     </Suspense>
   );

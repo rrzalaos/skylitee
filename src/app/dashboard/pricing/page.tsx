@@ -152,21 +152,21 @@ function PricingContent() {
 
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[12px] font-bold px-3 py-1 rounded-full mb-3">
+        <div className="inline-flex items-center gap-2 bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[14px] font-bold px-3 py-1 rounded-full mb-3">
           <Zap size={11} />
           14-day free trial — no credit card needed
         </div>
         <h1 className="text-[32px] font-black text-[#18181B] dark:text-[#F4F4F5]">
           Everything you need to grow
         </h1>
-        <p className="text-[14px] text-[#71717A] dark:text-[#A1A1AA] mt-1">
+        <p className="text-[16px] text-[#71717A] dark:text-[#A1A1AA] mt-1">
           One plan. All features. Cancel anytime.
         </p>
       </div>
 
       {/* Success banner */}
       {subscribed && (
-        <div className="w-full max-w-md mb-6 bg-[#F0FDF4] dark:bg-[#0A1F0E] border border-[#22C55E]/30 rounded-2xl px-4 py-3 text-[13px] text-[#15803D] dark:text-[#4ADE80] font-semibold flex items-center gap-2">
+        <div className="w-full max-w-md mb-6 bg-[#F0FDF4] dark:bg-[#0A1F0E] border border-[#22C55E]/30 rounded-2xl px-4 py-3 text-[15px] text-[#15803D] dark:text-[#4ADE80] font-semibold flex items-center gap-2">
           <Check size={14} />
           Trial started! Welcome to Skylitee Pro.
         </div>
@@ -174,21 +174,21 @@ function PricingContent() {
 
       {/* Error banner */}
       {error && (
-        <div className="w-full max-w-md mb-6 bg-[#FEF2F2] dark:bg-[#2D0A0A] border border-[#EF4444]/30 rounded-2xl px-4 py-3 text-[13px] text-[#991B1B] dark:text-[#FCA5A5] font-semibold">
+        <div className="w-full max-w-md mb-6 bg-[#FEF2F2] dark:bg-[#2D0A0A] border border-[#EF4444]/30 rounded-2xl px-4 py-3 text-[15px] text-[#991B1B] dark:text-[#FCA5A5] font-semibold">
           {error}
         </div>
       )}
 
       {/* Discount window ended — must re-subscribe at full price */}
       {revertPending && (
-        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[13px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
+        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[15px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
           Your discounted pricing period has ended. Re-subscribe at the full ${plan.price}/mo to keep your access.
         </div>
       )}
 
       {/* Free/trial access ended */}
       {accessEnded && !revertPending && (
-        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[13px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
+        <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[15px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
           Your free access period has ended. Subscribe below to continue using Skylitee.
         </div>
       )}
@@ -199,8 +199,8 @@ function PricingContent() {
         {/* Plan name + price */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <div className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{plan.name}</div>
-            <div className="text-[12px] text-[#22C55E] font-semibold mt-0.5">14-day free trial included</div>
+            <div className="text-[17px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{plan.name}</div>
+            <div className="text-[14px] text-[#22C55E] font-semibold mt-0.5">14-day free trial included</div>
           </div>
           <div className="text-right">
             {couponResult ? (
@@ -213,12 +213,12 @@ function PricingContent() {
                     <span className="text-[28px] font-black text-[#22C55E] leading-none">${couponResult.finalPrice}</span>
                   )}
                 </div>
-                <div className="text-[12px] text-[#A1A1AA]">/month after trial</div>
+                <div className="text-[14px] text-[#A1A1AA]">/month after trial</div>
               </div>
             ) : (
               <div>
                 <div className="text-[32px] font-black text-[#18181B] dark:text-[#F4F4F5] leading-none">${displayPrice}</div>
-                <div className="text-[12px] text-[#A1A1AA]">/month after trial</div>
+                <div className="text-[14px] text-[#A1A1AA]">/month after trial</div>
               </div>
             )}
           </div>
@@ -226,11 +226,11 @@ function PricingContent() {
 
         {/* Applied coupon badge */}
         {couponResult && (
-          <div className="flex items-center gap-2 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-xl px-3 py-2 mb-5 text-[12px] font-bold text-[#15803D] dark:text-[#4ADE80]">
+          <div className="flex items-center gap-2 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-xl px-3 py-2 mb-5 text-[14px] font-bold text-[#15803D] dark:text-[#4ADE80]">
             <Tag size={11} />
             Code applied — {couponResult.benefit || (couponResult.kind === "free" ? "Free access" : `${couponResult.discountPct}% off`)}
             <button
-              className="ml-auto text-[#A1A1AA] hover:text-[#EF4444] text-[11px] font-semibold"
+              className="ml-auto text-[#A1A1AA] hover:text-[#EF4444] text-[13px] font-semibold"
               onClick={() => { setCouponResult(null); setCouponCode(""); setCouponOpen(false); }}
             >
               Remove
@@ -241,7 +241,7 @@ function PricingContent() {
         {/* Features */}
         <ul className="space-y-3 mb-8">
           {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-2.5 text-[13px] text-[#52525B] dark:text-[#A1A1AA]">
+            <li key={f} className="flex items-start gap-2.5 text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
               <Check size={13} className="text-[#22C55E] shrink-0 mt-0.5" />
               {f}
             </li>
@@ -250,7 +250,7 @@ function PricingContent() {
 
         {/* CTA */}
         {isActive ? (
-          <div className="w-full py-3 rounded-xl text-[13px] font-bold text-center bg-[#F5F5F4] dark:bg-[#262626] text-[#A1A1AA]">
+          <div className="w-full py-3 rounded-xl text-[15px] font-bold text-center bg-[#F5F5F4] dark:bg-[#262626] text-[#A1A1AA]">
             ✓ Plan Active
           </div>
         ) : (
@@ -258,7 +258,7 @@ function PricingContent() {
             <button
               onClick={subscribe}
               disabled={loading}
-              className="w-full py-3 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-all shadow-sm disabled:opacity-60"
+              className="w-full py-3 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-all shadow-sm disabled:opacity-60"
             >
               {btnLabel}
             </button>
@@ -268,7 +268,7 @@ function PricingContent() {
               <div className="mt-4">
                 <button
                   onClick={() => setCouponOpen(v => !v)}
-                  className="flex items-center gap-1 text-[12px] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors mx-auto"
+                  className="flex items-center gap-1 text-[14px] text-[#71717A] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors mx-auto"
                 >
                   <Tag size={11} />
                   Have a coupon code?
@@ -283,18 +283,18 @@ function PricingContent() {
                         onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(null); }}
                         onKeyDown={e => e.key === "Enter" && validateCoupon()}
                         placeholder="Enter coupon code"
-                        className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] uppercase placeholder:normal-case"
+                        className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] uppercase placeholder:normal-case"
                       />
                       <button
                         onClick={validateCoupon}
                         disabled={couponLoading || !couponCode.trim()}
-                        className="px-4 py-2 rounded-xl text-[13px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#E5E5E5] dark:hover:bg-[#333] transition-colors disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl text-[15px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#E5E5E5] dark:hover:bg-[#333] transition-colors disabled:opacity-50"
                       >
                         {couponLoading ? "…" : "Apply"}
                       </button>
                     </div>
                     {couponError && (
-                      <p className="text-[12px] text-[#EF4444] font-semibold">{couponError}</p>
+                      <p className="text-[14px] text-[#EF4444] font-semibold">{couponError}</p>
                     )}
                   </div>
                 )}
@@ -304,7 +304,7 @@ function PricingContent() {
         )}
       </div>
 
-      <p className="text-center text-[12px] text-[#A1A1AA] mt-6">
+      <p className="text-center text-[14px] text-[#A1A1AA] mt-6">
         Billing is handled securely by Shopify. Cancel anytime from your Shopify admin.
       </p>
     </div>

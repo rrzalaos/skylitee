@@ -256,7 +256,7 @@ function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
   return (
     <div>
       {/* Plain-language summary */}
-      <p className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] mb-4 leading-relaxed">
+      <p className="text-[15px] text-[#52525B] dark:text-[#A1A1AA] mb-4 leading-relaxed">
         Of <b className="text-[#18181B] dark:text-[#F4F4F5]">{stages[0].count.toLocaleString("en-IN")}</b> people who clicked your ad,{" "}
         <b className="text-[#16A34A]">{k.purchases.toLocaleString("en-IN")}</b> completed a purchase{" "}
         <b className="text-[#18181B] dark:text-[#F4F4F5]">({k.conversionRatio}%)</b>. Each step shows how many continued and how many dropped off.
@@ -273,7 +273,7 @@ function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
             <div key={s.label}>
               {/* Drop-off connector */}
               {continued !== null && (
-                <div className="flex items-center gap-2 pl-9 py-1.5 text-[11px]">
+                <div className="flex items-center gap-2 pl-9 py-1.5 text-[13px]">
                   <ArrowDown size={13} className="text-[#A1A1AA] shrink-0" />
                   <span className={cn("font-bold",
                     continued >= 50 ? "text-[#16A34A]" : continued >= 20 ? "text-[#EA580C]" : "text-[#DC2626]"
@@ -290,15 +290,15 @@ function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2 mb-1">
                     <div className="min-w-0 truncate">
-                      <span className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.label}</span>
-                      <span className="text-[11px] text-[#A1A1AA] ml-2 hidden sm:inline">{s.desc}</span>
+                      <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.label}</span>
+                      <span className="text-[13px] text-[#A1A1AA] ml-2 hidden sm:inline">{s.desc}</span>
                     </div>
                     <div className="flex items-baseline gap-2 shrink-0">
                       {s.value > 0 && (
-                        <span className="text-[11px] text-[#EA580C] dark:text-[#FB923C] font-semibold">{cur}{s.value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                        <span className="text-[13px] text-[#EA580C] dark:text-[#FB923C] font-semibold">{cur}{s.value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
                       )}
-                      <span className="text-[17px] font-black text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.count.toLocaleString("en-IN")}</span>
-                      <span className="text-[11px] text-[#A1A1AA] w-11 text-right">{pctOfTop.toFixed(pctOfTop < 1 ? 2 : 0)}%</span>
+                      <span className="text-[19px] font-black text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.count.toLocaleString("en-IN")}</span>
+                      <span className="text-[13px] text-[#A1A1AA] w-11 text-right">{pctOfTop.toFixed(pctOfTop < 1 ? 2 : 0)}%</span>
                     </div>
                   </div>
                   <div className="h-3 rounded-full bg-[#F5F5F4] dark:bg-[#1C1C1C] overflow-hidden">
@@ -336,13 +336,13 @@ function DiagCard({ insight }: { insight: DiagInsight }) {
   return (
     <div className={cn("border-l-[3px] rounded-r-xl p-3", s.border, s.bg)}>
       <div className="flex items-center gap-1.5 mb-1.5">
-        <span className={cn("text-[10px] font-black uppercase tracking-wider", s.labelText)}>{s.label}</span>
-        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide", sourceStyle[insight.source])}>
+        <span className={cn("text-[12px] font-black uppercase tracking-wider", s.labelText)}>{s.label}</span>
+        <span className={cn("text-[12px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide", sourceStyle[insight.source])}>
           {sourceLabel[insight.source]}
         </span>
       </div>
-      <div className="text-[13px] font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-0.5">{insight.title}</div>
-      <div className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{insight.body}</div>
+      <div className="text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-0.5">{insight.title}</div>
+      <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] leading-relaxed">{insight.body}</div>
     </div>
   );
 }
@@ -436,7 +436,7 @@ function buildDiagnosis(k: MetaKPIs, roas: number, hasConversion: boolean): Diag
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-2">
-      <div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-[0.12em]">{children}</div>
+      <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-[0.12em]">{children}</div>
       <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
     </div>
   );
@@ -449,7 +449,7 @@ function FunnelCard({ k, cur, note }: { k: MetaKPIs; cur: string; note?: string 
   return (
     <Card>
       <CardHeader title="Conversion Funnel" right={<span className="text-[#F97316] font-semibold">CVR: {k.conversionRatio}%</span>} />
-      {note && <p className="text-[12px] text-[#A1A1AA] -mt-2 mb-3">{note}</p>}
+      {note && <p className="text-[14px] text-[#A1A1AA] -mt-2 mb-3">{note}</p>}
       <div className="mb-4">
         <ConversionFunnel k={k} cur={cur} />
       </div>
@@ -465,12 +465,12 @@ function FunnelCard({ k, cur, note }: { k: MetaKPIs; cur: string; note?: string 
               ? "bg-[#F0FDF4] border-[#BBF7D0] dark:bg-[#052E16] dark:border-[#14532D]"
               : "bg-[#FEF2F2] border-[#FECACA] dark:bg-[#2D0A0A] dark:border-[#7F1D1D]"
           )}>
-            <div className="text-[11px] text-[#A1A1AA] font-medium mb-1">{r.label}</div>
-            <div className={cn("text-[16px] font-black", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>{r.value}</div>
-            <div className={cn("text-[10px] font-bold mt-0.5", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>
+            <div className="text-[13px] text-[#A1A1AA] font-medium mb-1">{r.label}</div>
+            <div className={cn("text-[18px] font-black", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>{r.value}</div>
+            <div className={cn("text-[12px] font-bold mt-0.5", r.good ? "text-[#16A34A]" : "text-[#EF4444]")}>
               {r.good ? "✓ Good" : "↓ Below avg"}
             </div>
-            <div className="text-[11px] text-[#A1A1AA]">{r.avg}</div>
+            <div className="text-[13px] text-[#A1A1AA]">{r.avg}</div>
           </div>
         ))}
       </div>
@@ -490,8 +490,8 @@ function DiagnosisPanel({ diag }: { diag: DiagInsight[] }) {
         <div className="mb-4">
           <div className="flex items-center gap-1.5 mb-2">
             <AlertTriangle size={14} className="text-[#EF4444]" />
-            <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">Needs attention</span>
-            <span className="text-[11px] font-bold text-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] px-1.5 py-0.5 rounded-full">{attention.length}</span>
+            <span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">Needs attention</span>
+            <span className="text-[13px] font-bold text-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] px-1.5 py-0.5 rounded-full">{attention.length}</span>
           </div>
           <div className="space-y-2">{attention.map((ins, i) => <DiagCard key={i} insight={ins} />)}</div>
         </div>
@@ -500,8 +500,8 @@ function DiagnosisPanel({ diag }: { diag: DiagInsight[] }) {
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <CheckCircle2 size={14} className="text-[#22C55E]" />
-            <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">What's working</span>
-            <span className="text-[11px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full">{working.length}</span>
+            <span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">What's working</span>
+            <span className="text-[13px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full">{working.length}</span>
           </div>
           <div className="space-y-2">{working.map((ins, i) => <DiagCard key={i} insight={ins} />)}</div>
         </div>
@@ -524,22 +524,22 @@ function ScoreCard({ b, cur, totalSpend, active, onClick }: { b: ObjBucket; cur:
       className={cn("text-left rounded-2xl border p-3 transition-all hover:shadow-sm",
         active ? "ring-1 ring-[#F97316] border-[#F97316]" : "border-black/[0.06] dark:border-white/[0.06] hover:border-black/10 dark:hover:border-white/10")}>
       <div className="flex items-center justify-between mb-2">
-        <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", m.badge)}>{m.label}</span>
-        <span className="text-[11px] text-[#A1A1AA] font-medium">{pct}% of spend</span>
+        <span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold", m.badge)}>{m.label}</span>
+        <span className="text-[13px] text-[#A1A1AA] font-medium">{pct}% of spend</span>
       </div>
       <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5] mb-2 tabular-nums">{money(cur, b.spend)}</div>
       <div className="flex items-baseline justify-between gap-2 mb-1">
-        <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-wide">{hero.label}</span>
-        <span className={cn("text-[16px] font-black tabular-nums", valueColor)}>{hero.value}</span>
+        <span className="text-[12px] text-[#A1A1AA] font-bold uppercase tracking-wide">{hero.label}</span>
+        <span className={cn("text-[18px] font-black tabular-nums", valueColor)}>{hero.value}</span>
       </div>
-      <div className={cn("text-[11px] leading-snug mb-2", whyColor)}>
+      <div className={cn("text-[13px] leading-snug mb-2", whyColor)}>
         {tone === "good" ? "✓ " : tone === "bad" ? "↓ " : ""}{hero.why}
       </div>
       <div className="flex gap-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
         {hero.supports.map(s => (
           <div key={s.label} className="flex-1">
-            <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</div>
-            <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.value}</div>
+            <div className="text-[12px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</div>
+            <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{s.value}</div>
           </div>
         ))}
       </div>
@@ -639,8 +639,8 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className={cn("text-[12px] px-2.5 py-1 rounded-full font-bold", m.badge)}>{m.label}</span>
-        <span className="text-[13px] text-[#52525B] dark:text-[#A1A1AA]">
+        <span className={cn("text-[14px] px-2.5 py-1 rounded-full font-bold", m.badge)}>{m.label}</span>
+        <span className="text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
           {b.count} campaign{b.count === 1 ? "" : "s"} · {money(cur, b.spend)} ({pct}% of total spend)
         </span>
       </div>
@@ -668,7 +668,7 @@ interface AdRow extends DrillMetrics { id: string; name: string; status: string;
 function CreativeMedia({ c }: { c: ParsedCreative }) {
   const placeholder = (Icon: typeof ImageIcon, label: string) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#A1A1AA]">
-      <Icon size={28} /><span className="text-[11px] font-medium">{label}</span>
+      <Icon size={28} /><span className="text-[13px] font-medium">{label}</span>
     </div>
   );
   if (c.type === "video") {
@@ -746,11 +746,11 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
         <div className="flex items-start justify-between p-4 border-b border-black/[0.06] dark:border-white/[0.06] sticky top-0 bg-white dark:bg-[#171717] z-10">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-bold", OBJ_META[obj]?.badge ?? OBJ_META.OTHER.badge)}>{OBJ_META[obj]?.label ?? "Ad"}</span>
-              <span className="text-[12px] text-[#A1A1AA] capitalize">{c.type === "unknown" ? "ad" : c.type}</span>
-              <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
+              <span className={cn("px-2 py-0.5 rounded-full text-[13px] font-bold", OBJ_META[obj]?.badge ?? OBJ_META.OTHER.badge)}>{OBJ_META[obj]?.label ?? "Ad"}</span>
+              <span className="text-[14px] text-[#A1A1AA] capitalize">{c.type === "unknown" ? "ad" : c.type}</span>
+              <span className={cn("text-[12px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
             </div>
-            <h3 className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</h3>
+            <h3 className="text-[18px] font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</h3>
           </div>
           <button onClick={onClose} className="shrink-0 p-1.5 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#262626] text-[#71717A] dark:text-[#A1A1AA]"><X size={18} /></button>
         </div>
@@ -773,28 +773,28 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.images[0]} alt="" className="max-h-[420px] rounded-lg object-contain" />
             ) : (
-              <div className="text-[#A1A1AA] text-[13px]">No preview available</div>
+              <div className="text-[#A1A1AA] text-[15px]">No preview available</div>
             )}
           </div>
 
           {/* Copy + metrics */}
           <div className="p-4">
             {cta && (
-              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2.5 py-1 rounded-full mb-3">
+              <span className="inline-flex items-center gap-1 text-[14px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2.5 py-1 rounded-full mb-3">
                 <MousePointerClick size={12} /> {cta}
               </span>
             )}
-            <div className="space-y-3 text-[13px]">
-              {c.primaryText && (<div><div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#18181B] dark:text-[#F4F4F5] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
-              {c.headline && (<div><div className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Headline</div><p className="text-[#18181B] dark:text-[#F4F4F5] font-semibold">{c.headline}</p></div>)}
+            <div className="space-y-3 text-[15px]">
+              {c.primaryText && (<div><div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Primary text</div><p className="text-[#18181B] dark:text-[#F4F4F5] leading-relaxed whitespace-pre-line">{c.primaryText}</p></div>)}
+              {c.headline && (<div><div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Headline</div><p className="text-[#18181B] dark:text-[#F4F4F5] font-semibold">{c.headline}</p></div>)}
               {!c.primaryText && !c.headline && (<p className="text-[#A1A1AA]">No ad copy returned for this creative.</p>)}
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
               {stats.map(s => (
                 <div key={s.label} className="flex items-baseline justify-between gap-2">
-                  <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
-                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
+                  <span className="text-[12px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
+                  <span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -827,27 +827,27 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
       {preview && <AdPreviewModal ad={ad} obj={obj} cur={cur} onClose={() => setPreview(false)} />}
       <button onClick={() => setPreview(true)} className="block w-full aspect-square bg-[#F5F5F4] dark:bg-[#0C0C0C] relative cursor-pointer group" title="Click to preview full creative & copy">
         <CreativeMedia c={ad.creative} />
-        <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/55 text-white">
+        <span className="absolute top-2 left-2 flex items-center gap-1 text-[12px] font-bold px-1.5 py-0.5 rounded-full bg-black/55 text-white">
           <TypeIcon size={11} /> {ad.creative.type === "unknown" ? "Ad" : ad.creative.type.charAt(0).toUpperCase() + ad.creative.type.slice(1)}
         </span>
-        <span className={cn("absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
-        <span className="absolute bottom-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">Tap to expand</span>
+        <span className={cn("absolute top-2 right-2 text-[12px] px-1.5 py-0.5 rounded-full font-bold", statusBadge(ad.status))}>{ad.status}</span>
+        <span className="absolute bottom-2 right-2 text-[12px] font-bold px-2 py-0.5 rounded-full bg-black/55 text-white opacity-0 group-hover:opacity-100 transition-opacity">Tap to expand</span>
       </button>
       <div className="p-3">
-        <div className="font-bold text-[13px] text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</div>
+        <div className="font-bold text-[15px] text-[#18181B] dark:text-[#F4F4F5] truncate" title={ad.name}>{ad.name}</div>
         {cta && (
-          <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[13px] font-bold text-[#1877F2] bg-[#EFF6FF] dark:bg-[#0D1E3D] dark:text-[#93C5FD] px-2 py-0.5 rounded-full">
             <MousePointerClick size={11} /> {cta}
           </span>
         )}
         {ad.creative.primaryText && (
-          <p className="text-[12px] text-[#52525B] dark:text-[#A1A1AA] mt-2 leading-snug line-clamp-2">{ad.creative.primaryText}</p>
+          <p className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-2 leading-snug line-clamp-2">{ad.creative.primaryText}</p>
         )}
         <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
           {stats.map(s => (
             <div key={s.label} className="flex items-baseline justify-between gap-2">
-              <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
-              <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
+              <span className="text-[12px] text-[#A1A1AA] uppercase tracking-wide">{s.label}</span>
+              <span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums truncate">{s.value}</span>
             </div>
           ))}
         </div>
@@ -856,7 +856,7 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
         {fixes.length > 0 ? (
           <div className="mt-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05]">
             <button onClick={() => setShowFixes(o => !o)}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-[#EA580C] dark:text-[#FB923C]">
+              className="flex items-center gap-1.5 text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C]">
               <AlertTriangle size={12} /> {fixes.length} fix{fixes.length > 1 ? "es" : ""} to improve
               <ChevronDown size={12} className={cn("transition-transform", showFixes && "rotate-180")} />
             </button>
@@ -865,15 +865,15 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
                 {fixes.map((f, i) => (
                   <li key={i} className={cn("border-l-[3px] rounded-r-lg pl-2 py-1",
                     f.severity === "issue" ? "border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "border-l-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E]")}>
-                    <div className="text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{f.kpi}</div>
-                    <div className="text-[11px] text-[#52525B] dark:text-[#A1A1AA] leading-snug">{f.advice}</div>
+                    <div className="text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{f.kpi}</div>
+                    <div className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] leading-snug">{f.advice}</div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
         ) : (
-          <div className="mt-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center gap-1.5 text-[11px] font-bold text-[#16A34A]">
+          <div className="mt-3 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] flex items-center gap-1.5 text-[13px] font-bold text-[#16A34A]">
             <CheckCircle2 size={12} /> Meeting benchmarks
           </div>
         )}
@@ -934,22 +934,22 @@ export default function MetaPage() {
     loadDrill("adset", drill.campId);
   }
 
-  if (loading) return <div className="text-[14px] text-[#A1A1AA] py-16 text-center">Loading Meta Ads data…</div>;
+  if (loading) return <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Loading Meta Ads data…</div>;
 
   if (notConnected) return (
     <div className="text-center py-20">
       <div className="w-16 h-16 bg-[#EFF6FF] dark:bg-[#0D1E3D] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#BFDBFE] dark:border-[#1E40AF]">
         <Share2 size={28} className="text-[#1877F2]" />
       </div>
-      <h2 className="text-[16px] font-bold mb-1 text-[#18181B] dark:text-[#F4F4F5]">Meta Ads not connected</h2>
-      <p className="text-[13px] text-[#71717A] mb-5">Connect to see campaign spend, impressions, clicks and ROAS.</p>
-      <Link href="/dashboard/connections" className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[13px] font-semibold hover:bg-[#EA580C] transition-colors">
+      <h2 className="text-[18px] font-bold mb-1 text-[#18181B] dark:text-[#F4F4F5]">Meta Ads not connected</h2>
+      <p className="text-[15px] text-[#71717A] mb-5">Connect to see campaign spend, impressions, clicks and ROAS.</p>
+      <Link href="/dashboard/connections" className="px-5 py-2.5 bg-[#F97316] text-white rounded-xl text-[15px] font-semibold hover:bg-[#EA580C] transition-colors">
         Connect Meta Ads →
       </Link>
     </div>
   );
 
-  if (!data) return <div className="text-[14px] text-[#EF4444] py-8 text-center">Could not load Meta Ads data.</div>;
+  if (!data) return <div className="text-[16px] text-[#EF4444] py-8 text-center">Could not load Meta Ads data.</div>;
 
   const k = data.kpis;
   const cur = data.currency === "INR" ? "₹" : data.currency === "USD" ? "$" : data.currency + " ";
@@ -1060,12 +1060,12 @@ export default function MetaPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Meta Ads</h2>
-          <p className="text-[13px] text-[#A1A1AA] mt-0.5">
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">
             {data.adAccountName} · {data.period.from} → {data.period.to}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-[12px] text-[#EA580C] dark:text-[#FB923C] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-1 rounded-full">
+          <span className="flex items-center gap-1.5 text-[14px] text-[#EA580C] dark:text-[#FB923C] font-semibold bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" /> Live
           </span>
           <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
@@ -1076,7 +1076,7 @@ export default function MetaPage() {
       <div className="flex gap-0 overflow-x-auto border-b border-black/[0.06] dark:border-white/[0.06] mb-4">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn("px-4 py-2 text-[13px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
+            className={cn("px-4 py-2 text-[15px] font-semibold border-b-2 -mb-px transition-colors whitespace-nowrap",
               tab === t.key
                 ? "border-[#F97316] text-[#F97316]"
                 : "border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
@@ -1101,7 +1101,7 @@ export default function MetaPage() {
                 const m = OBJ_META[o];
                 return (
                   <button key={o} onClick={() => setObjView(o)}
-                    className={cn("px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
+                    className={cn("px-3 py-1.5 rounded-xl text-[15px] font-semibold border transition-all",
                       isActive
                         ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
                         : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10")}>
@@ -1296,7 +1296,7 @@ export default function MetaPage() {
             {drill ? (
               <>
                 {/* Breadcrumb */}
-                <div className="flex items-center gap-1.5 text-[13px] mb-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5 text-[15px] mb-1.5 flex-wrap">
                   <button onClick={drillToCampaigns} className="font-semibold text-[#F97316] hover:underline">Campaigns</button>
                   <ChevronRight size={14} className="text-[#A1A1AA] shrink-0" />
                   {drill.adsetId ? (
@@ -1312,27 +1312,27 @@ export default function MetaPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", OBJ_META[drill.obj].badge)}>{OBJ_META[drill.obj].label}</span>
-                  <span className="text-[12px] text-[#A1A1AA]">{drill.adsetId ? "Ads & creatives in this ad set" : "Ad sets in this campaign — click one to see its ads"}</span>
+                  <span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold", OBJ_META[drill.obj].badge)}>{OBJ_META[drill.obj].label}</span>
+                  <span className="text-[14px] text-[#A1A1AA]">{drill.adsetId ? "Ads & creatives in this ad set" : "Ad sets in this campaign — click one to see its ads"}</span>
                 </div>
 
                 {drillLoading ? (
-                  <div className="text-[13px] text-[#A1A1AA] py-12 text-center">Loading…</div>
+                  <div className="text-[15px] text-[#A1A1AA] py-12 text-center">Loading…</div>
                 ) : drillError ? (
-                  <div className="text-[13px] text-[#EF4444] py-12 text-center">{drillError}</div>
+                  <div className="text-[15px] text-[#EF4444] py-12 text-center">{drillError}</div>
                 ) : drillRows.length === 0 ? (
-                  <div className="text-[13px] text-[#A1A1AA] py-12 text-center">Nothing ran here in this period.</div>
+                  <div className="text-[15px] text-[#A1A1AA] py-12 text-center">Nothing ran here in this period.</div>
                 ) : drill.adsetId ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {(drillRows as AdRow[]).map(ad => <AdCard key={ad.id} ad={ad} obj={drill.obj} cur={cur} />)}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[13px] border-collapse">
+                    <table className="w-full text-[15px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
                           {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC"].map(h => (
-                            <th key={h} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            <th key={h} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -1345,11 +1345,11 @@ export default function MetaPage() {
                                 <Layers size={13} className="text-[#A1A1AA] shrink-0" />
                                 <div className="min-w-0">
                                   <div className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{a.name}</div>
-                                  {a.optimizationGoal && <div className="text-[10px] text-[#A1A1AA] truncate">{a.optimizationGoal.replace(/_/g, " ")}</div>}
+                                  {a.optimizationGoal && <div className="text-[12px] text-[#A1A1AA] truncate">{a.optimizationGoal.replace(/_/g, " ")}</div>}
                                 </div>
                               </div>
                             </td>
-                            <td className="py-2.5 px-2"><span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(a.status))}>{a.status}</span></td>
+                            <td className="py-2.5 px-2"><span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold", statusBadge(a.status))}>{a.status}</span></td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{cur}{a.spend.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{drillResult(a)}</td>
                             {drill.obj === "SALES" && (
@@ -1378,7 +1378,7 @@ export default function MetaPage() {
                     return (
                       <button key={f} onClick={() => setObjFilter(f)}
                         className={cn(
-                          "px-3 py-1.5 rounded-xl text-[13px] font-semibold border transition-all",
+                          "px-3 py-1.5 rounded-xl text-[15px] font-semibold border transition-all",
                           isActive
                             ? cn(m.chip, "shadow-sm ring-1 ring-current ring-offset-1")
                             : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10"
@@ -1391,7 +1391,7 @@ export default function MetaPage() {
 
                 {/* KPI hint for selected objective */}
                 {objFilter !== "ALL" && (
-                  <div className="mb-3 text-[12px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
+                  <div className="mb-3 text-[14px] text-[#71717A] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg px-3 py-2">
                     {objFilter === "SALES"     && "Showing: Spend · ROAS · Orders · Revenue · ATC · CTR · CPC"}
                     {objFilter === "TRAFFIC"   && "Showing: Spend · Clicks · Visits · Cost/Visit · CTR · CPC"}
                     {objFilter === "AWARENESS" && "Showing: Spend · Impressions · Reach · CPM · Frequency · CTR"}
@@ -1401,20 +1401,20 @@ export default function MetaPage() {
                   </div>
                 )}
 
-                <div className="mb-2 text-[12px] text-[#A1A1AA]">Click a campaign to see its ad sets, ads and creatives.</div>
+                <div className="mb-2 text-[14px] text-[#A1A1AA]">Click a campaign to see its ad sets, ads and creatives.</div>
 
                 {filtered.length === 0 ? (
-                  <div className="text-[13px] text-[#A1A1AA] py-6 text-center">No {OBJ_META[objFilter].label.toLowerCase()} campaigns in this period</div>
+                  <div className="text-[15px] text-[#A1A1AA] py-6 text-center">No {OBJ_META[objFilter].label.toLowerCase()} campaigns in this period</div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-[13px] border-collapse">
+                    <table className="w-full text-[15px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Campaign</th>
-                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Objective</th>
-                          <th className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider">Status</th>
+                          <th className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">Campaign</th>
+                          <th className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">Objective</th>
+                          <th className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider">Status</th>
                           {cols.map(col => (
-                            <th key={col.label} className="text-left py-2 px-2 text-[11px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{col.label}</th>
+                            <th key={col.label} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{col.label}</th>
                           ))}
                         </tr>
                       </thead>
@@ -1432,10 +1432,10 @@ export default function MetaPage() {
                                 </div>
                               </td>
                               <td className="py-2.5 px-2">
-                                <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap", objM.badge)}>{objM.label}</span>
+                                <span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap", objM.badge)}>{objM.label}</span>
                               </td>
                               <td className="py-2.5 px-2">
-                                <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
+                                <span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold", statusBadge(c.status))}>{c.status}</span>
                               </td>
                               {cols.map(col => (
                                 <td key={col.label} className="py-2.5 px-2">{col.render(c)}</td>
@@ -1450,7 +1450,7 @@ export default function MetaPage() {
               </>
             )}
 
-            <div className="mt-3 text-[12px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
+            <div className="mt-3 text-[14px] text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">
               {data.adAccountName} · Live from Meta Ads Manager
             </div>
           </Card>
