@@ -13,7 +13,7 @@ import {
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, ChevronDown, UserCircle,
   X, ShieldCheck, CreditCard, Plus,
-  FileText, TrendingUp, BarChart3, DollarSign, Sparkles, HelpCircle, FilePlus,
+  FileText, TrendingUp, BarChart3, DollarSign, HelpCircle, FilePlus,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
@@ -84,13 +84,12 @@ const navSections: NavSection[] = [
   },
   {
     label: "Reports",
-    tooltip: "Full business reports — SEO, Performance Marketing, Meta Ads, Traffic, Financial P&L, and AI-generated insights on what's working.",
+    tooltip: "Full business reports — Custom Report, SEO, Performance Marketing, and Financial P&L.",
     items: [
       { href: "/dashboard/reports/builder", label: "Custom Report", icon: FilePlus, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/reports/seo", label: "SEO Report", icon: FileText, badge: null, dot: "google_gsc" },
       { href: "/dashboard/reports/performance", label: "Performance Marketing", icon: TrendingUp, badge: null, dot: null },
       { href: "/dashboard/reports/financial", label: "Financial P&L", icon: DollarSign, badge: null, dot: null },
-      { href: "/dashboard/reports/insights", label: "AI Insights", icon: Sparkles, badge: { text: "AI", color: "orange" }, dot: null },
     ],
   },
   {
