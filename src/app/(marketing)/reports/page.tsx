@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Target, Search, TrendingUp, DollarSign, Users, Map, Zap, Calendar, ShoppingBag } from "lucide-react";
+import { BarChart2, Target, Search, TrendingUp, DollarSign, Users, Map, Zap, Calendar, ShoppingBag, Trophy, FileText } from "lucide-react";
 
 export const metadata = { title: "Reports — Skylitee" };
 
@@ -13,6 +13,17 @@ const reports = [
       { label: "Top Product", value: "Shirt #3", color: "#96BF48" },
       { label: "COD Rate", value: "62%", color: "#F97316" },
       { label: "Refund Rate", value: "4.1%", color: "#EF4444" },
+    ],
+  },
+  {
+    icon: BarChart2,
+    title: "Sales Analysis",
+    desc: "Store vs Meta vs Google vs Organic — by day, week or month. Blended ROAS, weekday-vs-weekend, and best day to sell.",
+    tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
+    mockup: [
+      { label: "Blended ROAS", value: "3.1×", color: "#22C55E" },
+      { label: "Best day", value: "Saturday", color: "#F97316" },
+      { label: "Organic share", value: "21%", color: "#3B82F6" },
     ],
   },
   {
@@ -123,6 +134,28 @@ const reports = [
       { label: "Revenue goal", value: "72% done", color: "#F97316" },
       { label: "ROAS goal", value: "✓ Hit", color: "#22C55E" },
       { label: "Days left", value: "11 days", color: "#3B82F6" },
+    ],
+  },
+  {
+    icon: Trophy,
+    title: "Benchmarking",
+    desc: "Your live metrics vs Indian D2C category averages — ROAS, CAC, CPM, AOV, COD and repeat rate — with a 90-day roadmap from your gaps.",
+    tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
+    mockup: [
+      { label: "Your ROAS", value: "Top 30%", color: "#22C55E" },
+      { label: "COD ratio", value: "Below avg", color: "#EF4444" },
+      { label: "AOV rank", value: "Above avg", color: "#3B82F6" },
+    ],
+  },
+  {
+    icon: FileText,
+    title: "Custom Report Builder",
+    desc: "Pick the blocks you want, set a date range, add your logo and client name, and export a white-label PDF in seconds. Save templates to reuse.",
+    tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
+    mockup: [
+      { label: "Output", value: "Branded PDF", color: "#F97316" },
+      { label: "White-label", value: "Logo + name", color: "#8B5CF6" },
+      { label: "Templates", value: "Reusable", color: "#22C55E" },
     ],
   },
 ];

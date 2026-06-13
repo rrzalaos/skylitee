@@ -4,18 +4,18 @@ import { Check, Zap } from "lucide-react";
 export const metadata = { title: "Pricing — Skylitee" };
 
 const features = [
-  "Shopify sales, orders & revenue dashboard",
-  "Meta Ads — ROAS, CAC, CTR, spend & creatives",
-  "Google Search Console & Analytics 4",
-  "AI Insights & Chat assistant",
-  "Cohort retention analysis",
-  "Financial P&L calculator",
-  "Goals tracker with live pace",
-  "Geo, customer segments & anomaly alerts",
-  "Attribution dashboard",
-  "Weekly performance digest",
-  "12+ reports across all platforms",
-  "Dark & light mode",
+  "Shopify sales, COD-cash & Sales Analysis",
+  "Objective-aware Meta — Sales / Leads / Traffic / Awareness",
+  "Creative Studio — 0–100 scoring & fatigue detection",
+  "Placement, age, gender, time & device winners",
+  "Google Search Console & Analytics 4 + attribution",
+  "True net profit & break-even ROAS (P&L)",
+  "Live benchmarking vs D2C category",
+  "AI insights, chat & priority actions",
+  "White-label custom PDF reports",
+  "Cohort retention, geo & customer intelligence",
+  "Goals tracker, anomaly alerts & weekly digest",
+  "12+ reports across all platforms · dark & light mode",
 ];
 
 const faqs = [

@@ -89,42 +89,56 @@ const features = [
     tag: "Shopify",
     tagColor: "#96BF48",
     title: "See everything happening in your store — in real time",
-    desc: "Revenue, orders, AOV, top products, customer segments, geo breakdown and cohort retention. All updated live, no exports needed.",
-    items: ["Daily revenue vs last period", "Top products & SKU performance", "Customer LTV & retention cohorts", "City and state breakdown"],
+    desc: "Revenue, orders, AOV, dead-stock & stockout alerts, customer LTV, cohorts and geo — plus the number Shopify never shows you: real cash collected after COD.",
+    items: ["Sales by day/week/month vs last period", "Top products + dead stock & stockout risk", "Customer LTV, repeat rate & retention cohorts", "COD vs prepaid — real cash, not just gross"],
     icon: ShoppingBag,
     mockupLines: [
       { label: "Today's Revenue", value: "₹1,24,850", change: "+22%", color: "#F97316" },
-      { label: "Orders", value: "94", change: "+8", color: "#22C55E" },
+      { label: "Real cash (prepaid)", value: "₹74,910", change: "40% COD pending", color: "#22C55E" },
       { label: "AOV", value: "₹1,328", change: "-2%", color: "#EF4444" },
-      { label: "New Customers", value: "61", change: "+31%", color: "#3B82F6" },
+      { label: "Repeat rate", value: "26%", change: "+3% MoM", color: "#3B82F6" },
     ],
   },
   {
     tag: "Meta Ads",
     tagColor: "#1877F2",
-    title: "Stop guessing why your ads aren't working",
-    desc: "Campaign ROAS, CAC, CTR, funnel diagnosis, creative performance, placement analysis and timing reports — built for D2C brands that run Meta.",
-    items: ["ROAS & CAC per campaign", "Rule-based funnel diagnosis", "Creative thumb-stop ratio", "Best hours & days to spend"],
+    title: "Judge every campaign on the goal it was built for",
+    desc: "Sales on ROAS, Leads on cost-per-lead, Awareness on CPM, Traffic on cost-per-visit — never one blended number. Plus a Creative Studio that scores every ad and a per-ad fix list.",
+    items: ["Objective-aware scoring — Sales / Leads / Traffic / Awareness", "Creative Studio: 0–100 score + fatigue detection", "Winners by placement, age, gender, time & device", "Per-ad “what to fix” — not just the numbers"],
     icon: Target,
     mockupLines: [
-      { label: "Total Spend", value: "₹28,400", change: "7 campaigns", color: "#3B82F6" },
-      { label: "ROAS", value: "4.1×", change: "vs 3.2× last week", color: "#22C55E" },
-      { label: "CTR", value: "2.8%", change: "+0.4%", color: "#F97316" },
-      { label: "CAC", value: "₹312", change: "-₹28", color: "#8B5CF6" },
+      { label: "Sales ROAS", value: "4.1×", change: "above 2.4× break-even", color: "#22C55E" },
+      { label: "Leads · Cost/Lead", value: "₹93", change: "31% WhatsApp", color: "#F97316" },
+      { label: "Best creative", value: "Score 82", change: "Scale ↑", color: "#8B5CF6" },
+      { label: "Fatigue risk", value: "2 ads", change: "freq ≥ 2.5", color: "#EF4444" },
     ],
   },
   {
     tag: "Google",
     tagColor: "#EA4335",
     title: "GSC + GA4 in one view — not two tabs",
-    desc: "Search Console keywords, GA4 traffic channels, ecommerce funnel, landing page performance, audience and geo data — unified.",
-    items: ["Top keywords & rankings", "GA4 traffic by channel", "View → ATC → purchase funnel", "Landing page performance"],
+    desc: "Search rankings, branded vs non-branded demand, GA4 traffic channels, the on-site funnel and which landing pages actually convert — unified with your store revenue.",
+    items: ["Top keywords, rankings & near-page-1 wins", "Branded vs non-branded demand split", "View → ATC → checkout → purchase funnel", "Channel attribution: paid vs organic vs direct"],
     icon: Search,
     mockupLines: [
       { label: "GSC Clicks", value: "1,842", change: "+340 this week", color: "#EA4335" },
+      { label: "Near page 1", value: "6 keywords", change: "one push away", color: "#F9AB00" },
       { label: "Sessions", value: "4,210", change: "+18%", color: "#3B82F6" },
-      { label: "Top Keyword", value: "#3 ranking", change: "custom t-shirts", color: "#F9AB00" },
-      { label: "Organic Revenue", value: "₹68K", change: "via GA4", color: "#22C55E" },
+      { label: "Organic revenue", value: "₹68K", change: "21% of total", color: "#22C55E" },
+    ],
+  },
+  {
+    tag: "Intelligence",
+    tagColor: "#F97316",
+    title: "It doesn't just report — it tells you what to do",
+    desc: "True net profit after COGS, RTO, COD and gateway fees. Blended ROAS across every channel. Live benchmarks vs your category. AI priority actions ranked by rupee impact. White-label PDF reports for clients.",
+    items: ["True net profit & break-even ROAS (not just revenue)", "Blended ROAS across Meta + Google + organic", "Live benchmarking vs D2C category averages", "AI actions ranked by ₹ impact + white-label reports"],
+    icon: TrendingUp,
+    mockupLines: [
+      { label: "Net Profit", value: "₹68,400", change: "13% margin", color: "#22C55E" },
+      { label: "Break-even ROAS", value: "2.4×", change: "from your costs", color: "#F97316" },
+      { label: "Blended ROAS", value: "3.1×", change: "all channels", color: "#3B82F6" },
+      { label: "RTO loss", value: "₹8,200", change: "fixable", color: "#EF4444" },
     ],
   },
 ];
@@ -167,7 +181,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-[18px] sm:text-[19px] text-[#A1A1AA] leading-relaxed mb-8 max-w-md">
-                Skylitee connects Shopify, Meta Ads and Google into one clean dashboard. Built for D2C brand owners who want answers, not more tabs.
+                Skylitee unifies Shopify, Meta Ads and Google into one live dashboard — then tells you what&apos;s working, what&apos;s broken, and exactly what to do next. Built for D2C founders who want answers, not more tabs.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-10">
                 <Link href="/install"
@@ -352,7 +366,7 @@ export default function HomePage() {
             </div>
             <div className="text-[15px] text-[#22C55E] font-semibold mb-6">14-day free trial — no credit card</div>
             <ul className="text-left space-y-2.5 mb-6">
-              {["Shopify full analytics", "Meta Ads dashboard", "Google GSC + GA4", "AI Insights & Chat", "Cohort retention & P&L"].map(feat => (
+              {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
                 <li key={feat} className="flex items-center gap-2.5 text-[16px] text-[#52525B]">
                   <Check size={13} className="text-[#22C55E] shrink-0" /> {feat}
                 </li>
