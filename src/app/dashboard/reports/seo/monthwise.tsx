@@ -23,12 +23,13 @@ function mom(vals: (number | null)[], lowerBetter: boolean) {
   return { pct, better: lowerBetter ? pct < 0 : pct > 0, up: pct >= 0 };
 }
 
-function build<T>(months: T[], defs: { key: string; get: (m: T) => number; fmt: (v: number) => string; lower: boolean; accent?: string }[]): MwRow[] {
+export function buildRows<T>(months: T[], defs: { key: string; get: (m: T) => number; fmt: (v: number) => string; lower: boolean; accent?: string }[]): MwRow[] {
   return defs.map(d => {
     const vals = months.map(d.get) as (number | null)[];
     return { key: d.key, display: vals.map(v => (v == null ? "—" : d.fmt(v))), mom: mom(vals, d.lower), accent: d.accent };
   });
 }
+const build = buildRows;
 
 export function buildGscRows(monthly: MonthlyMonth[]): MwRow[] {
   return build(monthly, [

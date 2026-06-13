@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:sales:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries in the STORE's timezone so totals match the Shopify admin.
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     }));
 
   const result = {
-    kpis: { grossSales: Math.round(grossSales), totalOrders, aov: Math.round(aov), newCustomers, returningCustomers, codOrders, prepaidOrders, avgItemsPerOrder },
+    kpis: { grossSales: Math.round(grossSales), totalOrders, aov: Math.round(aov), newCustomers, returningCustomers, codOrders, prepaidOrders, avgItemsPerOrder, totalItems, distinctSkus: allProducts.length },
     topByQty, topByRevenue, allBySku, topCities, topStates, recentOrders,
     period: { days },
   };
