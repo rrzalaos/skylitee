@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Trophy } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatINR } from "@/lib/utils";
@@ -135,7 +136,7 @@ export default function BenchmarkingPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Competitor Benchmarking</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Trophy size={18} className="text-[#F97316]" /> Competitor Benchmarking</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">
             Your <span className="font-medium text-[#181816]">live</span> store metrics ({range.label}) vs Indian ethnic-wear D2C category reference averages
           </p>

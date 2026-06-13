@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { MapPin } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
@@ -79,7 +80,7 @@ export default function GeoPage() {
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Geo Performance</h2>
+            <h2 className="text-lg font-semibold flex items-center gap-2"><MapPin size={18} className="text-[#F97316]" /> Geo Performance</h2>
             <span className="text-[13px] font-semibold text-[#0d6b4f] bg-[#e0f5ee] px-2 py-0.5 rounded-full">{range.label}</span>
           </div>
           <p className="text-[17px] text-[#686864] mt-0.5">City-level revenue &amp; buyers from Shopify · change the date range up top</p>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { Megaphone } from "lucide-react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis,
   Tooltip as RTooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -205,7 +206,7 @@ function GadsContent() {
       {/* Header + date picker */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-lg font-semibold">Google Ads</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Megaphone size={18} className="text-[#F97316]" /> Google Ads</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">{data.account} · {sym(c)} currency</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

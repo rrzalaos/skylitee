@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Package } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
@@ -100,7 +101,7 @@ export default function ProductsPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Product Analytics</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Package size={18} className="text-[#F97316]" /> Product Analytics</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">Shopify · live inventory & sales · {range.label}</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={products.length === 0} />

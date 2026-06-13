@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { CalendarDays } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WarnBanner } from "@/components/ui/warn-banner";
@@ -155,7 +156,7 @@ export default function WeeklyPage() {
 
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Weekly Digest</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><CalendarDays size={18} className="text-[#F97316]" /> Weekly Digest</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">Week of <span className="font-medium text-[#181816]">{thisW.label}</span> vs previous week · {metaConnected ? "Shopify + Meta live" : "Shopify live"}</p>
         </div>
         <ExportButton onExportCSV={handleCSV} onExportPDF={handlePDF} disabled={loading || !s} />

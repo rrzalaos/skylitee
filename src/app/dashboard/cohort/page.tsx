@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { BarChart2 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsightCard } from "@/components/ui/insight-card";
 import { BarRow } from "@/components/ui/bar-row";
@@ -97,7 +98,7 @@ export default function CohortPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold dark:text-[#F4F4F5]">Cohort Analysis</h2>
+          <h2 className="text-lg font-semibold dark:text-[#F4F4F5] flex items-center gap-2"><BarChart2 size={18} className="text-[#F97316]" /> Cohort Analysis</h2>
           <p className="text-[17px] text-[#686864] dark:text-[#A1A1AA] mt-0.5">
             Customer retention curves by acquisition month — real Shopify data
           </p>
