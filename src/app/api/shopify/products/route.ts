@@ -8,18 +8,22 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
   const { shop, token } = session;
 
-  const cacheKey = `cache:${shop}:products:v2`;
+  const url = new URL(req.url);
+  const fromParam = url.searchParams.get("from");
+  const toParam = url.searchParams.get("to");
+
+  const cacheKey = `cache:${shop}:products:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  // Month-to-date in the store's timezone.
-  const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
+  // Sales window follows the selected date range (in the store's timezone).
+  const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
 
   const [{ products }, orders] = await Promise.all([
     shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
-    fetchOrdersInRange(shop, token, startISO),
+    fetchOrdersInRange(shop, token, startISO, endISO),
   ]);
 
-  // Build sales map from orders
+  // Units + revenue sold per product within the window.
   const salesMap: Record<number, { qty: number; revenue: number }> = {};
   orders.forEach(o => {
     o.line_items.forEach(item => {
@@ -29,16 +33,57 @@ export async function GET(req: NextRequest) {
     });
   });
 
-  const result = products.map(p => {
+  const rows = products.map(p => {
     const stock = p.variants.reduce((s, v) => s + (v.inventory_quantity || 0), 0);
     const price = parseFloat(p.variants[0]?.price || "0");
     const sold = salesMap[p.id]?.qty || 0;
-    const revenue = salesMap[p.id]?.revenue || 0;
-    const signal = stock <= 10 ? "reorder" : sold > 50 ? "bestseller" : sold > 20 ? "good" : "bundle";
-    return { id: p.id, name: p.title, total: sold, revenue: Math.round(revenue), stock, price, signal };
+    const revenue = Math.round(salesMap[p.id]?.revenue || 0);
+    const soldPerDay = days > 0 ? +(sold / days).toFixed(2) : 0;
+    const daysLeft = soldPerDay > 0 ? Math.round(stock / soldPerDay) : null;
+    let signal: "oos" | "reorder" | "bestseller" | "good" | "dead" | "bundle";
+    if (stock <= 0) signal = "oos";
+    else if (sold === 0) signal = "dead";                       // capital locked, no movement in window
+    else if (daysLeft !== null && daysLeft <= 15) signal = "reorder";
+    else if (sold >= 10) signal = "bestseller";
+    else if (sold > 0) signal = "good";
+    else signal = "bundle";
+    return { id: p.id, name: p.title, total: sold, revenue, stock, price, soldPerDay, daysLeft, signal };
   }).sort((a, b) => b.revenue - a.revenue);
 
-  const response = { products: result };
+  // ── Aggregate inventory intelligence ──
+  const withSales = rows.filter(p => p.total > 0);
+  const periodRevenue = rows.reduce((s, p) => s + p.revenue, 0);
+  const unitsSold = rows.reduce((s, p) => s + p.total, 0);
+  const lowStock = rows.filter(p => p.stock > 0 && p.stock <= 10).length;
+  const outOfStock = rows.filter(p => p.stock <= 0).length;
+  const dead = rows.filter(p => p.stock > 0 && p.total === 0);
+  const deadStockValue = Math.round(dead.reduce((s, p) => s + p.stock * p.price, 0));
+  const inventoryUnits = rows.reduce((s, p) => s + Math.max(0, p.stock), 0);
+  const inventoryValue = Math.round(rows.reduce((s, p) => s + Math.max(0, p.stock) * p.price, 0));
+  // Bestsellers that are now out of stock = lost sales.
+  const oosBestsellers = [...withSales].sort((a, b) => b.total - a.total).filter(p => p.stock <= 0).slice(0, 5);
+  const bestSeller = [...withSales].sort((a, b) => b.total - a.total)[0] ?? null;   // by units
+  const bestEarner = withSales[0] ?? null;                                          // by revenue (rows already sorted)
+
+  const response = {
+    products: rows,
+    stats: {
+      totalProducts: rows.length,
+      withSales: withSales.length,
+      unitsSold,
+      periodRevenue,
+      lowStock,
+      outOfStock,
+      deadStockCount: dead.length,
+      deadStockValue,
+      inventoryUnits,
+      inventoryValue,
+      oosBestsellers,
+      bestSeller: bestSeller ? { name: bestSeller.name, total: bestSeller.total, revenue: bestSeller.revenue } : null,
+      bestEarner: bestEarner ? { name: bestEarner.name, revenue: bestEarner.revenue, total: bestEarner.total } : null,
+    },
+    period: { from: startISO, to: endISO, days },
+  };
   kv.set(cacheKey, response, { ex: 900 }).catch(() => {});
   return NextResponse.json(response);
 }
