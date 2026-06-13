@@ -469,10 +469,17 @@ export default function CommandCenterPage() {
           {sales.count > 0 && (
             <Card>
               <CardHeader title={<span className="flex items-center gap-1.5"><ShoppingCart size={14} className="text-[#EA580C]" /> Sales objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{sales.count} campaign{sales.count > 1 ? "s" : ""} · {formatINR(sales.spend)}</span>} />
-              <div className="grid grid-cols-3 gap-2">
-                <div><div className="text-[11px] text-[#A1A1AA]">ROAS</div><div className={cn("text-[18px] font-black", econ?.breakEvenRoas ? (sales.roas >= econ.breakEvenRoas ? "text-[#16A34A]" : "text-[#EF4444]") : "text-[#18181B] dark:text-[#F4F4F5]")}>{sales.roas}x</div><div className="text-[10px] text-[#A1A1AA]">{econ?.breakEvenRoas ? `break-even ${econ.breakEvenRoas}x` : "set costs for break-even"}</div></div>
-                <div><div className="text-[11px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
-                <div><div className="text-[11px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
+              <div className="flex items-center gap-4">
+                <div className="shrink-0">
+                  <Gauge
+                    value={Math.min(100, (sales.roas / (econ?.breakEvenRoas ? econ.breakEvenRoas * 2 : 4)) * 100)}
+                    color={econ?.breakEvenRoas ? (sales.roas >= econ.breakEvenRoas ? "#22C55E" : "#EF4444") : "#F97316"}
+                    centerValue={`${sales.roas}x`} centerLabel={econ?.breakEvenRoas ? `break-even ${econ.breakEvenRoas}x` : "ROAS"} size={120} />
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <div><div className="text-[11px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
+                  <div><div className="text-[11px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
+                </div>
               </div>
               <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
                 {econ?.breakEvenRoas && sales.roas >= econ.breakEvenRoas ? `Profitable — acquiring at ${formatINR(blendedCAC)} vs ~${formatINR(ltvEst)} LTV. Room to scale.` : econ?.breakEvenRoas ? `Below break-even (${econ.breakEvenRoas}x) — fix funnel/creative before scaling.` : "Add your costs (Financial P&L) to see real break-even ROAS & profit."}
@@ -482,9 +489,11 @@ export default function CommandCenterPage() {
           {leadsB.count > 0 && (
             <Card>
               <CardHeader title={<span className="flex items-center gap-1.5"><Target size={14} className="text-[#15803D]" /> Leads objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{leadsB.count} campaign{leadsB.count > 1 ? "s" : ""} · {formatINR(leadsB.spend)}</span>} />
-              <div className="grid grid-cols-3 gap-2">
-                <div><div className="text-[11px] text-[#A1A1AA]">Leads</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(leadsB.cpl)}/lead</div></div>
-                <div><div className="text-[11px] text-[#A1A1AA]">WhatsApp vs form</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{waPct}%</div><div className="text-[10px] text-[#A1A1AA]">{waLeads} chat · {formLeads} form</div></div>
+              <Donut
+                segments={[{ label: "WhatsApp / chat", value: waLeads, color: "#22C55E" }, { label: "Form leads", value: formLeads, color: "#3B82F6" }]}
+                centerValue={String(totalLeads)} centerLabel="leads" size={120} />
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <div><div className="text-[11px] text-[#A1A1AA]">Cost / Lead</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">{leadsB.leads} leads</div></div>
                 <div><div className="text-[11px] text-[#A1A1AA]">Pipeline (est.)</div><div className="text-[18px] font-black text-[#15803D]">{formatINR(pipelineEst)}</div><div className="text-[10px] text-[#A1A1AA]">{totalLeads}×{Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV</div></div>
               </div>
               <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
