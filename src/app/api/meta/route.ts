@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session";
-import { resolveMetaAccount, leadCount, leadBreakdown } from "@/lib/meta";
+import { resolveMetaAccount, leadCount, leadBreakdown, leadChannels } from "@/lib/meta";
 
 type ActionEntry = { action_type: string; value: string };
 
@@ -116,6 +116,7 @@ export async function GET(req: NextRequest) {
   );
   const videoViews3s = actInt(o?.actions, "video_view");
   const leads = leadCount(o?.actions);
+  const leadsByType = leadChannels(o?.actions);
 
   const atcValue = Math.max(
     actVal(o?.action_values, "offsite_conversion.fb_pixel_add_to_cart"),
@@ -207,7 +208,7 @@ export async function GET(req: NextRequest) {
     period: { from, to },
     kpis: {
       spend: +spend.toFixed(2), roas, cac, purchases, purchaseValue: +purchaseValue.toFixed(2),
-      leads, costPerLead,
+      leads, costPerLead, leadsByType,
       impressions, reach: parseInt(o?.reach ?? "0"),
       frequency: +parseFloat(o?.frequency ?? "0").toFixed(2),
       cpm: +parseFloat(o?.cpm ?? "0").toFixed(2),

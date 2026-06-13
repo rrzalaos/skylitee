@@ -1,0 +1,105 @@
+Skylitee — Complete Page Inventory
+🧭 OVERVIEW & AI
+Command Center — /dashboard
+
+Source: Shopify, Meta, GSC, GA4, Google Ads (all, with comparison period)
+6 cross-channel KPIs (Monthly Sales, Blended ROAS, Orders, AOV, Total Ad Spend, + context card) with % vs previous period · Revenue-vs-Ad-Spend chart + forecast strip · Channel Performance panel (per-platform stats) · Alerts & Signals · Key Insights (live benchmark callouts) · Quick Actions tiles
+AI Insights — /dashboard/insights
+
+Source: Shopify only, current month (ignores date range)
+Store snapshot (revenue, projected, orders, AOV, COD%, repeat rate) · Month-end forecast · Claude-written narrative insight cards
+AI Assistant — /dashboard/chat
+
+Source: Shopify + Meta context; POST /api/chat
+Chat thread + suggestion chips · "What I can analyse" question lists · Live store signals
+Anomaly Feed — /dashboard/anomaly
+
+Source: Shopify only, this month
+Critical / Warnings / Positive signal cards · Store summary (orders, COD ratio, repeat rate, projected)
+🛒 SALES & STORE
+Sales Report — /dashboard/sales
+
+Source: Shopify + Meta + GA4 · CSV/PDF export
+5 KPIs (Gross Sales, Orders, AOV, ROAS, CAC) · Channel Attribution · Payment Split (COD/prepaid) · Top products (qty & revenue) · Conversion funnel · Top cities/states · SKU performance table · Recent orders
+Monthly Goals — /dashboard/goals
+
+Source: Shopify + Meta (this vs last month); goals saved in browser localStorage
+Month progress gauge · Last-month baseline · Goal-setting inputs · Pace tracker (projected vs target) · Goal history
+Product Analytics — /dashboard/products
+
+Source: Shopify, this month · CSV/PDF export
+4 KPIs (Total products, Best seller, Orders, Low stock) · Revenue by product · Inventory & demand forecast (days-left, reorder/bundle signals)
+👥 CUSTOMERS
+Customer Intel — /dashboard/customers
+
+Source: Shopify (all-time + by-period toggle) · CSV/PDF
+KPIs (Total customers, Avg LTV, Repeat rate, New) / period variant · Customer segments · AI actions · Top cities by customers
+Cohort Analysis — /dashboard/cohort
+
+Source: Shopify (all-time, ignores date range)
+Retention cohort matrix (Month 0–5) · Retention insights · Revenue by cohort
+Geo Performance — /dashboard/geo
+
+Source: Shopify (revenue + buyers by city)
+KPIs (Top city, cities count, top-city share, buyers) · City performance table · Revenue by city · Geo AI insights
+📣 META ADS
+Meta Campaigns — /dashboard/meta
+
+Source: /api/meta + drill-down
+Performance by Objective scorecards · objective-focused KPI views · Reach/Click/Funnel/Video cards · Daily chart · What's Working diagnosis · Campaigns table with Campaign→Ad Set→Ad→Creative drill-down + creative previews
+Ads Placement — /dashboard/placement
+
+Source: /api/meta/placement
+5 tabs (Placement, Age, Gender, Time of Day, Device) · Winner headline banners · What's Working · Spend/ROAS charts · full breakdown tables
+Creative Studio — /dashboard/creative
+
+Source: /api/meta/ads
+Creative cards with media + 0–100 Creative Score + Scale/Keep/Refresh/Pause signals · fatigue detection · full-preview modal · score explainer
+Time Intelligence — /dashboard/timing
+
+Source: /api/meta/timing
+Peak hour / best day KPIs · Spend-by-hour & ROAS-by-day charts · day-parting insights · hourly table
+🔍 GOOGLE
+Search Console — /dashboard/gsc
+
+Source: /api/gsc
+Tabs (Overview/Keywords/Pages/Devices/Countries/Sitemap) · KPIs (Clicks, Impressions, CTR, Position) · health cards · keyword/page tables · sitemap status
+Analytics GA4 — /dashboard/ga4
+
+Source: /api/ga4
+Tabs (Overview/Traffic/Ecommerce/Audience/Geo/Landing) · KPIs · channels · ecommerce funnel · new-vs-returning · geo · landing pages
+Google Ads — /dashboard/gads
+
+Source: /api/google/ads (own date picker)
+KPIs, daily chart, campaigns & keywords tables — currently shows the "test token — data pending" blocked state (awaiting Google API approval)
+📊 OTHER ANALYTICS
+Attribution — /dashboard/attribution
+
+Source: Meta + GA4 + Shopify
+Revenue/Meta/Organic/ROAS KPIs · channel breakdown (GA4) · paid vs organic · cross-platform funnel · campaign attribution · pixel detail
+Financial P&L — /dashboard/financial
+
+Source: Shopify + Meta; you input costs (COGS, shipping, RTO, overheads, fees — saved in browser)
+Full P&L statement (money in → fulfilment costs → marketing → overheads → net profit) · margin summary · "where your ₹100 goes" · per-order economics
+Benchmarking — /dashboard/benchmarking
+
+Source: ⚠️ 100% mock/static data (not your real numbers)
+Your store vs category averages table · hardcoded 90-day roadmap
+Weekly Digest — /dashboard/weekly
+
+Source: Shopify + Meta (this vs last week)
+Headline · week-vs-week tiles · campaigns this week · action items · next-week forecast
+📄 REPORTS (print/export-styled, benchmark + signal layout)
+Report	Source	Note
+Custom Report /reports/builder	All (you pick)	The new white-label PDF builder
+SEO /reports/seo	GSC	Print version of GSC dashboard
+Performance Marketing /reports/performance	Shopify+Meta+GA4	Composite (no dashboard twin)
+Meta Ads /reports/meta	Meta	Print version of Meta dashboard
+Traffic /reports/traffic	GA4	Print version of GA4 dashboard
+Financial P&L /reports/financial	Shopify+Meta	Revenue-vs-spend (COGS disclaimed)
+AI Insights /reports/insights	All + Claude	Scored, on-demand multi-platform report
+⚙️ ACCOUNT & ADMIN
+Profile & Account /dashboard/profile — Personal info, Password & Security, Brand Identity, Target Audience, Business & Contact details
+Connections /dashboard/connections — Connect/disconnect Shopify, Meta (account select), GSC (site), GA4 (property), Google Ads
+Pricing /dashboard/pricing — Plan, subscribe, redeem access code
+Admin Panel /dashboard/admin (owner only) — Overview, Stores, Users, Analytics, Access Codes tabs

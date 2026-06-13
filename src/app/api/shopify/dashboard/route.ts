@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:dashboard:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:dashboard:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries + day buckets in the STORE's timezone so totals & the daily chart
@@ -30,8 +30,15 @@ export async function GET(req: NextRequest) {
   const newCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) === 1).length;
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
 
-  const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
+  const isCod = (o: typeof orders[number]) => {
+    const gw = o.payment_gateway?.toLowerCase() ?? "";
+    return gw.includes("cod") || gw.includes("cash");
+  };
+  const codOrders = orders.filter(isCod).length;
   const prepaidOrders = totalOrders - codOrders;
+  // Cash split: prepaid is collected up front; COD is pending-on-delivery (and RTO-risk).
+  const codRevenue = orders.filter(isCod).reduce((s, o) => s + orderRevenue(o), 0);
+  const prepaidRevenue = grossSales - codRevenue;
 
   const totalDiscounts = orders.reduce((s, o) => s + parseFloat(o.total_discounts ?? "0"), 0);
   // Money actually refunded = original total − current (refund/edit-adjusted) total.
@@ -73,6 +80,8 @@ export async function GET(req: NextRequest) {
       returningCustomers,
       codOrders,
       prepaidOrders,
+      codRevenue: Math.round(codRevenue),
+      prepaidRevenue: Math.round(prepaidRevenue),
       totalDiscounts: Math.round(totalDiscounts),
       refundedRevenue: Math.round(refundedRevenue),
     },

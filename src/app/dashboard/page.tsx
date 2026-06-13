@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import { KPICard } from "@/components/ui/kpi-card";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { formatINR } from "@/lib/utils";
 import {
@@ -8,147 +8,219 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
-  AlertCircle, AlertTriangle, CheckCircle2, TrendingUp,
+  AlertCircle, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown,
   ShoppingCart, Share2, Search, Plug, MessageSquareText, Layout,
-  Zap, RefreshCw,
+  Zap, RefreshCw, Target, Megaphone, Eye, MousePointerClick, Send, ArrowRight, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-interface ShopData {
-  shop: string;
-  kpis: { grossSales: number; totalOrders: number; aov: number; newCustomers: number; returningCustomers: number; codOrders: number; prepaidOrders: number };
-  dailyRevenue: { day: string; revenue: number }[];
-  topCities: { city: string; revenue: number }[];
-  period: { days: number };
+interface ShopKpis {
+  grossSales: number; totalOrders: number; aov: number; newCustomers: number; returningCustomers: number;
+  codOrders: number; prepaidOrders: number; codRevenue?: number; prepaidRevenue?: number;
+  refundedRevenue?: number; totalDiscounts?: number;
 }
+interface ShopData { shop: string; kpis: ShopKpis; dailyRevenue: { day: string; revenue: number }[]; period: { days: number } }
 interface AnomalyData {
-  critical: { title: string; desc: string }[];
-  warnings: { title: string; desc: string }[];
-  positive: { title: string; desc: string }[];
+  critical: { title: string; desc: string }[]; warnings: { title: string; desc: string }[]; positive: { title: string; desc: string }[];
   summary: { projectedMonthly: number; grossSales: number; totalOrders: number; codPct: number; repeatRate: number };
 }
-interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; clicks: number; ctr: number; impressions: number; frequency: number }
-interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue: number; clicks: number; ctr: number; impressions: number }
+interface LeadsByType { form: number; messaging: number; calls: number }
+interface MetaKPIs {
+  spend: number; roas: number; cac: number; purchases: number; purchaseValue: number; leads: number; costPerLead: number;
+  leadsByType?: LeadsByType; clicks: number; ctr: number; impressions: number; reach: number; frequency: number;
+  lpv: number; atc: number; checkout: number;
+}
+interface MetaCampaign { name: string; status: string; objective: string; spend: number; purchases: number; purchaseValue: number; leads: number; clicks: number; impressions: number; ctr: number; roas: number; frequency: number }
 interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPosition: number }
+interface GscKeyword { query: string; clicks: number; impressions: number; ctr: number; position: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
+interface GadsKPIs { spend: number; roas: number; conversions: number }
+interface CostModel { cogsPerOrder: number; shippingPerOrder: number; rtoRate: number; rtoCostPerOrder: number; gatewayPct: number; codFeePct: number }
 
-/* ─── Helpers ────────────────────────────────────────────────── */
-function signal(type: "roas" | "ctr" | "freq" | "cod", val: number): { label: string; color: string } {
-  if (type === "roas") {
-    if (val >= 3) return { label: "Strong", color: "text-[#22C55E] bg-[#F0FDF4]" };
-    if (val >= 2) return { label: "Average", color: "text-[#EAB308] bg-[#FFFBEB]" };
-    return { label: "Low", color: "text-[#EF4444] bg-[#FEF2F2]" };
-  }
-  if (type === "ctr") {
-    if (val >= 1.5) return { label: "Above avg", color: "text-[#22C55E] bg-[#F0FDF4]" };
-    if (val >= 0.9) return { label: "Average", color: "text-[#EAB308] bg-[#FFFBEB]" };
-    return { label: "Below avg", color: "text-[#EF4444] bg-[#FEF2F2]" };
-  }
-  if (type === "cod") {
-    if (val > 60) return { label: `${val}% COD — High`, color: "text-[#EF4444] bg-[#FEF2F2]" };
-    if (val > 40) return { label: `${val}% COD — Monitor`, color: "text-[#EAB308] bg-[#FFFBEB]" };
-    return { label: `${val}% COD — Healthy`, color: "text-[#22C55E] bg-[#F0FDF4]" };
-  }
-  return { label: "", color: "" };
+const ASSUMED_LEAD_CONV = 0.12; // industry-rough lead→order rate; labelled "est." wherever used
+
+/* ─── Objective helpers ──────────────────────────────────────── */
+type Obj = "SALES" | "LEADS" | "TRAFFIC" | "AWARENESS" | "ENGAGEMENT" | "OTHER";
+function normObj(raw: string): Obj {
+  const r = (raw || "").toUpperCase();
+  if (r.includes("SALES") || r.includes("CONVERSION")) return "SALES";
+  if (r.includes("LEAD")) return "LEADS";
+  if (r.includes("TRAFFIC") || r.includes("LINK_CLICK")) return "TRAFFIC";
+  if (r.includes("AWARENESS") || r.includes("REACH") || r.includes("BRAND") || r.includes("VIDEO")) return "AWARENESS";
+  if (r.includes("ENGAGEMENT")) return "ENGAGEMENT";
+  return "OTHER";
+}
+const OBJ_META: Record<Obj, { label: string; icon: typeof Target; color: string; chip: string }> = {
+  SALES:      { label: "Sales",      icon: ShoppingCart,      color: "#EA580C", chip: "bg-[#FFF7ED] text-[#EA580C]" },
+  LEADS:      { label: "Leads",      icon: Target,            color: "#15803D", chip: "bg-[#F0FDF4] text-[#15803D]" },
+  TRAFFIC:    { label: "Traffic",    icon: MousePointerClick, color: "#1D4ED8", chip: "bg-[#EFF6FF] text-[#1D4ED8]" },
+  AWARENESS:  { label: "Awareness",  icon: Eye,               color: "#7C3AED", chip: "bg-[#F5F3FF] text-[#7C3AED]" },
+  ENGAGEMENT: { label: "Engagement", icon: Megaphone,         color: "#BE185D", chip: "bg-[#FDF2F8] text-[#BE185D]" },
+  OTHER:      { label: "Other",      icon: Share2,            color: "#71717A", chip: "bg-[#F5F5F4] text-[#71717A]" },
+};
+interface Bucket { obj: Obj; count: number; spend: number; purchases: number; purchaseValue: number; leads: number; clicks: number; impressions: number; roas: number; cpl: number; cac: number; ctr: number }
+function bucketFor(camps: MetaCampaign[], obj: Obj): Bucket {
+  const c = camps.filter(x => normObj(x.objective) === obj);
+  const sum = (f: (x: MetaCampaign) => number) => c.reduce((s, x) => s + (f(x) || 0), 0);
+  const spend = sum(x => x.spend), purchaseValue = sum(x => x.purchaseValue), purchases = sum(x => x.purchases);
+  const leads = sum(x => x.leads), clicks = sum(x => x.clicks), impressions = sum(x => x.impressions);
+  return {
+    obj, count: c.length, spend, purchases, purchaseValue, leads, clicks, impressions,
+    roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
+    cpl: leads > 0 ? +(spend / leads).toFixed(0) : 0,
+    cac: purchases > 0 ? +(spend / purchases).toFixed(0) : 0,
+    ctr: impressions > 0 ? +(clicks / impressions * 100).toFixed(2) : 0,
+  };
+}
+
+/* ─── Small stat card with a unique sub-line ─────────────────── */
+function StatCard({ label, value, sub, tone = "neutral" }: { label: string; value: string; sub?: React.ReactNode; tone?: "good" | "bad" | "warn" | "neutral" }) {
+  const valColor = tone === "good" ? "text-[#16A34A]" : tone === "bad" ? "text-[#EF4444]" : tone === "warn" ? "text-[#B45309]" : "text-[#18181B] dark:text-[#F4F4F5]";
+  return (
+    <div className="bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-3">
+      <div className="text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-wide">{label}</div>
+      <div className={cn("text-[22px] font-black mt-0.5 leading-none tabular-nums", valColor)}>{value}</div>
+      {sub && <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 leading-snug">{sub}</div>}
+    </div>
+  );
 }
 
 const quickActions = [
-  { label: "Sales Report", sub: "Revenue, orders, COD vs prepaid", href: "/dashboard/sales", icon: ShoppingCart, color: "bg-[#FFF7ED] text-[#F97316]" },
-  { label: "Meta Campaigns", sub: "Spend, ROAS, funnel analysis", href: "/dashboard/meta", icon: Share2, color: "bg-[#EFF6FF] text-[#1877F2]" },
-  { label: "Search Console", sub: "Keywords, clicks, impressions", href: "/dashboard/gsc", icon: Search, color: "bg-[#F0FDF4] text-[#16A34A]" },
-  { label: "Ads Placement", sub: "Top performing placements", href: "/dashboard/placement", icon: Layout, color: "bg-[#F5F3FF] text-[#7C3AED]" },
-  { label: "AI Assistant", sub: "Ask anything about your store", href: "/dashboard/chat", icon: MessageSquareText, color: "bg-[#FEF2F2] text-[#DC2626]" },
-  { label: "Connections", sub: "Manage platform integrations", href: "/dashboard/connections", icon: Plug, color: "bg-[#F5F5F4] text-[#71717A]" },
+  { label: "Sales Report", href: "/dashboard/sales", icon: ShoppingCart, color: "bg-[#FFF7ED] text-[#F97316]" },
+  { label: "Meta Campaigns", href: "/dashboard/meta", icon: Share2, color: "bg-[#EFF6FF] text-[#1877F2]" },
+  { label: "Creative Studio", href: "/dashboard/creative", icon: Layout, color: "bg-[#F5F3FF] text-[#7C3AED]" },
+  { label: "Search Console", href: "/dashboard/gsc", icon: Search, color: "bg-[#F0FDF4] text-[#16A34A]" },
+  { label: "Financial P&L", href: "/dashboard/financial", icon: TrendingUp, color: "bg-[#FEF2F2] text-[#DC2626]" },
+  { label: "Connections", href: "/dashboard/connections", icon: Plug, color: "bg-[#F5F5F4] text-[#71717A]" },
 ];
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function CommandCenterPage() {
   const { range, compareWith } = useDateRange();
+  const router = useRouter();
 
   const [shop, setShop] = useState<ShopData | null>(null);
   const [compShop, setCompShop] = useState<ShopData | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyData | null>(null);
   const [meta, setMeta] = useState<MetaKPIs | null>(null);
+  const [compMeta, setCompMeta] = useState<MetaKPIs | null>(null);
+  const [campaigns, setCampaigns] = useState<MetaCampaign[]>([]);
   const [metaDaily, setMetaDaily] = useState<{ date: string; spend: number; purchaseValue: number }[]>([]);
   const [gads, setGads] = useState<GadsKPIs | null>(null);
   const [gadsDaily, setGadsDaily] = useState<{ date: string; spend: number }[]>([]);
   const [gsc, setGsc] = useState<GscKPIs | null>(null);
+  const [gscKeywords, setGscKeywords] = useState<GscKeyword[]>([]);
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
   const [connections, setConnections] = useState({ shopify: false, meta: false, gads: false, gsc: false, ga4: false });
+  const [cost, setCost] = useState<CostModel | null>(null);
+  const [salesTarget, setSalesTarget] = useState(0);
+  const [chatQ, setChatQ] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Cost model + goal from the same localStorage the Financial/Goals pages use.
+  useEffect(() => {
+    try {
+      const c = localStorage.getItem("skylitee-pl-inputs");
+      if (c) setCost(JSON.parse(c));
+      const g = localStorage.getItem("skylitee-goals");
+      if (g) setSalesTarget(JSON.parse(g)?.salesTarget ?? 0);
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     setLoading(true);
     const compRange = getComparisonRange(range, compareWith);
-
     Promise.allSettled([
       fetch(`/api/shopify/dashboard?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch("/api/shopify/anomalies").then(r => r.json()),
       compRange ? fetch(`/api/shopify/dashboard?from=${compRange.from}&to=${compRange.to}`).then(r => r.json()) : Promise.resolve(null),
       fetch(`/api/meta?from=${range.from}&to=${range.to}`).then(r => r.json()),
+      compRange ? fetch(`/api/meta?from=${compRange.from}&to=${compRange.to}`).then(r => r.json()) : Promise.resolve(null),
       fetch(`/api/gsc?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/ga4?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/google/ads?from=${range.from}&to=${range.to}`).then(r => r.json()),
     ]).then(results => {
-      const [shopRes, anomRes, compRes, metaRes, gscRes, ga4Res, gadsRes] = results;
-
-      if (shopRes.status === "fulfilled" && !shopRes.value?.error) {
-        setShop(shopRes.value);
-        setConnections(c => ({ ...c, shopify: true }));
-      }
+      const [shopRes, anomRes, compRes, metaRes, compMetaRes, gscRes, ga4Res, gadsRes] = results;
+      if (shopRes.status === "fulfilled" && !shopRes.value?.error) { setShop(shopRes.value); setConnections(c => ({ ...c, shopify: true })); }
       if (anomRes.status === "fulfilled" && !anomRes.value?.error) setAnomalies(anomRes.value);
       if (compRes.status === "fulfilled" && compRes.value && !compRes.value?.error) setCompShop(compRes.value);
       if (metaRes.status === "fulfilled" && !metaRes.value?.error) {
-        setMeta(metaRes.value.kpis ?? null);
-        setMetaDaily(metaRes.value.daily ?? []);
+        setMeta(metaRes.value.kpis ?? null); setMetaDaily(metaRes.value.daily ?? []); setCampaigns(metaRes.value.campaigns ?? []);
         setConnections(c => ({ ...c, meta: true }));
       }
-      if (gscRes.status === "fulfilled" && !gscRes.value?.error) {
-        setGsc(gscRes.value.kpis ?? null);
-        setConnections(c => ({ ...c, gsc: true }));
-      }
-      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) {
-        setGa4(ga4Res.value.kpis ?? null);
-        setConnections(c => ({ ...c, ga4: true }));
-      }
-      if (gadsRes.status === "fulfilled" && !gadsRes.value?.error) {
-        setGads(gadsRes.value.kpis ?? null);
-        setGadsDaily(gadsRes.value.daily ?? []);
-        setConnections(c => ({ ...c, gads: true }));
-      }
+      if (compMetaRes.status === "fulfilled" && compMetaRes.value && !compMetaRes.value?.error) setCompMeta(compMetaRes.value.kpis ?? null);
+      if (gscRes.status === "fulfilled" && !gscRes.value?.error) { setGsc(gscRes.value.kpis ?? null); setGscKeywords(gscRes.value.keywords ?? []); setConnections(c => ({ ...c, gsc: true })); }
+      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) { setGa4(ga4Res.value.kpis ?? null); setConnections(c => ({ ...c, ga4: true })); }
+      if (gadsRes.status === "fulfilled" && !gadsRes.value?.error) { setGads(gadsRes.value.kpis ?? null); setGadsDaily(gadsRes.value.daily ?? []); setConnections(c => ({ ...c, gads: true })); }
     }).finally(() => setLoading(false));
   }, [range.from, range.to, compareWith]);
 
-  /* ── Derived values ── */
+  /* ── Derived ── */
   const shopName = shop?.shop?.replace(".myshopify.com", "") ?? "";
   const days = shop?.period.days ?? 1;
-  const projected = anomalies?.summary.projectedMonthly ?? 0;
-  const codPct = shop ? Math.round((shop.kpis.codOrders / Math.max(shop.kpis.totalOrders, 1)) * 100) : 0;
-  const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev period";
-
-  function pct(curr: number, prev: number | undefined): number | undefined {
-    if (!prev || !compShop) return undefined;
-    return +((curr - prev) / prev * 100).toFixed(1);
-  }
-  function deltaLabel(v: number | undefined) {
-    if (v === undefined) return undefined;
-    return `${v >= 0 ? "+" : ""}${v}% vs ${compLabel}`;
-  }
-
-  const salesChange = pct(shop?.kpis.grossSales ?? 0, compShop?.kpis.grossSales);
-  const ordersChange = pct(shop?.kpis.totalOrders ?? 0, compShop?.kpis.totalOrders);
-  const aovChange = pct(shop?.kpis.aov ?? 0, compShop?.kpis.aov);
-
-  /* ── Blended ad metrics (MER): total store sales vs total ad spend across channels ── */
+  const k = shop?.kpis;
+  const codPct = k ? Math.round((k.codOrders / Math.max(k.totalOrders, 1)) * 100) : 0;
   const totalSpend = (meta?.spend ?? 0) + (gads?.spend ?? 0);
-  const totalSales = shop?.kpis.grossSales ?? 0;
-  const blendedRoas = totalSpend > 0 ? +(totalSales / totalSpend).toFixed(2) : 0;
-  const hasSpend = !!(meta || gads);
+  const liveCount = [connections.shopify, connections.meta, connections.gsc, connections.ga4, connections.gads].filter(Boolean).length;
+  const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev";
 
-  /* ── Combined chart data ── */
+  const pct = (curr: number, prev?: number) => (!prev ? undefined : +((curr - prev) / prev * 100).toFixed(0));
+  const salesChange = pct(k?.grossSales ?? 0, compShop?.kpis.grossSales);
+  const ordersChange = pct(k?.totalOrders ?? 0, compShop?.kpis.totalOrders);
+  const spendChange = pct(meta?.spend ?? 0, compMeta?.spend);
+
+  // Objective buckets (judge each by its own KPI)
+  const sales = useMemo(() => bucketFor(campaigns, "SALES"), [campaigns]);
+  const leadsB = useMemo(() => bucketFor(campaigns, "LEADS"), [campaigns]);
+  const awareness = useMemo(() => bucketFor(campaigns, "AWARENESS"), [campaigns]);
+  const traffic = useMemo(() => bucketFor(campaigns, "TRAFFIC"), [campaigns]);
+  const activeObjs = useMemo(() => (["SALES", "LEADS", "TRAFFIC", "AWARENESS", "ENGAGEMENT", "OTHER"] as Obj[])
+    .map(o => bucketFor(campaigns, o)).filter(b => b.count > 0 && b.spend > 0), [campaigns]);
+
+  // COD-adjusted cash
+  const prepaidRev = k?.prepaidRevenue ?? (k ? Math.round(k.aov * k.prepaidOrders) : 0);
+  const codRev = k?.codRevenue ?? (k ? Math.round(k.aov * k.codOrders) : 0);
+
+  // Break-even ROAS + unit economics from the saved cost model
+  const econ = useMemo(() => {
+    if (!k || !cost || k.aov <= 0) return null;
+    const feePct = (codPct / 100) * (cost.codFeePct / 100) + (1 - codPct / 100) * (cost.gatewayPct / 100);
+    const rtoPerOrder = (codPct / 100) * (cost.rtoRate / 100) * cost.rtoCostPerOrder;
+    const contribution = k.aov - cost.cogsPerOrder - cost.shippingPerOrder - (k.aov * feePct) - rtoPerOrder;
+    const margin = contribution / k.aov;
+    const breakEvenRoas = margin > 0 ? +(1 / margin).toFixed(2) : null;
+    return { contribution: Math.round(contribution), margin, breakEvenRoas };
+  }, [k, cost, codPct]);
+  const configured = !!cost && (cost.cogsPerOrder > 0 || cost.shippingPerOrder > 0);
+
+  const blendedCAC = (k?.newCustomers ?? 0) > 0 ? Math.round(totalSpend / k!.newCustomers) : 0;
+  const ltvEst = k ? Math.round(k.aov * 2) : 0; // est. (AOV × 2), consistent with Financial page
+
+  // GSC near-page-1 opportunity
+  const gscOpp = useMemo(() => {
+    const near = gscKeywords.filter(q => q.position > 10 && q.position <= 15 && q.impressions >= 20);
+    const extraClicks = Math.round(near.reduce((s, q) => s + q.impressions * Math.max(0, 0.03 - q.ctr / 100), 0));
+    return { count: near.length, extraClicks };
+  }, [gscKeywords]);
+
+  // Lead mix + pipeline estimate
+  const lt = meta?.leadsByType;
+  const totalLeads = meta?.leads ?? 0;
+  const waLeads = lt?.messaging ?? 0;
+  const formLeads = lt?.form ?? 0;
+  const waPct = totalLeads > 0 ? Math.round((waLeads / totalLeads) * 100) : 0;
+  const pipelineEst = k ? Math.round(totalLeads * ASSUMED_LEAD_CONV * k.aov) : 0;
+
+  // Run-rate / pace
+  const dailyRunRate = k ? Math.round(k.grossSales / Math.max(days, 1)) : 0;
+  const today = new Date();
+  const daysLeftInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate();
+  const neededPerDay = salesTarget > 0 && k ? Math.max(0, Math.round((salesTarget - k.grossSales) / Math.max(daysLeftInMonth, 1))) : 0;
+
+  /* ── Combined chart ── */
   const chartData = useMemo(() => {
     if (!shop) return [];
     return shop.dailyRevenue.map(d => {
@@ -158,39 +230,98 @@ export default function CommandCenterPage() {
     });
   }, [shop, metaDaily, gadsDaily]);
 
-  /* ── Key Insights (computed, no API) ── */
+  /* ── Cross-platform conversion funnel (Meta-centric) + biggest drop ── */
+  const funnel = useMemo(() => {
+    if (!meta) return null;
+    const steps = [
+      { label: "Sessions (GA4)", value: ga4?.sessions ?? 0, show: !!ga4 },
+      { label: "Ad Clicks", value: meta.clicks, show: true },
+      { label: "Landing Page Views", value: meta.lpv, show: meta.lpv > 0 },
+      { label: "Add to Cart", value: meta.atc, show: meta.atc > 0 },
+      { label: "Checkout", value: meta.checkout, show: meta.checkout > 0 },
+      { label: "Orders (Shopify)", value: k?.totalOrders ?? 0, show: !!k },
+    ].filter(s => s.show && s.value >= 0);
+    let worst = { from: "", to: "", dropPct: 0 };
+    for (let i = 1; i < steps.length; i++) {
+      const prev = steps[i - 1].value, cur = steps[i].value;
+      if (prev > 0 && cur <= prev) {
+        const drop = Math.round((1 - cur / prev) * 100);
+        if (drop > worst.dropPct) worst = { from: steps[i - 1].label, to: steps[i].label, dropPct: drop };
+      }
+    }
+    const diag: Record<string, string> = {
+      "Ad Clicks→Landing Page Views": "Clicks aren't loading the page — a site-speed / broken-link problem, not targeting. Your CTR is fine.",
+      "Landing Page Views→Add to Cart": "People land but don't add to cart — the landing page / offer isn't convincing. Fix the page, not the ads.",
+      "Add to Cart→Checkout": "Cart abandons before checkout — likely shipping-cost shock or a clunky cart. Show shipping early.",
+      "Checkout→Orders (Shopify)": "Checkout started but not completed — payment / COD friction. Simplify checkout, offer prepaid incentives.",
+      "Sessions (GA4)→Ad Clicks": "",
+    };
+    const key = `${worst.from}→${worst.to}`;
+    return { steps, worst, diagnosis: diag[key] ?? "" };
+  }, [meta, ga4, k]);
+
+  /* ── Cross-platform alerts ── */
+  const alerts = useMemo(() => {
+    const out: { sev: "danger" | "warning" | "positive"; title: string; body: string }[] = [];
+    if (meta && spendChange !== undefined && spendChange >= 25 && (ordersChange ?? 0) <= 5) {
+      out.push({ sev: "danger", title: `Meta spend up ${spendChange}% but orders flat`, body: "Spend rose sharply without more orders — likely an attribution break (pixel) or a landing-page issue. Check the Meta pixel and your top campaign's landing page." });
+    }
+    if (meta && sales.count > 0 && meta.spend > 0 && meta.purchaseValue === 0) {
+      out.push({ sev: "danger", title: `₹${meta.spend.toLocaleString("en-IN")} spent, ₹0 tracked revenue`, body: "A sales campaign is spending but recording no revenue — almost always a broken/ missing purchase pixel. Verify the Meta pixel fires on order confirmation." });
+    }
+    if (codPct > 60 && k) out.push({ sev: "warning", title: `COD at ${codPct}% — cash & RTO risk`, body: `Only ${formatINR(prepaidRev)} is collected up front; ${formatINR(codRev)} is COD (pending + return risk). Offer a ₹75–100 prepaid discount to shift the mix.` });
+    if (meta && meta.frequency >= 3) out.push({ sev: "warning", title: `Ad frequency at ${meta.frequency}x — fatigue incoming`, body: "Audience is seeing the same ads too often; CPM/CPL will rise in 2–3 days. Refresh creative or widen the audience now." });
+    if (anomalies && anomalies.summary.repeatRate < 20 && anomalies.summary.repeatRate > 0) {
+      out.push({ sev: "warning", title: `Repeat rate ${anomalies.summary.repeatRate}% vs 20% benchmark`, body: "Most customers don't come back. Set up a win-back email/WhatsApp flow for past buyers — cheapest revenue you have." });
+    }
+    (anomalies?.critical ?? []).forEach(a => out.push({ sev: "danger", title: a.title, body: a.desc }));
+    return out.sort((a, b) => ({ danger: 0, warning: 1, positive: 2 }[a.sev] - { danger: 0, warning: 1, positive: 2 }[b.sev]));
+  }, [meta, spendChange, ordersChange, sales.count, codPct, k, prepaidRev, codRev, anomalies]);
+
+  /* ── AI insights (computed, sharp) ── */
   const insights = useMemo(() => {
     const list: { type: "positive" | "warning" | "danger"; title: string; body: string }[] = [];
-    // Meta ROAS — vs 2x break-even / 3x good
-    if (meta) {
-      if (meta.roas >= 3.0) list.push({ type: "positive", title: `ROAS ${meta.roas}x — campaigns profitable`, body: "Above the 3x D2C benchmark. Ads are working — scale budget 20–30% on your best campaigns to grow without hurting ROAS." });
-      else if (meta.roas >= 2.0) list.push({ type: "warning", title: `ROAS ${meta.roas}x — okay, below the 3x target`, body: "Past break-even but not strong profit yet. Why: one funnel stage is leaking. Fix the weakest stage on the Meta page and shift budget to top campaigns to reach 3x." });
-      else list.push({ type: "danger", title: `ROAS ${meta.roas}x — below the 2x minimum`, body: "You're not recovering ad spend. Pause the lowest-ROAS campaigns and fix your biggest funnel drop-off before raising budgets." });
+    if (sales.count > 0 && sales.spend > 0) {
+      const be = econ?.breakEvenRoas;
+      if (be && sales.roas >= be) list.push({ type: "positive", title: `Sales ROAS ${sales.roas}x — above your ${be}x break-even`, body: `Every ₹1 on sales ads returns ₹${sales.roas}. You have room to scale — push budget 20–30% on the best campaigns.` });
+      else if (be) list.push({ type: "danger", title: `Sales ROAS ${sales.roas}x — below your ${be}x break-even`, body: `At your margins you need ${be}x just to break even. Pause the lowest-ROAS sales campaigns and fix the biggest funnel drop before scaling.` });
+      else list.push({ type: sales.roas >= 3 ? "positive" : "warning", title: `Sales ROAS ${sales.roas}x`, body: configured ? "" : "Set your costs in Financial P&L to see your real break-even ROAS." });
     }
-    // Search CTR — vs 2–3% average
-    if (gsc) {
-      if (gsc.ctr >= 2.0) list.push({ type: "positive", title: `Search CTR ${gsc.ctr.toFixed(1)}% — healthy`, body: "At/above the 2–3% search average. Your titles and descriptions are pulling clicks. Keep optimising top pages to hold rankings." });
-      else list.push({ type: "warning", title: `Search CTR ${gsc.ctr.toFixed(1)}% — below the 2% average`, body: "People see you in search but don't click. Why: weak title tags / meta descriptions. Rewrite them with the benefit + a reason to click on your highest-impression pages." });
+    if (leadsB.count > 0 && totalLeads > 0 && waPct > 0 && waPct < 50) {
+      list.push({ type: "warning", title: `${100 - waPct}% of leads are forms, ${waPct}% WhatsApp`, body: "WhatsApp/chat leads usually convert higher and drop off less. Shift creative CTAs to click-to-WhatsApp to lift lead quality." });
     }
-    // COD mix — vs return-risk threshold
-    if (shop && shop.kpis.totalOrders > 0) {
-      if (codPct > 55) list.push({ type: "warning", title: `COD at ${codPct}% — return risk`, body: "High COD raises RTO/returns and ties up cash. Why: prepaid isn't incentivised. Offer a ₹75–100 prepaid discount or free shipping on prepaid to shift behaviour." });
-      else if (codPct <= 40) list.push({ type: "positive", title: `COD at ${codPct}% — healthy prepaid mix`, body: "Most orders are prepaid, lowering return risk and improving cash flow. Keep prepaid incentives running." });
-    }
-    // Anomaly feed highlights
-    if (anomalies?.critical?.length) list.push({ type: "danger", title: anomalies.critical[0].title, body: anomalies.critical[0].desc });
-    if (anomalies?.positive?.length) list.push({ type: "positive", title: anomalies.positive[0].title, body: anomalies.positive[0].desc });
-
-    // Show what needs attention first, then what's working
+    if (gscOpp.count >= 2) list.push({ type: "positive", title: `${gscOpp.count} keywords on the cusp of page 1`, body: `Sitting at position 11–15 with demand. One content/link push ≈ +${gscOpp.extraClicks} clicks/period at 3% CTR — the cheapest acquisition you have right now.` });
+    if (k && codPct > 55) list.push({ type: "warning", title: `COD ${codPct}% — real cash is ${formatINR(prepaidRev)}, not ${formatINR(k.grossSales)}`, body: "COD ties up cash and carries RTO risk. A small prepaid incentive shifts behaviour and protects margin." });
     const order = { danger: 0, warning: 1, positive: 2 } as const;
-    list.sort((a, b) => order[a.type] - order[b.type]);
-    return list.slice(0, 5);
-  }, [meta, shop, codPct, anomalies, gsc]);
+    return list.filter(x => x.body).sort((a, b) => order[a.type] - order[b.type]).slice(0, 5);
+  }, [sales, leadsB.count, totalLeads, waPct, gscOpp, k, codPct, prepaidRev, econ, configured]);
 
-  const allAlerts = [...(anomalies?.critical ?? []), ...(anomalies?.warnings ?? [])];
-  const liveCount = [connections.shopify, connections.meta, connections.gsc, connections.ga4].filter(Boolean).length;
+  /* ── Priority actions (₹-ranked) ── */
+  const actions = useMemo(() => {
+    const out: { impact: number; text: string; source: string }[] = [];
+    // Fatigued / losing sales campaigns
+    const losing = campaigns.filter(c => normObj(c.objective) === "SALES" && c.spend > 0 && c.roas > 0 && c.roas < 1);
+    if (losing.length) {
+      const waste = Math.round(losing.reduce((s, c) => s + c.spend, 0));
+      out.push({ impact: waste, text: `Pause ${losing.length} sales campaign${losing.length > 1 ? "s" : ""} running below 1x ROAS (e.g. "${losing[0].name}")`, source: "Meta" });
+    }
+    const fatigued = campaigns.filter(c => c.frequency >= 3.5 && c.spend > 0);
+    if (fatigued.length) out.push({ impact: Math.round(fatigued.reduce((s, c) => s + c.spend, 0) * 0.2), text: `Refresh creative on ${fatigued.length} fatigued campaign${fatigued.length > 1 ? "s" : ""} (freq ≥ 3.5) before CPL rises`, source: "Meta" });
+    // Prepaid shift
+    if (k && codPct > 50 && cost) {
+      const rtoSave = Math.round(k.codOrders * (cost.rtoRate / 100) * cost.rtoCostPerOrder);
+      if (rtoSave > 0) out.push({ impact: rtoSave, text: `Add a ₹75 prepaid discount — at ${codPct}% COD this could save ~${formatINR(rtoSave)} in RTO losses`, source: "Shopify + costs" });
+    }
+    // GSC content
+    if (gscOpp.count >= 2 && k) {
+      const val = Math.round(gscOpp.extraClicks * 0.02 * k.aov);
+      out.push({ impact: val, text: `Improve content/links on ${gscOpp.count} keywords at position 11–15 → est. ${formatINR(val)} from +${gscOpp.extraClicks} organic clicks`, source: "GSC" });
+    }
+    // Lead pipeline / WhatsApp
+    if (leadsB.count > 0 && pipelineEst > 0) out.push({ impact: Math.round(pipelineEst * 0.25), text: `Follow up ${totalLeads} leads fast — est. ${formatINR(pipelineEst)} pipeline (${totalLeads}×${Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV); shift CTAs to WhatsApp to lift conversion`, source: "Meta + Shopify (est.)" });
+    return out.sort((a, b) => b.impact - a.impact).slice(0, 5);
+  }, [campaigns, k, codPct, cost, gscOpp, leadsB.count, pipelineEst, totalLeads]);
 
-  /* ─── Platform status strip ── */
   const platforms = [
     { label: "Shopify", connected: connections.shopify },
     { label: "Meta Ads", connected: connections.meta },
@@ -199,18 +330,20 @@ export default function CommandCenterPage() {
     { label: "Google Ads", connected: connections.gads },
   ];
 
+  function askAI() {
+    if (chatQ.trim()) { try { sessionStorage.setItem("skylitee-chat-prefill", chatQ.trim()); } catch { /* ignore */ } }
+    router.push("/dashboard/chat");
+  }
+
   return (
     <div className="space-y-3">
-
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
             {loading ? (
-              <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1">
-                <RefreshCw size={10} className="animate-spin" /> Loading…
-              </span>
+              <span className="text-[12px] text-[#A1A1AA] flex items-center gap-1"><RefreshCw size={10} className="animate-spin" /> Loading…</span>
             ) : connections.shopify ? (
               <span className="flex items-center gap-1 text-[12px] text-[#EA580C] dark:text-[#FB923C] bg-[#FFF7ED] dark:bg-[#2A1A0E] px-2.5 py-0.5 rounded-full font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" /> Live · {shopName}
@@ -219,16 +352,10 @@ export default function CommandCenterPage() {
           </div>
           <p className="text-[12px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
         </div>
-
-        {/* Platform status pills — hide on mobile */}
         <div className="hidden sm:flex items-center gap-1.5">
           {platforms.map(p => (
-            <div key={p.label} className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border",
-              p.connected
-                ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
-                : "bg-white dark:bg-[#171717] border-black/[0.04] dark:border-white/[0.04] text-[#A1A1AA]"
-            )}>
+            <div key={p.label} className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold border",
+              p.connected ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]" : "bg-white dark:bg-[#171717] border-black/[0.04] dark:border-white/[0.04] text-[#A1A1AA]")}>
               <span className={cn("w-1.5 h-1.5 rounded-full", p.connected ? "bg-[#22C55E]" : "bg-[#D4D4D4] dark:bg-[#525252]")} />
               {p.label}
             </div>
@@ -236,324 +363,266 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
-      {/* ── KPI Row: 6 cross-channel cards ── */}
+      {/* ── SECTION 1: Active Objectives Strip ── */}
+      {activeObjs.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] px-3 py-2.5">
+          <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">You&apos;re running:</span>
+          {activeObjs.map(b => {
+            const m = OBJ_META[b.obj];
+            const result = b.obj === "SALES" ? `${b.roas}x ROAS` : b.obj === "LEADS" ? `${b.leads} leads · ${formatINR(b.cpl)}/lead` : b.obj === "AWARENESS" ? `${(b.impressions / 1000).toFixed(0)}K impressions` : b.obj === "TRAFFIC" ? `${b.clicks.toLocaleString("en-IN")} clicks` : `${formatINR(b.spend)}`;
+            return (
+              <span key={b.obj} className={cn("inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full", m.chip)}>
+                <m.icon size={12} /> {m.label} <span className="opacity-70">· {result}</span>
+              </span>
+            );
+          })}
+          <span className="text-[11px] text-[#A1A1AA] ml-auto hidden md:block">Each objective judged by its own KPI — not one blended number</span>
+        </div>
+      )}
+
+      {/* ── SECTION 2: Objective-aware KPI cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <KPICard
-          label="Monthly Sales"
-          value={shop ? formatINR(shop.kpis.grossSales) : "—"}
-          change={salesChange}
-          changeLabel={deltaLabel(salesChange)}
-        />
-        <KPICard
-          label="Blended ROAS"
-          value={hasSpend ? `${blendedRoas}x` : "—"}
-          change={hasSpend ? (blendedRoas >= 2 ? 1 : -1) : undefined}
-          changeLabel={hasSpend ? signal("roas", blendedRoas).label : undefined}
-        />
-        <KPICard
-          label="Orders"
-          value={shop ? shop.kpis.totalOrders.toString() : "—"}
-          change={ordersChange}
-          changeLabel={deltaLabel(ordersChange)}
-        />
-        <KPICard
-          label="AOV"
-          value={shop ? formatINR(shop.kpis.aov) : "—"}
-          change={aovChange}
-          changeLabel={deltaLabel(aovChange)}
-        />
-        <KPICard
-          label="Total Ad Spend"
-          value={hasSpend ? formatINR(totalSpend) : "—"}
-          change={hasSpend ? (blendedRoas >= 2 ? 1 : -1) : undefined}
-          changeLabel={hasSpend ? `${connections.gads ? "Meta + Google" : "Meta"} · ${blendedRoas}x` : undefined}
-        />
-        <KPICard
-          label={gsc ? "GSC Clicks" : ga4 ? "Sessions" : "New Customers"}
-          value={gsc ? gsc.clicks.toLocaleString("en-IN") : ga4 ? ga4.sessions.toLocaleString("en-IN") : (shop?.kpis.newCustomers.toString() ?? "—")}
-          change={gsc ? (gsc.ctr >= 1.5 ? 1 : -1) : undefined}
-          changeLabel={gsc ? `${gsc.ctr.toFixed(1)}% CTR` : undefined}
-        />
+        <StatCard label="Gross Sales" value={k ? formatINR(k.grossSales) : "—"}
+          sub={k ? <>Avg <b>{formatINR(dailyRunRate)}</b>/day{salesTarget > 0 && <> · need <b className="text-[#EA580C]">{formatINR(neededPerDay)}</b>/day to hit {formatINR(salesTarget)}</>}{salesChange !== undefined && <> · <span className={salesChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{salesChange >= 0 ? "+" : ""}{salesChange}% vs {compLabel}</span></>}</> : undefined} />
+
+        {sales.count > 0 || !leadsB.count ? (
+          <StatCard label="Sales ROAS" value={sales.spend > 0 ? `${sales.roas}x` : "—"}
+            tone={econ?.breakEvenRoas ? (sales.roas >= econ.breakEvenRoas ? "good" : "bad") : (sales.roas >= 3 ? "good" : sales.roas >= 2 ? "warn" : "bad")}
+            sub={sales.spend > 0 ? <>{econ?.breakEvenRoas ? <>break-even <b>{econ.breakEvenRoas}x</b> · </> : ""}{formatINR(sales.spend)} spend → {formatINR(sales.purchaseValue)}</> : "No sales campaigns"} />
+        ) : (
+          <StatCard label="Cost / Lead" value={leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"} tone={leadsB.cpl > 0 && leadsB.cpl <= 200 ? "good" : "warn"}
+            sub={<>{leadsB.leads} leads · {formatINR(leadsB.spend)} spend</>} />
+        )}
+
+        <StatCard label="Orders" value={k ? k.totalOrders.toString() : "—"} tone={codPct > 60 ? "warn" : "neutral"}
+          sub={k ? <>{codPct}% COD · real cash <b>{formatINR(prepaidRev)}</b> not {formatINR(k.grossSales)}{ordersChange !== undefined && <> · <span className={ordersChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{ordersChange >= 0 ? "+" : ""}{ordersChange}%</span></>}</> : undefined} />
+
+        <StatCard label="Total Ad Spend" value={totalSpend > 0 ? formatINR(totalSpend) : "—"}
+          tone={meta && meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? "bad" : "neutral"}
+          sub={meta ? (meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? <span className="text-[#EF4444] font-semibold">₹0 tracked revenue — likely pixel issue</span> : <>{connections.gads ? "Meta + Google" : "Meta"}{spendChange !== undefined && <> · <span className={spendChange > 25 ? "text-[#EF4444]" : "text-[#A1A1AA]"}>{spendChange >= 0 ? "+" : ""}{spendChange}% vs {compLabel}</span></>}</>) : "Connect Meta"} />
+
+        {leadsB.count > 0 ? (
+          <StatCard label="Total Leads" value={totalLeads.toString()}
+            sub={<>{waPct}% WhatsApp · {100 - waPct}% form · est. lead→order {Math.round(ASSUMED_LEAD_CONV * 100)}%</>} />
+        ) : (
+          <StatCard label="AOV" value={k ? formatINR(k.aov) : "—"} sub={k ? <>{k.newCustomers} new · {k.returningCustomers} returning</> : undefined} />
+        )}
+
+        <StatCard label={gsc ? "Search Clicks" : "New Customers"} value={gsc ? gsc.clicks.toLocaleString("en-IN") : (k?.newCustomers.toString() ?? "—")}
+          sub={gsc ? (gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
       </div>
 
-      {/* ── Main: Revenue chart + Channel panel ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      {/* ── SECTION 5: Objective Performance Panels ── */}
+      {(sales.count > 0 || leadsB.count > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {sales.count > 0 && (
+            <Card>
+              <CardHeader title={<span className="flex items-center gap-1.5"><ShoppingCart size={14} className="text-[#EA580C]" /> Sales objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{sales.count} campaign{sales.count > 1 ? "s" : ""} · {formatINR(sales.spend)}</span>} />
+              <div className="grid grid-cols-3 gap-2">
+                <div><div className="text-[11px] text-[#A1A1AA]">ROAS</div><div className={cn("text-[18px] font-black", econ?.breakEvenRoas ? (sales.roas >= econ.breakEvenRoas ? "text-[#16A34A]" : "text-[#EF4444]") : "text-[#18181B] dark:text-[#F4F4F5]")}>{sales.roas}x</div><div className="text-[10px] text-[#A1A1AA]">{econ?.breakEvenRoas ? `break-even ${econ.breakEvenRoas}x` : "set costs for break-even"}</div></div>
+                <div><div className="text-[11px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[10px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
+                <div><div className="text-[11px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                {econ?.breakEvenRoas && sales.roas >= econ.breakEvenRoas ? `Profitable — acquiring at ${formatINR(blendedCAC)} vs ~${formatINR(ltvEst)} LTV. Room to scale.` : econ?.breakEvenRoas ? `Below break-even (${econ.breakEvenRoas}x) — fix funnel/creative before scaling.` : "Add your costs (Financial P&L) to see real break-even ROAS & profit."}
+              </div>
+            </Card>
+          )}
+          {leadsB.count > 0 && (
+            <Card>
+              <CardHeader title={<span className="flex items-center gap-1.5"><Target size={14} className="text-[#15803D]" /> Leads objective</span>} right={<span className="text-[11px] text-[#A1A1AA]">{leadsB.count} campaign{leadsB.count > 1 ? "s" : ""} · {formatINR(leadsB.spend)}</span>} />
+              <div className="grid grid-cols-3 gap-2">
+                <div><div className="text-[11px] text-[#A1A1AA]">Leads</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads}</div><div className="text-[10px] text-[#A1A1AA]">{formatINR(leadsB.cpl)}/lead</div></div>
+                <div><div className="text-[11px] text-[#A1A1AA]">WhatsApp vs form</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{waPct}%</div><div className="text-[10px] text-[#A1A1AA]">{waLeads} chat · {formLeads} form</div></div>
+                <div><div className="text-[11px] text-[#A1A1AA]">Pipeline (est.)</div><div className="text-[18px] font-black text-[#15803D]">{formatINR(pipelineEst)}</div><div className="text-[10px] text-[#A1A1AA]">{totalLeads}×{Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV</div></div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                {waPct < 50 ? "WhatsApp leads convert higher than forms — shift creative CTAs to click-to-WhatsApp." : "Strong WhatsApp lead share — keep nurturing chat leads fast (intent fades in hours)."}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
-        {/* Combined revenue + spend chart */}
+      {/* ── SECTION 3 + 4: Revenue chart + Platform snapshot ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="col-span-1 lg:col-span-2">
           <Card className="h-full">
-            <CardHeader
-              title="Revenue vs Ad Spend"
-              right={<span className="flex items-center gap-3 text-[11px]">
-                <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-[#F97316] inline-block" /> Revenue</span>
-                {(connections.meta || connections.gads) && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
-              </span>}
-            />
-            {loading ? (
-              <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">Loading chart…</div>
-            ) : chartData.length === 0 ? (
-              <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">No revenue data for this period</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={176}>
-                <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} interval={Math.floor(chartData.length / 6)} />
-                  <YAxis hide />
-                  <Tooltip
-                    contentStyle={{ fontSize: 12, border: "1px solid #E5E5E5", borderRadius: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}
-                    formatter={(v, name) => [formatINR(Number(v)), name === "revenue" ? "Revenue" : "Ad Spend"]}
-                  />
-                  <Bar dataKey="revenue" fill="#F97316" radius={[3, 3, 0, 0]} barSize={10} opacity={0.9} />
-                  {(connections.meta || connections.gads) && (
-                    <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            )}
-
-            {/* Forecast strip */}
-            {projected > 0 && (
-              <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[12px] text-[#A1A1AA]">
-                  <TrendingUp size={12} className="text-[#F97316]" />
-                  At current pace ({days} days into period)
-                </div>
-                <div className="text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C]">
-                  {formatINR(projected)} projected
-                </div>
+            <CardHeader title="Revenue vs Ad Spend" right={<span className="flex items-center gap-3 text-[11px]">
+              <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-[#F97316] inline-block" /> Revenue</span>
+              {(connections.meta || connections.gads) && <span className="flex items-center gap-1"><span className="w-3 h-px rounded bg-[#94A3B8] inline-block border-b border-dashed border-[#94A3B8]" /> Ad Spend</span>}
+            </span>} />
+            {loading ? <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">Loading chart…</div>
+              : chartData.length === 0 ? <div className="h-44 flex items-center justify-center text-[13px] text-[#A1A1AA]">No revenue data for this period</div>
+              : (
+                <ResponsiveContainer width="100%" height={176}>
+                  <ComposedChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" strokeOpacity={0.4} vertical={false} />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#A1A1AA" }} tickLine={false} axisLine={false} interval={Math.floor(chartData.length / 6)} />
+                    <YAxis hide />
+                    <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E5E5", borderRadius: 12 }} formatter={(v, name) => [formatINR(Number(v)), name === "revenue" ? "Revenue" : "Ad Spend"]} />
+                    <Bar dataKey="revenue" fill="#F97316" radius={[3, 3, 0, 0]} barSize={10} opacity={0.9} />
+                    {(connections.meta || connections.gads) && <Line type="monotone" dataKey="spend" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 text-[12px] text-[#A1A1AA]"><TrendingUp size={12} className="text-[#F97316]" /> At current pace ({days}d)</div>
+              <div className="flex items-center gap-3">
+                {(k?.refundedRevenue ?? 0) > 0 && <span className="text-[12px] text-[#A1A1AA]">Returns: <b className="text-[#EF4444]">−{formatINR(k!.refundedRevenue!)}</b></span>}
+                {anomalies && anomalies.summary.projectedMonthly > 0 && <span className="text-[13px] font-bold text-[#EA580C] dark:text-[#FB923C]">{formatINR(anomalies.summary.projectedMonthly)} projected</span>}
               </div>
-            )}
+            </div>
           </Card>
         </div>
 
-        {/* Channel performance panel */}
+        {/* Platform snapshot — unique data per platform */}
         <Card>
-          <CardHeader title="Channel Performance" />
+          <CardHeader title="Platform Snapshot" />
           <div className="space-y-0">
-            {/* Shopify */}
-            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.shopify && "opacity-50")}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.shopify ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
-                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Shopify</span>
+            <PlatformRow name="Shopify" connected={connections.shopify}
+              main={k ? formatINR(k.grossSales) : "—"} mainSub={k ? `${k.totalOrders} orders · AOV ${formatINR(k.aov)}` : ""}
+              right={k ? `${codPct}% COD` : ""} rightSub={anomalies ? `repeat ${anomalies.summary.repeatRate}%${anomalies.summary.repeatRate < 20 ? " ⚠" : ""}` : ""} rightTone={codPct > 55 ? "warn" : "neutral"} />
+            <PlatformRow name="Meta Ads" connected={connections.meta} connectHref="/dashboard/connections"
+              main={meta ? formatINR(meta.spend) : "—"} mainSub={activeObjs.length ? activeObjs.map(b => `${OBJ_META[b.obj].label}`).join(" + ") : "spend"}
+              right={sales.count > 0 ? `${sales.roas}x ROAS` : leadsB.count > 0 ? `${formatINR(leadsB.cpl)}/lead` : ""} rightSub={meta ? `freq ${meta.frequency}x${meta.frequency >= 3 ? " ⚠" : ""}` : ""} rightTone={meta && meta.frequency >= 3 ? "warn" : "neutral"} />
+            <PlatformRow name="Search Console" connected={connections.gsc} connectHref="/dashboard/connections"
+              main={gsc ? gsc.clicks.toLocaleString("en-IN") : "—"} mainSub={gsc ? `${gsc.impressions.toLocaleString("en-IN")} impressions` : ""}
+              right={gsc ? `pos ${gsc.avgPosition.toFixed(1)}` : ""} rightSub={gscOpp.count > 0 ? `${gscOpp.count} near page 1` : `${gsc?.ctr.toFixed(1) ?? "—"}% CTR`} rightTone={gscOpp.count > 0 ? "good" : "neutral"} />
+            <PlatformRow name="Analytics GA4" connected={connections.ga4} connectHref="/dashboard/connections"
+              main={ga4 ? ga4.sessions.toLocaleString("en-IN") : "—"} mainSub={ga4 ? `${ga4.users.toLocaleString("en-IN")} users` : ""}
+              right={ga4 ? `${ga4.bounceRate.toFixed(0)}% bounce` : ""} rightSub={ga4?.avgSessionMin ?? ""} />
+            {!connections.gads && (
+              <div className="py-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]" /><span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Google Ads</span></div>
                 </div>
-                <span className="text-[10px] text-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] px-1.5 py-0.5 rounded-full font-bold">Live</span>
+                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect — you may be flying blind on spend here →</Link>
               </div>
-              {shop ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(shop.kpis.grossSales)}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{shop.kpis.totalOrders} orders · AOV {formatINR(shop.kpis.aov)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[12px] font-semibold text-[#EAB308]">{codPct}% COD</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{shop.kpis.newCustomers} new</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-[12px] text-[#A1A1AA]">Not connected</div>
-              )}
-            </div>
-
-            {/* Meta */}
-            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.meta && "opacity-50")}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.meta ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
-                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Meta Ads</span>
-                </div>
-                {connections.meta && meta && (
-                  <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-bold", signal("roas", meta.roas).color)}>
-                    ROAS {meta.roas}x
-                  </span>
-                )}
-              </div>
-              {connections.meta && meta ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{formatINR(meta.spend)}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">spend · {meta.purchases} purchases</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[12px] font-semibold">{formatINR(meta.purchaseValue)}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{meta.ctr}% CTR</div>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect Meta →</Link>
-              )}
-            </div>
-
-            {/* GSC */}
-            <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06]", !connections.gsc && "opacity-50")}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.gsc ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
-                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Search Console</span>
-                </div>
-              </div>
-              {connections.gsc && gsc ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{gsc.clicks.toLocaleString("en-IN")}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">clicks · {gsc.impressions.toLocaleString("en-IN")} impressions</div>
-                  </div>
-                  <div className="text-right">
-                    <div className={cn("text-[12px] font-semibold", gsc.ctr >= 1.5 ? "text-[#F97316]" : "text-[#EAB308]")}>{gsc.ctr.toFixed(1)}% CTR</div>
-                    <div className="text-[11px] text-[#A1A1AA]">pos {gsc.avgPosition.toFixed(1)}</div>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect GSC →</Link>
-              )}
-            </div>
-
-            {/* GA4 */}
-            <div className={cn("py-3", !connections.ga4 && "opacity-50")}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("w-1.5 h-1.5 rounded-full", connections.ga4 ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} />
-                  <span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Analytics GA4</span>
-                </div>
-              </div>
-              {connections.ga4 && ga4 ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{ga4.sessions.toLocaleString("en-IN")}</div>
-                    <div className="text-[11px] text-[#A1A1AA]">sessions · {ga4.users.toLocaleString("en-IN")} users</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[12px] font-semibold text-[#A1A1AA]">{ga4.bounceRate.toFixed(0)}% bounce</div>
-                    <div className="text-[11px] text-[#A1A1AA]">{ga4.avgSessionMin ?? "—"} avg</div>
-                  </div>
-                </div>
-              ) : (
-                <Link href="/dashboard/connections" className="text-[12px] text-[#F97316] font-semibold">Connect GA4 →</Link>
-              )}
-            </div>
+            )}
           </div>
         </Card>
       </div>
 
-      {/* ── Bottom row: Alerts + Insights + Quick Actions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-
-        {/* Alerts & Signals */}
+      {/* ── SECTION 6: Cross-platform conversion funnel ── */}
+      {funnel && funnel.steps.length >= 3 && (
         <Card>
-          <CardHeader title="Alerts & Signals" right={
-            allAlerts.length > 0
-              ? <span className="text-[11px] text-[#EF4444] font-bold bg-[#FEF2F2] dark:bg-[#2D0A0A] px-2 py-0.5 rounded-full">{allAlerts.length} action needed</span>
-              : <span className="text-[11px] text-[#22C55E] font-bold bg-[#F0FDF4] dark:bg-[#052E16] px-2 py-0.5 rounded-full">All clear</span>
-          } />
-
-          {(anomalies?.critical ?? []).map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
-              <div className="w-7 h-7 rounded-lg bg-[#FEF2F2] dark:bg-[#2D0A0A] flex items-center justify-center shrink-0 border border-[#FCA5A5] dark:border-[#991B1B]">
-                <AlertCircle size={12} className="text-[#EF4444]" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
-              </div>
+          <CardHeader title="Conversion Funnel — ad click to order" right={<span className="text-[11px] text-[#A1A1AA]">Meta → GA4 → Shopify, stitched</span>} />
+          <div className="space-y-1.5">
+            {funnel.steps.map((s, i) => {
+              const top = funnel.steps[0].value || 1;
+              const widthPct = Math.max(4, Math.round((s.value / top) * 100));
+              const prev = i > 0 ? funnel.steps[i - 1].value : null;
+              const drop = prev && prev > 0 ? Math.round((1 - s.value / prev) * 100) : null;
+              const isWorst = funnel.worst.to === s.label && funnel.worst.dropPct > 0;
+              return (
+                <div key={s.label} className="flex items-center gap-3">
+                  <div className="w-36 text-[12px] text-[#52525B] dark:text-[#A1A1AA] shrink-0">{s.label}</div>
+                  <div className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg h-6 relative overflow-hidden">
+                    <div className={cn("h-full rounded-lg", isWorst ? "bg-[#EF4444]" : "bg-[#F97316]")} style={{ width: `${widthPct}%` }} />
+                    <span className="absolute left-2 top-0 h-full flex items-center text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.value.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="w-16 text-right text-[11px] shrink-0">{drop !== null && <span className={drop >= 70 ? "text-[#EF4444] font-bold" : "text-[#A1A1AA]"}>−{drop}%</span>}</div>
+                </div>
+              );
+            })}
+          </div>
+          {funnel.diagnosis && (
+            <div className="mt-3 rounded-xl bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[3px] border-l-[#EF4444] p-3">
+              <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Biggest drop: {funnel.worst.dropPct}% between {funnel.worst.from} → {funnel.worst.to}</div>
+              <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{funnel.diagnosis}</div>
             </div>
-          ))}
-
-          {(anomalies?.warnings ?? []).map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
-              <div className="w-7 h-7 rounded-lg bg-[#FFFBEB] dark:bg-[#2D1C00] flex items-center justify-center shrink-0 border border-[#FCD34D] dark:border-[#92400E]">
-                <AlertTriangle size={12} className="text-[#EAB308]" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div>
-                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
-              </div>
-            </div>
-          ))}
-
-          {(anomalies?.positive ?? []).slice(0, 2).map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0">
-              <div className="w-7 h-7 rounded-lg bg-[#FFF7ED] dark:bg-[#2A1A0E] flex items-center justify-center shrink-0 border border-[#FED7AA] dark:border-[#7C2D12]">
-                <CheckCircle2 size={12} className="text-[#F97316]" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-[#EA580C] dark:text-[#FB923C]">{a.title}</div>
-                <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.desc}</div>
-              </div>
-            </div>
-          ))}
-
-          {allAlerts.length === 0 && (anomalies?.positive ?? []).length === 0 && !loading && (
-            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No anomalies detected</div>
           )}
-          {loading && <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Checking alerts…</div>}
+        </Card>
+      )}
 
+      {/* ── SECTION 7 + 8 + 9: Alerts · AI Insights · Priority Actions ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Alerts */}
+        <Card>
+          <CardHeader title="Cross-Platform Alerts" right={alerts.length > 0 ? <span className="text-[11px] text-[#EF4444] font-bold bg-[#FEF2F2] px-2 py-0.5 rounded-full">{alerts.length}</span> : <span className="text-[11px] text-[#22C55E] font-bold bg-[#F0FDF4] px-2 py-0.5 rounded-full">All clear</span>} />
+          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Checking…</div>
+            : alerts.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No cross-platform issues detected</div>
+            : <div className="space-y-2">{alerts.slice(0, 5).map((a, i) => (
+                <div key={i} className="flex items-start gap-2.5 py-1">
+                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", a.sev === "danger" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "bg-[#FFFBEB] dark:bg-[#2D1C00]")}>
+                    {a.sev === "danger" ? <AlertCircle size={12} className="text-[#EF4444]" /> : <AlertTriangle size={12} className="text-[#EAB308]" />}
+                  </div>
+                  <div><div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{a.title}</div><div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{a.body}</div></div>
+                </div>
+              ))}</div>}
           <Link href="/dashboard/anomaly" className="block mt-3 text-[12px] font-bold text-[#F97316]">View all alerts →</Link>
         </Card>
 
-        {/* Key Insights */}
+        {/* AI Insights */}
         <Card>
-          <CardHeader title="Key Insights" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Zap size={11} /> Computed live</span>} />
-
-          {loading ? (
-            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing insights…</div>
-          ) : insights.length === 0 ? (
-            <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Connect more platforms for insights</div>
-          ) : (
-            <div className="space-y-2">
-              {insights.map((ins, i) => (
-                <div key={i} className={cn(
-                  "rounded-xl p-3 border-l-[3px]",
-                  ins.type === "positive" ? "bg-[#F0FDF4] dark:bg-[#052E16] border-l-[#22C55E]" :
-                  ins.type === "warning" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] border-l-[#EAB308]" :
-                  "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[#EF4444]"
-                )}>
-                  <div className="flex items-center gap-1.5">
-                    {ins.type === "positive"
-                      ? <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" />
-                      : <AlertTriangle size={13} className={cn("shrink-0", ins.type === "warning" ? "text-[#EAB308]" : "text-[#EF4444]")} />}
-                    <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div>
-                  </div>
+          <CardHeader title="AI Insights" right={<span className="flex items-center gap-1 text-[#A1A1AA]"><Zap size={11} /> Live</span>} />
+          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing…</div>
+            : insights.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Connect more platforms / set costs for insights</div>
+            : <div className="space-y-2">{insights.map((ins, i) => (
+                <div key={i} className={cn("rounded-xl p-3 border-l-[3px]", ins.type === "positive" ? "bg-[#F0FDF4] dark:bg-[#052E16] border-l-[#22C55E]" : ins.type === "warning" ? "bg-[#FFFBEB] dark:bg-[#2D1C00] border-l-[#EAB308]" : "bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[#EF4444]")}>
+                  <div className="flex items-center gap-1.5">{ins.type === "positive" ? <CheckCircle2 size={13} className="text-[#22C55E] shrink-0" /> : <AlertTriangle size={13} className={cn("shrink-0", ins.type === "warning" ? "text-[#EAB308]" : "text-[#EF4444]")} />}<div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ins.title}</div></div>
                   <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-relaxed">{ins.body}</div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* COD + prepaid mini stats */}
-          {shop && (
-            <div className="mt-3 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 gap-2">
-              <div className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
-                <div className="text-[16px] font-black text-[#F97316]">{shop.kpis.prepaidOrders}</div>
-                <div className="text-[10px] text-[#A1A1AA] mt-0.5">Prepaid orders</div>
-              </div>
-              <div className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5 text-center">
-                <div className={cn("text-[16px] font-black", codPct > 50 ? "text-[#EF4444]" : "text-[#EAB308]")}>{shop.kpis.codOrders}</div>
-                <div className="text-[10px] text-[#A1A1AA] mt-0.5">COD orders ({codPct}%)</div>
-              </div>
-            </div>
-          )}
+              ))}</div>}
         </Card>
 
-        {/* Quick Actions */}
+        {/* Priority Actions */}
         <Card>
-          <CardHeader title="Quick Actions" right="Jump to any section" />
-          <div className="grid grid-cols-2 gap-2">
-            {quickActions.map(a => (
-              <Link key={a.href} href={a.href}
-                className="group flex items-start gap-2 p-2.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-[#FAFAF9] dark:bg-[#1C1C1C] hover:border-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-all">
-                <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", a.color)}>
-                  <a.icon size={13} />
+          <CardHeader title="Priority Actions" right={<span className="text-[11px] text-[#A1A1AA]">by ₹ impact</span>} />
+          {loading ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">Computing…</div>
+            : actions.length === 0 ? <div className="text-[12px] text-[#A1A1AA] py-4 text-center">No high-impact actions right now — you&apos;re in good shape.</div>
+            : <div className="space-y-2">{actions.map((a, i) => (
+                <div key={i} className="flex items-start gap-2.5 py-1">
+                  <span className="w-5 h-5 rounded-full bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <div>
+                    <div className="text-[12px] font-semibold text-[#18181B] dark:text-[#F4F4F5] leading-snug">{a.text}</div>
+                    <div className="text-[10px] text-[#A1A1AA] mt-0.5">{a.impact > 0 ? <span className="text-[#16A34A] font-bold">≈ {formatINR(a.impact)} impact</span> : null} · {a.source}</div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5] group-hover:text-[#EA580C] dark:group-hover:text-[#FB923C] transition-colors leading-tight">{a.label}</div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-0.5 leading-tight">{a.sub}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
+              ))}</div>}
         </Card>
       </div>
 
+      {/* ── SECTION 10: Quick nav + AI chat ── */}
+      <Card>
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={14} className="text-[#F97316]" />
+          <input value={chatQ} onChange={e => setChatQ(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI()}
+            placeholder="Ask anything — &quot;which city has the worst RTO?&quot;, &quot;which creative should I kill?&quot;"
+            className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[13px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+          <button onClick={askAI} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {quickActions.map(a => (
+            <Link key={a.href} href={a.href} className="group flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-black/[0.05] dark:border-white/[0.05] bg-[#FAFAF9] dark:bg-[#1C1C1C] hover:border-[#F97316] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] transition-all text-center">
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", a.color)}><a.icon size={14} /></div>
+              <div className="text-[11px] font-bold text-[#18181B] dark:text-[#F4F4F5] group-hover:text-[#EA580C] leading-tight">{a.label}</div>
+            </Link>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Platform snapshot row ─────────────────────────────────── */
+function PlatformRow({ name, connected, connectHref, main, mainSub, right, rightSub, rightTone = "neutral" }: {
+  name: string; connected: boolean; connectHref?: string; main: string; mainSub: string; right?: string; rightSub?: string; rightTone?: "good" | "warn" | "neutral";
+}) {
+  return (
+    <div className={cn("py-3 border-b border-black/[0.06] dark:border-white/[0.06] last:border-0", !connected && "opacity-60")}>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", connected ? "bg-[#22C55E]" : "bg-[#D4D4D4]")} /><span className="text-[12px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{name}</span></div>
+      </div>
+      {connected ? (
+        <div className="flex items-center justify-between">
+          <div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{main}</div><div className="text-[11px] text-[#A1A1AA]">{mainSub}</div></div>
+          {right && <div className="text-right"><div className={cn("text-[12px] font-semibold", rightTone === "good" ? "text-[#16A34A]" : rightTone === "warn" ? "text-[#B45309]" : "text-[#52525B] dark:text-[#A1A1AA]")}>{right}</div><div className="text-[11px] text-[#A1A1AA]">{rightSub}</div></div>}
+        </div>
+      ) : (
+        <Link href={connectHref ?? "/dashboard/connections"} className="text-[12px] text-[#F97316] font-semibold">Connect {name} →</Link>
+      )}
     </div>
   );
 }

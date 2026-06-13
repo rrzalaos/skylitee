@@ -1,0 +1,85 @@
+Section 1 — Active Objectives Strip
+Unique value: Nobody shows you which objectives are live and adapts the dashboard accordingly. Meta Ads Manager shows all campaigns in one wall. We show: "You're running Sales + Leads. Here's what matters for each."
+
+Section 2 — KPI Cards
+Each card must show something competitors don't:
+CardUnique angleGross Sales+ daily run rate vs pace to monthly goal. "Need ₹8,200/day to hit target. Currently averaging ₹6,400."Blended ROASSplit into Sales ROAS and Lead ROAS separately. Blending them is meaningless and every other tool does it.Orders+ COD vs Prepaid split. "148 orders — 61% COD. Real cash collected today: ₹58,000 not ₹1,18,000."Total Ad Spend+ spend efficiency signal. "₹49K spent. ₹0 tracked revenue. Likely pixel issue."Total Leads+ lead quality signal. "148 leads — 31% WhatsApp (higher intent), 69% form. Lead→Order 12%."GSC Clicks+ "3 keywords sitting at position 11–12. One push = page 1." Nobody connects GSC position to opportunity in rupee terms.
+
+Section 3 — Revenue vs Spend Chart
+Unique value: Every tool shows revenue OR spend. We show both on the same timeline so you see immediately if spend went up but revenue didn't move — the signal that something broke.
+Add a third layer nobody shows: COD cancellation dips. A revenue spike that's followed by a dip 3 days later = COD returns. We can show gross revenue vs net-of-returns on the same chart.
+
+Section 4 — Platform Snapshot
+Unique value: Nobody shows all 5 platforms in one health row. The unique data per platform:
+
+Shopify → COD% (real cash vs gross), repeat rate vs benchmark
+Meta → objective split (sales vs leads vs awareness), not one blended number
+GSC → position movement (up/down vs last week), not just current position
+GA4 → traffic source quality (paid vs organic session duration comparison)
+Google Ads → if disconnected, show estimated blind spot in ₹. "You're flying blind on ~₹40K/mo."
+
+
+Section 5 — Objective Performance Panels
+Unique value: No tool judges each campaign objective by its own KPI. Meta Ads Manager shows ROAS for every campaign including awareness ones. We show:
+Sales panel unique data:
+
+Break-even ROAS (calculated from their COGs, not a generic number)
+CAC vs LTV ratio — "You're acquiring customers at ₹897. Their LTV is ₹2,840. Healthy."
+Revenue attributed back to Shopify orders (not Meta's own attribution, which overcounts)
+
+Leads panel unique data:
+
+WhatsApp leads vs form leads separately (WhatsApp = higher intent, lower drop-off)
+Lead → Shopify order conversion rate (requires stitching Meta + Shopify — nobody does this automatically)
+Estimated pipeline value: "148 leads × 12% × ₹1,091 AOV = ₹19,638 pipeline"
+
+
+Section 6 — Conversion Funnel
+Unique value: No single tool shows the full D2C funnel in one view. Meta shows top-of-funnel. GA4 shows mid-funnel. Shopify shows bottom. We stitch all three.
+The unique insight: where the biggest drop-off is and why.
+
+"You lose 84% of people between Click and Add to Cart. This is a landing page problem, not a targeting problem. Your CTR is fine."
+
+Nobody says that. Every other tool just shows the numbers and leaves you to figure out the diagnosis.
+
+Section 7 — Alerts & Signals
+Unique value: Every platform sends its own alerts in isolation. Meta alerts about ad delivery. Shopify alerts about inventory. GSC sends email reports. Nobody connects them.
+Unique alerts we surface that nobody else does:
+
+"Meta spend up 40% this week but Shopify orders flat — possible attribution break or landing page issue" (cross-platform)
+"COD% jumped from 52% to 71% in 3 days — check if new campaign is targeting high-COD geographies" (Shopify + Meta combined)
+"GSC position dropped 4 spots on your top keyword — check if you changed that page recently" (requires GSC history + context)
+"Lead campaign frequency at 3.8 — your CPL will start rising in 2–3 days" (predictive, not reactive)
+"Repeat rate 3% vs 20% industry benchmark — 31 customers who could come back haven't been emailed" (benchmark + action)
+
+
+Section 8 — AI Insights
+Unique value: Every analytics tool summarises what happened. We tell you why and what to do — with your actual numbers, not generic tips.
+Examples of insights nobody else surfaces:
+
+"Your best ROAS days are Tuesday and Wednesday 8–11pm. You're currently running equal budget 24/7. Shifting 40% of budget to those windows could improve ROAS by ~0.3x."
+"WhatsApp leads convert at 18% vs form leads at 7%. Your form leads are 69% of volume. Shift creative CTAs to WhatsApp click-to-chat."
+"3 of your top 5 products have under 30 units left. At current velocity, stockout in 8–12 days. Pausing ads on those SKUs now saves ₹12,000 in wasted spend."
+"Your GSC CTR is 10.5% but avg position 11.8. You're on the cusp of page 1 on 3 queries. This is the cheapest CAC available to you right now — invest in content, not ads."
+
+
+Section 9 — Priority Actions
+Unique value: No tool gives you a numbered, prioritised to-do list generated from your actual cross-platform data. This is the thing store owners and marketers say they wish existed.
+Rules for each action:
+
+Specific (not "optimise campaigns" — "pause Embroidery Static, frequency 3.8")
+Quantified ("est. ₹19,000 impact" not "could improve performance")
+Sourced ("from Meta + Shopify data, not a generic tip")
+Ordered by impact (highest ₹ impact first)
+
+
+Section 10 — Quick Navigation
+No deep unique data here. Just fast access. The AI chat input at the bottom is the unique piece — natural language access to all connected data in one box.
+
+Summary: The 5 Things This Dashboard Shows That Nobody Else Does
+
+Objective-aware KPIs — Sales ROAS and Lead CPL shown separately, each judged by its own benchmark
+COD-adjusted revenue — Real cash vs gross, something every Indian D2C brand needs and no global tool provides
+Cross-platform funnel in one view — Meta top → GA4 mid → Shopify bottom, with diagnosis of the biggest drop-off
+Cross-platform alerts — Signals that require stitching 2+ platforms together (spend up + orders flat = something broke)
+Prioritised action list in ₹ — Not just what's happening, but what to do and what it's worth

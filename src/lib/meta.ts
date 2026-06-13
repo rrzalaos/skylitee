@@ -49,6 +49,31 @@ export function leadCount(actions: MetaActionEntry[] | undefined): number {
   return 0;
 }
 
+/**
+ * Split leads by channel — on-Meta/website FORM leads vs MESSAGING (WhatsApp/Messenger/IG
+ * DM) vs CALL leads. Messaging leads are higher-intent and convert differently, so the
+ * Command Center shows them separately instead of one blended lead count.
+ */
+export function leadChannels(actions: MetaActionEntry[] | undefined): { form: number; messaging: number; calls: number } {
+  if (!actions?.length) return { form: 0, messaging: 0, calls: 0 };
+  const v = (t: string) => {
+    const hit = actions.find(a => a.action_type.toLowerCase() === t);
+    return hit ? Math.round(parseFloat(hit.value) || 0) : 0;
+  };
+  const form = Math.max(
+    v("onsite_conversion.lead_grouped"), v("leadgen.other"),
+    v("onsite_conversion.lead"), v("offsite_conversion.fb_pixel_lead"), v("lead"),
+  );
+  const messaging = Math.max(
+    v("onsite_conversion.total_messaging_connection"),
+    v("onsite_conversion.messaging_conversation_started_7d"),
+    v("onsite_conversion.messaging_conversation_started"),
+    v("messaging_conversation_started"),
+  );
+  const calls = Math.max(v("onsite_conversion.click_to_call"), v("click_to_call"));
+  return { form, messaging, calls };
+}
+
 /** Every lead-ish event + value — for the debug/audit view so a mismatch is diagnosable. */
 export function leadBreakdown(actions: MetaActionEntry[] | undefined): { type: string; value: number; chosen: boolean }[] {
   if (!actions?.length) return [];
