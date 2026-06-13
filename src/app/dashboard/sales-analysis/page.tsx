@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useDateRange } from "@/lib/date-range-context";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV, exportToPDF, ExportSection } from "@/lib/export";
+import { Donut } from "@/components/ui/charts";
+import { BarChart3 } from "lucide-react";
 
 /* ── Types ── */
 interface ShopDaily { date: string; revenue: number; orders: number }
@@ -146,7 +148,7 @@ export default function SalesAnalysisPage() {
     <div className="space-y-3">
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sales Analysis</h2>
+          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2"><BarChart3 size={18} className="text-[#F97316]" /> Sales Analysis</h2>
           <p className="text-[15px] text-[#A1A1AA] mt-0.5">Store vs Meta vs Google vs Organic · by day / week / month · {range.label}</p>
         </div>
         <ExportButton onExportCSV={() => exportToCSV("skylitee-sales-analysis", buildSections())} onExportPDF={() => exportToPDF("skylitee-sales-analysis", "Sales Analysis", `${range.label}`, buildSections())} disabled={loading || buckets.length === 0} />
@@ -168,6 +170,27 @@ export default function SalesAnalysisPage() {
 
       {loading ? <div className="py-12 text-center text-[15px] text-[#A1A1AA]">Loading…</div> : (
         <>
+          {/* Revenue mix donut */}
+          {(() => {
+            const storeRev = shopDaily.reduce((s, d) => s + d.revenue, 0);
+            const metaR = metaKpis?.purchaseValue ?? 0;
+            const gR = gadsKpis?.conversionValue ?? 0;
+            const organicR = Math.max(0, storeRev - metaR - gR);
+            return (
+              <Card>
+                <CardHeader title="Revenue mix" right={<span className="text-[13px] text-[#A1A1AA]">store sales by source</span>} />
+                <Donut
+                  segments={[
+                    { label: "Organic / Direct", value: organicR, color: "#22C55E" },
+                    { label: "Meta Ads", value: metaR, color: "#3B82F6" },
+                    ...(gR > 0 ? [{ label: "Google Ads", value: gR, color: "#EAB308" }] : []),
+                  ]}
+                  centerValue={formatINR(storeRev)} centerLabel="total" size={150}
+                />
+              </Card>
+            );
+          })()}
+
           {/* Source summary cards (Store / Meta / Google) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             {/* Store */}

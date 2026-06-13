@@ -187,7 +187,7 @@ export default function SalesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sales Report</h2>
+          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2"><ShoppingCart size={18} className="text-[#F97316]" /> Sales Report</h2>
           <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · {sales.period.days} days · Live</p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />

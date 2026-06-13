@@ -128,7 +128,7 @@ export default function AttributionPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Channel Attribution</h2>
+          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2"><Share2 size={18} className="text-[#F97316]" /> Channel Attribution</h2>
           <p className="text-[14px] text-[#A1A1AA] mt-0.5">
             {range.label} · Last-click model · {[metaOk && "Meta", ga4Ok && "GA4", shopOk && "Shopify"].filter(Boolean).join(" + ")}
           </p>

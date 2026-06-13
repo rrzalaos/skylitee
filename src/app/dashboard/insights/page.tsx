@@ -52,7 +52,7 @@ export default function InsightsPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold">AI Insights</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Brain size={18} className="text-[#F97316]" /> AI Insights</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">Claude AI · analysing your real Shopify data</p>
         </div>
         <button

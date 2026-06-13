@@ -331,7 +331,7 @@ export default function PlacementPage() {
 
   const header = (
     <div className="mb-3">
-      <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Ads Placement</h2>
+      <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2"><Target size={18} className="text-[#F97316]" /> Ads Placement</h2>
       <p className="text-[15px] text-[#A1A1AA] mt-0.5">Meta placement intelligence · breakdown by surface</p>
     </div>
   );

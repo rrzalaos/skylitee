@@ -486,7 +486,7 @@ export default function CreativePage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Creative Studio</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><LayoutGrid size={18} className="text-[#F97316]" /> Creative Studio</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">AI creative scoring · fatigue detection · performance ranking</p>
         </div>
         {ads.length > 0 && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}

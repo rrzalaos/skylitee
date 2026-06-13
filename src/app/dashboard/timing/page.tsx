@@ -195,7 +195,7 @@ export default function TimingPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Time Intelligence</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Clock size={18} className="text-[#F97316]" /> Time Intelligence</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">Best hours &amp; days to run ads · based on your conversion data</p>
         </div>
         {data && <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />}

@@ -33,7 +33,7 @@ export default function AnomalyPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Anomaly Feed</h2>
+          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2"><AlertCircle size={18} className="text-[#F97316]" /> Anomaly Feed</h2>
           <p className="text-[15px] text-[#A1A1AA] mt-0.5">Real-time signals from your Shopify store</p>
         </div>
         <div className="flex items-center gap-2.5">
