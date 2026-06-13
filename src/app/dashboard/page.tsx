@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
 import { cn } from "@/lib/utils";
+import { Sparkline, Donut, Gauge } from "@/components/ui/charts";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 interface ShopKpis {
@@ -22,7 +23,7 @@ interface ShopKpis {
   codOrders: number; prepaidOrders: number; codRevenue?: number; prepaidRevenue?: number;
   refundedRevenue?: number; totalDiscounts?: number;
 }
-interface ShopData { shop: string; kpis: ShopKpis; dailyRevenue: { day: string; revenue: number }[]; period: { days: number } }
+interface ShopData { shop: string; kpis: ShopKpis; dailyRevenue: { date?: string; day: string; revenue: number; orders?: number }[]; period: { days: number } }
 interface AnomalyData {
   critical: { title: string; desc: string }[]; warnings: { title: string; desc: string }[]; positive: { title: string; desc: string }[];
   summary: { projectedMonthly: number; grossSales: number; totalOrders: number; codPct: number; repeatRate: number };
@@ -37,7 +38,7 @@ interface MetaCampaign { name: string; status: string; objective: string; spend:
 interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPosition: number }
 interface GscKeyword { query: string; clicks: number; impressions: number; ctr: number; position: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
-interface GadsKPIs { spend: number; roas: number; conversions: number }
+interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue?: number }
 interface CostModel { cogsPerOrder: number; shippingPerOrder: number; rtoRate: number; rtoCostPerOrder: number; gatewayPct: number; codFeePct: number }
 
 const ASSUMED_LEAD_CONV = 0.12; // industry-rough lead→order rate; labelled "est." wherever used
@@ -76,14 +77,16 @@ function bucketFor(camps: MetaCampaign[], obj: Obj): Bucket {
   };
 }
 
-/* ─── Small stat card with a unique sub-line ─────────────────── */
-function StatCard({ label, value, sub, tone = "neutral" }: { label: string; value: string; sub?: React.ReactNode; tone?: "good" | "bad" | "warn" | "neutral" }) {
+/* ─── Small stat card with a unique sub-line + optional sparkline ── */
+function StatCard({ label, value, sub, tone = "neutral", spark, sparkColor = "#F97316" }: { label: string; value: string; sub?: React.ReactNode; tone?: "good" | "bad" | "warn" | "neutral"; spark?: number[]; sparkColor?: string }) {
   const valColor = tone === "good" ? "text-[#16A34A]" : tone === "bad" ? "text-[#EF4444]" : tone === "warn" ? "text-[#B45309]" : "text-[#18181B] dark:text-[#F4F4F5]";
   return (
-    <div className="bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-3">
+    <div className="relative bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-3 overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#F97316] via-[#FB923C] to-transparent opacity-80" />
       <div className="text-[11px] font-semibold text-[#A1A1AA] uppercase tracking-wide">{label}</div>
       <div className={cn("text-[22px] font-black mt-0.5 leading-none tabular-nums", valColor)}>{value}</div>
       {sub && <div className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1.5 leading-snug">{sub}</div>}
+      {spark && spark.length > 1 && <div className="mt-2 -mx-1"><Sparkline data={spark} color={sparkColor} height={28} /></div>}
     </div>
   );
 }
@@ -183,6 +186,26 @@ export default function CommandCenterPage() {
   // COD-adjusted cash
   const prepaidRev = k?.prepaidRevenue ?? (k ? Math.round(k.aov * k.prepaidOrders) : 0);
   const codRev = k?.codRevenue ?? (k ? Math.round(k.aov * k.codOrders) : 0);
+
+  // Sparkline series for KPI cards
+  const revSpark = shop?.dailyRevenue.map(d => d.revenue) ?? [];
+  const ordersSpark = shop?.dailyRevenue.map(d => d.orders ?? 0) ?? [];
+  const spendSpark = metaDaily.map(d => d.spend);
+
+  // Donut / gauge data
+  const metaSalesV = meta?.purchaseValue ?? 0;
+  const gSalesV = gads?.conversionValue ?? 0;
+  const organicSalesV = Math.max(0, (k?.grossSales ?? 0) - metaSalesV - gSalesV);
+  const channelSegments = [
+    { label: "Organic / Direct", value: organicSalesV, color: "#22C55E" },
+    { label: "Meta Ads", value: metaSalesV, color: "#3B82F6" },
+    ...(gSalesV > 0 ? [{ label: "Google Ads", value: gSalesV, color: "#EAB308" }] : []),
+  ];
+  const paySegments = [
+    { label: "Prepaid (cash now)", value: prepaidRev, color: "#F97316" },
+    { label: "COD (pending)", value: codRev, color: "#94A3B8" },
+  ];
+  const goalPct = salesTarget > 0 && k ? Math.round((k.grossSales / salesTarget) * 100) : null;
 
   // Break-even ROAS + unit economics from the saved cost model
   const econ = useMemo(() => {
@@ -382,7 +405,7 @@ export default function CommandCenterPage() {
 
       {/* ── SECTION 2: Objective-aware KPI cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <StatCard label="Gross Sales" value={k ? formatINR(k.grossSales) : "—"}
+        <StatCard label="Gross Sales" value={k ? formatINR(k.grossSales) : "—"} spark={revSpark} sparkColor="#F97316"
           sub={k ? <>Avg <b>{formatINR(dailyRunRate)}</b>/day{salesTarget > 0 && <> · need <b className="text-[#EA580C]">{formatINR(neededPerDay)}</b>/day to hit {formatINR(salesTarget)}</>}{salesChange !== undefined && <> · <span className={salesChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{salesChange >= 0 ? "+" : ""}{salesChange}% vs {compLabel}</span></>}</> : undefined} />
 
         {sales.count > 0 || !leadsB.count ? (
@@ -394,10 +417,10 @@ export default function CommandCenterPage() {
             sub={<>{leadsB.leads} leads · {formatINR(leadsB.spend)} spend</>} />
         )}
 
-        <StatCard label="Orders" value={k ? k.totalOrders.toString() : "—"} tone={codPct > 60 ? "warn" : "neutral"}
+        <StatCard label="Orders" value={k ? k.totalOrders.toString() : "—"} tone={codPct > 60 ? "warn" : "neutral"} spark={ordersSpark} sparkColor="#22C55E"
           sub={k ? <>{codPct}% COD · real cash <b>{formatINR(prepaidRev)}</b> not {formatINR(k.grossSales)}{ordersChange !== undefined && <> · <span className={ordersChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{ordersChange >= 0 ? "+" : ""}{ordersChange}%</span></>}</> : undefined} />
 
-        <StatCard label="Total Ad Spend" value={totalSpend > 0 ? formatINR(totalSpend) : "—"}
+        <StatCard label="Total Ad Spend" value={totalSpend > 0 ? formatINR(totalSpend) : "—"} spark={spendSpark} sparkColor="#3B82F6"
           tone={meta && meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? "bad" : "neutral"}
           sub={meta ? (meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? <span className="text-[#EF4444] font-semibold">₹0 tracked revenue — likely pixel issue</span> : <>{connections.gads ? "Meta + Google" : "Meta"}{spendChange !== undefined && <> · <span className={spendChange > 25 ? "text-[#EF4444]" : "text-[#A1A1AA]"}>{spendChange >= 0 ? "+" : ""}{spendChange}% vs {compLabel}</span></>}</>) : "Connect Meta"} />
 
@@ -411,6 +434,34 @@ export default function CommandCenterPage() {
         <StatCard label={gsc ? "Search Clicks" : "New Customers"} value={gsc ? gsc.clicks.toLocaleString("en-IN") : (k?.newCustomers.toString() ?? "—")}
           sub={gsc ? (gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
       </div>
+
+      {/* ── Visual snapshot: channel mix · cash split · pace ── */}
+      {k && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Card>
+            <CardHeader title="Revenue by channel" right={<span className="text-[11px] text-[#A1A1AA]">where sales come from</span>} />
+            <Donut segments={channelSegments} centerValue={formatINR(k.grossSales)} centerLabel="total" />
+          </Card>
+          <Card>
+            <CardHeader title="Cash collected" right={<span className="text-[11px] text-[#A1A1AA]">prepaid vs COD</span>} />
+            <Donut segments={paySegments} centerValue={`${100 - codPct}%`} centerLabel="prepaid now" />
+          </Card>
+          <Card>
+            <CardHeader title={salesTarget > 0 ? "Monthly goal pace" : "Month progress"} right={<span className="text-[11px] text-[#A1A1AA]">{salesTarget > 0 ? formatINR(salesTarget) : "this month"}</span>} />
+            <div className="pt-2">
+              <Gauge
+                value={goalPct ?? Math.round(today.getDate() / new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() * 100)}
+                color={goalPct !== null && goalPct >= 100 ? "#22C55E" : "#F97316"}
+                centerValue={goalPct !== null ? `${goalPct}%` : undefined}
+                centerLabel={salesTarget > 0 ? "of target" : "of month elapsed"}
+              />
+              {salesTarget > 0 && k && (
+                <div className="text-center text-[11px] text-[#A1A1AA] mt-1">{formatINR(k.grossSales)} of {formatINR(salesTarget)}{neededPerDay > 0 && <> · need {formatINR(neededPerDay)}/day</>}</div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* ── SECTION 5: Objective Performance Panels ── */}
       {(sales.count > 0 || leadsB.count > 0) && (
