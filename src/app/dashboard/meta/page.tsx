@@ -549,7 +549,7 @@ function ScoreCard({ b, cur, totalSpend, active, onClick }: { b: ObjBucket; cur:
 
 function ObjectiveScorecards({ campaigns, cur, totalSpend, active, onSelect }: { campaigns: Campaign[]; cur: string; totalSpend: number; active: ObjFilter; onSelect: (o: ObjFilter) => void }) {
   const present = OBJ_ORDER.map(o => aggregate(campaigns, o)).filter(b => b.count > 0);
-  if (present.length < 2) return null; // single-objective accounts don't need a breakdown
+  if (present.length < 1) return null; // nothing to break down only when there are no campaigns
   return (
     <div>
       <SectionLabel>Performance by Objective</SectionLabel>
@@ -976,7 +976,10 @@ export default function MetaPage() {
   const hasAnyConv = convOrders > 0 || convRevenue > 0;
 
   const presentObjs = OBJ_ORDER.filter(o => data.campaigns.some(c => normalizeObj(c.objective) === o));
-  const showObjective = presentObjs.length >= 2;
+  // Show the objective breakdown whenever any objective is detected — including
+  // single-objective accounts (e.g. a leads-only store), so their Leads / Cost-per-Lead
+  // surface the same way a multi-objective account's do.
+  const showObjective = presentObjs.length >= 1;
   const objViews: ObjFilter[] = ["ALL", ...presentObjs];
   // Fall back to "All" if the focused objective no longer exists in the current range.
   const effectiveView: ObjFilter = objView !== "ALL" && presentObjs.includes(objView) ? objView : "ALL";
