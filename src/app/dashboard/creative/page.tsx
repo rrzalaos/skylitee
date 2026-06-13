@@ -5,7 +5,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDateRange } from "@/lib/date-range-context";
 import { formatINR, formatNumber } from "@/lib/utils";
-import { Image as ImageIcon, Video, LayoutGrid, TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Image as ImageIcon, Images, Video, LayoutGrid, TrendingUp, AlertTriangle, Info } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { exportToCSV, exportToPDF } from "@/lib/export";
@@ -18,6 +18,7 @@ interface AdCreative {
   status: string;
   thumbnail: string | null;
   objectType: string | null;
+  format: "image" | "video" | "carousel";
   objective: Objective;
   spend: number;
   impressions: number;
@@ -112,10 +113,11 @@ function scoreColor(score: number) {
 
 function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
   const sig = SIGNAL_STYLES[ad.signal];
-  const isVideo = ad.objectType?.toLowerCase().includes("video") || ad.videoViews3s > 0;
   const fmt = (n: number) => currency === "INR" ? formatINR(n) : `$${n.toFixed(0)}`;
   const obj = OBJ_META[ad.objective] ?? OBJ_META.OTHER;
   const view = objectiveView(ad, fmt);
+  const FmtIcon = ad.format === "video" ? Video : ad.format === "carousel" ? Images : ImageIcon;
+  const fmtLabel = ad.format === "video" ? "Video" : ad.format === "carousel" ? "Carousel" : "Image";
 
   return (
     <div className="bg-white border border-black/[0.09] rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
@@ -126,8 +128,8 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
           <img src={ad.thumbnail} alt={ad.name} className="w-full h-full object-cover" />
         ) : (
           <div className="flex flex-col items-center gap-1.5 text-[#1877F2] opacity-50">
-            {isVideo ? <Video size={32} /> : <ImageIcon size={32} />}
-            <span className="text-[13px]">{isVideo ? "Video" : "Image"}</span>
+            <FmtIcon size={32} />
+            <span className="text-[13px]">{fmtLabel}</span>
           </div>
         )}
         {/* Signal badge */}
@@ -140,6 +142,10 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
           {ad.status === "PAUSED" && (
             <div className="px-2 py-0.5 rounded-full text-[12px] font-medium bg-black/40 text-white">Paused</div>
           )}
+        </div>
+        {/* Creative format badge */}
+        <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-medium bg-black/55 text-white backdrop-blur-sm">
+          <FmtIcon size={11} /> {fmtLabel}
         </div>
       </div>
 
@@ -180,7 +186,7 @@ function CreativeCard({ ad, currency }: { ad: AdCreative; currency: string }) {
         </div>
 
         {/* Video metrics if applicable */}
-        {isVideo && (ad.thumbStopRatio > 0 || ad.holdRatio > 0) && (
+        {ad.format === "video" && (ad.thumbStopRatio > 0 || ad.holdRatio > 0) && (
           <div className="flex gap-3 mt-2 text-[12px] text-[#9e9e9a]">
             <span>Thumb stop: <span className="text-[#181816] font-medium">{ad.thumbStopRatio}%</span></span>
             <span>Hold: <span className="text-[#181816] font-medium">{ad.holdRatio}%</span></span>
@@ -288,7 +294,8 @@ export default function CreativePage() {
         title: "All Ad Creatives",
         headers: ["Ad Name", "Objective", "Status", "Type", "Score", "Signal", "Spend", "Impressions", "Clicks", "CTR", "CPC", "CPM", "Freq", "Leads", "Cost/Lead", "Purchases", "Revenue", "ROAS", "CAC", "ATC", "LP Views", "3s Views", "Thruplay", "Thumb Stop%", "Hold%"],
         rows: ads.map(a => [
-          a.name, OBJ_META[a.objective]?.label ?? a.objective, a.status, a.objectType ?? "Image",
+          a.name, OBJ_META[a.objective]?.label ?? a.objective, a.status,
+          a.format === "video" ? "Video" : a.format === "carousel" ? "Carousel" : "Image",
           `${a.score}/100`, SIGNAL_STYLES[a.signal]?.label ?? a.signal,
           fmtC(a.spend), fmtN(a.impressions), fmtN(a.clicks),
           `${a.ctr}%`, fmtC(a.cpc), fmtC(a.cpm),

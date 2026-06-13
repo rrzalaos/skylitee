@@ -28,8 +28,27 @@ interface AdRow {
     thumbnail_url?: string;
     object_type?: string;
     image_url?: string;
+    video_id?: string;
+    object_story_spec?: {
+      video_data?: unknown;
+      link_data?: { child_attachments?: unknown[] };
+    };
+    asset_feed_spec?: { videos?: unknown[]; images?: unknown[] };
   };
   campaign?: { objective?: string };
+}
+
+export type CreativeFormat = "image" | "video" | "carousel";
+// Work out the creative format from the creative spec: a video_id / video_data / video
+// asset → Video; >1 carousel child or >1 feed image → Carousel; otherwise a single Image.
+function detectFormat(c: AdRow["creative"]): CreativeFormat {
+  if (!c) return "image";
+  const ot = (c.object_type ?? "").toUpperCase();
+  if (c.video_id || c.object_story_spec?.video_data || (c.asset_feed_spec?.videos?.length ?? 0) > 0 || ot === "VIDEO") return "video";
+  const childCount = c.object_story_spec?.link_data?.child_attachments?.length ?? 0;
+  const feedImages = c.asset_feed_spec?.images?.length ?? 0;
+  if (childCount > 1 || feedImages > 1) return "carousel";
+  return "image";
 }
 
 function actVal(arr: ActionEntry[] | undefined, type: string): number {
@@ -134,7 +153,7 @@ export async function GET(req: NextRequest) {
 
   const [insightsRes, adsRes] = await Promise.all([
     fetch(`https://graph.facebook.com/v19.0/${selected.id}/insights?fields=${insightFields}&level=ad&time_range=${timeRange}&limit=50&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
-    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bthumbnail_url,object_type,image_url%7D,campaign%7Bobjective%7D&limit=100&access_token=${token}`),
+    fetch(`https://graph.facebook.com/v19.0/${selected.id}/ads?fields=id,name,status,creative%7Bthumbnail_url,object_type,image_url,video_id,object_story_spec%7Bvideo_data,link_data%7Bchild_attachments%7D%7D,asset_feed_spec%7Bvideos,images%7D%7D,campaign%7Bobjective%7D&limit=100&access_token=${token}`),
   ]);
 
   const [insightsData, adsData] = await Promise.all([
@@ -144,13 +163,14 @@ export async function GET(req: NextRequest) {
 
   if (insightsData.error) return NextResponse.json({ error: insightsData.error.message }, { status: 400 });
 
-  const thumbnailMap = new Map<string, { thumbnail?: string; objectType?: string; status?: string; objective?: string }>();
+  const thumbnailMap = new Map<string, { thumbnail?: string; objectType?: string; status?: string; objective?: string; format?: CreativeFormat }>();
   for (const ad of adsData.data ?? []) {
     thumbnailMap.set(ad.id, {
       thumbnail: ad.creative?.thumbnail_url ?? ad.creative?.image_url,
       objectType: ad.creative?.object_type,
       status: ad.status,
       objective: ad.campaign?.objective,
+      format: detectFormat(ad.creative),
     });
   }
 
@@ -200,6 +220,7 @@ export async function GET(req: NextRequest) {
       status: creativeInfo?.status ?? "UNKNOWN",
       thumbnail: creativeInfo?.thumbnail ?? null,
       objectType: creativeInfo?.objectType ?? null,
+      format: creativeInfo?.format ?? "image",
       objective,
       spend: +spend.toFixed(2),
       impressions,
