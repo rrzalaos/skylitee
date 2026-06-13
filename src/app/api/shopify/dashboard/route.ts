@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:dashboard:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:dashboard:v5:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries + day buckets in the STORE's timezone so totals & the daily chart
@@ -45,18 +45,21 @@ export async function GET(req: NextRequest) {
   const refundedRevenue = orders.reduce((s, o) => s + Math.max(0, parseFloat(o.total_price) - orderRevenue(o)), 0);
 
   const dailyMap: Record<string, number> = {};
+  const dailyOrdersMap: Record<string, number> = {};
   orders.forEach(o => {
     const d = ymdInTz(new Date(o.created_at), tz);   // store-local day
     dailyMap[d] = (dailyMap[d] || 0) + orderRevenue(o);
+    dailyOrdersMap[d] = (dailyOrdersMap[d] || 0) + 1;
   });
 
-  const dailyRevenue: { day: string; revenue: number }[] = [];
+  // Each entry carries the ISO `date` (for week/month bucketing) + revenue + orders.
+  const dailyRevenue: { date: string; day: string; revenue: number; orders: number }[] = [];
   const cur = new Date(`${startYmd}T00:00:00.000Z`);
   const last = new Date(`${endYmd}T00:00:00.000Z`);
   while (cur <= last) {
     const key = cur.toISOString().split("T")[0];          // YYYY-MM-DD
     const [, mm, dd] = key.split("-");
-    dailyRevenue.push({ day: `${parseInt(mm)}/${parseInt(dd)}`, revenue: Math.round(dailyMap[key] || 0) });
+    dailyRevenue.push({ date: key, day: `${parseInt(mm)}/${parseInt(dd)}`, revenue: Math.round(dailyMap[key] || 0), orders: dailyOrdersMap[key] || 0 });
     cur.setUTCDate(cur.getUTCDate() + 1);
   }
 

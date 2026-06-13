@@ -75,6 +75,7 @@ const navSections: NavSection[] = [
     label: "Analytics",
     tooltip: "Cross-platform analysis — where revenue comes from (attribution), Profit & Loss, industry benchmarks, and weekly summaries.",
     items: [
+      { href: "/dashboard/sales-analysis", label: "Sales Analysis", icon: BarChart3, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/attribution", label: "Attribution", icon: GitMerge, badge: null, dot: null },
       { href: "/dashboard/financial", label: "Financial P&L", icon: Receipt, badge: null, dot: null },
       { href: "/dashboard/benchmarking", label: "Benchmarking", icon: Trophy, badge: null, dot: null },
