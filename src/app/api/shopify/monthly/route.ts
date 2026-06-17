@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue, getShopTimezone } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, getShopTimezone, isCodGateway } from "@/lib/shopify";
 import { ymdInTz } from "@/lib/timezone";
 import { getShopifySession } from "@/lib/session";
 
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   const months = Math.min(12, Math.max(1, parseInt(req.nextUrl.searchParams.get("months") ?? "6", 10)));
-  const cacheKey = `cache:${shop}:shopmonthly:v2:${months}`;
+  const cacheKey = `cache:${shop}:shopmonthly:v3:${months}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const tz = await getShopTimezone(shop, token);
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const orders = await fetchOrdersInRange(shop, token, startISO);
 
-  const isCod = (gw?: string) => { const g = (gw ?? "").toLowerCase(); return g.includes("cod") || g.includes("cash"); };
+  const isCod = (gw?: string) => isCodGateway(gw);
   const acc: Record<string, { revenue: number; orders: number; codOrders: number; codRevenue: number; returning: number }> = {};
   for (const o of orders) {
     const ym = ymdInTz(new Date(o.created_at), tz).slice(0, 7);   // store-local YYYY-MM

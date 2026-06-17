@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { shopifyFetch, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway, ShopifyProduct } from "@/lib/shopify";
 import { NextRequest } from "next/server";
 import { getShopifySession } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
@@ -30,16 +30,16 @@ async function buildStoreContext(req: NextRequest): Promise<{ context: string; s
     // Month-to-date in the store's timezone.
     const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
 
-    const [orders, { products }, { customers }] = await Promise.all([
+    const [orders, products, customers] = await Promise.all([
       fetchOrdersInRange(shop, token, startISO),
-      shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
-      shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
+      shopifyFetchAll<ShopifyProduct>(shop, token, "/products.json?limit=250&fields=id,title,variants", "products"),
+      shopifyFetchAll<Customer>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent", "customers"),
     ]);
 
     const grossSales = Math.round(orders.reduce((s, o) => s + orderRevenue(o), 0));
     const totalOrders = orders.length;
     const aov = totalOrders ? Math.round(grossSales / totalOrders) : 0;
-    const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
+    const codOrders = orders.filter(o => isCodGateway(o.payment_gateway)).length;
     const codPct = totalOrders ? Math.round((codOrders / totalOrders) * 100) : 0;
     const totalCustomers = customers.length;
     const repeatCustomers = customers.filter(c => c.orders_count > 1).length;

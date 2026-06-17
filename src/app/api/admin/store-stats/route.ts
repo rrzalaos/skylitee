@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
-import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway } from "@/lib/shopify";
 
 async function kvGet<T>(key: string): Promise<T | null> {
   try { return await kv.get<T>(key); } catch { return null; }
@@ -34,10 +34,7 @@ export async function GET(req: NextRequest) {
     const revenue = orders.reduce((s, o) => s + orderRevenue(o), 0);
     const ordersCount = orders.length;
     const aov = ordersCount ? Math.round(revenue / ordersCount) : 0;
-    const codOrders = orders.filter(o => {
-      const gw = (o.payment_gateway ?? "").toLowerCase();
-      return gw.includes("cod") || gw.includes("cash");
-    }).length;
+    const codOrders = orders.filter(o => isCodGateway(o.payment_gateway)).length;
     const codPct = ordersCount ? Math.round((codOrders / ordersCount) * 100) : 0;
     const hasMetaToken = metaToken.status === "fulfilled" && !!metaToken.value;
 

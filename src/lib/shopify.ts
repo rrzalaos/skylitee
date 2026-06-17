@@ -171,6 +171,15 @@ export function orderRevenue(o: ShopifyOrder): number {
   return parseFloat(o.current_total_price ?? o.total_price ?? "0");
 }
 
+// Recognise a Cash-on-Delivery order from its payment-gateway label. Covers the common
+// Shopify and 3rd-party checkout labels (COD, Cash on Delivery, Pay on Delivery). Centralised
+// so every route classifies COD identically — if a store's checkout app (GoKwik / Shiprocket /
+// Razorpay) uses a custom COD label, add the token here once.
+export function isCodGateway(gateway?: string | null): boolean {
+  const g = (gateway ?? "").toLowerCase();
+  return g.includes("cod") || g.includes("cash") || g.includes("pay on delivery") || g.includes("pay-on-delivery") || g.includes("payondelivery");
+}
+
 // Fetch EVERY real order in a window (paginated past the 250/page limit, test/cancelled/
 // voided filtered out). `fromISO` required; `toISO` optional. Use this everywhere instead of
 // a one-page shopifyFetch so stores with >250 orders aren't silently undercounted.

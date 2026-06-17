@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway } from "@/lib/shopify";
 import { ymdInTz } from "@/lib/timezone";
 import { getShopifySession } from "@/lib/session";
 
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:dashboard:v6:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:dashboard:v7:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries + day buckets in the STORE's timezone so totals & the daily chart
@@ -33,10 +33,7 @@ export async function GET(req: NextRequest) {
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
   const newCustomers = totalOrders - returningCustomers;
 
-  const isCod = (o: typeof orders[number]) => {
-    const gw = o.payment_gateway?.toLowerCase() ?? "";
-    return gw.includes("cod") || gw.includes("cash");
-  };
+  const isCod = (o: typeof orders[number]) => isCodGateway(o.payment_gateway);
   const codOrders = orders.filter(isCod).length;
   const prepaidOrders = totalOrders - codOrders;
   // Cash split: prepaid is collected up front; COD is pending-on-delivery (and RTO-risk).

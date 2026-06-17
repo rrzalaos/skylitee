@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyOrder } from "@/lib/shopify";
+import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 type Order = ShopifyOrder;
 
-function isCod(o: Order) {
-  const gw = o.payment_gateway?.toLowerCase() ?? "";
-  return gw.includes("cod") || gw.includes("cash");
-}
+const isCod = (o: Order) => isCodGateway(o.payment_gateway);
 
 export async function GET(req: NextRequest) {
   const session = await getShopifySession(req);
@@ -19,7 +16,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:v5:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:sales:v6:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries in the STORE's timezone so totals match the Shopify admin.

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { shopifyFetch, shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 interface Customer { orders_count: number; total_spent: string; created_at: string; }
@@ -14,15 +14,15 @@ export async function GET(req: NextRequest) {
   // Month-to-date in the store's timezone.
   const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
 
-  const [orders, products, { customers }] = await Promise.all([
+  const [orders, products, customers] = await Promise.all([
     fetchOrdersInRange(shop, token, startISO),
     shopifyFetchAll<ShopifyProduct>(shop, token, "/products.json?limit=250&fields=id,title,variants", "products"),
-    shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
+    shopifyFetchAll<Customer>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent", "customers"),
   ]);
 
   const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
-  const codOrders = orders.filter(o => o.payment_gateway?.toLowerCase().includes("cod") || o.payment_gateway?.toLowerCase().includes("cash")).length;
+  const codOrders = orders.filter(o => isCodGateway(o.payment_gateway)).length;
   const codPct = totalOrders ? Math.round((codOrders / totalOrders) * 100) : 0;
   const dailyAvg = days > 0 ? grossSales / days : 0;
   const projectedMonthly = Math.round(dailyAvg * 30);
