@@ -755,9 +755,17 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
     { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
     { label: "Impressions", value: compact(ad.impressions) },
     { label: "Reach", value: compact(ad.reach) },
+    { label: "CPM", value: money(cur, ad.cpm) },
     { label: "CTR", value: `${ad.ctr}%` },
     { label: "CPC", value: money(cur, ad.cpc) },
+    { label: "Link Clicks", value: compact(ad.outboundClicks || ad.clicks) },
+    { label: "Landing Page Views", value: compact(ad.lpv) },
+    { label: "LP%", value: ad.clicks > 0 ? `${(ad.lpv / ad.clicks * 100).toFixed(0)}%` : "—" },
+    { label: "Add to Cart", value: ad.atc > 0 ? `${ad.atc}` : "—" },
+    { label: "ATC%", value: ad.lpv > 0 ? `${(ad.atc / ad.lpv * 100).toFixed(0)}%` : "—" },
+    ...(obj === "SALES" ? [{ label: "Purchase Value", value: ad.purchaseValue > 0 ? money(cur, ad.purchaseValue) : "—" }] : []),
     ...(ad.creative.type === "video" && ad.thumbStopRatio > 0 ? [{ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` }] : []),
+    ...(ad.creative.type === "video" && ad.videoViews3s > 0 ? [{ label: "Hold ratio", value: `${(ad.thruplay / ad.videoViews3s * 100).toFixed(0)}%` }] : []),
   ];
 
   return createPortal(
@@ -1278,6 +1286,7 @@ export default function MetaPage() {
           { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
           { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "—"}</span> },
           { label: "Revenue",  render: c => <span className="whitespace-nowrap">{c.purchaseValue > 0 ? `${cur}${c.purchaseValue.toLocaleString("en-IN")}` : "—"}</span> },
+          { label: "CAC",      render: c => <span className="whitespace-nowrap font-semibold">{c.purchases > 0 ? `${cur}${(c.spend / c.purchases).toFixed(2)}` : "—"}</span> },
           { label: "ATC",      render: c => <span>{c.atc > 0 ? c.atc : "—"}</span> },
           { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
           { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
@@ -1316,9 +1325,12 @@ export default function MetaPage() {
         // In the mixed "All" view, ROAS/Orders are meaningless for non-sales campaigns.
         // The "Result" column shows each campaign's own primary outcome instead.
         const renderResult = (c: CampaignRow) => objectiveResult(normalizeObj(c.objective), c);
+        // Cost-per-result, objective-aware (CAC for sales, Cost/Lead for leads, etc.).
+        const costPerResult = (c: CampaignRow) => objectiveCost(normalizeObj(c.objective), { ...c, cac: c.purchases > 0 ? +(c.spend / c.purchases).toFixed(2) : 0 }, cur);
         const allCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Result",   render: c => <span className="font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{renderResult(c)}</span> },
+          { label: "Cost/Result", render: c => <span className="whitespace-nowrap font-semibold text-[#18181B] dark:text-[#F4F4F5]">{costPerResult(c)}</span> },
           { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : c.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
           { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
           { label: "Clicks",   render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
@@ -1379,7 +1391,7 @@ export default function MetaPage() {
                     <table className="w-full text-[15px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                          {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC"].map(h => (
+                          {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC", "CPM", "LP%", "ATC%"].map(h => (
                             <th key={h} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1408,6 +1420,9 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.ctr}%</td>
                             <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpc}</td>
+                            <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpm}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks > 0 ? `${(a.lpv / a.clicks * 100).toFixed(0)}%` : "—"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.lpv > 0 ? `${(a.atc / a.lpv * 100).toFixed(0)}%` : "—"}</td>
                           </tr>
                         ))}
                       </tbody>
