@@ -96,6 +96,16 @@ export function useDateRange() {
   return ctx;
 }
 
+/** Human-readable explicit date span, e.g. "9 Jun – 15 Jun". Always shows the
+ *  real dates so figures can be reconciled against Shopify / Meta. */
+export function formatRangeDates(range: DateRange): string {
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+  const d1 = new Date(range.from + "T00:00:00");
+  const d2 = new Date(range.to + "T00:00:00");
+  if (range.from === range.to) return d1.toLocaleDateString("en-IN", opts);
+  return `${d1.toLocaleDateString("en-IN", opts)} – ${d2.toLocaleDateString("en-IN", opts)}`;
+}
+
 export function getComparisonRange(range: DateRange, compareWith: string): { from: string; to: string; label: string } | null {
   const from = new Date(range.from + "T00:00:00");
   const to = new Date(range.to + "T00:00:00");

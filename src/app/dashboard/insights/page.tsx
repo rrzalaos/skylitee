@@ -21,6 +21,20 @@ export default function InsightsPage() {
   const [metrics, setMetrics] = useState<InsightMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [adsConnected, setAdsConnected] = useState(false);
+
+  // Reflect real connection status — don't hard-show a "Connect Meta/Google Ads"
+  // prompt when those platforms are already linked.
+  useEffect(() => {
+    Promise.allSettled([
+      fetch("/api/meta/accounts").then(r => r.json()),
+      fetch("/api/google/sites").then(r => r.json()),
+    ]).then(([m, g]) => {
+      const metaOk = m.status === "fulfilled" && !m.value?.error;
+      const gadsOk = g.status === "fulfilled" && !!g.value?.gadsConnected;
+      setAdsConnected(metaOk || gadsOk);
+    });
+  }, []);
 
   const fetchInsights = () => {
     setLoading(true);
@@ -101,9 +115,15 @@ export default function InsightsPage() {
                   Based on {metrics.days} days of real data
                 </div>
               </div>
-              <Link href="/dashboard/connections" className="block text-[17px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">
-                <span className="font-medium text-[#92400e]">Connect Meta/Google Ads</span> to see ROAS and channel attribution →
-              </Link>
+              {adsConnected ? (
+                <Link href="/dashboard/attribution" className="block text-[17px] text-[#686864] bg-[#f0faf4] border border-[#bbf7d0] rounded-lg px-3 py-2">
+                  <span className="font-medium text-[#15803d]">Meta / Google Ads connected</span> — view ROAS & channel attribution →
+                </Link>
+              ) : (
+                <Link href="/dashboard/connections" className="block text-[17px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">
+                  <span className="font-medium text-[#92400e]">Connect Meta/Google Ads</span> to see ROAS and channel attribution →
+                </Link>
+              )}
             </Card>
           )}
         </div>

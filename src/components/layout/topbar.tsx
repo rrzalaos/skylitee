@@ -42,13 +42,14 @@ const presets: { id: DatePreset; label: string }[] = [
   { id: "custom", label: "Custom range" },
 ];
 
+// Only period-shiftable comparisons — every option maps to a real date range
+// and updates the figures. (Dropped "vs Yesterday" / "vs Goal": they had no
+// date mapping, so selecting them silently did nothing.)
 const compareOptions = [
   { id: "prev_period", label: "vs Previous period" },
-  { id: "yesterday", label: "vs Yesterday" },
   { id: "last_week", label: "vs Last week" },
   { id: "last_month", label: "vs Last month" },
   { id: "last_year", label: "vs Last year" },
-  { id: "goal", label: "vs Goal" },
 ];
 
 export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => void; isAdmin?: boolean }) {
@@ -70,6 +71,10 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   const [invites, setInvites] = useState<Array<{ shop: string; role: string; addedAt: string; inviterEmail: string }>>([]);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; type: string; message: string; read: boolean; createdAt: string }>>([]);
+  // Auto data alerts — live signals from the store's own data (COD/RTO, stock,
+  // repeat-rate, order anomalies), so the bell is never empty when invites are.
+  const [alerts, setAlerts] = useState<Array<{ sev: "danger" | "warning"; title: string; body: string }>>([]);
+  const [alertsSeen, setAlertsSeen] = useState(false);
   const { range, setPreset, setCustomRange, compareWith, setCompareWith } = useDateRange();
 
   useEffect(() => {
@@ -91,6 +96,16 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
     fetch("/api/notifications")
       .then(r => r.json())
       .then(d => setNotifications(d.notifications ?? []))
+      .catch(() => {});
+    fetch("/api/shopify/anomalies")
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) return;
+        setAlerts([
+          ...((d.critical ?? []) as Array<{ title: string; desc: string }>).map(x => ({ sev: "danger" as const, title: x.title, body: x.desc })),
+          ...((d.warnings ?? []) as Array<{ title: string; desc: string }>).map(x => ({ sev: "warning" as const, title: x.title, body: x.desc })),
+        ]);
+      })
       .catch(() => {});
   }, [isAdmin]);
 
@@ -315,18 +330,21 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
             <button
               onClick={() => {
                 setShowBell(v => !v);
-                // Mark notifications read when opening
-                if (!showBell && notifications.some(n => !n.read)) {
-                  fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
-                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                // Mark notifications + data alerts read when opening
+                if (!showBell) {
+                  if (notifications.some(n => !n.read)) {
+                    fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
+                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                  }
+                  setAlertsSeen(true);
                 }
               }}
               className="w-8 h-8 rounded-lg border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors relative"
             >
               <Bell size={14} />
-              {(invites.length + notifications.filter(n => !n.read).length) > 0 && (
+              {(invites.length + notifications.filter(n => !n.read).length + (alertsSeen ? 0 : alerts.length)) > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-[#EF4444] rounded-full text-[11px] font-bold text-white flex items-center justify-center px-0.5">
-                  {invites.length + notifications.filter(n => !n.read).length}
+                  {invites.length + notifications.filter(n => !n.read).length + (alertsSeen ? 0 : alerts.length)}
                 </span>
               )}
             </button>
@@ -334,12 +352,30 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
               <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 w-[320px]">
                 <div className="px-3.5 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between">
                   <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Notifications</span>
-                  {(invites.length + notifications.length) === 0
+                  {(invites.length + notifications.length + alerts.length) === 0
                     ? <span className="text-[13px] text-[#A1A1AA]">All caught up</span>
-                    : <span className="text-[13px] text-[#A1A1AA]">{invites.length + notifications.length} items</span>}
+                    : <span className="text-[13px] text-[#A1A1AA]">{invites.length + notifications.length + alerts.length} items</span>}
                 </div>
 
                 <div className="max-h-[380px] overflow-y-auto">
+                  {/* ── Live data alerts ── */}
+                  {alerts.length > 0 && (
+                    <>
+                      <div className="px-3.5 pt-2.5 pb-1">
+                        <span className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wider">Data Alerts</span>
+                      </div>
+                      {alerts.map((a, i) => (
+                        <div key={i} className="px-3.5 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] flex items-start gap-2.5">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${a.sev === "danger" ? "bg-[#EF4444]" : "bg-[#EAB308]"}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] leading-snug">{a.title}</div>
+                            <div className="text-[12px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 leading-snug">{a.body}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
                   {/* ── Pending invitations ── */}
                   {invites.length > 0 && (
                     <>
@@ -406,7 +442,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
                     </>
                   )}
 
-                  {invites.length === 0 && notifications.length === 0 && (
+                  {invites.length === 0 && notifications.length === 0 && alerts.length === 0 && (
                     <div className="px-3.5 py-6 text-[14px] text-[#A1A1AA] text-center">No notifications yet</div>
                   )}
                 </div>

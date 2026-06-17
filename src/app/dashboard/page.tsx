@@ -13,7 +13,7 @@ import {
   Zap, RefreshCw, Target, Megaphone, Eye, MousePointerClick, Send, ArrowRight, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useDateRange, getComparisonRange } from "@/lib/date-range-context";
+import { useDateRange, getComparisonRange, formatRangeDates } from "@/lib/date-range-context";
 import { cn } from "@/lib/utils";
 import { Sparkline, Donut, Gauge } from "@/components/ui/charts";
 
@@ -38,6 +38,7 @@ interface MetaCampaign { name: string; status: string; objective: string; spend:
 interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPosition: number }
 interface GscKeyword { query: string; clicks: number; impressions: number; ctr: number; position: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
+interface Ga4Ecom { itemsViewed: number; itemsAddedToCart: number; itemsCheckedOut: number; itemsPurchased: number; purchases: number; revenue: number }
 interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue?: number }
 interface CostModel { cogsPerOrder: number; shippingPerOrder: number; rtoRate: number; rtoCostPerOrder: number; gatewayPct: number; codFeePct: number }
 
@@ -117,6 +118,8 @@ export default function CommandCenterPage() {
   const [gsc, setGsc] = useState<GscKPIs | null>(null);
   const [gscKeywords, setGscKeywords] = useState<GscKeyword[]>([]);
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
+  const [ga4Ecom, setGa4Ecom] = useState<Ga4Ecom | null>(null);
+  const [funnelSrc, setFunnelSrc] = useState<"meta" | "ga4" | "shopify">("meta");
   const [connections, setConnections] = useState({ shopify: false, meta: false, gads: false, gsc: false, ga4: false });
   const [cost, setCost] = useState<CostModel | null>(null);
   const [salesTarget, setSalesTarget] = useState(0);
@@ -156,7 +159,7 @@ export default function CommandCenterPage() {
       }
       if (compMetaRes.status === "fulfilled" && compMetaRes.value && !compMetaRes.value?.error) setCompMeta(compMetaRes.value.kpis ?? null);
       if (gscRes.status === "fulfilled" && !gscRes.value?.error) { setGsc(gscRes.value.kpis ?? null); setGscKeywords(gscRes.value.keywords ?? []); setConnections(c => ({ ...c, gsc: true })); }
-      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) { setGa4(ga4Res.value.kpis ?? null); setConnections(c => ({ ...c, ga4: true })); }
+      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) { setGa4(ga4Res.value.kpis ?? null); setGa4Ecom(ga4Res.value.ecommerce ?? null); setConnections(c => ({ ...c, ga4: true })); }
       if (gadsRes.status === "fulfilled" && !gadsRes.value?.error) { setGads(gadsRes.value.kpis ?? null); setGadsDaily(gadsRes.value.daily ?? []); setConnections(c => ({ ...c, gads: true })); }
     }).finally(() => setLoading(false));
   }, [range.from, range.to, compareWith]);
@@ -169,6 +172,14 @@ export default function CommandCenterPage() {
   const totalSpend = (meta?.spend ?? 0) + (gads?.spend ?? 0);
   const liveCount = [connections.shopify, connections.meta, connections.gsc, connections.ga4, connections.gads].filter(Boolean).length;
   const compLabel = getComparisonRange(range, compareWith)?.label ?? "prev";
+
+  // GSC reports finalise ~2–3 days late, so a recent window legitimately reads 0
+  // even when GA4 shows traffic. Flag it so a bare "0" doesn't look broken.
+  const gscRecentLag = useMemo(() => {
+    const d = new Date(); d.setDate(d.getDate() - 3);
+    return range.to > d.toISOString().slice(0, 10);
+  }, [range.to]);
+  const gscPending = !!gsc && gsc.clicks === 0 && gscRecentLag;
 
   const pct = (curr: number, prev?: number) => (!prev ? undefined : +((curr - prev) / prev * 100).toFixed(0));
   const salesChange = pct(k?.grossSales ?? 0, compShop?.kpis.grossSales);
@@ -247,41 +258,103 @@ export default function CommandCenterPage() {
   const chartData = useMemo(() => {
     if (!shop) return [];
     return shop.dailyRevenue.map(d => {
-      const md = metaDaily.find(m => m.date.slice(5).replace("-", "/") === d.day || m.date === d.day);
-      const gd = gadsDaily.find(g => g.date.slice(5).replace("-", "/") === d.day || g.date === d.day);
+      // Join on the canonical YYYY-MM-DD `date` (all three sources share it).
+      // The old "M/D" match silently failed on leading zeros ("06/12" ≠ "6/12"),
+      // so ad spend always rendered as a flat 0 line.
+      const md = metaDaily.find(m => m.date === d.date);
+      const gd = gadsDaily.find(g => g.date === d.date);
       return { day: d.day, revenue: d.revenue, spend: (md?.spend ?? 0) + (gd?.spend ?? 0) };
     });
   }, [shop, metaDaily, gadsDaily]);
 
-  /* ── Cross-platform conversion funnel (Meta-centric) + biggest drop ── */
-  const funnel = useMemo(() => {
-    if (!meta) return null;
-    const steps = [
-      { label: "Sessions (GA4)", value: ga4?.sessions ?? 0, show: !!ga4 },
-      { label: "Ad Clicks", value: meta.clicks, show: true },
-      { label: "Landing Page Views", value: meta.lpv, show: meta.lpv > 0 },
-      { label: "Add to Cart", value: meta.atc, show: meta.atc > 0 },
-      { label: "Checkout", value: meta.checkout, show: meta.checkout > 0 },
-      { label: "Orders (Shopify)", value: k?.totalOrders ?? 0, show: !!k },
-    ].filter(s => s.show && s.value >= 0);
-    let worst = { from: "", to: "", dropPct: 0 };
-    for (let i = 1; i < steps.length; i++) {
-      const prev = steps[i - 1].value, cur = steps[i].value;
-      if (prev > 0 && cur <= prev) {
-        const drop = Math.round((1 - cur / prev) * 100);
-        if (drop > worst.dropPct) worst = { from: steps[i - 1].label, to: steps[i].label, dropPct: drop };
-      }
-    }
+  /* ── Single-source conversion funnels ── one platform at a time, no stitching.
+        Each funnel is built ONLY from its own platform's tracked numbers so a
+        store owner always knows exactly which source they're reading. ── */
+  const funnels = useMemo(() => {
+    const inr = (n: number) => formatINR(n);
+    const cnt = (n: number) => n.toLocaleString("en-IN");
+
+    // Meta — the ad funnel, all Meta-tracked
+    const metaSteps = meta ? [
+      { label: "Impressions", value: meta.impressions, display: cnt(meta.impressions) },
+      { label: "Link Clicks", value: meta.clicks, display: cnt(meta.clicks) },
+      { label: "Landing Page Views", value: meta.lpv, display: cnt(meta.lpv) },
+      { label: "Add to Cart", value: meta.atc, display: cnt(meta.atc) },
+      { label: "Checkout", value: meta.checkout, display: cnt(meta.checkout) },
+      { label: "Purchases", value: meta.purchases, display: cnt(meta.purchases) },
+    ].filter(s => s.value > 0) : [];
+
+    // GA4 — the on-site ecommerce funnel (needs ecommerce events configured)
+    const ga4Steps = ga4 && ga4Ecom ? [
+      { label: "Sessions", value: ga4.sessions, display: cnt(ga4.sessions) },
+      { label: "Product Views", value: ga4Ecom.itemsViewed, display: cnt(ga4Ecom.itemsViewed) },
+      { label: "Add to Cart", value: ga4Ecom.itemsAddedToCart, display: cnt(ga4Ecom.itemsAddedToCart) },
+      { label: "Reached Checkout", value: ga4Ecom.itemsCheckedOut, display: cnt(ga4Ecom.itemsCheckedOut) },
+      { label: "Purchased", value: ga4Ecom.itemsPurchased, display: cnt(ga4Ecom.itemsPurchased) },
+    ].filter(s => s.value > 0) : [];
+
+    // Shopify — the revenue / cash funnel (gross → net → real cash now)
+    const discounts = k?.totalDiscounts ?? 0;
+    const returns = k?.refundedRevenue ?? 0;
+    const afterDisc = Math.max(0, (k?.grossSales ?? 0) - discounts);
+    const net = Math.max(0, (k?.grossSales ?? 0) - returns);
+    const shopSteps = k ? [
+      { label: "Gross Sales", value: k.grossSales, display: inr(k.grossSales) },
+      ...(discounts > 0 ? [{ label: "After Discounts", value: afterDisc, display: inr(afterDisc) }] : []),
+      ...(returns > 0 ? [{ label: "Net of Returns", value: net, display: inr(net) }] : []),
+      { label: "Prepaid Cash Now", value: prepaidRev, display: inr(prepaidRev) },
+    ].filter(s => s.value > 0) : [];
+
     const diag: Record<string, string> = {
-      "Ad Clicks→Landing Page Views": "Clicks aren't loading the page — a site-speed / broken-link problem, not targeting. Your CTR is fine.",
+      // Meta
+      "Link Clicks→Landing Page Views": "Clicks aren't loading the page — a site-speed / broken-link problem, not targeting.",
       "Landing Page Views→Add to Cart": "People land but don't add to cart — the landing page / offer isn't convincing. Fix the page, not the ads.",
       "Add to Cart→Checkout": "Cart abandons before checkout — likely shipping-cost shock or a clunky cart. Show shipping early.",
-      "Checkout→Orders (Shopify)": "Checkout started but not completed — payment / COD friction. Simplify checkout, offer prepaid incentives.",
-      "Sessions (GA4)→Ad Clicks": "",
+      "Checkout→Purchases": "Checkout started but not completed — payment / COD friction. Offer prepaid incentives.",
+      // GA4
+      "Product Views→Add to Cart": "Visitors view products but don't add to cart — price, photos or trust signals on the product page need work.",
+      "Add to Cart→Reached Checkout": "Carts abandon before checkout — surface shipping cost and a clear CTA earlier.",
+      "Reached Checkout→Purchased": "Checkout drop-off — simplify the form and reduce payment friction.",
+      // Shopify
+      "Gross Sales→Prepaid Cash Now": "A large share of sales is COD — cash is pending and carries RTO risk. A prepaid discount shifts the mix.",
+      "Net of Returns→Prepaid Cash Now": "Most collected revenue is still COD (pending). Nudge prepaid to protect cash flow.",
     };
-    const key = `${worst.from}→${worst.to}`;
-    return { steps, worst, diagnosis: diag[key] ?? "" };
-  }, [meta, ga4, k]);
+
+    const build = (steps: { label: string; value: number; display: string }[], unit: "count" | "inr") => {
+      let worst = { from: "", to: "", dropPct: 0 };
+      for (let i = 1; i < steps.length; i++) {
+        const prev = steps[i - 1].value, cur = steps[i].value;
+        if (prev > 0 && cur <= prev) {
+          const drop = Math.round((1 - cur / prev) * 100);
+          if (drop > worst.dropPct) worst = { from: steps[i - 1].label, to: steps[i].label, dropPct: drop };
+        }
+      }
+      return { steps, worst, diagnosis: diag[`${worst.from}→${worst.to}`] ?? "", available: steps.length >= 2, unit };
+    };
+
+    return {
+      meta: build(metaSteps, "count"),
+      ga4: build(ga4Steps, "count"),
+      shopify: build(shopSteps, "inr"),
+    };
+  }, [meta, ga4, ga4Ecom, k, prepaidRev]);
+
+  // Keep the selected source on something that actually has data.
+  useEffect(() => {
+    const order = ["meta", "ga4", "shopify"] as const;
+    if (!funnels[funnelSrc].available) {
+      const first = order.find(s => funnels[s].available);
+      if (first && first !== funnelSrc) setFunnelSrc(first);
+    }
+  }, [funnels, funnelSrc]);
+
+  const funnel = funnels[funnelSrc];
+  const anyFunnel = funnels.meta.available || funnels.ga4.available || funnels.shopify.available;
+  const FUNNEL_SRC_META: Record<"meta" | "ga4" | "shopify", { label: string; sub: string }> = {
+    meta: { label: "Meta", sub: "Meta-tracked ad funnel — impressions to purchase" },
+    ga4: { label: "GA4", sub: "On-site behaviour — sessions to purchase" },
+    shopify: { label: "Shopify", sub: "Revenue funnel — gross sales to real cash collected" },
+  };
 
   /* ── Cross-platform alerts ── */
   const alerts = useMemo(() => {
@@ -373,7 +446,7 @@ export default function CommandCenterPage() {
               </span>
             ) : null}
           </div>
-          <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · {liveCount} of 5 platforms active</p>
+          <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · <span className="font-semibold text-[#71717A] dark:text-[#A1A1AA]">{formatRangeDates(range)}</span> · {liveCount} of 5 platforms active</p>
         </div>
         <div className="hidden sm:flex items-center gap-1.5">
           {platforms.map(p => (
@@ -432,7 +505,7 @@ export default function CommandCenterPage() {
         )}
 
         <StatCard label={gsc ? "Search Clicks" : "New Customers"} value={gsc ? gsc.clicks.toLocaleString("en-IN") : (k?.newCustomers.toString() ?? "—")}
-          sub={gsc ? (gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
+          sub={gsc ? (gscPending ? <span className="text-[#B45309] font-semibold">Search Console finalises ~2–3 days late — this window is too recent to report yet</span> : gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
       </div>
 
       {/* ── Visual snapshot: channel mix · cash split · pace ── */}
@@ -547,7 +620,7 @@ export default function CommandCenterPage() {
               main={meta ? formatINR(meta.spend) : "—"} mainSub={activeObjs.length ? activeObjs.map(b => `${OBJ_META[b.obj].label}`).join(" + ") : "spend"}
               right={sales.count > 0 ? `${sales.roas}x ROAS` : leadsB.count > 0 ? `${formatINR(leadsB.cpl)}/lead` : ""} rightSub={meta ? `freq ${meta.frequency}x${meta.frequency >= 3 ? " ⚠" : ""}` : ""} rightTone={meta && meta.frequency >= 3 ? "warn" : "neutral"} />
             <PlatformRow name="Search Console" connected={connections.gsc} connectHref="/dashboard/connections"
-              main={gsc ? gsc.clicks.toLocaleString("en-IN") : "—"} mainSub={gsc ? `${gsc.impressions.toLocaleString("en-IN")} impressions` : ""}
+              main={gsc ? gsc.clicks.toLocaleString("en-IN") : "—"} mainSub={gscPending ? "lags 2–3 days — too recent" : gsc ? `${gsc.impressions.toLocaleString("en-IN")} impressions` : ""}
               right={gsc ? `pos ${gsc.avgPosition.toFixed(1)}` : ""} rightSub={gscOpp.count > 0 ? `${gscOpp.count} near page 1` : `${gsc?.ctr.toFixed(1) ?? "—"}% CTR`} rightTone={gscOpp.count > 0 ? "good" : "neutral"} />
             <PlatformRow name="Analytics GA4" connected={connections.ga4} connectHref="/dashboard/connections"
               main={ga4 ? ga4.sessions.toLocaleString("en-IN") : "—"} mainSub={ga4 ? `${ga4.users.toLocaleString("en-IN")} users` : ""}
@@ -564,10 +637,34 @@ export default function CommandCenterPage() {
         </Card>
       </div>
 
-      {/* ── SECTION 6: Cross-platform conversion funnel ── */}
-      {funnel && funnel.steps.length >= 3 && (
+      {/* ── SECTION 6: Single-source conversion funnel (pick one platform) ── */}
+      {anyFunnel && (
         <Card>
-          <CardHeader title="Conversion Funnel — ad click to order" right={<span className="text-[13px] text-[#A1A1AA]">Meta → GA4 → Shopify, stitched</span>} />
+          <CardHeader
+            title="Conversion Funnel"
+            right={
+              <div className="flex items-center gap-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg p-0.5">
+                {(["meta", "ga4", "shopify"] as const).map(src => {
+                  const ok = funnels[src].available;
+                  return (
+                    <button
+                      key={src}
+                      onClick={() => ok && setFunnelSrc(src)}
+                      disabled={!ok}
+                      title={ok ? "" : `No ${FUNNEL_SRC_META[src].label} funnel data for this period`}
+                      className={cn("px-2.5 py-1 rounded-md text-[13px] font-bold transition-colors",
+                        funnelSrc === src ? "bg-white dark:bg-[#2A2A2A] text-[#EA580C] shadow-sm"
+                          : ok ? "text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]"
+                          : "text-[#D4D4D4] dark:text-[#3F3F46] cursor-not-allowed")}
+                    >
+                      {FUNNEL_SRC_META[src].label}
+                    </button>
+                  );
+                })}
+              </div>
+            }
+          />
+          <p className="text-[13px] text-[#A1A1AA] -mt-1 mb-2">{FUNNEL_SRC_META[funnelSrc].sub}</p>
           <div className="space-y-1.5">
             {funnel.steps.map((s, i) => {
               const top = funnel.steps[0].value || 1;
@@ -580,13 +677,16 @@ export default function CommandCenterPage() {
                   <div className="w-36 text-[14px] text-[#52525B] dark:text-[#A1A1AA] shrink-0">{s.label}</div>
                   <div className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg h-6 relative overflow-hidden">
                     <div className={cn("h-full rounded-lg", isWorst ? "bg-[#EF4444]" : "bg-[#F97316]")} style={{ width: `${widthPct}%` }} />
-                    <span className="absolute left-2 top-0 h-full flex items-center text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.value.toLocaleString("en-IN")}</span>
+                    <span className="absolute left-2 top-0 h-full flex items-center text-[13px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.display}</span>
                   </div>
                   <div className="w-16 text-right text-[13px] shrink-0">{drop !== null && <span className={drop >= 70 ? "text-[#EF4444] font-bold" : "text-[#A1A1AA]"}>−{drop}%</span>}</div>
                 </div>
               );
             })}
           </div>
+          {funnel.steps.length < 2 && (
+            <div className="text-[14px] text-[#A1A1AA] py-3 text-center">No {FUNNEL_SRC_META[funnelSrc].label} funnel data for this period.{funnelSrc === "ga4" ? " (GA4 needs ecommerce events configured.)" : ""}</div>
+          )}
           {funnel.diagnosis && (
             <div className="mt-3 rounded-xl bg-[#FEF2F2] dark:bg-[#2D0A0A] border-l-[3px] border-l-[#EF4444] p-3">
               <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Biggest drop: {funnel.worst.dropPct}% between {funnel.worst.from} → {funnel.worst.to}</div>
