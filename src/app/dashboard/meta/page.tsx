@@ -675,15 +675,17 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
 interface DrillMetrics {
   spend: number; impressions: number; reach: number; frequency: number;
   clicks: number; ctr: number; cpc: number; cpm: number; outboundClicks: number;
-  lpv: number; leads: number; purchases: number; purchaseValue: number; roas: number; cac: number; atc: number;
+  lpv: number; leads: number; purchases: number; purchaseValue: number; roas: number; cac: number;
+  atc: number; atcValue: number; checkout: number; checkoutValue: number;
 }
 interface AdSetRow extends DrillMetrics { id: string; name: string; status: string; optimizationGoal: string | null; budget: number | null; }
 interface ParsedCreative {
   type: "image" | "carousel" | "video" | "unknown";
   images: string[]; videoThumb: string | null; videoSrc: string | null; videoId: string | null;
   cta: string | null; primaryText: string | null; headline: string | null;
+  productSetId?: string | null; catalogName?: string | null;
 }
-interface AdRow extends DrillMetrics { id: string; name: string; status: string; creative: ParsedCreative; videoViews3s: number; thruplay: number; thumbStopRatio: number; }
+interface AdRow extends DrillMetrics { id: string; name: string; status: string; createdTime?: string | null; creative: ParsedCreative; videoViews3s: number; thruplay: number; thumbStopRatio: number; }
 
 function CreativeMedia({ c }: { c: ParsedCreative }) {
   const placeholder = (Icon: typeof ImageIcon, label: string) => (
@@ -761,9 +763,14 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
     { label: "Link Clicks", value: compact(ad.outboundClicks || ad.clicks) },
     { label: "Landing Page Views", value: compact(ad.lpv) },
     { label: "LP%", value: ad.clicks > 0 ? `${(ad.lpv / ad.clicks * 100).toFixed(0)}%` : "—" },
-    { label: "Add to Cart", value: ad.atc > 0 ? `${ad.atc}` : "—" },
+    { label: "Add to Cart", value: ad.atc > 0 ? `${ad.atc}${ad.atcValue > 0 ? ` · ${money(cur, ad.atcValue)}` : ""}` : "—" },
     { label: "ATC%", value: ad.lpv > 0 ? `${(ad.atc / ad.lpv * 100).toFixed(0)}%` : "—" },
-    ...(obj === "SALES" ? [{ label: "Purchase Value", value: ad.purchaseValue > 0 ? money(cur, ad.purchaseValue) : "—" }] : []),
+    { label: "Checkout (CI)", value: ad.checkout > 0 ? `${ad.checkout}${ad.checkoutValue > 0 ? ` · ${money(cur, ad.checkoutValue)}` : ""}` : "—" },
+    { label: "CI%", value: ad.atc > 0 ? `${(ad.checkout / ad.atc * 100).toFixed(0)}%` : "—" },
+    ...(obj === "SALES" ? [
+      { label: "Purchase", value: ad.purchases > 0 ? `${ad.purchases}${ad.purchaseValue > 0 ? ` · ${money(cur, ad.purchaseValue)}` : ""}` : "—" },
+      { label: "P%", value: ad.checkout > 0 ? `${(ad.purchases / ad.checkout * 100).toFixed(0)}%` : "—" },
+    ] : []),
     ...(ad.creative.type === "video" && ad.thumbStopRatio > 0 ? [{ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` }] : []),
     ...(ad.creative.type === "video" && ad.videoViews3s > 0 ? [{ label: "Hold ratio", value: `${(ad.thruplay / ad.videoViews3s * 100).toFixed(0)}%` }] : []),
   ];
@@ -817,6 +824,26 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
               {c.headline && (<div><div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider mb-1">Headline</div><p className="text-[#18181B] dark:text-[#F4F4F5] font-semibold">{c.headline}</p></div>)}
               {!c.primaryText && !c.headline && (<p className="text-[#A1A1AA]">No ad copy returned for this creative.</p>)}
             </div>
+
+            {/* Catalog set (DPA) + how long it's been running */}
+            {(c.catalogName || ad.createdTime) && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {c.catalogName && (
+                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#7C3AED] bg-[#F5F3FF] dark:bg-[#1E1437] px-2.5 py-1 rounded-full">
+                    <Layers size={12} /> Catalog: {c.catalogName}
+                  </span>
+                )}
+                {ad.createdTime && (() => {
+                  const start = new Date(ad.createdTime);
+                  const days = Math.max(0, Math.round((Date.now() - start.getTime()) / 86_400_000));
+                  return (
+                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#52525B] dark:text-[#A1A1AA] bg-[#F5F5F4] dark:bg-[#1C1C1C] px-2.5 py-1 rounded-full">
+                      Active {days}d · since {start.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
               {stats.map(s => (
@@ -1391,7 +1418,7 @@ export default function MetaPage() {
                     <table className="w-full text-[15px] border-collapse">
                       <thead>
                         <tr className="border-b border-black/[0.06] dark:border-white/[0.06]">
-                          {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC", "CPM", "LP%", "ATC%"].map(h => (
+                          {["Ad Set", "Status", "Spend", "Result", ...(drill.obj === "SALES" ? ["ROAS"] : []), costLabelFor(drill.obj), "Impressions", "Clicks", "CTR", "CPC", "CPM", "LP%", "ATC%", "CI%", "P%"].map(h => (
                             <th key={h} className="text-left py-2 px-2 text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -1423,6 +1450,8 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpm}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks > 0 ? `${(a.lpv / a.clicks * 100).toFixed(0)}%` : "—"}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.lpv > 0 ? `${(a.atc / a.lpv * 100).toFixed(0)}%` : "—"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.atc > 0 ? `${(a.checkout / a.atc * 100).toFixed(0)}%` : "—"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.checkout > 0 ? `${(a.purchases / a.checkout * 100).toFixed(0)}%` : "—"}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -33,10 +33,10 @@ interface AssetFeedSpec {
 interface Creative {
   id?: string; name?: string; thumbnail_url?: string; image_url?: string;
   object_type?: string; call_to_action_type?: string; video_id?: string;
-  effective_object_story_id?: string;
+  effective_object_story_id?: string; product_set_id?: string;
   object_story_spec?: ObjectStorySpec; asset_feed_spec?: AssetFeedSpec;
 }
-interface AdMeta { id: string; name: string; status: string; creative?: Creative }
+interface AdMeta { id: string; name: string; status: string; created_time?: string; creative?: Creative }
 interface AdSetMeta { id: string; name: string; status: string; daily_budget?: string; lifetime_budget?: string; optimization_goal?: string }
 
 function actVal(arr: ActionEntry[] | undefined, type: string): number {
@@ -79,6 +79,10 @@ function metricsFromRow(row: InsightRow) {
     roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
     cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
     atc: Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart")),
+    atcValue: +Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_add_to_cart"), actVal(row.action_values, "add_to_cart")).toFixed(2),
+    // Checkout (a.k.a. CI — Checkout Initiated) enables CI Ratio and P Ratio downstream.
+    checkout: Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_initiate_checkout"), actInt(row.actions, "initiate_checkout")),
+    checkoutValue: +Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_initiate_checkout"), actVal(row.action_values, "initiate_checkout")).toFixed(2),
   };
 }
 
@@ -91,6 +95,8 @@ interface ParsedCreative {
   cta: string | null;
   primaryText: string | null;
   headline: string | null;
+  productSetId: string | null;
+  catalogName: string | null;
 }
 
 function parseCreative(cr: Creative | undefined): ParsedCreative {
@@ -131,7 +137,8 @@ function parseCreative(cr: Creative | undefined): ParsedCreative {
     else if (cr?.thumbnail_url) { type = "image"; images = [cr.thumbnail_url]; }
   }
 
-  return { type, images, videoThumb, videoSrc: null, videoId, cta, primaryText, headline };
+  const productSetId = cr?.product_set_id ?? null;
+  return { type, images, videoThumb, videoSrc: null, videoId, cta, primaryText, headline, productSetId, catalogName: null };
 }
 
 const GRAPH = "https://graph.facebook.com/v19.0";
@@ -153,7 +160,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:meta:drill:v2:${level}:${parentId}:${from}:${to}`;
+  const cacheKey = `cache:${shop}:meta:drill:v3:${level}:${parentId}:${from}:${to}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Verify the saved Meta account is still resolvable (token sanity) — parentId is the scope.
@@ -201,7 +208,7 @@ export async function GET(req: NextRequest) {
 
   // level === "ad"
   const fields = "ad_id,ad_name,spend,impressions,reach,frequency,clicks,ctr,cpc,cpm,outbound_clicks,actions,action_values,video_thruplay_watched_actions";
-  const creativeFields = "id,name,status,creative%7Bid,name,thumbnail_url,image_url,object_type,call_to_action_type,video_id,effective_object_story_id,object_story_spec%7Blink_data%7Bmessage,name,description,picture,link,call_to_action,child_attachments%7D,video_data%7Bmessage,title,image_url,video_id,call_to_action%7D,photo_data%7Bimage_url%7D%7D,asset_feed_spec%7Bimages,videos,bodies,titles,call_to_action_types%7D%7D";
+  const creativeFields = "id,name,status,created_time,creative%7Bid,name,thumbnail_url,image_url,object_type,call_to_action_type,video_id,effective_object_story_id,product_set_id,object_story_spec%7Blink_data%7Bmessage,name,description,picture,link,call_to_action,child_attachments%7D,video_data%7Bmessage,title,image_url,video_id,call_to_action%7D,photo_data%7Bimage_url%7D%7D,asset_feed_spec%7Bimages,videos,bodies,titles,call_to_action_types%7D%7D";
   const [insRes, adsRes] = await Promise.all([
     fetch(`${GRAPH}/${parentId}/insights?fields=${fields}&level=ad&time_range=${timeRange}&limit=100&sort=spend_descending&action_attribution_windows=${attrWindows}&access_token=${token}`),
     fetch(`${GRAPH}/${parentId}/ads?fields=${creativeFields}&limit=200&access_token=${token}`),
@@ -228,13 +235,27 @@ export async function GET(req: NextRequest) {
     } catch { /* video source is best-effort; thumbnail still shows */ }
   }
 
+  // Batch-resolve catalog (product set) names for DPA / catalog ads — "if possible" intel.
+  const setIds = Array.from(new Set(Array.from(parsed.values()).map(p => p.productSetId).filter((v): v is string => !!v)));
+  if (setIds.length > 0) {
+    try {
+      const sRes = await fetch(`${GRAPH}/?ids=${setIds.join(",")}&fields=name&access_token=${token}`);
+      const sData = await sRes.json() as Record<string, { name?: string }>;
+      for (const p of parsed.values()) {
+        if (p.productSetId && sData[p.productSetId]?.name) p.catalogName = sData[p.productSetId].name ?? null;
+      }
+    } catch { /* catalog name is best-effort */ }
+  }
+
+  const emptyCreative: ParsedCreative = { type: "unknown", images: [], videoThumb: null, videoSrc: null, videoId: null, cta: null, primaryText: null, headline: null, productSetId: null, catalogName: null };
   const rows = (insData.data ?? []).map(r => {
     const id = r.ad_id ?? "";
     const m = adMap.get(id);
     return {
       id, name: r.ad_name ?? m?.name ?? "",
       status: m?.status ?? "UNKNOWN",
-      creative: parsed.get(id) ?? { type: "unknown", images: [], videoThumb: null, videoSrc: null, videoId: null, cta: null, primaryText: null, headline: null },
+      createdTime: m?.created_time ?? null,
+      creative: parsed.get(id) ?? emptyCreative,
       ...metricsFromRow(r),
       videoViews3s: actInt(r.actions, "video_view"),
       thruplay: Math.round(sumArr(r.video_thruplay_watched_actions)),
