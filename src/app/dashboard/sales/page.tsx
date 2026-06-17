@@ -45,6 +45,7 @@ export default function SalesPage() {
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
   const [ga4Ecom, setGa4Ecom] = useState<Ga4Ecom | null>(null);
   const [metaConnected, setMetaConnected] = useState(false);
+  const [metaSalesCac, setMetaSalesCac] = useState<number | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [months, setMonths] = useState(6);
@@ -59,7 +60,16 @@ export default function SalesPage() {
       fetch(`/api/ga4?from=${range.from}&to=${range.to}`).then(r => r.json()),
     ]).then(([sRes, mRes, gRes]) => {
       if (sRes.status === "fulfilled" && !sRes.value?.error) setSales(sRes.value);
-      if (mRes.status === "fulfilled" && !mRes.value?.error) { setMeta(mRes.value.kpis ?? null); setMetaConnected(true); }
+      if (mRes.status === "fulfilled" && !mRes.value?.error) {
+        setMeta(mRes.value.kpis ?? null); setMetaConnected(true);
+        // CAC scoped to SALES-objective campaigns (not blended account spend) — awareness/
+        // traffic spend shouldn't inflate the cost-per-order figure.
+        const camps = (mRes.value.campaigns ?? []) as { objective: string; spend: number; purchases: number }[];
+        const salesC = camps.filter(c => /SALES|CONVERSION/i.test(c.objective ?? ""));
+        const sSpend = salesC.reduce((s, c) => s + (c.spend || 0), 0);
+        const sPurch = salesC.reduce((s, c) => s + (c.purchases || 0), 0);
+        setMetaSalesCac(sPurch > 0 ? Math.round(sSpend / sPurch) : null);
+      }
       if (gRes.status === "fulfilled" && !gRes.value?.error) { setGa4(gRes.value.kpis ?? null); setGa4Ecom(gRes.value.ecommerce ?? null); setGa4Connected(true); }
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
@@ -81,6 +91,9 @@ export default function SalesPage() {
   const organicOrders = sales ? Math.max(0, sales.kpis.totalOrders - metaOrders) : 0;
   const organicRevenue = sales ? Math.max(0, sales.kpis.grossSales - metaRevenue) : 0;
   const fp = (n: number, d: number) => d ? Math.round((n / d) * 100) : 0;
+  // Prefer the sales-objective CAC; fall back to account-level only if no sales campaigns.
+  const cacValue = metaSalesCac ?? meta?.cac ?? null;
+  const cacIsSalesScoped = metaSalesCac !== null;
   // Website funnel = one source, GA4 (on-site behaviour) — not Meta-tracked events stitched in.
   // GA4 needs ecommerce events configured; if absent we show a clear empty state.
   const sessions = ga4?.sessions ?? 0;
@@ -227,8 +240,8 @@ export default function SalesPage() {
         <KPICard label="ROAS" value={meta ? `${meta.roas}x` : "—"}
           change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
           changeLabel={meta ? (meta.roas >= 3 ? "Strong" : meta.roas >= 2 ? "Average" : "Below target") : "Connect Meta"} />
-        <KPICard label="CAC" value={meta ? formatINR(meta.cac) : "—"}
-          sub={metaConnected ? "Cost per acquisition" : "Connect Meta Ads"} />
+        <KPICard label="CAC" value={cacValue !== null ? formatINR(cacValue) : "—"}
+          sub={metaConnected ? (cacIsSalesScoped ? "Per order · Sales ads only" : "Cost per acquisition") : "Connect Meta Ads"} />
       </div>
 
       {/* Channel Attribution + COD/Prepaid */}
@@ -432,7 +445,7 @@ export default function SalesPage() {
               <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">Meta ads · source: Meta</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
-                { label: "CAC", value: formatINR(meta.cac) },
+                { label: cacIsSalesScoped ? "CAC (Sales)" : "CAC", value: formatINR(cacValue ?? meta.cac) },
                 { label: "CTR", value: `${meta.ctr}%` },
                 { label: "Clicks", value: meta.clicks.toLocaleString("en-IN") },
                 { label: "Impressions", value: (meta.impressions >= 1000 ? `${(meta.impressions / 1000).toFixed(0)}k` : meta.impressions.toString()) },

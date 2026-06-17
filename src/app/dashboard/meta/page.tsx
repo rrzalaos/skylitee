@@ -36,6 +36,7 @@ interface MetaData {
     spend: number; impressions: number; reach: number; frequency: number; clicks: number; ctr: number;
     cpc: number; cpm: number; outboundClicks: number; lpv: number; leads: number;
     purchases: number; purchaseValue: number; roas: number; atc: number;
+    atcValue: number; checkout: number; checkoutValue: number;
   }[];
   daily: { date: string; spend: number; impressions: number; clicks: number; purchases: number; purchaseValue: number }[];
 }
@@ -92,6 +93,17 @@ interface ObjBucket {
   spend: number; impressions: number; reach: number; clicks: number;
   lpv: number; leads: number; purchases: number; purchaseValue: number; atc: number; outboundClicks: number;
   cpm: number; ctr: number; cpc: number; frequency: number; cpl: number; cplpv: number; lpRatio: number; roas: number; cac: number;
+  // Full funnel (so a single objective can render its own funnel, not the account blend)
+  atcValue: number; checkout: number; checkoutValue: number;
+  atcRatio: number; checkoutRatio: number; purchaseRatio: number; conversionRatio: number;
+}
+
+// Minimal shape the funnel card needs — satisfied by both MetaKPIs (account) and ObjBucket
+// (a single objective), so the same funnel renders for either scope.
+interface FunnelData {
+  clicks: number; lpv: number; atc: number; atcValue: number;
+  checkout: number; checkoutValue: number; purchases: number; purchaseValue: number;
+  conversionRatio: number; lpRatio: number; atcRatio: number; checkoutRatio: number; purchaseRatio: number;
 }
 
 function money(cur: string, n: number) { return `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`; }
@@ -146,8 +158,10 @@ function aggregate(camps: Campaign[], obj: ObjFilter): ObjBucket {
   const clicks = sum(x => x.clicks), lpv = sum(x => x.lpv), leads = sum(x => x.leads);
   const purchases = sum(x => x.purchases), purchaseValue = sum(x => x.purchaseValue);
   const atc = sum(x => x.atc), outboundClicks = sum(x => x.outboundClicks);
+  const atcValue = sum(x => x.atcValue), checkout = sum(x => x.checkout), checkoutValue = sum(x => x.checkoutValue);
   return {
     obj, count: c.length, spend, impressions, reach, clicks, lpv, leads, purchases, purchaseValue, atc, outboundClicks,
+    atcValue, checkout, checkoutValue,
     cpm: impressions > 0 ? +(spend / impressions * 1000).toFixed(2) : 0,
     ctr: impressions > 0 ? +(clicks / impressions * 100).toFixed(2) : 0,
     cpc: clicks > 0 ? +(spend / clicks).toFixed(2) : 0,
@@ -155,6 +169,10 @@ function aggregate(camps: Campaign[], obj: ObjFilter): ObjBucket {
     cpl: leads > 0 ? +(spend / leads).toFixed(2) : 0,
     cplpv: lpv > 0 ? +(spend / lpv).toFixed(2) : 0,
     lpRatio: clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0,
+    atcRatio: lpv > 0 ? +(atc / lpv * 100).toFixed(1) : 0,
+    checkoutRatio: atc > 0 ? +(checkout / atc * 100).toFixed(1) : 0,
+    purchaseRatio: checkout > 0 ? +(purchases / checkout * 100).toFixed(1) : 0,
+    conversionRatio: clicks > 0 ? +(purchases / clicks * 100).toFixed(2) : 0,
     roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
     cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
   };
@@ -243,7 +261,7 @@ function buildObjDiagnosis(b: ObjBucket, cur: string): DiagInsight[] {
 
 const FUNNEL_COLORS = ["#FB923C", "#F97316", "#EA580C", "#DC2626", "#16A34A"];
 
-function ConversionFunnel({ k, cur }: { k: MetaKPIs; cur: string }) {
+function ConversionFunnel({ k, cur }: { k: FunnelData; cur: string }) {
   const stages = [
     { label: "Ad Clicks", desc: "Clicked your ad", count: k.clicks, value: 0, Icon: MousePointerClick },
     { label: "Visited Site", desc: "Landing page loaded", count: k.lpv, value: 0, Icon: MonitorSmartphone },
@@ -447,7 +465,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // Site conversion funnel + stage-ratio bar. Reused by the account Overview and the
 // Conversion objective view. Funnel data is always account-level (Meta only reports
 // the deep stages — ATC/checkout — at account scope).
-function FunnelCard({ k, cur, note }: { k: MetaKPIs; cur: string; note?: string }) {
+function FunnelCard({ k, cur, note }: { k: FunnelData; cur: string; note?: string }) {
   return (
     <Card>
       <CardHeader title="Conversion Funnel" right={<span className="text-[#F97316] font-semibold">CVR: {k.conversionRatio}%</span>} />
@@ -647,7 +665,7 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
         </span>
       </div>
       {cards}
-      {b.obj === "SALES" && <FunnelCard k={k} cur={cur} note="Site funnel reflects all on-site events (clicks → purchase) in this period." />}
+      {b.obj === "SALES" && <FunnelCard k={b} cur={cur} note={`Sales-objective funnel only — clicks → purchase from the ${b.count} Sales campaign${b.count === 1 ? "" : "s"} (not blended with awareness/traffic).`} />}
       <DiagnosisPanel diag={diag} />
     </div>
   );
@@ -1183,8 +1201,8 @@ export default function MetaPage() {
             </div>
           </div>
 
-          {/* Conversion Funnel — account-level site events */}
-          <FunnelCard k={k} cur={cur} />
+          {/* Conversion Funnel — all objectives combined; use the Sales toggle for sales-only */}
+          <FunnelCard k={k} cur={cur} note={hasConv ? "All objectives combined (awareness + traffic + sales). Click the Sales toggle above for the sales-only funnel." : undefined} />
 
           {/* Video metrics */}
           {hasVideo && (

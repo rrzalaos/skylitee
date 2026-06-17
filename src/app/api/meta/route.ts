@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
   // ?debug=1 returns the raw action types Meta sent (and bypasses cache) so we can map
   // the right "result" action for each objective when a count looks wrong (e.g. leads = 0).
   const debug = req.nextUrl.searchParams.get("debug") === "1";
-  const cacheKey = `cache:${shop}:meta:v2:${from}:${to}`;
+  const cacheKey = `cache:${shop}:meta:v3:${from}:${to}`;
   if (!debug) { try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ } }
 
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
@@ -160,6 +160,18 @@ export async function GET(req: NextRequest) {
       actInt(c?.actions, "offsite_conversion.fb_pixel_add_to_cart"),
       actInt(c?.actions, "add_to_cart")
     );
+    const cCheckout = Math.max(
+      actInt(c?.actions, "offsite_conversion.fb_pixel_initiate_checkout"),
+      actInt(c?.actions, "initiate_checkout")
+    );
+    const cAtcValue = Math.max(
+      actVal(c?.action_values, "offsite_conversion.fb_pixel_add_to_cart"),
+      actVal(c?.action_values, "add_to_cart")
+    );
+    const cCheckoutValue = Math.max(
+      actVal(c?.action_values, "offsite_conversion.fb_pixel_initiate_checkout"),
+      actVal(c?.action_values, "initiate_checkout")
+    );
     const cSpend = parseFloat(c.spend ?? "0");
     const cLpv = actInt(c?.actions, "landing_page_view");
     const cLeads = leadCount(c?.actions);
@@ -183,6 +195,9 @@ export async function GET(req: NextRequest) {
       purchaseValue: +cPurchaseValue.toFixed(2),
       roas: cSpend > 0 ? +(cPurchaseValue / cSpend).toFixed(2) : 0,
       atc: cAtc,
+      atcValue: +cAtcValue.toFixed(2),
+      checkout: cCheckout,
+      checkoutValue: +cCheckoutValue.toFixed(2),
     };
   });
 
