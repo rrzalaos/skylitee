@@ -6,6 +6,7 @@ import { resolveMetaAccount, leadCount } from "@/lib/meta";
 type ActionEntry = { action_type: string; value: string };
 
 interface PlacementRow {
+  campaign_id?: string;
   publisher_platform?: string;
   platform_position?: string;
   spend?: string;
@@ -74,6 +75,18 @@ function friendlyLabel(platform: string, position: string): string {
     return "Messenger";
   }
   return `${platform} · ${position}`;
+}
+
+// Normalize a Meta campaign objective to the buckets the UI filters by.
+function normObj(raw: string): string {
+  const r = (raw ?? "").toUpperCase();
+  if (r.includes("SALES") || r.includes("CONVERSION")) return "SALES";
+  if (r.includes("TRAFFIC") || r.includes("LINK_CLICK")) return "TRAFFIC";
+  if (r.includes("AWARENESS") || r.includes("REACH") || r.includes("BRAND") || r.includes("VIDEO")) return "AWARENESS";
+  if (r.includes("ENGAGEMENT")) return "ENGAGEMENT";
+  if (r.includes("LEAD")) return "LEADS";
+  if (r.includes("APP")) return "APP";
+  return "OTHER";
 }
 
 function platformGroup(platform: string): string {
@@ -168,7 +181,7 @@ export async function GET(req: NextRequest) {
   const from = req.nextUrl.searchParams.get("from") ?? defaultStart;
   const to = req.nextUrl.searchParams.get("to") ?? defaultEnd;
 
-  const cacheKey = `cache:${shop}:meta:placement:v2:${from}:${to}`;
+  const cacheKey = `cache:${shop}:meta:placement:v3:${from}:${to}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const timeRange = encodeURIComponent(JSON.stringify({ since: from, until: to }));
@@ -178,51 +191,91 @@ export async function GET(req: NextRequest) {
   const selected = await resolveMetaAccount(savedAccount, token);
   if (!selected) return NextResponse.json({ error: "no_accounts" });
 
-  // Placement (publisher_platform + platform_position) + the four extra breakdowns, in parallel.
-  const [placementRes, ageRows, genderRows, deviceRows, hourlyRows] = await Promise.all([
-    fetch(`${GRAPH}/${selected.id}/insights?fields=${METRIC_FIELDS}&breakdowns=publisher_platform,platform_position&time_range=${timeRange}&limit=100&action_attribution_windows=${attrWindows}&access_token=${token}`),
+  // Placement is fetched at CAMPAIGN level (so each row carries campaign_id → objective),
+  // letting us split placement performance per objective instead of one blended figure.
+  // The age/gender/device/time breakdowns stay account-level (across all objectives).
+  const [campRes, placementRes, ageRows, genderRows, deviceRows, hourlyRows] = await Promise.all([
+    fetch(`${GRAPH}/${selected.id}/campaigns?fields=id,objective&limit=500&access_token=${token}`),
+    fetch(`${GRAPH}/${selected.id}/insights?fields=campaign_id,${METRIC_FIELDS}&breakdowns=publisher_platform,platform_position&level=campaign&time_range=${timeRange}&limit=500&action_attribution_windows=${attrWindows}&access_token=${token}`),
     getBreakdown(selected.id, token, "age", timeRange, attrWindows),
     getBreakdown(selected.id, token, "gender", timeRange, attrWindows),
     getBreakdown(selected.id, token, "impression_device", timeRange, attrWindows),
     getBreakdown(selected.id, token, "hourly_stats_aggregated_by_advertiser_time_zone", timeRange, attrWindows, false),
   ]);
 
+  const campJson = await campRes.json() as { data?: { id: string; objective: string }[] };
+  const objMap = new Map((campJson.data ?? []).map(c => [c.id, normObj(c.objective)]));
+
   const placementData = await placementRes.json() as { data?: PlacementRow[]; error?: { message: string } };
   if (placementData.error) return NextResponse.json({ error: placementData.error.message }, { status: 400 });
 
-  const placements = (placementData.data ?? []).map(row => {
-    const spend = parseFloat(row.spend ?? "0");
-    const purchases = Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_purchase"), actInt(row.actions, "purchase"));
-    const purchaseValue = Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_purchase"), actVal(row.action_values, "purchase"));
-    const atc = Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart"));
-    const clicks = parseInt(row.clicks ?? "0");
-    const lpv = actInt(row.actions, "landing_page_view");
-    const leads = leadCount(row.actions);
-    return {
-      platform: row.publisher_platform ?? "",
-      position: row.platform_position ?? "",
-      label: friendlyLabel(row.publisher_platform ?? "", row.platform_position ?? ""),
-      group: platformGroup(row.publisher_platform ?? ""),
-      spend: +spend.toFixed(2),
-      impressions: parseInt(row.impressions ?? "0"),
-      clicks,
-      ctr: +parseFloat(row.ctr ?? "0").toFixed(2),
-      cpc: +parseFloat(row.cpc ?? "0").toFixed(2),
-      cpm: +parseFloat(row.cpm ?? "0").toFixed(2),
-      reach: parseInt(row.reach ?? "0"),
-      purchases,
-      purchaseValue: +purchaseValue.toFixed(2),
-      atc,
-      lpv,
-      leads,
-      roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
-      cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
-      costPerLead: leads > 0 ? +(spend / leads).toFixed(2) : 0,
-      lpRatio: clicks > 0 ? +(lpv / clicks * 100).toFixed(1) : 0,
-    };
-  }).sort((a, b) => b.spend - a.spend);
+  // Accumulate raw metrics per objective × placement (and an "ALL" blend), then derive rates
+  // once — summing rates would be wrong, so we keep raw counts and compute ROAS/CTR/etc. after.
+  interface Raw { spend: number; impressions: number; clicks: number; reach: number; purchases: number; purchaseValue: number; atc: number; lpv: number; leads: number; }
+  const groups = new Map<string, { objective: string; platform: string; position: string; r: Raw }>();
+  const addRow = (objective: string, row: PlacementRow) => {
+    const platform = row.publisher_platform ?? "", position = row.platform_position ?? "";
+    const key = `${objective}${platform}${position}`;
+    let g = groups.get(key);
+    if (!g) { g = { objective, platform, position, r: { spend: 0, impressions: 0, clicks: 0, reach: 0, purchases: 0, purchaseValue: 0, atc: 0, lpv: 0, leads: 0 } }; groups.set(key, g); }
+    const r = g.r;
+    r.spend += parseFloat(row.spend ?? "0");
+    r.impressions += parseInt(row.impressions ?? "0");
+    r.clicks += parseInt(row.clicks ?? "0");
+    r.reach += parseInt(row.reach ?? "0");
+    r.purchases += Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_purchase"), actInt(row.actions, "purchase"));
+    r.purchaseValue += Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_purchase"), actVal(row.action_values, "purchase"));
+    r.atc += Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart"));
+    r.lpv += actInt(row.actions, "landing_page_view");
+    r.leads += leadCount(row.actions);
+  };
+  for (const row of placementData.data ?? []) {
+    const obj = objMap.get(row.campaign_id ?? "") ?? "OTHER";
+    addRow(obj, row);
+    addRow("ALL", row);
+  }
 
-  const totalSpend = placements.reduce((s, p) => s + p.spend, 0);
+  const toPlacement = (g: { objective: string; platform: string; position: string; r: Raw }) => {
+    const r = g.r;
+    return {
+      platform: g.platform,
+      position: g.position,
+      label: friendlyLabel(g.platform, g.position),
+      group: platformGroup(g.platform),
+      spend: +r.spend.toFixed(2),
+      impressions: r.impressions,
+      clicks: r.clicks,
+      ctr: r.impressions > 0 ? +(r.clicks / r.impressions * 100).toFixed(2) : 0,
+      cpc: r.clicks > 0 ? +(r.spend / r.clicks).toFixed(2) : 0,
+      cpm: r.impressions > 0 ? +(r.spend / r.impressions * 1000).toFixed(2) : 0,
+      reach: r.reach,
+      purchases: r.purchases,
+      purchaseValue: +r.purchaseValue.toFixed(2),
+      atc: r.atc,
+      lpv: r.lpv,
+      leads: r.leads,
+      roas: r.spend > 0 ? +(r.purchaseValue / r.spend).toFixed(2) : 0,
+      cac: r.purchases > 0 ? +(r.spend / r.purchases).toFixed(2) : 0,
+      costPerLead: r.leads > 0 ? +(r.spend / r.leads).toFixed(2) : 0,
+      lpRatio: r.clicks > 0 ? +(r.lpv / r.clicks * 100).toFixed(1) : 0,
+    };
+  };
+
+  const placementsByObjective: Record<string, ReturnType<typeof toPlacement>[]> = {};
+  const totalSpendByObjective: Record<string, number> = {};
+  for (const g of groups.values()) {
+    (placementsByObjective[g.objective] ??= []).push(toPlacement(g));
+    totalSpendByObjective[g.objective] = (totalSpendByObjective[g.objective] ?? 0) + g.r.spend;
+  }
+  for (const k of Object.keys(placementsByObjective)) placementsByObjective[k].sort((a, b) => b.spend - a.spend);
+  for (const k of Object.keys(totalSpendByObjective)) totalSpendByObjective[k] = +totalSpendByObjective[k].toFixed(2);
+
+  // Objective tabs to show: ALL first, then objectives that actually spent, in a stable order.
+  const OBJ_DISPLAY = ["SALES", "TRAFFIC", "AWARENESS", "LEADS", "ENGAGEMENT", "APP", "OTHER"];
+  const objectives = ["ALL", ...OBJ_DISPLAY.filter(o => (totalSpendByObjective[o] ?? 0) > 0)];
+
+  const placements = placementsByObjective["ALL"] ?? [];
+  const totalSpend = totalSpendByObjective["ALL"] ?? 0;
 
   const age = finalize(ageRows.map(r => bucketFromRow(r, r.age ?? "", r.age ?? "Unknown", AGE_ORDER.indexOf(r.age ?? "") < 0 ? 99 : AGE_ORDER.indexOf(r.age ?? ""))));
   const gender = finalize(genderRows.map(r => bucketFromRow(r, r.gender ?? "", GENDER_LABEL[(r.gender ?? "").toLowerCase()] ?? (r.gender ?? "Unknown"), 0)).map(b => ({ ...b, sort: -b.spend })));
@@ -238,6 +291,9 @@ export async function GET(req: NextRequest) {
     period: { from, to },
     totalSpend: +totalSpend.toFixed(2),
     placements,
+    objectives,
+    placementsByObjective,
+    totalSpendByObjective,
     breakdowns: { age, gender, device, hourly },
   };
   kv.set(cacheKey, result, { ex: 900 }).catch(() => {});

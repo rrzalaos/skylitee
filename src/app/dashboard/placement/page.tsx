@@ -46,10 +46,18 @@ interface PlacementData {
   period: { from: string; to: string };
   totalSpend: number;
   placements: Placement[];
+  objectives?: string[];
+  placementsByObjective?: Record<string, Placement[]>;
+  totalSpendByObjective?: Record<string, number>;
   breakdowns?: { age: BBucket[]; gender: BBucket[]; device: BBucket[]; hourly: BBucket[] };
 }
 
 type PTab = "placement" | "age" | "gender" | "time" | "device";
+
+const OBJ_LABELS: Record<string, string> = {
+  ALL: "All objectives", SALES: "Sales", TRAFFIC: "Traffic", AWARENESS: "Awareness",
+  LEADS: "Leads", ENGAGEMENT: "Engagement", APP: "App", OTHER: "Other",
+};
 
 const groupColors: Record<string, string> = {
   Facebook: "#1877F2",
@@ -316,6 +324,7 @@ export default function PlacementPage() {
   const [notConnected, setNotConnected] = useState(false);
   const [sortBy, setSortBy] = useState<keyof Placement>("spend");
   const [tab, setTab] = useState<PTab>("placement");
+  const [objView, setObjView] = useState<string>("ALL");
 
   useEffect(() => {
     setLoading(true);
@@ -388,11 +397,17 @@ export default function PlacementPage() {
     );
   }
 
-  const sorted = [...data.placements].sort((a, b) => (b[sortBy] as number) - (a[sortBy] as number));
+  // Objective-scoped placement set (so "Sales" placements aren't blended with boost/traffic).
+  const objectives = data.objectives ?? ["ALL"];
+  const activeObj = objectives.includes(objView) ? objView : "ALL";
+  const activePlacements = data.placementsByObjective?.[activeObj] ?? data.placements;
+  const activeTotal = data.totalSpendByObjective?.[activeObj] ?? data.totalSpend;
+
+  const sorted = [...activePlacements].sort((a, b) => (b[sortBy] as number) - (a[sortBy] as number));
 
   const groups = ["Facebook", "Instagram", "Audience Network", "Messenger"];
   const groupData = groups.map(g => {
-    const ps = data.placements.filter(p => p.group === g);
+    const ps = activePlacements.filter(p => p.group === g);
     const spend = ps.reduce((s, p) => s + p.spend, 0);
     const purchases = ps.reduce((s, p) => s + p.purchases, 0);
     const leads = ps.reduce((s, p) => s + (p.leads || 0), 0);
@@ -404,7 +419,7 @@ export default function PlacementPage() {
       leads,
       purchaseValue: +purchaseValue.toFixed(2),
       roas: spend > 0 ? +(purchaseValue / spend).toFixed(2) : 0,
-      pct: data.totalSpend > 0 ? +(spend / data.totalSpend * 100).toFixed(1) : 0,
+      pct: activeTotal > 0 ? +(spend / activeTotal * 100).toFixed(1) : 0,
     };
   }).filter(g => g.spend > 0);
 
@@ -449,12 +464,31 @@ export default function PlacementPage() {
         ))}
       </div>
 
+      {tab !== "placement" && (
+        <p className="text-[13px] text-[#A1A1AA] mb-3">These breakdowns are across <b>all objectives</b> combined. For per-objective splits use the Placement tab.</p>
+      )}
+
       {tab === "age" && <BreakdownView title="Performance by Age" dimLabel="Age" dimWord="age group" buckets={data.breakdowns?.age ?? []} cur={cur} />}
       {tab === "gender" && <BreakdownView title="Performance by Gender" dimLabel="Gender" dimWord="audience" buckets={data.breakdowns?.gender ?? []} cur={cur} />}
       {tab === "time" && <BreakdownView title="Performance by Time of Day" dimLabel="Hour" dimWord="time slot" buckets={data.breakdowns?.hourly ?? []} cur={cur} />}
       {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" dimWord="device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
 
       {tab === "placement" && (<>
+      {/* Objective filter — placement performance per objective, never blended */}
+      {objectives.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mr-1">Objective</span>
+          {objectives.map(o => (
+            <button key={o} onClick={() => setObjView(o)}
+              className={cn("px-3 py-1.5 rounded-xl text-[14px] font-semibold border transition-all",
+                activeObj === o
+                  ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] border-[#FED7AA] shadow-sm"
+                  : "bg-[#F5F5F4] dark:bg-[#1C1C1C] text-[#71717A] dark:text-[#A1A1AA] border-transparent hover:border-black/10 dark:hover:border-white/10")}>
+              {OBJ_LABELS[o] ?? o}{data.totalSpendByObjective?.[o] !== undefined && o !== "ALL" ? ` · ${fmtC(data.totalSpendByObjective[o])}` : ""}
+            </button>
+          ))}
+        </div>
+      )}
       {/* Headline winner — which platform drives the most orders/leads & spend */}
       <WinnerHeadline items={platformWinnerItems} dimWord="platform" cur={cur} />
       {/* Platform group summary */}
@@ -485,7 +519,7 @@ export default function PlacementPage() {
 
       {/* What's working & what's not — across placements */}
       {(() => {
-        const ins = buildPlacementInsights(data.placements, data.totalSpend);
+        const ins = buildPlacementInsights(activePlacements, activeTotal);
         if (ins.length === 0) return null;
         const attention = ins.filter(i => !i.good);
         const working = ins.filter(i => i.good);
@@ -568,7 +602,7 @@ export default function PlacementPage() {
 
       {/* Placement table */}
       <Card>
-        <CardHeader title={`All Placements (${data.placements.length})`} right={
+        <CardHeader title={`${activeObj === "ALL" ? "All" : OBJ_LABELS[activeObj]} Placements (${activePlacements.length})`} right={
           <select value={sortBy} onChange={e => setSortBy(e.target.value as keyof Placement)}
             className="text-[14px] border border-black/[0.08] dark:border-white/[0.08] rounded-lg px-2 py-1 bg-white dark:bg-[#1C1C1C] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#F97316]">
             <option value="spend">Sort: Spend</option>
@@ -578,7 +612,7 @@ export default function PlacementPage() {
             <option value="clicks">Sort: Clicks</option>
           </select>
         } />
-        {data.placements.length === 0 ? (
+        {activePlacements.length === 0 ? (
           <div className="text-[15px] text-[#A1A1AA] py-6 text-center">No placement data for this period</div>
         ) : (
           <div className="overflow-x-auto">
@@ -600,7 +634,7 @@ export default function PlacementPage() {
                     </td>
                     <td className="py-2.5 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{fmtC(p.spend)}</td>
                     <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">
-                      {data.totalSpend > 0 ? `${(p.spend / data.totalSpend * 100).toFixed(1)}%` : "—"}
+                      {activeTotal > 0 ? `${(p.spend / activeTotal * 100).toFixed(1)}%` : "—"}
                     </td>
                     <td className="py-2.5 px-2">
                       {p.roas > 0 ? (
