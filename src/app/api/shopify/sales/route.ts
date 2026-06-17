@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:sales:v5:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries in the STORE's timezone so totals match the Shopify admin.
@@ -30,8 +30,10 @@ export async function GET(req: NextRequest) {
   const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
   const aov = totalOrders ? grossSales / totalOrders : 0;
-  const newCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) === 1).length;
+  // Returning = lifetime orders_count > 1; everyone else (first-timers + guest/COD checkouts
+  // with no linked customer) is new, so the two always sum to total orders.
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
+  const newCustomers = totalOrders - returningCustomers;
   const codOrders = orders.filter(isCod).length;
   const prepaidOrders = totalOrders - codOrders;
 

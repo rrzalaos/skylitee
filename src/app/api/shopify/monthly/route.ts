@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   const months = Math.min(12, Math.max(1, parseInt(req.nextUrl.searchParams.get("months") ?? "6", 10)));
-  const cacheKey = `cache:${shop}:shopmonthly:v1:${months}`;
+  const cacheKey = `cache:${shop}:shopmonthly:v2:${months}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   const tz = await getShopTimezone(shop, token);
@@ -23,32 +23,38 @@ export async function GET(req: NextRequest) {
   const orders = await fetchOrdersInRange(shop, token, startISO);
 
   const isCod = (gw?: string) => { const g = (gw ?? "").toLowerCase(); return g.includes("cod") || g.includes("cash"); };
-  const acc: Record<string, { revenue: number; orders: number; codOrders: number; codRevenue: number; newCustomers: number }> = {};
+  const acc: Record<string, { revenue: number; orders: number; codOrders: number; codRevenue: number; returning: number }> = {};
   for (const o of orders) {
     const ym = ymdInTz(new Date(o.created_at), tz).slice(0, 7);   // store-local YYYY-MM
-    const a = acc[ym] ?? { revenue: 0, orders: 0, codOrders: 0, codRevenue: 0, newCustomers: 0 };
+    const a = acc[ym] ?? { revenue: 0, orders: 0, codOrders: 0, codRevenue: 0, returning: 0 };
     const rev = orderRevenue(o);
     a.revenue += rev; a.orders += 1;
     if (isCod(o.payment_gateway)) { a.codOrders += 1; a.codRevenue += rev; }
-    if ((o.customer?.orders_count ?? 0) === 1) a.newCustomers += 1;
+    // Returning = known buyer (orders_count > 1); new = the rest (incl. guest/COD).
+    if ((o.customer?.orders_count ?? 0) > 1) a.returning += 1;
     acc[ym] = a;
   }
 
-  const monthsOut = Object.entries(acc).map(([ym, a]) => {
-    const date = new Date(parseInt(ym.slice(0, 4)), parseInt(ym.slice(5, 7)) - 1, 1);
+  // Emit every requested month (zero-filled) so the "Last N months" selector always shows N
+  // columns instead of only the months that happened to have orders.
+  const empty = { revenue: 0, orders: 0, codOrders: 0, codRevenue: 0, returning: 0 };
+  const monthsOut = Array.from({ length: months }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (months - 1) + i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const a = acc[ym] ?? empty;
     return {
       ym,
-      label: date.toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+      label: d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
       revenue: Math.round(a.revenue),
       orders: a.orders,
       aov: a.orders > 0 ? Math.round(a.revenue / a.orders) : 0,
-      newCustomers: a.newCustomers,
-      returningCustomers: a.orders - a.newCustomers,
+      newCustomers: a.orders - a.returning,
+      returningCustomers: a.returning,
       codOrders: a.codOrders,
       codPct: a.orders > 0 ? Math.round((a.codOrders / a.orders) * 100) : 0,
       prepaidRevenue: Math.round(a.revenue - a.codRevenue),
     };
-  }).sort((x, y) => x.ym.localeCompare(y.ym));
+  });
 
   const result = { shop, months: monthsOut };
   kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});

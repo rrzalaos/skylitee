@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { shopifyFetch, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetch, shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 interface Customer { orders_count: number; total_spent: string; created_at: string; }
@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
   // Month-to-date in the store's timezone.
   const { startISO } = await resolveShopifyPeriod(shop, token, null, null);
 
-  const [orders, { products }, { customers }] = await Promise.all([
+  const [orders, products, { customers }] = await Promise.all([
     fetchOrdersInRange(shop, token, startISO),
-    shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
+    shopifyFetchAll<ShopifyProduct>(shop, token, "/products.json?limit=250&fields=id,title,variants", "products"),
     shopifyFetch<{ customers: Customer[] }>(shop, token, "/customers.json?limit=250&fields=id,orders_count,total_spent"),
   ]);
 

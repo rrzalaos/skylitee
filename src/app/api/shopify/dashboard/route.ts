@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:dashboard:v5:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:dashboard:v6:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Period boundaries + day buckets in the STORE's timezone so totals & the daily chart
@@ -27,8 +27,11 @@ export async function GET(req: NextRequest) {
   const grossSales = orders.reduce((s, o) => s + orderRevenue(o), 0);
   const totalOrders = orders.length;
   const aov = totalOrders ? grossSales / totalOrders : 0;
-  const newCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) === 1).length;
+  // Returning = a buyer Shopify already knows (lifetime orders_count > 1). Everyone else
+  // (first-time buyers AND guest/COD checkouts with no linked customer) counts as new, so
+  // new + returning always equals total orders — never "both 0" on a 28-order store.
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
+  const newCustomers = totalOrders - returningCustomers;
 
   const isCod = (o: typeof orders[number]) => {
     const gw = o.payment_gateway?.toLowerCase() ?? "";

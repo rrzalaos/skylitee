@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { shopifyFetch, fetchOrdersInRange, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
+import { shopifyFetchAll, fetchOrdersInRange, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
@@ -12,14 +12,16 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:products:v3:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const cacheKey = `cache:${shop}:products:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
   // Sales window follows the selected date range (in the store's timezone).
   const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
 
-  const [{ products }, orders] = await Promise.all([
-    shopifyFetch<{ products: ShopifyProduct[] }>(shop, token, "/products.json?limit=250&fields=id,title,variants"),
+  // Paginate ALL products (Shopify caps each page at 250) — a single page silently capped a
+  // 450-product catalog at 250 and dropped units sold for any product past the first page.
+  const [products, orders] = await Promise.all([
+    shopifyFetchAll<ShopifyProduct>(shop, token, "/products.json?limit=250&fields=id,title,variants", "products"),
     fetchOrdersInRange(shop, token, startISO, endISO),
   ]);
 
@@ -53,7 +55,9 @@ export async function GET(req: NextRequest) {
   // ── Aggregate inventory intelligence ──
   const withSales = rows.filter(p => p.total > 0);
   const periodRevenue = rows.reduce((s, p) => s + p.revenue, 0);
-  const unitsSold = rows.reduce((s, p) => s + p.total, 0);
+  // Units sold = total quantity across all order line-items (not just matched products), so it
+  // reconciles with order count even if a sold product was since deleted from the catalog.
+  const unitsSold = orders.reduce((s, o) => s + (o.line_items ?? []).reduce((q, it) => q + (it.quantity || 0), 0), 0);
   const lowStock = rows.filter(p => p.stock > 0 && p.stock <= 10).length;
   const outOfStock = rows.filter(p => p.stock <= 0).length;
   const dead = rows.filter(p => p.stock > 0 && p.total === 0);

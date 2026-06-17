@@ -35,6 +35,7 @@ interface SalesData {
 }
 interface MetaKPIs { spend: number; roas: number; purchases: number; purchaseValue: number; ctr: number; cac: number; atc: number; checkout: number; impressions: number; clicks: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; newUsers?: number; avgSessionMin?: string }
+interface Ga4Ecom { itemsViewed: number; itemsAddedToCart: number; itemsCheckedOut: number; itemsPurchased: number; purchases: number; revenue: number }
 
 /* ─── Page ────────────────────────────────────────────────────── */
 export default function SalesPage() {
@@ -42,6 +43,7 @@ export default function SalesPage() {
   const [sales, setSales] = useState<SalesData | null>(null);
   const [meta, setMeta] = useState<MetaKPIs | null>(null);
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
+  const [ga4Ecom, setGa4Ecom] = useState<Ga4Ecom | null>(null);
   const [metaConnected, setMetaConnected] = useState(false);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function SalesPage() {
     ]).then(([sRes, mRes, gRes]) => {
       if (sRes.status === "fulfilled" && !sRes.value?.error) setSales(sRes.value);
       if (mRes.status === "fulfilled" && !mRes.value?.error) { setMeta(mRes.value.kpis ?? null); setMetaConnected(true); }
-      if (gRes.status === "fulfilled" && !gRes.value?.error) { setGa4(gRes.value.kpis ?? null); setGa4Connected(true); }
+      if (gRes.status === "fulfilled" && !gRes.value?.error) { setGa4(gRes.value.kpis ?? null); setGa4Ecom(gRes.value.ecommerce ?? null); setGa4Connected(true); }
     }).finally(() => setLoading(false));
   }, [range.from, range.to]);
 
@@ -78,12 +80,11 @@ export default function SalesPage() {
   const metaRevenue = meta?.purchaseValue ?? 0;
   const organicOrders = sales ? Math.max(0, sales.kpis.totalOrders - metaOrders) : 0;
   const organicRevenue = sales ? Math.max(0, sales.kpis.grossSales - metaRevenue) : 0;
-  const sessions = ga4?.sessions ?? 0;
-  const atc = meta?.atc ?? 0;
-  const checkout = meta?.checkout ?? 0;
-  const purchases = meta?.purchases ?? 0;
-  const abandonedCart = Math.max(0, atc - purchases);
   const fp = (n: number, d: number) => d ? Math.round((n / d) * 100) : 0;
+  // Website funnel = one source, GA4 (on-site behaviour) — not Meta-tracked events stitched in.
+  // GA4 needs ecommerce events configured; if absent we show a clear empty state.
+  const sessions = ga4?.sessions ?? 0;
+  const hasWebsiteFunnel = !!ga4Ecom && (ga4Ecom.itemsViewed > 0 || ga4Ecom.itemsAddedToCart > 0 || ga4Ecom.itemsPurchased > 0);
 
   function buildSections(): ExportSection[] {
     if (!sales) return [];
@@ -197,13 +198,14 @@ export default function SalesPage() {
     { label: "Organic/Direct", icon: TrendingUp, color: "text-[#22C55E]", bg: "bg-[#F0FDF4] dark:bg-[#052E16]", orders: organicOrders, revenue: organicRevenue, spend: null, roas: null },
   ];
 
-  const funnel = [
-    { label: "Website Sessions", value: sessions, base: sessions, color: "#6366F1", source: "GA4", barPct: 100 },
-    { label: "Add to Cart (ATC)", value: atc, base: sessions, color: "#F97316", source: "Meta", barPct: fp(atc, Math.max(sessions, 1)) },
-    { label: "Checkout Started", value: checkout, base: sessions, color: "#EAB308", source: "Meta", barPct: fp(checkout, Math.max(sessions, 1)) },
-    { label: "Purchases", value: purchases, base: sessions, color: "#22C55E", source: "Meta", barPct: fp(purchases, Math.max(sessions, 1)) },
-    { label: "Abandoned Cart", value: abandonedCart, base: atc, color: "#EF4444", source: "ATC − Purchases", barPct: fp(abandonedCart, Math.max(atc, 1)) },
-  ];
+  // Pure GA4 website funnel — every step measured on-site by Google Analytics (no Meta mixing).
+  const funnel = hasWebsiteFunnel && ga4Ecom ? [
+    { label: "Website Sessions", value: sessions, color: "#6366F1", source: "GA4", barPct: 100 },
+    { label: "Product Views", value: ga4Ecom.itemsViewed, color: "#8B5CF6", source: "GA4", barPct: fp(ga4Ecom.itemsViewed, Math.max(sessions, 1)) },
+    { label: "Add to Cart", value: ga4Ecom.itemsAddedToCart, color: "#F97316", source: "GA4", barPct: fp(ga4Ecom.itemsAddedToCart, Math.max(sessions, 1)) },
+    { label: "Reached Checkout", value: ga4Ecom.itemsCheckedOut, color: "#EAB308", source: "GA4", barPct: fp(ga4Ecom.itemsCheckedOut, Math.max(sessions, 1)) },
+    { label: "Purchased", value: ga4Ecom.itemsPurchased, color: "#22C55E", source: "GA4", barPct: fp(ga4Ecom.itemsPurchased, Math.max(sessions, 1)) },
+  ] : [];
 
   return (
     <div className="space-y-3">
@@ -398,9 +400,16 @@ export default function SalesPage() {
       {/* Funnel + Geography */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        {/* Conversion Funnel */}
+        {/* Conversion Funnel — website behaviour, single source (GA4) */}
         <Card>
-          <CardHeader title="Conversion Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{metaConnected && ga4Connected ? "Meta + GA4" : metaConnected ? "Meta" : ga4Connected ? "GA4" : "Connect platforms"}</span>} />
+          <CardHeader title="Website Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{ga4Connected ? "GA4 · website" : "Connect GA4"}</span>} />
+          {!hasWebsiteFunnel && (
+            <div className="text-[14px] text-[#A1A1AA] py-4 text-center">
+              {ga4Connected
+                ? "GA4 is connected but has no ecommerce events yet — enable GA4 Enhanced Ecommerce (view_item / add_to_cart / begin_checkout / purchase) to see the website funnel."
+                : <>Connect GA4 to see the website session → cart → checkout → purchase funnel. <Link href="/dashboard/connections" className="text-[#F97316] font-semibold">Connect →</Link></>}
+            </div>
+          )}
           <div className="space-y-2 mb-3">
             {funnel.map((step) => (
               <div key={step.label} className={cn("rounded-xl p-2.5", step.color === "#EF4444" ? "bg-[#FEF2F2] dark:bg-[#2D0A0A]" : "bg-[#F5F5F4] dark:bg-[#1C1C1C]")}>
@@ -419,7 +428,9 @@ export default function SalesPage() {
             ))}
           </div>
           {metaConnected && meta && (
-            <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06]">
+              <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">Meta ads · source: Meta</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {[
                 { label: "CAC", value: formatINR(meta.cac) },
                 { label: "CTR", value: `${meta.ctr}%` },
@@ -431,13 +442,16 @@ export default function SalesPage() {
                   <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
                 </div>
               ))}
+              </div>
             </div>
           )}
           {ga4Connected && ga4 && (
-            <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-3">
+            <div className="mt-2">
+              <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">Website · source: GA4</div>
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-3">
               {[
                 { label: "Users", value: ga4.users.toLocaleString("en-IN") },
-                { label: "Bounce", value: `${ga4.bounceRate.toFixed(0)}%` },
+                { label: "Bounce (GA4)", value: `${ga4.bounceRate.toFixed(0)}%` },
                 { label: "Avg session", value: ga4.avgSessionMin ?? "—" },
               ].map(kpi => (
                 <div key={kpi.label} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2">
@@ -445,6 +459,7 @@ export default function SalesPage() {
                   <div className="text-[12px] text-[#A1A1AA] mt-0.5">{kpi.label}</div>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </Card>
