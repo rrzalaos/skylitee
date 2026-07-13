@@ -156,7 +156,10 @@ async function postOAuth(shop: string, body: Record<string, unknown>): Promise<S
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Shopify OAuth ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Shopify OAuth ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`);
+  }
   return res.json() as Promise<ShopifyTokenResponse>;
 }
 
@@ -202,6 +205,22 @@ async function refreshExpiringToken(shop: string, refreshToken: string): Promise
   const rec = toTokenRecord(data);
   await shopKv.setTokenRecord(shop, rec);
   return rec;
+}
+
+// Diagnostic wrapper for the admin migration sweep: migrate one shop's legacy token and report
+// exactly what happened (with the Shopify error text on failure — e.g. a 400 "invalid subject
+// token" means the store uninstalled/revoked the app, so there's nothing left to migrate).
+export type MigrateStatus = "migrated" | "already_expiring" | "no_token" | "failed";
+export async function migrateShopToken(shop: string): Promise<{ status: MigrateStatus; detail?: string }> {
+  const rec = await shopKv.getTokenRecord(shop);
+  if (!rec) return { status: "no_token" };
+  if (rec.expires_at || rec.refresh_token) return { status: "already_expiring" };
+  try {
+    await migrateLegacyToken(shop, rec.access_token);
+    return { status: "migrated" };
+  } catch (e) {
+    return { status: "failed", detail: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 // Refresh a little early so a token doesn't expire mid-request.

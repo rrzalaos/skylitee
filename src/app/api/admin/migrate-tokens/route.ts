@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllUserEmails, getUser, getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
-import { shopKv } from "@/lib/kv";
-import { getValidToken } from "@/lib/shopify";
+import { migrateShopToken } from "@/lib/shopify";
 
 // One-time (safe to re-run) sweep that proactively migrates every connected store's Shopify
 // offline token from the deprecated PERMANENT type to the new EXPIRING type, instead of waiting
@@ -29,15 +28,8 @@ export async function GET(req: NextRequest) {
   }
 
   const results = await Promise.allSettled([...shops].map(async (shop) => {
-    const before = await shopKv.getTokenRecord(shop);
-    if (!before) return { shop, status: "no_token" as const };
-    const wasLegacy = !before.expires_at && !before.refresh_token;
-    if (!wasLegacy) return { shop, status: "already_expiring" as const };
-
-    await getValidToken(shop);                       // performs the token-exchange migration
-    const after = await shopKv.getTokenRecord(shop);
-    const migrated = !!(after?.expires_at || after?.refresh_token);
-    return { shop, status: migrated ? ("migrated" as const) : ("failed" as const) };
+    const { status, detail } = await migrateShopToken(shop);
+    return detail ? { shop, status, detail } : { shop, status };
   }));
 
   const rows = results.map(r => r.status === "fulfilled" ? r.value : { shop: "?", status: "error" as const });
