@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { shopKv } from "./kv";
+import { getValidToken } from "./shopify";
 import { getSession, getUser, SESSION_COOKIE } from "./auth";
 
 // ── Shop identity (cookies are correct here — shop domain is a UI cookie, not a secret token) ──
@@ -29,7 +30,8 @@ export async function getShopifySession(
 ): Promise<{ shop: string; token: string } | null> {
   const shop = await getAuthorizedShop(req);
   if (!shop) return null;
-  const token = (await shopKv.getToken(shop)) ?? process.env.SHOPIFY_ACCESS_TOKEN ?? null;
+  // getValidToken transparently refreshes an expiring token or migrates a legacy permanent one.
+  const token = (await getValidToken(shop)) ?? process.env.SHOPIFY_ACCESS_TOKEN ?? null;
   if (!token) return null;
   return { shop, token };
 }

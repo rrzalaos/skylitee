@@ -72,10 +72,28 @@ async function kvDel(key: string): Promise<void> {
   try { await kv.del(key); } catch { /* KV not configured */ }
 }
 
+// Shopify offline access token record. Shopify is retiring permanent offline tokens in favour
+// of EXPIRING ones (access token ~1h + 90-day refresh token; required for public apps by
+// 2027-01-01). Legacy records were stored as a bare access-token string — getTokenRecord
+// normalizes those to `{ access_token }` (no expiry/refresh) so lib/shopify can migrate them.
+export interface ShopifyToken {
+  access_token: string;
+  refresh_token?: string;               // present only for expiring tokens
+  expires_at?: number;                  // epoch ms when access_token expires (absent = legacy permanent)
+  refresh_token_expires_at?: number;    // epoch ms when refresh_token expires (90-day sliding window)
+  scope?: string;
+}
+
 export const shopKv = {
   // Shopify
-  getToken:       (shop: string) => kvGet<string>(`shop:${shop}:shopify_token`),
-  setToken:       (shop: string, v: string) => kvSet(`shop:${shop}:shopify_token`, v),
+  getTokenRecord: async (shop: string): Promise<ShopifyToken | null> => {
+    const raw = await kvGet<string | ShopifyToken>(`shop:${shop}:shopify_token`);
+    if (!raw) return null;
+    return typeof raw === "string" ? { access_token: raw } : raw;   // legacy string → permanent-token record
+  },
+  setTokenRecord: (shop: string, v: ShopifyToken) => kvSet(`shop:${shop}:shopify_token`, v),
+  getToken:       async (shop: string) => (await shopKv.getTokenRecord(shop))?.access_token ?? null,
+  setToken:       (shop: string, v: string) => kvSet(`shop:${shop}:shopify_token`, { access_token: v } as ShopifyToken),
   delToken:       (shop: string) => kvDel(`shop:${shop}:shopify_token`),
 
   // Google GSC

@@ -1,4 +1,4 @@
-import { shopKv } from "@/lib/kv";
+import { shopKv, type ShopifyToken } from "@/lib/kv";
 import { startOfMonthInTz, todayInTz, zonedDayStartISO, zonedDayEndISO, dayCount } from "@/lib/timezone";
 
 // Shopify releases API versions quarterly. Update when Shopify deprecates this version.
@@ -10,9 +10,13 @@ export function shopifyApiUrl(shop: string, path: string) {
 
 // Shopify rotating offline tokens: when a token is rotated, the response includes
 // X-Shopify-Access-Token-Next. We must persist it immediately or future calls will fail.
+// Merge into the existing record so any refresh-token/expiry metadata is preserved.
 function rotateTokenIfNeeded(shop: string, res: Response) {
   const next = res.headers.get("X-Shopify-Access-Token-Next");
-  if (next) shopKv.setToken(shop, next).catch(() => {});
+  if (!next) return;
+  shopKv.getTokenRecord(shop)
+    .then(rec => shopKv.setTokenRecord(shop, { ...(rec ?? {}), access_token: next }))
+    .catch(() => {});
 }
 
 export async function shopifyFetch<T = unknown>(
@@ -120,18 +124,124 @@ export function buildAuthUrl(shop: string, state: string): string {
   return `https://${shop}/admin/oauth/authorize?${params}`;
 }
 
-export async function exchangeCodeForToken(shop: string, code: string): Promise<string> {
+// ── Offline access tokens: expiring-token acquisition, refresh & legacy migration ───────────
+// Shopify is retiring permanent offline tokens. Public apps must use EXPIRING offline tokens by
+// 2027-01-01: a ~1h access token plus a 90-day refresh token. We request them with `expiring=1`,
+// refresh via grant_type=refresh_token, and migrate any legacy permanent token in-code (token
+// exchange) — no merchant reinstall needed. See getValidToken below for the resolution flow.
+
+interface ShopifyTokenResponse {
+  access_token: string;
+  expires_in?: number;                // seconds; present only for expiring tokens
+  refresh_token?: string;
+  refresh_token_expires_in?: number;  // seconds (90 days)
+  scope?: string;
+}
+
+// Turn Shopify's OAuth response into a stored record with ABSOLUTE expiry timestamps.
+function toTokenRecord(data: ShopifyTokenResponse): ShopifyToken {
+  const now = Date.now();
+  return {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_in ? now + data.expires_in * 1000 : undefined,
+    refresh_token_expires_at: data.refresh_token_expires_in ? now + data.refresh_token_expires_in * 1000 : undefined,
+    scope: data.scope,
+  };
+}
+
+async function postOAuth(shop: string, body: Record<string, unknown>): Promise<ShopifyTokenResponse> {
   const res = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: process.env.SHOPIFY_CLIENT_ID,
-      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-      code,
-    }),
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
   });
-  const data = await res.json() as { access_token: string };
-  return data.access_token;
+  if (!res.ok) throw new Error(`Shopify OAuth ${res.status}`);
+  return res.json() as Promise<ShopifyTokenResponse>;
+}
+
+// Authorization-code grant → request an EXPIRING offline token (expiring=1). New installs get
+// expiring tokens straight away. Returns the record to persist (via shopKv.setTokenRecord).
+export async function exchangeCodeForToken(shop: string, code: string): Promise<ShopifyToken> {
+  const data = await postOAuth(shop, {
+    client_id: process.env.SHOPIFY_CLIENT_ID,
+    client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+    code,
+    expiring: 1,
+  });
+  return toTokenRecord(data);
+}
+
+// Migrate a legacy permanent offline token to an expiring one via token exchange, using the
+// permanent token itself as the subject (no merchant reinstall). The old token is REVOKED on
+// success (irreversible), so we persist the new record before returning it.
+async function migrateLegacyToken(shop: string, legacy: string): Promise<ShopifyToken> {
+  const data = await postOAuth(shop, {
+    client_id: process.env.SHOPIFY_CLIENT_ID,
+    client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+    grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+    subject_token: legacy,
+    subject_token_type: "urn:shopify:params:oauth:token-type:offline-access-token",
+    requested_token_type: "urn:shopify:params:oauth:token-type:offline-access-token",
+    expiring: 1,
+  });
+  const rec = toTokenRecord(data);
+  await shopKv.setTokenRecord(shop, rec);
+  return rec;
+}
+
+// Refresh an expiring offline token (grant_type=refresh_token). Persists and returns the new
+// record (Shopify rotates the refresh token too, resetting its 90-day window).
+async function refreshExpiringToken(shop: string, refreshToken: string): Promise<ShopifyToken> {
+  const data = await postOAuth(shop, {
+    client_id: process.env.SHOPIFY_CLIENT_ID,
+    client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+  const rec = toTokenRecord(data);
+  await shopKv.setTokenRecord(shop, rec);
+  return rec;
+}
+
+// Refresh a little early so a token doesn't expire mid-request.
+const TOKEN_EXPIRY_BUFFER_MS = 2 * 60 * 1000;
+
+// Resolve a VALID Shopify access token for a shop, handling the expiring-token lifecycle:
+//   • legacy permanent token (no expiry/refresh)  → migrate once via token exchange, then use it
+//   • expiring token still comfortably valid       → use as-is
+//   • expiring token expired / near expiry         → refresh
+// On a failed migrate/refresh, re-reads KV once (a concurrent request may have already rotated
+// it). Use this everywhere instead of shopKv.getToken so every Shopify call uses a fresh token.
+export async function getValidToken(shop: string): Promise<string | null> {
+  const rec = await shopKv.getTokenRecord(shop);
+  if (!rec) return null;
+
+  // Legacy permanent token → migrate to expiring. Fall back to the old token if migration fails
+  // (still valid until the 2027-01-01 cutoff), so a transient error never breaks the dashboard.
+  if (!rec.expires_at && !rec.refresh_token) {
+    try {
+      return (await migrateLegacyToken(shop, rec.access_token)).access_token;
+    } catch {
+      return (await shopKv.getTokenRecord(shop))?.access_token ?? rec.access_token;
+    }
+  }
+
+  // Expiring token still valid.
+  if (rec.expires_at && Date.now() < rec.expires_at - TOKEN_EXPIRY_BUFFER_MS) {
+    return rec.access_token;
+  }
+
+  // Expired / near expiry → refresh.
+  if (rec.refresh_token) {
+    try {
+      return (await refreshExpiringToken(shop, rec.refresh_token)).access_token;
+    } catch {
+      return (await shopKv.getTokenRecord(shop))?.access_token ?? null;
+    }
+  }
+
+  return rec.access_token;
 }
 
 // ── Data helpers ────────────────────────────────────────────────────────────

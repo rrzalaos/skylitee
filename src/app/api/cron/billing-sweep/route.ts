@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllUserEmails, getUser } from "@/lib/auth";
 import { shopKv } from "@/lib/kv";
-import { shopifyDelete } from "@/lib/shopify";
+import { shopifyDelete, getValidToken } from "@/lib/shopify";
 
 // Daily sweep that retires expired access grants:
 //  - Expired FREE grants (trials / comped clients) → downgrade to free; the access gate
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Discount grant expired → stop the discounted Shopify charge and gate access.
-    const [token, chargeId] = await Promise.all([shopKv.getToken(shop), shopKv.getChargeId(shop)]);
+    const [token, chargeId] = await Promise.all([getValidToken(shop), shopKv.getChargeId(shop)]);
     if (token && chargeId) {
       try { await shopifyDelete(shop, token, `/recurring_application_charges/${chargeId}.json`); } catch { /* best-effort */ }
     }

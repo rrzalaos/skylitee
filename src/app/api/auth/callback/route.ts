@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const accessToken = await exchangeCodeForToken(shop, code);
-    await shopKv.setToken(shop, accessToken);
+    const token = await exchangeCodeForToken(shop, code);
+    await shopKv.setTokenRecord(shop, token);
 
     // Link shop to user account if session exists
     const sessionToken = req.cookies.get(SESSION_COOKIE)?.value;
