@@ -110,15 +110,18 @@ export function buildPerfModel(input: {
   const codPct = s.totalOrders ? Math.round((s.codOrders / s.totalOrders) * 100) : 0;
   const unitsPerOrder = s.avgItemsPerOrder;
   const totalUnits = s.totalItems ?? 0;
+  const totalLeads = m?.leads ?? 0;
 
-  /* hero KPIs */
+  /* hero KPIs — main summary. Each card shows only when its data is available
+     (e.g. Total Leads appears only when the store runs lead-gen ads). */
   const hero: KpiCard[] = [
     { label: "Gross Sales", value: inr(s.grossSales), accent: "#F97316" },
     { label: "Total Orders", value: s.totalOrders.toLocaleString("en-IN"), accent: "#3B82F6", sub: `${unitsPerOrder} items/order` },
-    { label: "AOV", value: inr(s.aov), accent: "#8B5CF6" },
+    ...(s.grossSales > 0 ? [{ label: "AOV", value: inr(s.aov), accent: "#8B5CF6" }] : []),
     { label: "Total Ad Spend", value: inr(totalSpend), accent: "#EF4444", sub: googleSpend > 0 ? "Meta + Google" : "Meta" },
     { label: "Blended ROAS", value: blendedRoas ? `${blendedRoas}x` : "—", accent: blendedRoas >= 2 ? "#22C55E" : "#EF4444", sub: "store ÷ ad spend" },
     { label: "Units Sold", value: totalUnits ? totalUnits.toLocaleString("en-IN") : "—", accent: "#14B8A6", sub: s.distinctSkus ? `${s.distinctSkus} SKUs` : undefined },
+    ...(totalLeads > 0 ? [{ label: "Total Leads", value: totalLeads.toLocaleString("en-IN"), accent: "#8B5CF6", sub: "from Meta ads" }] : []),
   ];
 
   /* objective-aware KPI blocks (from campaign objectives) */

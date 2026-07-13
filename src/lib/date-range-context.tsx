@@ -96,6 +96,19 @@ export function useDateRange() {
   return ctx;
 }
 
+/** Report-friendly period label. When the range falls entirely within one
+ *  calendar month, show the month name ("June 2026") instead of a preset word
+ *  like "Last month" / "This month". Otherwise fall back to explicit dates. */
+export function formatReportPeriod(range: DateRange): string {
+  const d1 = new Date(range.from + "T00:00:00");
+  const d2 = new Date(range.to + "T00:00:00");
+  if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
+    return d1.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  }
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+  return `${d1.toLocaleDateString("en-IN", opts)} – ${d2.toLocaleDateString("en-IN", { ...opts, year: "numeric" })}`;
+}
+
 /** Human-readable explicit date span, e.g. "9 Jun – 15 Jun". Always shows the
  *  real dates so figures can be reconciled against Shopify / Meta. */
 export function formatRangeDates(range: DateRange): string {

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useDateRange } from "@/lib/date-range-context";
+import { useDateRange, formatReportPeriod } from "@/lib/date-range-context";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ExportButton } from "@/components/ui/export-button";
 import { exportToCSV } from "@/lib/export";
@@ -96,6 +96,7 @@ export default function PerformanceReportPage() {
     </div>
   );
   const M = model;
+  const period = formatReportPeriod(range);
   const revTotal = M.revenueMix.reduce((s, x) => s + x.value, 0);
 
   return (
@@ -108,12 +109,12 @@ export default function PerformanceReportPage() {
               <div className="w-7 h-7 bg-[#F97316] rounded-lg flex items-center justify-center"><TrendingUp size={14} className="text-white" /></div>
               <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Performance Marketing</h1>
             </div>
-            <p className="text-[14px] text-[#A1A1AA] ml-9">{range.label} · Generated {generatedAt}</p>
+            <p className="text-[14px] text-[#A1A1AA] ml-9">{period} · Generated {generatedAt}</p>
           </div>
           <div data-html2canvas-ignore="true">
             <ExportButton
               onExportCSV={() => exportToCSV(`skylitee-performance-${range.from}`, buildCSV(M))}
-              onExportPDF={() => printRef.current ? exportElementToPDF(printRef.current, `skylitee-performance-${range.from}`, { reportTitle: "Performance Marketing Report", subtitle: `${site} · ${range.label}`, branding: { brandName: "Skylitee", color: "#F97316" } }) : Promise.resolve()}
+              onExportPDF={() => printRef.current ? exportElementToPDF(printRef.current, `skylitee-performance-${range.from}`, { reportTitle: "Performance Marketing Report", subtitle: `${site} · ${period}`, branding: { brandName: "Skylitee", color: "#F97316" } }) : Promise.resolve()}
             />
           </div>
         </div>
@@ -282,7 +283,7 @@ export default function PerformanceReportPage() {
 
       {/* Off-screen PDF layout */}
       <div ref={printRef} aria-hidden style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
-        <PrintablePerformance model={M} site={site} rangeLabel={range.label} generatedAt={generatedAt} />
+        <PrintablePerformance model={M} site={site} rangeLabel={period} generatedAt={generatedAt} />
       </div>
     </>
   );
