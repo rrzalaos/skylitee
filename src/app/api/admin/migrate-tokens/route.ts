@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllUserEmails, getUser } from "@/lib/auth";
+import { getAllUserEmails, getUser, getSession, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
 import { shopKv } from "@/lib/kv";
 import { getValidToken } from "@/lib/shopify";
 
@@ -8,16 +8,14 @@ import { getValidToken } from "@/lib/shopify";
 // for each store's dashboard to load. Calling getValidToken performs the token-exchange migration
 // for any legacy token; re-running is a no-op for already-migrated stores.
 //
-// Protected by CRON_SECRET. Trigger from a browser with ?key=<CRON_SECRET> or via
-// `Authorization: Bearer <CRON_SECRET>`. If CRON_SECRET is unset, the route refuses to run.
+// Admin-only (same gate as the admin Stores tab): just open this URL in a browser while logged
+// in to skylitee.io as the admin account — no secret needed.
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 });
-  }
-  const provided = req.nextUrl.searchParams.get("key") ?? req.headers.get("authorization")?.replace("Bearer ", "");
-  if (provided !== secret) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const session = await getSession(token);
+  if (!session || session.email !== ADMIN_EMAIL) {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
   // Collect unique shops across all users.
