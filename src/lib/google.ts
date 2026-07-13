@@ -53,6 +53,11 @@ export async function getGoogleAccessToken(refreshToken: string): Promise<string
       refresh_token: refreshToken,
     }),
   });
-  const data = await res.json() as { access_token: string };
+  const data = await res.json() as { access_token?: string; error?: string; error_description?: string };
+  // Surface a failed refresh (revoked/expired token) instead of returning undefined,
+  // which would make every downstream GSC/GA4/Ads call 401 and silently produce zeros.
+  if (!res.ok || !data.access_token) {
+    throw new Error(`Google token refresh failed: ${data.error_description ?? data.error ?? res.status}`);
+  }
   return data.access_token;
 }

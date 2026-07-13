@@ -86,11 +86,21 @@ export async function GET(req: NextRequest) {
   ]);
 
   const [overviewData, campaignInsightsData, dailyData, campaignsMetaData] = await Promise.all([
-    overviewRes.json() as Promise<{ data?: MetaInsightRow[] }>,
+    overviewRes.json() as Promise<{ data?: MetaInsightRow[]; error?: { message?: string } }>,
     campaignInsightsRes.json() as Promise<{ data?: MetaInsightRow[] }>,
     dailyRes.json() as Promise<{ data?: (MetaInsightRow & { date_start: string })[] }>,
     campaignsMetaRes.json() as Promise<{ data?: MetaCampaignMeta[] }>,
   ]);
+
+  // Fail loudly instead of caching all-zero KPIs when the overview call errors
+  // (expired token, rate limit, API-version sunset). A silent 0 is indistinguishable
+  // from a real no-spend period and would poison the cache for 15 min.
+  if (!overviewRes.ok || overviewData.error) {
+    return NextResponse.json(
+      { error: "meta_api_error", detail: overviewData.error?.message ?? `Meta API returned ${overviewRes.status}` },
+      { status: 502 }
+    );
+  }
 
   const o = overviewData.data?.[0];
   const spend = parseFloat(o?.spend ?? "0");

@@ -170,6 +170,17 @@ export async function GET(req: NextRequest) {
       }, { status: 403 });
     }
 
+    // Any other API error (expired/invalid token → UNAUTHENTICATED 401, INVALID_CUSTOMER_ID,
+    // RESOURCE_EXHAUSTED quota, version sunset) must NOT fall through to summed zeros — that
+    // reads as a real "no spend" account and would be cached for 15 min. Fail loudly instead.
+    if (!overview || (overview as GadsResponse).error) {
+      const err = (overview as GadsResponse | null)?.error;
+      return NextResponse.json(
+        { error: "google_ads_api_error", detail: err?.message ?? "Google Ads overview query failed" },
+        { status: 502 }
+      );
+    }
+
     // Overview aggregates (sum across all rows — customer query returns one row per date)
     let totalImpressions = 0, totalClicks = 0, totalCost = 0, totalConversions = 0, totalConvValue = 0;
     let accountName = `Account ${customerId}`, currency = "USD";

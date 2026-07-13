@@ -13,7 +13,12 @@ export async function GET(req: NextRequest) {
   const refreshToken = await getGa4RefreshToken(req, shop);
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
-  const token = await getGoogleAccessToken(refreshToken);
+  let token: string;
+  try {
+    token = await getGoogleAccessToken(refreshToken);
+  } catch (e) {
+    return NextResponse.json({ error: "ga4_auth_error", detail: String(e) }, { status: 502 });
+  }
 
   const properties: { property: string; displayName: string }[] = [];
   let pageToken: string | undefined;

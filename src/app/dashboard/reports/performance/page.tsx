@@ -71,7 +71,7 @@ export default function PerformanceReportPage() {
       fetch(`/api/meta/placement?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/shopify/monthly?months=3`).then(r => r.json()),
       fetch(`/api/meta/monthly?months=3`).then(r => r.json()),
-      fetch(`/api/gads?from=${range.from}&to=${range.to}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/google/ads?from=${range.from}&to=${range.to}`).then(r => r.json()).catch(() => null),
     ]).then(([sR, mR, gR, pR, smR, mmR, gaR]) => {
       const sales = sR.status === "fulfilled" && !sR.value?.error ? sR.value : null;
       if (!sales) { setFailed(true); return; }

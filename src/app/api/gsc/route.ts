@@ -10,7 +10,12 @@ export async function GET(req: NextRequest) {
   const refreshToken = await getGscRefreshToken(req, shop);
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
-  const token = await getGoogleAccessToken(refreshToken);
+  let token: string;
+  try {
+    token = await getGoogleAccessToken(refreshToken);
+  } catch (e) {
+    return NextResponse.json({ error: "gsc_auth_error", detail: String(e) }, { status: 502 });
+  }
 
   const sitesRes = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
     headers: { Authorization: `Bearer ${token}` },
@@ -76,7 +81,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [totals, keywords, pages, devices, countries, daily, sitemapsData] = await Promise.all([
-    totalsRes.json() as Promise<{ rows?: GSCRow[] }>,
+    totalsRes.json() as Promise<{ rows?: GSCRow[]; error?: { message?: string } }>,
     keywordsRes.json() as Promise<{ rows?: GSCRow[] }>,
     pagesRes.json() as Promise<{ rows?: GSCRow[] }>,
     devicesRes.json() as Promise<{ rows?: GSCRow[] }>,
@@ -84,6 +89,16 @@ export async function GET(req: NextRequest) {
     dailyRes.json() as Promise<{ rows?: GSCRow[] }>,
     sitemapsRes.json() as Promise<{ sitemap?: Sitemap[] }>,
   ]);
+
+  // Fail loudly rather than caching all-zero metrics when the query errors
+  // (expired token, 403 permission, 429 quota). A silent 0 looks like a real
+  // "no traffic" period and would be served from cache for 30 min.
+  if (!totalsRes.ok || totals.error) {
+    return NextResponse.json(
+      { error: "gsc_api_error", detail: totals.error?.message ?? `GSC API returned ${totalsRes.status}` },
+      { status: 502 }
+    );
+  }
 
   const aggRow = totals.rows?.[0];
 
