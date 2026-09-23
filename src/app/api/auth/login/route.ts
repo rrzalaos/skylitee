@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, verifyPassword, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
-import { activityKv } from "@/lib/kv";
+import { activityKv, inviteKv } from "@/lib/kv";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
   }).catch(() => {});
 
   const isAdmin = user.email === ADMIN_EMAIL;
-  const res = NextResponse.json({ ok: true, hasShop: user.shops.length > 0, isAdmin });
+  // Invited clients have no store of their own yet — send them to the dashboard
+  // (where the invite bell lives) instead of the "connect your store" screen.
+  const pendingInvites = user.shops.length === 0 ? (await inviteKv.getInvites(user.email) ?? []).length : 0;
+  const res = NextResponse.json({ ok: true, hasShop: user.shops.length > 0 || pendingInvites > 0, isAdmin });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     maxAge: SESSION_MAX_AGE,

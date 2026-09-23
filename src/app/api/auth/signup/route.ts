@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, createUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
+import { inviteKv } from "@/lib/kv";
 
 export async function POST(req: NextRequest) {
   const { name, email, password } = await req.json();
@@ -20,7 +21,8 @@ export async function POST(req: NextRequest) {
   const token = await createSession(user.email, "");
 
   const isAdmin = user.email === ADMIN_EMAIL;
-  const res = NextResponse.json({ ok: true, isAdmin });
+  const hasInvites = ((await inviteKv.getInvites(user.email)) ?? []).length > 0;
+  const res = NextResponse.json({ ok: true, isAdmin, hasInvites });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     maxAge: SESSION_MAX_AGE,

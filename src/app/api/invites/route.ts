@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, addShopToUser, SESSION_COOKIE } from "@/lib/auth";
+import { getSession, addShopToUser, updateSessionShop, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth";
 import { inviteKv, shopKv, notificationKv, activityKv } from "@/lib/kv";
 
 export async function GET(req: NextRequest) {
@@ -52,6 +52,13 @@ export async function POST(req: NextRequest) {
       userEmail: session.email,
       detail: `Accepted invitation as ${(invite?.role ?? "member").replace("_", " ")}`,
     });
+
+    // Switch the session to the accepted store — an invitee with no store of
+    // their own otherwise has no active shop cookie and sees an empty dashboard.
+    await updateSessionShop(token, shop);
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set("shopify_shop", shop, { httpOnly: true, maxAge: SESSION_MAX_AGE, sameSite: "lax", path: "/" });
+    return res;
   } else {
     // Decline: remove from shop's team list
     const members = await shopKv.getTeam(shop) ?? [];
