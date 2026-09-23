@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeGoogleCode } from "@/lib/google";
 import { shopKv } from "@/lib/kv";
-import { getShopFromRequest } from "@/lib/session";
+import { requireShopPermission } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
 
   // State format: "{nonce}|{service}" — service is "gsc", "ga4", or "both"
   const service = state.split("|")[1] ?? "both";
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const perm = await requireShopPermission(req, "connections");
+  if (!perm.ok) return NextResponse.redirect(new URL("/dashboard/connections?error=view_only", req.url));
+  const shop = perm.shop;
 
   try {
     const tokens = await exchangeGoogleCode(code);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShopifySession } from "@/lib/session";
+import { getShopifySession, requireShopPermission } from "@/lib/session";
 import { shopifyPost } from "@/lib/shopify";
 import { PLANS, PlanId } from "@/lib/billing";
 import { shopKv, couponKv } from "@/lib/kv";
@@ -24,6 +24,8 @@ function isCouponValid(coupon: { active: boolean; expiresAt: string | null; maxU
 export async function POST(req: NextRequest) {
   const session = await getShopifySession(req);
   if (!session) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const perm = await requireShopPermission(req, "billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
   const { shop, token } = session;
 
   const { planId, couponCode } = await req.json() as { planId: PlanId; couponCode?: string };

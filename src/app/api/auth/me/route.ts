@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, updateUser, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
+import { getAuthorizedShop, getShopRole, roleCan } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -11,12 +12,23 @@ export async function GET(req: NextRequest) {
   const user = await getUser(session.email);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+  const shop = await getAuthorizedShop(req);
+  const role = shop ? await getShopRole(shop, user.email) : null;
+
   return NextResponse.json({
     name: user.name,
     email: user.email,
     shops: user.shops,
     activeShop: session.activeShop,
     isAdmin: user.email === ADMIN_EMAIL,
+    role,
+    // No active store yet → nothing to restrict.
+    can: {
+      billing:     role ? roleCan(role, "billing") : true,
+      team:        role ? roleCan(role, "team") : true,
+      connections: role ? roleCan(role, "connections") : true,
+      edit:        role ? roleCan(role, "edit") : true,
+    },
   });
 }
 

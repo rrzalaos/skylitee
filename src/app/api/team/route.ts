@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, addShopToUser, removeShopFromUser, SESSION_COOKIE } from "@/lib/auth";
 import { shopKv, inviteKv, notificationKv, activityKv, TeamMember } from "@/lib/kv";
-import { getAuthorizedShop } from "@/lib/session";
+import { requireShopPermission } from "@/lib/session";
 
 const VALID_ROLES = ["admin", "marketing", "view_only"];
 
@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const ctx = await getSessionAndShop(req);
   if (!ctx) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const perm = await requireShopPermission(req, "team");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const { email, role } = await req.json() as { email?: string; role?: string };
   if (!email || !role) return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
@@ -70,6 +72,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const ctx = await getSessionAndShop(req);
   if (!ctx) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  const perm = await requireShopPermission(req, "team");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const { email } = await req.json() as { email?: string };
   if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });

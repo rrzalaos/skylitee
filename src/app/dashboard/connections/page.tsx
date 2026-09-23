@@ -43,7 +43,16 @@ function ConnectionsContent() {
 
   const [saving, setSaving] = useState(false);
 
+  // Marketing / view-only members see status but can't connect, disconnect or change accounts.
+  const [canEdit, setCanEdit] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
+
   useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then(d => { setCanEdit(d.can?.connections !== false); setRole(d.role ?? null); })
+      .catch(() => {});
+
     fetch("/api/shopify/dashboard")
       .then(r => r.json())
       .then(d => { if (d.shop) setShopName(d.shop); })
@@ -255,6 +264,12 @@ function ConnectionsContent() {
         <p className="text-[17px] text-[#686864] mt-0.5">Manage integrations · GSC and GA4 can be on different Google accounts</p>
       </div>
 
+      {!canEdit && (
+        <div className="mb-3 px-3 py-2.5 rounded-lg bg-[#f7f7f5] border border-black/[0.08] text-[15px] text-[#686864]">
+          You have {role === "view_only" ? "view-only" : "read-only connection"} access to this store. Contact the store owner to change connections.
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <Card>
           <CardHeader title="Connected platforms" />
@@ -275,7 +290,7 @@ function ConnectionsContent() {
                     <span className="px-3 py-1.5 rounded-lg text-[16px] font-medium bg-[#e0f5ee] border border-[#9FE1CB] text-[#064d38]">
                       Connected
                     </span>
-                    {p.disconnectFn && (
+                    {p.disconnectFn && canEdit && (
                       <button
                         onClick={p.disconnectFn}
                         className="px-2.5 py-1.5 rounded-lg text-[16px] font-medium bg-[#fce8e8] border border-[#f5a0a0] text-[#d94040] hover:bg-[#fbd5d5] transition-colors"
@@ -284,6 +299,10 @@ function ConnectionsContent() {
                       </button>
                     )}
                   </>
+                ) : !canEdit ? (
+                  <span className="px-3 py-1.5 rounded-lg text-[16px] font-medium bg-[#f7f7f5] border border-black/[0.08] text-[#686864]">
+                    Not connected
+                  </span>
                 ) : p.href ? (
                   <a
                     href={p.href}
@@ -304,7 +323,7 @@ function ConnectionsContent() {
           ))}
 
           {/* GSC site picker */}
-          {gscConnected && gscSites.length > 0 && (
+          {canEdit && gscConnected && gscSites.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -332,7 +351,7 @@ function ConnectionsContent() {
           )}
 
           {/* GA4 property picker */}
-          {ga4Connected && ga4Properties.length > 0 && (
+          {canEdit && ga4Connected && ga4Properties.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -365,7 +384,7 @@ function ConnectionsContent() {
           )}
 
           {/* Google Ads customer picker */}
-          {gadsConnected && (
+          {canEdit && gadsConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -428,7 +447,7 @@ function ConnectionsContent() {
           )}
 
           {/* Meta ad account picker */}
-          {metaConnected && (
+          {canEdit && metaConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">

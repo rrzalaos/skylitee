@@ -24,6 +24,59 @@ export async function getAuthorizedShop(req: NextRequest): Promise<string | null
   return shop;
 }
 
+// ── Store roles ───────────────────────────────────────────────────────────────
+// A user with the shop on their account is its owner unless they joined via a
+// team invite, in which case their team role applies.
+
+export type ShopRole = "owner" | "admin" | "marketing" | "view_only";
+
+// Mirrors the "Access Levels" card on the profile Team tab.
+export type ShopPermission =
+  | "billing"      // subscribe, coupons
+  | "team"         // invite / remove members
+  | "connections"  // connect/disconnect platforms, pick accounts & sites
+  | "edit";        // saved report templates
+
+const PERMISSION_ROLES: Record<ShopPermission, ShopRole[]> = {
+  billing:     ["owner"],
+  team:        ["owner", "admin"],
+  connections: ["owner", "admin"],
+  edit:        ["owner", "admin", "marketing"],
+};
+
+export async function getShopRole(shop: string, email: string): Promise<ShopRole> {
+  if (process.env.SHOPIFY_STORE) return "owner";
+  const [owner, team] = await Promise.all([shopKv.getOwner(shop), shopKv.getTeam(shop)]);
+  if (owner === email) return "owner";
+  return team?.find(m => m.email === email)?.role ?? "owner";
+}
+
+export function roleCan(role: ShopRole, permission: ShopPermission): boolean {
+  return PERMISSION_ROLES[permission].includes(role);
+}
+
+// Verified shop + the caller's role on it. Use on every route that changes store state.
+export async function requireShopPermission(
+  req: NextRequest,
+  permission: ShopPermission
+): Promise<{ ok: true; shop: string; email: string; role: ShopRole } | { ok: false; status: 401 | 403; error: string }> {
+  const shop = await getAuthorizedShop(req);
+  if (!shop) return { ok: false, status: 401, error: "Not authenticated" };
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = token ? await getSession(token) : null;
+  const email = session?.email ?? "";
+  const role = await getShopRole(shop, email);
+  if (!roleCan(role, permission)) {
+    return {
+      ok: false, status: 403,
+      error: role === "view_only"
+        ? "You have view-only access to this store"
+        : "Your role on this store doesn't allow this — ask the store owner",
+    };
+  }
+  return { ok: true, shop, email, role };
+}
+
 // Returns shop + Shopify API token. Use on routes that call the Shopify REST API.
 export async function getShopifySession(
   req: NextRequest

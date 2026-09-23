@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
-import { getGadsRefreshToken, getGadsCustomerId, getAuthorizedShop } from "@/lib/session";
+import { getGadsRefreshToken, getGadsCustomerId, getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 
 const DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
@@ -105,8 +105,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const shop = await getAuthorizedShop(req);
-  if (!shop) return NextResponse.json({ error: "not_authorized" }, { status: 403 });
+  const perm = await requireShopPermission(req, "connections");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  const shop = perm.shop;
 
   const { customerId } = await req.json() as { customerId?: string };
   if (!customerId) return NextResponse.json({ error: "missing_customer_id" }, { status: 400 });

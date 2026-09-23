@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { getAuthorizedShop } from "@/lib/session";
+import { getAuthorizedShop, requireShopPermission } from "@/lib/session";
 
 export interface ReportTemplate {
   id: string;
@@ -23,8 +23,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const shop = await getAuthorizedShop(req);
-  if (!shop) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const perm = await requireShopPermission(req, "edit");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  const shop = perm.shop;
 
   const body = await req.json() as Partial<ReportTemplate>;
   const name = (body.name ?? "").trim();
@@ -51,8 +52,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const shop = await getAuthorizedShop(req);
-  if (!shop) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const perm = await requireShopPermission(req, "edit");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  const shop = perm.shop;
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   const templates = await load(shop);

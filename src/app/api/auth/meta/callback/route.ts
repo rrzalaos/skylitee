@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shopKv } from "@/lib/kv";
-import { getShopFromRequest } from "@/lib/session";
+import { requireShopPermission } from "@/lib/session";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
   if (error || !code) {
     return NextResponse.redirect(`${APP_URL}/dashboard/connections?meta_error=denied`);
   }
+
+  const perm = await requireShopPermission(req, "connections");
+  if (!perm.ok) return NextResponse.redirect(`${APP_URL}/dashboard/connections?meta_error=view_only`);
+  const shop = perm.shop;
 
   const appId = process.env.META_APP_ID!;
   const appSecret = process.env.META_APP_SECRET!;
@@ -33,7 +37,6 @@ export async function GET(req: NextRequest) {
   const longData = await longRes.json() as { access_token?: string };
   const finalToken = longData.access_token ?? tokenData.access_token;
 
-  const shop = getShopFromRequest(req) ?? "unknown";
   await shopKv.setMetaToken(shop, finalToken);
 
   const response = NextResponse.redirect(`${APP_URL}/dashboard/connections`);

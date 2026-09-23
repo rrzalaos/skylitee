@@ -111,7 +111,7 @@ const ROLES = [
   },
   {
     role: "View Only", icon: Eye, color: "text-[#71717A]", bg: "bg-[#F5F5F4] dark:bg-[#1C1C1C]",
-    permissions: ["Read-only dashboard", "No data export", "No settings access", "No connection changes"],
+    permissions: ["Read-only dashboard", "Can view & download reports", "Cannot save report templates", "No team, billing or connection changes"],
   },
 ];
 
@@ -276,6 +276,8 @@ export default function ProfilePage() {
 
   const [meEmail, setMeEmail]       = useState("");
   const [meName, setMeName]         = useState("");
+  const [myRole, setMyRole]         = useState("owner");
+  const [canManageTeam, setCanManageTeam] = useState(true);
   const [teamMembers, setTeamMembers]   = useState<TeamMember[]>([]);
   const [teamLoading, setTeamLoading]   = useState(false);
   const [addEmail, setAddEmail]         = useState("");
@@ -323,6 +325,8 @@ export default function ProfilePage() {
         setIsAdmin(!!d.isAdmin);
         setMeEmail(d.email ?? "");
         setMeName(d.name ?? "");
+        setMyRole(d.role ?? "owner");
+        setCanManageTeam(d.can?.team !== false);
       })
       .catch(() => setIsAdmin(false));
   }, []);
@@ -665,7 +669,8 @@ export default function ProfilePage() {
           <Card>
             <CardHeader title="Team Members" right={`${1 + teamMembers.length} member${teamMembers.length ? "s" : ""}`} />
 
-            {/* Owner row — always first */}
+            {/* Owner row — always first (only when the viewer is the owner) */}
+            {myRole === "owner" && (
             <div className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-center gap-3">
                 <Avatar photoUrl={data.photoUrl} name={meName || "Owner"} size={40} />
@@ -678,6 +683,7 @@ export default function ProfilePage() {
                 <Crown size={10} /> Owner
               </span>
             </div>
+            )}
 
             {/* Team members */}
             {teamLoading ? (
@@ -704,17 +710,25 @@ export default function ProfilePage() {
                   <span className={cn("text-[13px] font-bold px-2.5 py-1 rounded-full", ROLE_COLORS[m.role] ?? ROLE_COLORS.view_only)}>
                     {ROLE_LABELS[m.role] ?? m.role}
                   </span>
-                  <button
+                  {canManageTeam && m.email !== meEmail && <button
                     onClick={() => removeMember(m.email)}
                     className="text-[13px] text-[#EF4444] hover:text-[#DC2626] font-semibold px-2 py-1 rounded-lg hover:bg-[#FEF2F2] dark:hover:bg-[#2D0A0A] transition-colors"
                   >
                     Remove
-                  </button>
+                  </button>}
                 </div>
               </div>
             ))}
 
+            {!canManageTeam && (
+              <div className="pt-4 mt-1 border-t border-black/[0.06] dark:border-white/[0.06] text-[13px] text-[#A1A1AA] flex items-start gap-1.5">
+                <Info size={11} className="shrink-0 mt-0.5" />
+                Only the store owner or an admin can add or remove team members.
+              </div>
+            )}
+
             {/* Add member form */}
+            {canManageTeam && (
             <div className="pt-4 mt-1 border-t border-black/[0.06] dark:border-white/[0.06]">
               <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Add Team Member</div>
               <div className="flex gap-2 flex-wrap">
@@ -741,6 +755,7 @@ export default function ProfilePage() {
                 They will receive a notification and must accept before getting store access. Status shows Pending until accepted.
               </div>
             </div>
+            )}
           </Card>
 
           <Card>

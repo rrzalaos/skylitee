@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthorizedShop } from "@/lib/session";
+import { getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv, couponKv, Grant, normalizeCoupon, computeGrantExpiry, describeBenefit } from "@/lib/kv";
 import { PLANS } from "@/lib/billing";
 
@@ -16,6 +16,8 @@ function isCouponValid(coupon: { active: boolean; expiresAt: string | null; maxU
 export async function POST(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
   if (!shop) return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  const perm = await requireShopPermission(req, "billing");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
 
   const { code, action = "validate" } = await req.json() as { code: string; action?: "validate" | "apply" };
 

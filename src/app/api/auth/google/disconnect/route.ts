@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shopKv } from "@/lib/kv";
-import { getShopFromRequest } from "@/lib/session";
+import { requireShopPermission } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   const service = new URL(req.url).searchParams.get("service") ?? "all";
-  const shop = getShopFromRequest(req) ?? "unknown";
+  const perm = await requireShopPermission(req, "connections");
+  if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
+  const shop = perm.shop;
   const res = NextResponse.json({ ok: true });
 
   if (service === "gsc") {
