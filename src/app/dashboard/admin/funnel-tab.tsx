@@ -20,6 +20,7 @@ interface FunnelRow {
   activeDays: number;
   lastSeenDay: string | null;
   steps: Record<StepKey, boolean>;
+  welcome: { questions: boolean; xray: boolean; done: boolean } | null;
 }
 
 const STEPS: { key: StepKey | "installed"; label: string }[] = [
@@ -103,6 +104,14 @@ export function FunnelTab({ onToast }: { onToast: (msg: string) => void }) {
     .filter(x => x.count > 0);
   const answered = uninstalled.filter(r => r.reason).length;
 
+  const welcomeRows = inWindow.filter(r => r.welcome);
+  const welcomeSteps = [
+    { label: "Reached /welcome",      count: welcomeRows.filter(r => r.steps.account).length },
+    { label: "Answered 3 questions",  count: welcomeRows.filter(r => r.welcome?.questions).length },
+    { label: "Saw Store X-Ray",       count: welcomeRows.filter(r => r.welcome?.xray).length },
+    { label: "Went to dashboard",     count: welcomeRows.filter(r => r.welcome?.done).length },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-2">
@@ -157,6 +166,26 @@ export function FunnelTab({ onToast }: { onToast: (msg: string) => void }) {
             );
           })}
         </div>
+      </Card>
+
+      {/* Welcome flow (new installs only) */}
+      <Card>
+        <CardHeader title="Welcome flow" right={`${welcomeRows.length} new install${welcomeRows.length === 1 ? "" : "s"} went through it`} />
+        {welcomeRows.length === 0 ? (
+          <div className="text-[14px] text-[#A1A1AA] py-2 mt-1">No new installs through the welcome flow in this period yet.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-3">
+            {welcomeSteps.map(s => {
+              const pct = welcomeRows.length ? Math.round((s.count / welcomeRows.length) * 100) : 0;
+              return (
+                <div key={s.label} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-3">
+                  <div className="text-[13px] text-[#A1A1AA]">{s.label}</div>
+                  <div className="text-[22px] font-black dark:text-[#F4F4F5]">{s.count}<span className="text-[14px] font-semibold text-[#A1A1AA]"> · {pct}%</span></div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Uninstalls */}

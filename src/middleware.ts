@@ -11,7 +11,7 @@ export function middleware(req: NextRequest) {
 
   const session = req.cookies.get(SESSION_COOKIE)?.value;
 
-  if (pathname.startsWith("/dashboard") && !session) {
+  if ((pathname.startsWith("/dashboard") || pathname.startsWith("/welcome")) && !session) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -19,5 +19,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/welcome/:path*", "/welcome"],
 };

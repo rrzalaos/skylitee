@@ -10,7 +10,7 @@ export { UNINSTALL_REASONS, type UninstallReason };
 //
 // Every writer here swallows errors: tracking must never break install, OAuth or billing.
 
-export type FunnelMark = "installedAt" | "planAt" | "metaAt" | "googleAt";
+export type FunnelMark = "installedAt" | "planAt" | "metaAt" | "googleAt" | "questionsAt" | "xrayAt" | "welcomeDoneAt";
 
 export type FunnelRecord = {
   installedAt?: string;       // first successful Shopify OAuth
@@ -18,6 +18,9 @@ export type FunnelRecord = {
   planAt?: string;            // first time a plan/trial/free grant became active
   metaAt?: string;            // first Meta connect
   googleAt?: string;          // first GSC / GA4 / Google Ads connect
+  questionsAt?: string;       // /welcome: answered the 3 questions
+  xrayAt?: string;            // /welcome: Store X-Ray loaded with real data
+  welcomeDoneAt?: string;     // /welcome: clicked through to the dashboard
   lastSeenDay?: string;       // YYYY-MM-DD of the latest dashboard visit
   activeDays?: number;        // distinct days the dashboard was opened
   returnedD7At?: string;      // first visit 7+ days after install

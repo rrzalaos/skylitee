@@ -3,6 +3,7 @@ import { kv } from "@vercel/kv";
 import { getSession, getUser, getAllUserEmails, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
 import { shopKv } from "@/lib/kv";
 import { getFunnel, listFunnelShops } from "@/lib/funnel";
+import { getOnboarding } from "@/lib/onboarding";
 
 async function kvExists(key: string): Promise<boolean> {
   try { return (await kv.exists(key)) > 0; } catch { return false; }
@@ -31,8 +32,9 @@ export async function GET(req: NextRequest) {
   const shops = [...new Set([...await listFunnelShops(), ...linkedShops])];
 
   const rows = await Promise.all(shops.map(async (shop) => {
-    const [f, shopify, meta, gsc, ga4, gads, plan, connectedAt, owner] = await Promise.all([
+    const [f, onboarding, shopify, meta, gsc, ga4, gads, plan, connectedAt, owner] = await Promise.all([
       getFunnel(shop),
+      getOnboarding(shop),
       kvExists(`shop:${shop}:shopify_token`),
       kvExists(`shop:${shop}:meta_token`),
       kvExists(`shop:${shop}:gsc_token`),
@@ -66,6 +68,12 @@ export async function GET(req: NextRequest) {
         google:   !!f?.googleAt || gsc || ga4 || gads,
         returned: !!f?.returnedD7At,
       },
+      // Only stores that went through the /welcome flow (new installs after it shipped).
+      welcome: onboarding ? {
+        questions: !!f?.questionsAt || !!onboarding.answeredAt,
+        xray:      !!f?.xrayAt,
+        done:      !!f?.welcomeDoneAt || onboarding.status === "done",
+      } : null,
     };
   }));
 

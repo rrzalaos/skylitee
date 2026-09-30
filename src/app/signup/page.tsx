@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -13,6 +13,11 @@ export default function SignupPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fromInstall, setFromInstall] = useState(false);
+
+  useEffect(() => {
+    setFromInstall(new URLSearchParams(window.location.search).get("from") === "install");
+  }, []);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +37,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push(data.isAdmin ? "/admin" : data.hasInvites ? "/dashboard" : "/connect");
+    router.push(data.isAdmin ? "/admin" : data.next ?? (data.hasInvites ? "/dashboard" : "/connect"));
   };
 
   return (
@@ -49,6 +54,11 @@ export default function SignupPage() {
 
         {/* Card */}
         <div className="bg-[#111111] border border-white/[0.08] rounded-2xl p-7 shadow-xl">
+          {fromInstall && (
+            <div className="mb-5 text-[13px] text-[#22C55E] bg-[#22C55E]/10 px-3 py-2.5 rounded-xl border border-[#22C55E]/20">
+              ✓ Your Shopify store is connected. Create your account to see your free Store X-Ray.
+            </div>
+          )}
           <h1 className="text-[20px] font-bold text-white mb-1">Create your account</h1>
           <p className="text-[14px] text-white/50 mb-6">Start your free analytics dashboard</p>
 
