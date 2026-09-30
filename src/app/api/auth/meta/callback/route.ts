@@ -4,17 +4,26 @@ import { requireShopPermission } from "@/lib/session";
 import { markOnce } from "@/lib/funnel";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
+const META_RETURN_COOKIE = "meta_return";   // set in ../route.ts when connect starts from /welcome
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
+  const toWelcome = req.cookies.get(META_RETURN_COOKIE)?.value === "welcome";
 
-  if (error || !code) {
-    return NextResponse.redirect(`${APP_URL}/dashboard/connections?meta_error=denied`);
-  }
+  // Onboarding merchants go back to /welcome; everyone else keeps the Connections page.
+  const back = (query: string) => {
+    const res = NextResponse.redirect(toWelcome
+      ? `${APP_URL}/welcome${query ? `?${query}` : ""}`
+      : `${APP_URL}/dashboard/connections${query ? `?${query}` : ""}`);
+    if (toWelcome) res.cookies.delete(META_RETURN_COOKIE);
+    return res;
+  };
+
+  if (error || !code) return back("meta_error=denied");
 
   const perm = await requireShopPermission(req, "connections");
-  if (!perm.ok) return NextResponse.redirect(`${APP_URL}/dashboard/connections?meta_error=view_only`);
+  if (!perm.ok) return back("meta_error=view_only");
   const shop = perm.shop;
 
   const appId = process.env.META_APP_ID!;
@@ -27,9 +36,7 @@ export async function GET(req: NextRequest) {
   );
   const tokenData = await tokenRes.json() as { access_token?: string; error?: { message: string } };
 
-  if (!tokenData.access_token) {
-    return NextResponse.redirect(`${APP_URL}/dashboard/connections?meta_error=token`);
-  }
+  if (!tokenData.access_token) return back("meta_error=token");
 
   const longRes = await fetch(
     `https://graph.facebook.com/v19.0/oauth/access_token` +
@@ -41,7 +48,7 @@ export async function GET(req: NextRequest) {
   await shopKv.setMetaToken(shop, finalToken);
   await markOnce(shop, "metaAt");
 
-  const response = NextResponse.redirect(`${APP_URL}/dashboard/connections`);
+  const response = back(toWelcome ? "connected=meta" : "");
   response.cookies.set("meta_token", finalToken, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 55,

@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
+const META_RETURN_COOKIE = "meta_return";   // read in ./callback
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const appId = process.env.META_APP_ID;
   if (!appId) return NextResponse.json({ error: "META_APP_ID not configured" }, { status: 500 });
 
@@ -12,5 +13,10 @@ export async function GET() {
   url.searchParams.set("scope", "ads_read");
   url.searchParams.set("response_type", "code");
 
-  return NextResponse.redirect(url.toString());
+  const res = NextResponse.redirect(url.toString());
+  // Connect started from the /welcome onboarding → come back there for the real-ROAS reveal.
+  if (req.nextUrl.searchParams.get("return") === "welcome") {
+    res.cookies.set(META_RETURN_COOKIE, "welcome", { httpOnly: true, maxAge: 600, sameSite: "lax", path: "/" });
+  }
+  return res;
 }

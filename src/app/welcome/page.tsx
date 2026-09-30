@@ -65,6 +65,8 @@ export default function WelcomePage() {
   const [scanStep, setScanStep] = useState(0);
   const [minScanDone, setMinScanDone] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [skipScan, setSkipScan] = useState(false);
+  const [metaError, setMetaError] = useState("");
   const started = useRef(false);
 
   useEffect(() => {
@@ -82,6 +84,15 @@ export default function WelcomePage() {
 
     fetch("/api/billing/status").then(r => r.json()).then(d => setHasAccess(!!d.hasAccess)).catch(() => {});
 
+    // Back from Meta connect (?connected=meta / ?meta_error=…) — skip the scan animation.
+    const params = new URLSearchParams(window.location.search);
+    const returned = params.get("connected") === "meta" || params.has("meta_error");
+    if (params.has("meta_error")) setMetaError(params.get("meta_error") ?? "failed");
+    if (returned) {
+      setSkipScan(true);
+      window.history.replaceState(null, "", "/welcome");
+    }
+
     fetch("/api/onboarding").then(async r => {
       if (r.status === 401) { window.location.href = "/login"; return; }
       const d = await r.json();
@@ -96,12 +107,13 @@ export default function WelcomePage() {
   // Scanning animation: walk through the steps, at least ~3s so the result feels earned.
   useEffect(() => {
     if (phase !== "xray") return;
+    if (skipScan) { setMinScanDone(true); return; }
     setScanStep(0);
     setMinScanDone(false);
     const t = setInterval(() => setScanStep(s => Math.min(s + 1, SCAN_STEPS.length)), 750);
     const done = setTimeout(() => setMinScanDone(true), SCAN_STEPS.length * 750 + 200);
     return () => { clearInterval(t); clearTimeout(done); };
-  }, [phase]);
+  }, [phase, skipScan]);
 
   const pick = async (key: keyof Answers, v: string) => {
     const next = { ...answers, [key]: v } as Answers;
@@ -150,12 +162,22 @@ export default function WelcomePage() {
 
         {showResults && (
           <div className="space-y-6">
+            {metaError && (
+              <div className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3 text-[14px] text-[#EF4444]">
+                {metaError === "view_only"
+                  ? "Your role on this store can't connect ad accounts — ask the store owner."
+                  : "Meta connection didn't finish. Try again from the Meta card below."}
+              </div>
+            )}
+            {connected.meta && <RoasReveal />}
             {xray ? <XRayView x={xray} /> : (
               <div className="rounded-2xl border border-white/[0.08] bg-[#111111] p-6 text-[15px] text-white/60">
                 We couldn&apos;t read your store orders right now ({xrayError}). Your dashboard will retry automatically.
               </div>
             )}
-            <LockedCards answers={answers} connected={connected} onConnect={url => finish(url)} disabled={finishing} />
+            <LockedCards answers={answers} connected={connected} disabled={finishing}
+              // Meta comes back here for the ROAS reveal; Google lands on Connections to pick a site.
+              onConnect={url => url.startsWith("/api/auth/meta") ? (window.location.href = url) : finish(url)} />
             <div className="rounded-2xl border border-[#F97316]/30 bg-[#F97316]/[0.06] p-6 text-center">
               <div className="text-[18px] font-bold mb-1">
                 {hasAccess ? "Your full dashboard is ready" : "See everything — free for 14 days"}
@@ -394,6 +416,138 @@ function Header({ x }: { x: XRay }) {
   );
 }
 
+// ── Step 4: real-ROAS reveal (after Meta connects) ───────────────────────────
+interface RoasData {
+  period: { from: string; to: string };
+  adAccountName: string;
+  metaCurrency: string;
+  shopCurrency: string | null;
+  currencyMismatch: boolean;
+  spend: number;
+  metaPurchaseValue: number;
+  metaPurchases: number;
+  leads: number;
+  shopRevenue: number;
+  shopOrders: number;
+  metaRoas: number | null;
+  realRoas: number | null;
+  metaClaimPct: number | null;
+}
+
+function RoasReveal() {
+  const [data, setData] = useState<RoasData | null>(null);
+  const [error, setError] = useState("");
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [accountId, setAccountId] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true); setError("");
+    try {
+      const r = await fetch("/api/onboarding/roas");
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error === "no_ad_account" ? "No ad account found on this Meta login." : "Couldn't read your Meta ads right now.");
+      setData(d as RoasData);
+    } catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+    fetch("/api/meta/accounts").then(r => r.json()).then(d => {
+      setAccounts(d.accounts ?? []);
+      setAccountId(d.selectedAccountId ?? "");
+    }).catch(() => {});
+  }, []);
+
+  const switchAccount = async (id: string) => {
+    setAccountId(id);
+    await fetch("/api/meta/accounts", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ adAccount: id }),
+    }).catch(() => {});
+    load();
+  };
+
+  const money = (n: number, cur: string | null) => {
+    try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: cur ?? "INR", maximumFractionDigits: 0 }).format(n); }
+    catch { return `${cur ?? ""} ${Math.round(n).toLocaleString("en-IN")}`; }
+  };
+
+  const picker = accounts.length > 1 && (
+    <select value={accountId} onChange={e => switchAccount(e.target.value)}
+      className="bg-white/[0.05] border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-[13px] text-white max-w-full">
+      {accounts.map(a => <option key={a.id} value={a.id} className="bg-[#111111]">{a.name}</option>)}
+    </select>
+  );
+
+  let body: React.ReactNode;
+  if (loading) {
+    body = <div className="flex items-center gap-2 text-[15px] text-white/50 py-6"><LoaderCircle size={16} className="animate-spin" /> Comparing Meta with your real Shopify sales…</div>;
+  } else if (error || !data) {
+    body = <div className="text-[15px] text-white/60 py-4">{error || "Couldn't load."}</div>;
+  } else if (data.spend === 0) {
+    body = <div className="text-[15px] text-white/60 py-4">No Meta ad spend in <b className="text-white">{data.adAccountName}</b> in the last 30 days.{accounts.length > 1 ? " Pick another ad account above." : ""}</div>;
+  } else {
+    const realGood = (data.realRoas ?? 0) >= 3;
+    const claim = data.metaClaimPct;
+    const overClaim = claim !== null && claim > 100;
+    const leadAds = data.metaPurchaseValue === 0 && data.leads > 0;
+    body = (
+      <div className="space-y-4">
+        {data.currencyMismatch && (
+          <div className="text-[13px] text-white/50">Note: your ad account is in {data.metaCurrency} and your store in {data.shopCurrency}, so the two numbers aren&apos;t directly comparable.</div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+            <div className="text-[13px] text-white/45">What Meta says</div>
+            <div className="text-[32px] font-black">{leadAds ? "—" : `${data.metaRoas?.toFixed(2)}×`}</div>
+            <div className="text-[13px] text-white/50">
+              {leadAds ? `${data.leads} leads · ${money(data.spend / data.leads, data.metaCurrency)} per lead`
+                : `${money(data.metaPurchaseValue, data.metaCurrency)} sales from ${data.metaPurchases} purchases`}
+            </div>
+          </div>
+          <div className={`rounded-xl border p-4 ${realGood ? "border-[#22C55E]/40 bg-[#22C55E]/[0.06]" : "border-[#EF4444]/40 bg-[#EF4444]/[0.06]"}`}>
+            <div className="text-[13px] text-white/45">Your real ROAS (Shopify sales ÷ Meta spend)</div>
+            <div className={`text-[32px] font-black ${realGood ? "text-[#22C55E]" : "text-[#EF4444]"}`}>{data.realRoas?.toFixed(2)}×</div>
+            <div className="text-[13px] text-white/50">{money(data.shopRevenue, data.shopCurrency)} real sales · {data.shopOrders} orders · {money(data.spend, data.metaCurrency)} spent</div>
+          </div>
+        </div>
+        <div className="space-y-2 text-[14px]">
+          <div className={realGood ? "text-[#22C55E]" : "text-[#EF4444]"}>
+            {realGood
+              ? `Healthy — every 1 spent on Meta comes back as ${data.realRoas?.toFixed(1)} in store sales (D2C benchmark: 3× or more).`
+              : `Below the 3× D2C benchmark — every 1 spent on Meta brings back ${data.realRoas?.toFixed(1)} in store sales. The dashboard shows which campaigns to cut.`}
+          </div>
+          {!leadAds && claim !== null && (
+            <div className={overClaim || claim > 80 ? "text-[#EF4444]" : "text-[#22C55E]"}>
+              {overClaim
+                ? `Meta claims ${money(data.metaPurchaseValue, data.metaCurrency)} in sales — more than your whole store made. Meta is over-counting, so don't scale on its ROAS alone.`
+                : claim > 80
+                  ? `Meta takes credit for ${claim}% of all your sales — likely counting repeat and organic buyers too. Real ROAS is the safer number.`
+                  : `Meta takes credit for ${claim}% of your sales — its numbers look believable.`}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#F97316]/40 bg-[#111111] p-5">
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[#F97316] mb-1">
+            <CircleCheck size={13} /> Meta connected
+          </div>
+          <div className="text-[18px] font-bold">Your real ROAS — last 30 days</div>
+        </div>
+        {picker}
+      </div>
+      {body}
+    </div>
+  );
+}
+
 // ── Step 3: locked cards ─────────────────────────────────────────────────────
 function LockedCards({ answers, connected, onConnect, disabled }: {
   answers: Answers; connected: { meta: boolean; google: boolean }; onConnect: (url: string) => void; disabled: boolean;
@@ -402,7 +556,7 @@ function LockedCards({ answers, connected, onConnect, disabled }: {
     {
       key: "meta" as const, icon: Megaphone, title: "Your real ROAS",
       text: "Meta says one number, Shopify says another. See which ads actually bring paying orders.",
-      cta: "Connect Meta Ads", url: "/api/auth/meta",
+      cta: "Connect Meta Ads", url: "/api/auth/meta?return=welcome",
     },
     {
       key: "google" as const, icon: Search, title: "Keywords that bring buyers",
