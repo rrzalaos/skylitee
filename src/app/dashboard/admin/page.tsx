@@ -8,8 +8,9 @@ import {
   Search, UserX, UserCheck, ShieldCheck,
   Eye, EyeOff, Lock, RefreshCw, LogIn, TrendingUp,
   Tag, Plus, Trash2, ToggleLeft, ToggleRight, KeyRound, Gift,
-  Store, ChevronRight, Calendar,
+  Store, ChevronRight, Calendar, Filter,
 } from "lucide-react";
+import { FunnelTab } from "./funnel-tab";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ function PasswordGate({ pin, setPin, onLogin, error }: {
   );
 }
 
-type AdminTab = "overview" | "stores" | "users" | "analytics" | "coupons";
+type AdminTab = "overview" | "funnel" | "stores" | "users" | "analytics" | "coupons";
 
 type StoreRole = "owner" | "admin" | "marketing" | "view_only";
 interface AdminStore {
@@ -476,6 +477,7 @@ export default function AdminPage() {
 
   const tabs: { key: AdminTab; label: string; icon: React.ElementType }[] = [
     { key: "overview",  label: "Overview",            icon: LayoutDashboard },
+    { key: "funnel",    label: "Funnel",              icon: Filter          },
     { key: "stores",    label: `Stores (${stores.length})`, icon: Store     },
     { key: "users",     label: `Users (${users.length})`, icon: Users       },
     { key: "analytics", label: "Analytics",           icon: BarChart2       },
@@ -615,6 +617,9 @@ export default function AdminPage() {
           </Card>
         </div>
       )}
+
+      {/* ── FUNNEL ── */}
+      {tab === "funnel" && <FunnelTab onToast={showToast} />}
 
       {/* ── STORES ── */}
       {tab === "stores" && (

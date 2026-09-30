@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exchangeCodeForToken } from "@/lib/shopify";
+import { exchangeCodeForToken, registerUninstallWebhook } from "@/lib/shopify";
 import { shopKv } from "@/lib/kv";
+import { recordInstall } from "@/lib/funnel";
 import { getSession, addShopToUser, updateSessionShop, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -17,6 +18,10 @@ export async function GET(req: NextRequest) {
   try {
     const token = await exchangeCodeForToken(shop, code);
     await shopKv.setTokenRecord(shop, token);
+    await Promise.allSettled([
+      recordInstall(shop),
+      registerUninstallWebhook(shop, token.access_token),
+    ]);
 
     // Link shop to user account if session exists
     const sessionToken = req.cookies.get(SESSION_COOKIE)?.value;

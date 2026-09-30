@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, getUser, updateUser, SESSION_COOKIE, ADMIN_EMAIL } from "@/lib/auth";
 import { getAuthorizedShop, getShopRole, roleCan } from "@/lib/session";
+import { touchSeen } from "@/lib/funnel";
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
 
   const shop = await getAuthorizedShop(req);
   const role = shop ? await getShopRole(shop, user.email) : null;
+  // Funnel: count merchant dashboard visits (the admin's own account doesn't count).
+  if (shop && user.email !== ADMIN_EMAIL) await touchSeen(shop);
 
   return NextResponse.json({
     name: user.name,

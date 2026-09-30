@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv, couponKv, Grant, normalizeCoupon, computeGrantExpiry, describeBenefit } from "@/lib/kv";
 import { PLANS } from "@/lib/billing";
+import { markOnce } from "@/lib/funnel";
 
 function isCouponValid(coupon: { active: boolean; expiresAt: string | null; maxUses: number; usedCount: number }): boolean {
   if (!coupon.active) return false;
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
 
   await Promise.allSettled([
     shopKv.setPlan(shop, "growth"),
+    markOnce(shop, "planAt"),
     shopKv.setGrant(shop, grant),
     couponKv.set(normalized, {
       ...coupon,

@@ -113,6 +113,37 @@ export async function shopifyDelete(
   return res.ok || res.status === 404;
 }
 
+// Subscribe this shop to the app/uninstalled webhook (GraphQL). Safe to call repeatedly:
+// an existing subscription to the same address comes back as a "taken" user error, which
+// counts as success.
+export async function registerUninstallWebhook(shop: string, accessToken: string): Promise<{ ok: boolean; detail?: string }> {
+  const appUrl = process.env.SHOPIFY_APP_URL ?? "https://skylitee.io";
+  const res = await fetch(shopifyApiUrl(shop, "/graphql.json"), {
+    method: "POST",
+    headers: { "X-Shopify-Access-Token": accessToken, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: `mutation($topic: WebhookSubscriptionTopic!, $sub: WebhookSubscriptionInput!) {
+        webhookSubscriptionCreate(topic: $topic, webhookSubscription: $sub) {
+          webhookSubscription { id }
+          userErrors { message }
+        }
+      }`,
+      variables: { topic: "APP_UNINSTALLED", sub: { uri: `${appUrl}/api/webhooks/app/uninstalled` } },
+    }),
+    signal: AbortSignal.timeout(5000),   // never hold up the install redirect
+  });
+  rotateTokenIfNeeded(shop, res);
+  if (!res.ok) return { ok: false, detail: `HTTP ${res.status}` };
+  const json = await res.json() as {
+    data?: { webhookSubscriptionCreate?: { webhookSubscription?: { id: string } | null; userErrors?: { message: string }[] } };
+    errors?: { message: string }[];
+  };
+  if (json.errors?.length) return { ok: false, detail: json.errors[0].message };
+  const errs = json.data?.webhookSubscriptionCreate?.userErrors ?? [];
+  if (errs.length === 0 || errs.every(e => /taken|already/i.test(e.message))) return { ok: true };
+  return { ok: false, detail: errs[0].message };
+}
+
 export function buildAuthUrl(shop: string, state: string): string {
   const appUrl = process.env.SHOPIFY_APP_URL!;
   const params = new URLSearchParams({

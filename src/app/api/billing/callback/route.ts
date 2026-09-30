@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getShopifySession } from "@/lib/session";
 import { shopifyPost, shopifyDelete } from "@/lib/shopify";
 import { shopKv, couponKv, Grant, normalizeCoupon, computeGrantExpiry } from "@/lib/kv";
+import { markOnce } from "@/lib/funnel";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
       const prevChargeId = await shopKv.getChargeId(shop);
       await shopKv.setPlan(shop, planId);
       await shopKv.setChargeId(shop, chargeId);
+      await markOnce(shop, "planAt");
 
       // A pending coupon means this charge used a partial discount — mark it used and
       // record the discount grant (its benefit window). No pending coupon means a plain

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { shopKv } from "@/lib/kv";
 import { requireShopPermission } from "@/lib/session";
+import { markOnce } from "@/lib/funnel";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
   const finalToken = longData.access_token ?? tokenData.access_token;
 
   await shopKv.setMetaToken(shop, finalToken);
+  await markOnce(shop, "metaAt");
 
   const response = NextResponse.redirect(`${APP_URL}/dashboard/connections`);
   response.cookies.set("meta_token", finalToken, {

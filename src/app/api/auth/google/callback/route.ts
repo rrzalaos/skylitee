@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeGoogleCode } from "@/lib/google";
 import { shopKv } from "@/lib/kv";
 import { requireShopPermission } from "@/lib/session";
+import { markOnce } from "@/lib/funnel";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
       res.cookies.set("google_refresh_token", tokens.refresh_token, cookieOpts);
     }
 
+    await markOnce(shop, "googleAt");
     res.cookies.delete("google_state");
     return res;
   } catch {
