@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthorizedShop } from "@/lib/session";
+import { getAuthorizedShop, getShopRole } from "@/lib/session";
+import { getSession, SESSION_COOKIE } from "@/lib/auth";
 import { shopKv } from "@/lib/kv";
 import { getAccessState } from "@/lib/access";
 import { markOnce } from "@/lib/funnel";
@@ -14,18 +15,21 @@ export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
   if (!shop) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  const [onboarding, meta, gsc, ga4, gads] = await Promise.all([
+  const session = await getSession(req.cookies.get(SESSION_COOKIE)?.value ?? "");
+  const [onboarding, meta, gsc, ga4, gads, role] = await Promise.all([
     getOnboarding(shop),
     shopKv.getMetaToken(shop),
     shopKv.getGscToken(shop),
     shopKv.getGa4Token(shop),
     shopKv.getGadsToken(shop),
+    getShopRole(shop, session?.email ?? ""),
   ]);
 
   return NextResponse.json({
     shop,
     onboarding,
-    connected: { meta: !!meta, google: !!(gsc || ga4 || gads) },
+    role,
+    connected: { meta: !!meta, google: !!(gsc || ga4 || gads), gsc: !!gsc, ga4: !!ga4, gads: !!gads },
   });
 }
 

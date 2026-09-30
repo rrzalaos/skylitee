@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { SetupProgress } from "@/components/layout/setup-progress";
 import { DateRangeProvider } from "@/lib/date-range-context";
 import { Eye, X } from "lucide-react";
 
@@ -84,7 +85,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="h-full flex items-center justify-center text-[15px] text-[#71717A] dark:text-[#A1A1AA]">
                 Redirecting to plans…
               </div>
-            ) : children}
+            ) : (
+              <>
+                {accessChecked && !isAdmin && !impersonate && <SetupProgress hasAccess={hasAccess} />}
+                {children}
+              </>
+            )}
           </main>
         </div>
       </div>
