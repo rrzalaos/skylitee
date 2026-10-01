@@ -16,6 +16,7 @@ import {
   FileText, TrendingUp, BarChart3, DollarSign, HelpCircle, FilePlus,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
+import { isEmbedded } from "@/lib/embedded-client";
 
 interface NavItem {
   href: string; label: string; icon: React.ElementType;
@@ -134,6 +135,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const [gadsConnected, setGadsConnected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Inside the Shopify admin the app is for that one store — no adding/switching stores.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => { setEmbedded(isEmbedded()); }, []);
 
   useEffect(() => {
     const active = getActiveSectionLabel(pathname);
@@ -248,11 +252,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             )}
           </div>
 
-          {/* Always-visible Add Store button */}
+          {/* Add Store button (website only) */}
           <button
             onClick={() => { window.location.href = "/connect"; }}
             title="Add another store"
-            className="flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] text-[#A1A1AA] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] hover:border-[#F97316]/30 hover:text-[#F97316] transition-colors"
+            className={cn(embedded && "!hidden", "flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-xl bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] text-[#A1A1AA] hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E] hover:border-[#F97316]/30 hover:text-[#F97316] transition-colors")}
           >
             <Plus size={13} />
           </button>

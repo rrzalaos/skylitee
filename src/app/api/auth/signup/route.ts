@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, createUser, createSession, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
+import { getUser, createUser, createSession, isEmbeddedEmail, SESSION_COOKIE, SESSION_MAX_AGE, ADMIN_EMAIL } from "@/lib/auth";
 import { inviteKv } from "@/lib/kv";
 import { claimPendingInstall, isOnboardingPending, PENDING_INSTALL_COOKIE } from "@/lib/onboarding";
 
@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Name, email and password are required" }, { status: 400 });
+  }
+  // A real address only — "embedded:" accounts belong to stores opened inside Shopify.
+  if (typeof email !== "string" || !/^[^\s@:]+@[^\s@]+\.[^\s@]+$/.test(email) || isEmbeddedEmail(email)) {
+    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   }
   if (password.length < 8) {
     return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });

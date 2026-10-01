@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 import type { XRay } from "@/app/api/onboarding/xray/route";
+import { goExternal, needsHandoff } from "@/lib/embedded-client";
 
 type Goal = "sales" | "ad_cost" | "profit";
 type Ads = "meta" | "google" | "both" | "none";
@@ -137,7 +138,8 @@ export default function WelcomePage() {
       const d = await r.json();
       if (d.next) next = d.next;
     } catch { /* use default */ }
-    window.location.href = to ?? next;
+    const dest = to ?? next;
+    if (needsHandoff(dest)) goExternal(dest); else window.location.href = dest;
   };
 
   const showResults = phase === "xray" && minScanDone && (xray || xrayError);
@@ -177,7 +179,7 @@ export default function WelcomePage() {
             )}
             <LockedCards answers={answers} connected={connected} disabled={finishing}
               // Meta comes back here for the ROAS reveal; Google lands on Connections to pick a site.
-              onConnect={url => url.startsWith("/api/auth/meta") ? (window.location.href = url) : finish(url)} />
+              onConnect={url => url.startsWith("/api/auth/meta") ? goExternal(url) : finish(url)} />
             <div className="rounded-2xl border border-[#F97316]/30 bg-[#F97316]/[0.06] p-6 text-center">
               <div className="text-[18px] font-bold mb-1">
                 {hasAccess ? "Your full dashboard is ready" : "See everything — free for 14 days"}

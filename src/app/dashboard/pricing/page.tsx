@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, ChevronDown, Tag, Zap } from "lucide-react";
 import { PLANS } from "@/lib/billing";
+import { openTop } from "@/lib/embedded-client";
 
 export default function PricingPage() {
   return (
@@ -121,7 +122,7 @@ function PricingContent() {
       });
       const data = await res.json() as { confirmationUrl?: string; error?: string };
       if (data.confirmationUrl) {
-        window.location.href = data.confirmationUrl;
+        openTop(data.confirmationUrl);   // Shopify's approval page can't open inside the admin iframe
       } else {
         setError("Could not create subscription. Please try again.");
         setLoading(false);

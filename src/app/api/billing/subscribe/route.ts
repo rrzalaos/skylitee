@@ -3,6 +3,7 @@ import { getShopifySession, requireShopPermission } from "@/lib/session";
 import { shopifyPost } from "@/lib/shopify";
 import { PLANS, PlanId } from "@/lib/billing";
 import { shopKv, couponKv } from "@/lib/kv";
+import { isEmbeddedRequest } from "@/lib/embedded-server";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest) {
       recurring_application_charge: {
         name: `Skylitee ${plan.name}`,
         price: price.toFixed(2),
-        return_url: `${APP_URL}/api/billing/callback?plan=${planId}`,
+        // Inside the admin the approval page opens top-level with no session → the callback
+        // identifies the store from the URL and sends the merchant back into the admin.
+        return_url: `${APP_URL}/api/billing/callback?plan=${planId}` +
+          (isEmbeddedRequest(req) ? `&shop=${encodeURIComponent(shop)}&e=1` : ""),
         trial_days: plan.trialDays,
         test: isTest,
       },

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getShopifySession } from "@/lib/session";
-import { shopifyPost, shopifyDelete } from "@/lib/shopify";
+import { shopifyPost, shopifyDelete, getValidToken } from "@/lib/shopify";
+import { backToAdmin } from "@/lib/embedded-server";
+import { isValidShopDomain } from "@/lib/embedded";
 import { shopKv, couponKv, Grant, normalizeCoupon, computeGrantExpiry } from "@/lib/kv";
 import { markOnce } from "@/lib/funnel";
 
@@ -18,11 +20,18 @@ export async function GET(req: NextRequest) {
   const chargeId = searchParams.get("charge_id");
   const planId = searchParams.get("plan") ?? "growth";
 
+  // Subscribed from inside the Shopify admin: the store is in the URL (the charge can only be
+  // activated with that store's own token, and only after its owner approved it).
+  const embeddedShop = searchParams.get("e") === "1" ? searchParams.get("shop") : null;
+  const embeddedToken = isValidShopDomain(embeddedShop) ? await getValidToken(embeddedShop) : null;
+  const finish = async (path: string) =>
+    embeddedToken ? backToAdmin(embeddedShop!, path) : NextResponse.redirect(`${APP_URL}${path}`);
+
   if (!chargeId) {
-    return NextResponse.redirect(`${APP_URL}/dashboard/pricing?error=no_charge`);
+    return finish("/dashboard/pricing?error=no_charge");
   }
 
-  const session = await getShopifySession(req);
+  const session = embeddedToken ? { shop: embeddedShop!, token: embeddedToken } : await getShopifySession(req);
   if (!session) {
     return NextResponse.redirect(`${APP_URL}/dashboard/connections`);
   }
@@ -76,11 +85,11 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(`${APP_URL}/dashboard?subscribed=1`);
+      return finish("/dashboard?subscribed=1");
     } else {
-      return NextResponse.redirect(`${APP_URL}/dashboard/pricing?error=declined`);
+      return finish("/dashboard/pricing?error=declined");
     }
   } catch {
-    return NextResponse.redirect(`${APP_URL}/dashboard/pricing?error=failed`);
+    return finish("/dashboard/pricing?error=failed");
   }
 }

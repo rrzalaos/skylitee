@@ -4,6 +4,7 @@ import { RefreshCw, Bell, ChevronDown, Calendar, Sun, Moon, Menu, LogOut, User, 
 import { useState, useRef, useEffect } from "react";
 import { useDateRange, DatePreset } from "@/lib/date-range-context";
 import { useTheme } from "@/lib/theme-context";
+import { isEmbedded } from "@/lib/embedded-client";
 
 const titles: Record<string, string> = {
   "/dashboard": "Command Center",
@@ -130,6 +131,10 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
       .then(d => { if (d.name) setUserName(d.name[0].toUpperCase()); })
       .catch(() => {});
   }, []);
+
+  // Inside the Shopify admin the store owner is signed in by Shopify — no profile/logout menu.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => { setEmbedded(isEmbedded()); }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -452,7 +457,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
         )}
 
         {/* Avatar + user menu */}
-        <div className="relative" ref={userMenuRef}>
+        <div className={embedded ? "hidden" : "relative"} ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(v => !v)}
             className="w-8 h-8 rounded-full bg-[#F97316] flex items-center justify-center text-[15px] font-bold text-white hover:bg-[#EA580C] transition-colors"

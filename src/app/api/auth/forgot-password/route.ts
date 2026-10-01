@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, createResetToken } from "@/lib/auth";
+import { getUser, createResetToken, isEmbeddedEmail } from "@/lib/auth";
 import { Resend } from "resend";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "noreply@skylitee.io";
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   const user = await getUser(email);
   // Always return ok to avoid email enumeration
-  if (!user) return NextResponse.json({ ok: true });
+  if (!user || isEmbeddedEmail(user.email)) return NextResponse.json({ ok: true });
 
   const token = await createResetToken(user.email);
   const resetUrl = `${APP_URL}/reset-password?token=${token}`;

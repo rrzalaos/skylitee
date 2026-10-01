@@ -4,6 +4,8 @@ import { shopKv } from "@/lib/kv";
 import { recordInstall, getFunnel } from "@/lib/funnel";
 import { startOnboarding, isOnboardingPending, setPendingInstallCookie } from "@/lib/onboarding";
 import { getSession, addShopToUser, updateSessionShop, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth";
+import { embeddedModeOn, shopAdminAppUrl } from "@/lib/embedded";
+import { INSTALL_FROM_ADMIN_COOKIE } from "@/lib/embedded-server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -49,6 +51,17 @@ export async function GET(req: NextRequest) {
           await shopKv.setOwner(shop, session.email);
         }
       }
+    }
+
+    // Installed from the Shopify admin / App Store: reopen inside the admin, where the store
+    // owner is logged in automatically (no signup). Website installs keep the flow below.
+    const fromAdmin = req.cookies.get(INSTALL_FROM_ADMIN_COOKIE)?.value === "1";
+    if (embeddedModeOn() && (fromAdmin || !linked)) {
+      if (!(await shopKv.getConnectedAt(shop))) await shopKv.setConnectedAt(shop, new Date().toISOString());
+      const res = NextResponse.redirect(shopAdminAppUrl(shop));
+      res.cookies.delete(INSTALL_FROM_ADMIN_COOKIE);
+      res.cookies.delete("shopify_state");
+      return res;
     }
 
     // Onboarding merchants see their Store X-Ray before any paywall. Not logged in (App Store

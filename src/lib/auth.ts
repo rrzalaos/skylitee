@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv";
 import crypto from "crypto";
+import { EMBEDDED_SESSION_PREFIX, isEmbeddedSessionToken, verifyShopifySessionToken } from "./embedded";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ export interface SessionRecord {
   email: string;
   activeShop: string;
   createdAt: string;
+  embedded?: boolean;   // inside the Shopify admin (session token, see lib/embedded.ts)
 }
 
 // ── Password helpers (PBKDF2 — no extra deps) ────────────────────────────────
@@ -27,6 +29,7 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored) return false;   // passwordless (embedded) account
   const [salt, hash] = stored.split(":");
   const attempt = crypto.pbkdf2Sync(password, salt, 100_000, 64, "sha256").toString("hex");
   return attempt === hash;
@@ -103,10 +106,39 @@ export async function createSession(email: string, activeShop: string): Promise<
 }
 
 export async function getSession(token: string): Promise<SessionRecord | null> {
+  if (isEmbeddedSessionToken(token)) return getEmbeddedSession(token);
   return kvGet<SessionRecord>(`session:${token}`);
 }
 
+// ── Embedded (inside Shopify admin) sessions ─────────────────────────────────
+// A verified Shopify session token acts as a per-store account that can see ONLY that store —
+// never the owner's personal account, so Shopify staff can't reach the owner's other stores.
+// It has no password: login / signup / password reset all refuse embedded emails.
+
+const EMBEDDED_EMAIL_PREFIX = "embedded:";
+export const embeddedEmail = (shop: string) => `${EMBEDDED_EMAIL_PREFIX}${shop}`;
+export const isEmbeddedEmail = (email: string) => email.toLowerCase().startsWith(EMBEDDED_EMAIL_PREFIX);
+
+async function ensureEmbeddedUser(shop: string): Promise<boolean> {
+  const email = embeddedEmail(shop);
+  const user = await getUser(email);
+  if (user) return !user.passwordHash && user.shops.length === 1 && user.shops[0] === shop;
+  await kvSet(`user:${email}`, {
+    name: shop.replace(".myshopify.com", ""), email, passwordHash: "", shops: [shop],
+    createdAt: new Date().toISOString(),
+  } satisfies UserRecord);
+  try { await kv.sadd("users:index", email); } catch { /* KV not configured */ }
+  return true;
+}
+
+async function getEmbeddedSession(token: string): Promise<SessionRecord | null> {
+  const claims = await verifyShopifySessionToken(token.slice(EMBEDDED_SESSION_PREFIX.length));
+  if (!claims || !(await ensureEmbeddedUser(claims.shop))) return null;
+  return { email: embeddedEmail(claims.shop), activeShop: claims.shop, createdAt: new Date().toISOString(), embedded: true };
+}
+
 export async function updateSessionShop(token: string, activeShop: string): Promise<void> {
+  if (isEmbeddedSessionToken(token)) return;   // locked to its store
   const session = await getSession(token);
   if (!session) return;
   session.activeShop = activeShop;
