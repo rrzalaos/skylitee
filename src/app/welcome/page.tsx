@@ -179,7 +179,14 @@ export default function WelcomePage() {
             )}
             <LockedCards answers={answers} connected={connected} disabled={finishing}
               // Meta comes back here for the ROAS reveal; Google lands on Connections to pick a site.
-              onConnect={url => url.startsWith("/api/auth/meta") ? goExternal(url) : finish(url)} />
+              onConnect={url => url.startsWith("/api/auth/meta") ? goExternal(url) : finish(url)}
+              onDisconnect={async key => {
+                const label = key === "meta" ? "Meta Ads" : "Google";
+                if (!confirm(`Disconnect ${label}? You can connect a different account right after.`)) return;
+                const r = await fetch(key === "meta" ? "/api/auth/meta/disconnect" : "/api/auth/google/disconnect?service=all", { method: "POST" });
+                if (r.ok) setConnected(c => ({ ...c, [key]: false }));
+                else alert("Couldn't disconnect — your role on this store may not allow it.");
+              }} />
             <div className="rounded-2xl border border-[#F97316]/30 bg-[#F97316]/[0.06] p-6 text-center">
               <div className="text-[18px] font-bold mb-1">
                 {hasAccess ? "Your full dashboard is ready" : "See everything — free for 14 days"}
@@ -551,8 +558,9 @@ function RoasReveal() {
 }
 
 // ── Step 3: locked cards ─────────────────────────────────────────────────────
-function LockedCards({ answers, connected, onConnect, disabled }: {
-  answers: Answers; connected: { meta: boolean; google: boolean }; onConnect: (url: string) => void; disabled: boolean;
+function LockedCards({ answers, connected, onConnect, onDisconnect, disabled }: {
+  answers: Answers; connected: { meta: boolean; google: boolean }; onConnect: (url: string) => void;
+  onDisconnect: (key: "meta" | "google") => void; disabled: boolean;
 }) {
   const cards = [
     {
@@ -598,7 +606,13 @@ function LockedCards({ answers, connected, onConnect, disabled }: {
               </div>
               <p className="text-[14px] text-white/55 mb-4">{c.text}</p>
               {isConnected ? (
-                <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#22C55E]"><CircleCheck size={15} /> Connected</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#22C55E]"><CircleCheck size={15} /> Connected</div>
+                  <button onClick={() => onDisconnect(c.key)} disabled={disabled}
+                    className="text-[13px] font-semibold text-white/50 hover:text-[#EF4444] underline underline-offset-2 disabled:opacity-60">
+                    Disconnect
+                  </button>
+                </div>
               ) : (
                 <button onClick={() => onConnect(c.url)} disabled={disabled}
                   className={`w-full py-2.5 rounded-xl text-[15px] font-bold transition-all disabled:opacity-60 ${
