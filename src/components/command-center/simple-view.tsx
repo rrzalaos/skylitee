@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2, AlertTriangle, AlertCircle, CircleDashed, Check, Clock, ExternalLink,
-  Megaphone, Store, Users, Search, Sparkles, Send, ArrowRight,
+  Megaphone, Store, Users, Search, Sparkles, Send, ArrowRight, ChevronDown, Trophy,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { formatINR, cn } from "@/lib/utils";
@@ -25,17 +25,24 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [q, setQ] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [stats, setStats] = useState({ fixedThisMonth: 0, savedThisMonth: 0 });
 
   useEffect(() => {
     fetch("/api/actions").then(r => r.ok ? r.json() : null).then(d => {
       if (d?.actions) setStates(d.actions);
+      if (d) setStats({ fixedThisMonth: d.fixedThisMonth ?? 0, savedThisMonth: d.savedThisMonth ?? 0 });
     }).catch(() => {});
   }, []);
 
   const open = report.actions.filter(a => !states[a.id]);
   const today = open.slice(0, 3);
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const doneRecently = Object.entries(states)
+    .filter(([, s]) => s.status === "done" && s.at >= monthStart)
+    .sort((a, b) => b[1].at - a[1].at);
 
-  async function mark(a: PlainAction, status: "done" | "snoozed" | "clear") {
+  async function mark(a: Pick<PlainAction, "id" | "impact" | "title">, status: "done" | "snoozed" | "clear") {
     setBusy(a.id); setNote("");
     try {
       const r = await fetch("/api/actions", {
@@ -43,6 +50,8 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
         body: JSON.stringify({ id: a.id, status, impact: a.impact, title: a.title }),
       });
       if (!r.ok) { setNote(r.status === 403 ? "Your role can view but not update this list." : "Couldn't save — please try again."); return; }
+      const d = await r.json().catch(() => null);
+      if (d) setStats({ fixedThisMonth: d.fixedThisMonth ?? 0, savedThisMonth: d.savedThisMonth ?? 0 });
       setStates(s => {
         const next = { ...s };
         if (status === "clear") delete next[a.id];
@@ -64,6 +73,17 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
           </p>
         </div>
       </Card>
+
+      {/* ── Results this month ── */}
+      {stats.fixedThisMonth > 0 && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-[#F0FDF4] dark:bg-[#052E16] border border-[#BBF7D0] dark:border-[#14532D] px-3 py-2.5">
+          <Trophy size={18} className="text-[#16A34A] shrink-0" />
+          <span className="text-[15px] text-[#14532D] dark:text-[#BBF7D0]">
+            You fixed <b>{stats.fixedThisMonth} {stats.fixedThisMonth === 1 ? "issue" : "issues"}</b> this month
+            {stats.savedThisMonth > 0 && <> — worth about <b>{formatINR(stats.savedThisMonth)}</b></>}. Nice work.
+          </span>
+        </div>
+      )}
 
       {/* ── Health tiles ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -106,6 +126,23 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
                           ≈ {formatINR(a.impact)} {a.impactKind === "save" ? "you could save" : "you could earn"}
                         </div>
                       )}
+                      {a.steps.length > 0 && (
+                        <div className="mt-2">
+                          <button onClick={() => setExpanded(expanded === a.id ? null : a.id)} className="inline-flex items-center gap-1 text-[14px] font-bold text-[#EA580C] hover:underline">
+                            <ChevronDown size={14} className={cn("transition-transform", expanded === a.id && "rotate-180")} /> How to fix
+                          </button>
+                          {expanded === a.id && (
+                            <ol className="mt-2 space-y-1.5 pl-1">
+                              {a.steps.map((step, n) => (
+                                <li key={n} className="flex items-start gap-2 text-[14px] text-[#3F3F46] dark:text-[#D4D4D8] leading-snug">
+                                  <span className="w-5 h-5 rounded-full bg-[#F5F5F4] dark:bg-[#262626] text-[12px] font-bold flex items-center justify-center shrink-0">{n + 1}</span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2 mt-3">
                         {a.link && (a.link.external ? (
                           <a href={a.link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white">
@@ -130,6 +167,19 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
             </div>
           )}
         {note && <div className="text-[13px] text-[#DC2626] mt-2">{note}</div>}
+        {doneRecently.length > 0 && (
+          <details className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+            <summary className="text-[14px] font-semibold text-[#71717A] cursor-pointer">Done this month ({doneRecently.length})</summary>
+            <div className="mt-2 space-y-1.5">
+              {doneRecently.map(([id, s]) => (
+                <div key={id} className="flex items-center justify-between gap-2 text-[14px]">
+                  <span className="flex items-center gap-1.5 text-[#52525B] dark:text-[#A1A1AA] min-w-0"><Check size={13} className="text-[#16A34A] shrink-0" /><span className="truncate">{s.title}</span></span>
+                  <button disabled={busy === id} onClick={() => mark({ id, impact: s.impact, title: s.title }, "clear")} className="text-[13px] text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5] shrink-0">Undo</button>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
       </Card>
 
       {/* ── Every number, explained ── */}
