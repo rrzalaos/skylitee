@@ -16,6 +16,8 @@ import Link from "next/link";
 import { useDateRange, getComparisonRange, formatRangeDates } from "@/lib/date-range-context";
 import { cn } from "@/lib/utils";
 import { Sparkline, Donut, Gauge } from "@/components/ui/charts";
+import { SimpleView } from "@/components/command-center/simple-view";
+import { buildPlainReport } from "@/lib/plain-insights";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 interface ShopKpis {
@@ -125,6 +127,15 @@ export default function CommandCenterPage() {
   const [salesTarget, setSalesTarget] = useState(0);
   const [chatQ, setChatQ] = useState("");
   const [loading, setLoading] = useState(true);
+  // Simple (plain-language, default for everyone) vs Expert (all charts). Remembered per browser.
+  const [view, setView] = useState<"simple" | "expert">("simple");
+  useEffect(() => {
+    try { if (localStorage.getItem("skylitee-cc-view") === "expert") setView("expert"); } catch { /* ignore */ }
+  }, []);
+  function switchView(v: "simple" | "expert") {
+    setView(v);
+    try { localStorage.setItem("skylitee-cc-view", v); } catch { /* ignore */ }
+  }
 
   // Cost model + goal from the same localStorage the Financial/Goals pages use.
   useEffect(() => {
@@ -426,15 +437,39 @@ export default function CommandCenterPage() {
     { label: "Google Ads", connected: connections.gads },
   ];
 
-  function askAI() {
-    if (chatQ.trim()) { try { sessionStorage.setItem("skylitee-chat-prefill", chatQ.trim()); } catch { /* ignore */ } }
+  function askAI(q = chatQ) {
+    if (q.trim()) { try { sessionStorage.setItem("skylitee-chat-prefill", q.trim()); } catch { /* ignore */ } }
     router.push("/dashboard/chat");
   }
+
+  /* ── Plain-language report for the Simple view ── */
+  const plain = useMemo(() => buildPlainReport({
+    periodLabel: (() => {
+      const l = (range.label ?? "").toLowerCase();
+      if (["today", "yesterday", "this month", "last month"].includes(l)) return l;
+      return l.startsWith("last ") ? `the ${l}` : "this period";
+    })(),
+    storeHandle: shopName || undefined,
+    shop: k ? {
+      sales: k.grossSales, orders: k.totalOrders, aov: k.aov, codOrders: k.codOrders,
+      prepaidRevenue: prepaidRev, codRevenue: codRev, newCustomers: k.newCustomers,
+    } : null,
+    salesChangePct: salesChange,
+    repeatRate: anomalies && anomalies.summary.repeatRate > 0 ? anomalies.summary.repeatRate : null,
+    meta: meta ? { spend: meta.spend, purchaseValue: meta.purchaseValue, leads: meta.leads, clicks: meta.clicks, impressions: meta.impressions, frequency: meta.frequency } : null,
+    campaigns: campaigns.map(c => ({ name: c.name, objective: c.objective, spend: c.spend, purchases: c.purchases, purchaseValue: c.purchaseValue, leads: c.leads, clicks: c.clicks, impressions: c.impressions, frequency: c.frequency })),
+    gads: gads ? { spend: gads.spend, conversionValue: gads.conversionValue ?? 0 } : null,
+    gsc: gsc ? { avgPosition: gsc.avgPosition, nearPage1: gscOpp.count, extraClicks: gscOpp.extraClicks, pending: gscPending } : null,
+    connected: { meta: connections.meta, google: connections.gsc || connections.ga4 || connections.gads },
+    breakEvenRoas: econ?.breakEvenRoas ?? null,
+    costsSet: configured,
+    rto: cost ? { rate: cost.rtoRate, costPerOrder: cost.rtoCostPerOrder } : null,
+  }), [range.label, shopName, k, prepaidRev, codRev, salesChange, anomalies, meta, campaigns, gads, gsc, gscOpp, gscPending, connections, econ, configured, cost]);
 
   return (
     <div className="space-y-3">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Command Center</h2>
@@ -448,9 +483,18 @@ export default function CommandCenterPage() {
           </div>
           <p className="text-[14px] text-[#A1A1AA] mt-0.5">{range.label} · <span className="font-semibold text-[#71717A] dark:text-[#A1A1AA]">{formatRangeDates(range)}</span> · {liveCount} of 5 platforms active</p>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5">
-          {platforms.map(p => (
-            <div key={p.label} className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-[13px] font-semibold border",
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-lg p-0.5 mr-1" role="group" aria-label="View">
+            {(["simple", "expert"] as const).map(v => (
+              <button key={v} onClick={() => switchView(v)}
+                className={cn("px-3 py-1 rounded-md text-[13px] font-bold transition-colors",
+                  view === v ? "bg-white dark:bg-[#2A2A2A] text-[#EA580C] shadow-sm" : "text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]")}>
+                {v === "simple" ? "Simple" : "Expert"}
+              </button>
+            ))}
+          </div>
+          {view === "expert" && platforms.map(p => (
+            <div key={p.label} className={cn("hidden sm:flex items-center gap-1 px-2 py-1 rounded-full text-[13px] font-semibold border",
               p.connected ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]" : "bg-white dark:bg-[#171717] border-black/[0.04] dark:border-white/[0.04] text-[#A1A1AA]")}>
               <span className={cn("w-1.5 h-1.5 rounded-full", p.connected ? "bg-[#22C55E]" : "bg-[#D4D4D4] dark:bg-[#525252]")} />
               {p.label}
@@ -459,6 +503,9 @@ export default function CommandCenterPage() {
         </div>
       </div>
 
+      {view === "simple" ? (
+        <SimpleView report={plain} loading={loading} onAsk={askAI} />
+      ) : (<>
       {/* ── SECTION 1: Active Objectives Strip ── */}
       {activeObjs.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-[#171717] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] px-3 py-2.5">
@@ -751,7 +798,7 @@ export default function CommandCenterPage() {
           <input value={chatQ} onChange={e => setChatQ(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI()}
             placeholder="Ask anything — &quot;which city has the worst RTO?&quot;, &quot;which creative should I kill?&quot;"
             className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
-          <button onClick={askAI} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
+          <button onClick={() => askAI()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {quickActions.map(a => (
@@ -762,6 +809,7 @@ export default function CommandCenterPage() {
           ))}
         </div>
       </Card>
+      </>)}
     </div>
   );
 }
