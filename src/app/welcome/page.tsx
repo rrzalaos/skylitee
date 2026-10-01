@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 import type { XRay } from "@/app/api/onboarding/xray/route";
+import type { Finding } from "@/app/api/onboarding/roas/route";
 import { goExternal, needsHandoff } from "@/lib/embedded-client";
 
 type Goal = "sales" | "ad_cost" | "profit";
@@ -68,6 +69,7 @@ export default function WelcomePage() {
   const [finishing, setFinishing] = useState(false);
   const [skipScan, setSkipScan] = useState(false);
   const [metaError, setMetaError] = useState("");
+  const [adSummary, setAdSummary] = useState<AdSummary | null>(null);
   const started = useRef(false);
 
   useEffect(() => {
@@ -171,7 +173,7 @@ export default function WelcomePage() {
                   : "Meta connection didn't finish. Try again from the Meta card below."}
               </div>
             )}
-            {connected.meta && <RoasReveal />}
+            {connected.meta && <RoasReveal hasAccess={hasAccess} onSummary={setAdSummary} />}
             {xray ? <XRayView x={xray} /> : (
               <div className="rounded-2xl border border-white/[0.08] bg-[#111111] p-6 text-[15px] text-white/60">
                 We couldn&apos;t read your store orders right now ({xrayError}). Your dashboard will retry automatically.
@@ -191,9 +193,19 @@ export default function WelcomePage() {
               <div className="text-[18px] font-bold mb-1">
                 {hasAccess ? "Your full dashboard is ready" : "See everything — free for 14 days"}
               </div>
-              <p className="text-[14px] text-white/55 mb-4">
-                {goalLine(answers.goal)}
-              </p>
+              {adSummary && connected.meta ? (
+                <p className="text-[15px] text-white/70 mb-4">
+                  You spent <b className="text-white">{fmtMoney(adSummary.spend, adSummary.currency)}</b> on Meta in 30 days
+                  {adSummary.wasted > 0
+                    ? <> — <b className="text-[#EF4444]">{fmtMoney(adSummary.wasted, adSummary.currency)}</b> of it on campaigns with zero results.</>
+                    : "."}
+                  {adSummary.fixes > 0 && ` We found ${adSummary.fixes} thing${adSummary.fixes > 1 ? "s" : ""} to fix — the dashboard shows exactly where.`}
+                </p>
+              ) : (
+                <p className="text-[14px] text-white/55 mb-4">
+                  {goalLine(answers.goal)}
+                </p>
+              )}
               <button onClick={() => finish()} disabled={finishing}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] rounded-xl text-[16px] font-bold shadow-[0_0_24px_rgba(249,115,22,0.35)] disabled:opacity-60 transition-all">
                 {finishing ? <LoaderCircle size={16} className="animate-spin" /> : null}
@@ -205,6 +217,11 @@ export default function WelcomePage() {
       </div>
     </div>
   );
+}
+
+function fmtMoney(n: number, cur: string) {
+  try { return new Intl.NumberFormat("en-IN", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(n); }
+  catch { return `${cur} ${Math.round(n).toLocaleString("en-IN")}`; }
 }
 
 function goalLine(goal?: Goal) {
@@ -441,9 +458,18 @@ interface RoasData {
   metaRoas: number | null;
   realRoas: number | null;
   metaClaimPct: number | null;
+  campaignCount?: number;
+  wastedSpend?: number;
+  linkClicks?: number;
+  findings?: Finding[];
 }
 
-function RoasReveal() {
+type AdSummary = { spend: number; wasted: number; currency: string; fixes: number };
+
+// Findings shown in full before the trial; the rest are teased (blurred) to show there's more.
+const FREE_FINDINGS = 3;
+
+function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (s: AdSummary | null) => void }) {
   const [data, setData] = useState<RoasData | null>(null);
   const [error, setError] = useState("");
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -455,9 +481,14 @@ function RoasReveal() {
     try {
       const r = await fetch("/api/onboarding/roas");
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error === "no_ad_account" ? "No ad account found on this Meta login." : "Couldn't read your Meta ads right now.");
-      setData(d as RoasData);
-    } catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
+      if (!r.ok) throw new Error(d.error === "no_ad_account" ? "no_ad_account" : "Couldn't read your Meta ads right now.");
+      const rd = d as RoasData;
+      setData(rd);
+      onSummary(rd.spend > 0 ? {
+        spend: rd.spend, wasted: rd.wastedSpend ?? 0, currency: rd.metaCurrency,
+        fixes: (rd.findings ?? []).filter(f => f.flag === "bad").length,
+      } : null);
+    } catch (e) { setError(e instanceof Error ? e.message : "Failed"); onSummary(null); }
     setLoading(false);
   };
 
@@ -485,6 +516,7 @@ function RoasReveal() {
   const picker = accounts.length > 1 && (
     <select value={accountId} onChange={e => switchAccount(e.target.value)}
       className="bg-white/[0.05] border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-[13px] text-white max-w-full">
+      {!accountId && <option value="" className="bg-[#111111]">Select your ad account…</option>}
       {accounts.map(a => <option key={a.id} value={a.id} className="bg-[#111111]">{a.name}</option>)}
     </select>
   );
@@ -492,6 +524,10 @@ function RoasReveal() {
   let body: React.ReactNode;
   if (loading) {
     body = <div className="flex items-center gap-2 text-[15px] text-white/50 py-6"><LoaderCircle size={16} className="animate-spin" /> Comparing Meta with your real Shopify sales…</div>;
+  } else if (error === "no_ad_account") {
+    body = <div className="text-[15px] text-white/60 py-4">
+      {accounts.length > 1 ? "This Meta login has several ad accounts — pick yours above to see the results." : "No ad account found on this Meta login."}
+    </div>;
   } else if (error || !data) {
     body = <div className="text-[15px] text-white/60 py-4">{error || "Couldn't load."}</div>;
   } else if (data.spend === 0) {
@@ -501,7 +537,59 @@ function RoasReveal() {
     const claim = data.metaClaimPct;
     const overClaim = claim !== null && claim > 100;
     const leadAds = data.metaPurchaseValue === 0 && data.leads > 0;
-    body = (
+    const findings = data.findings ?? [];
+    const shown = hasAccess ? findings : findings.slice(0, FREE_FINDINGS);
+    const hidden = hasAccess ? 0 : Math.max(0, findings.length - FREE_FINDINGS);
+    const fmt = (f: Finding) => f.valueKind === "money" ? money(f.value, data.metaCurrency) : f.valueKind === "pct" ? `${f.value}%` : `${f.value}×`;
+    const findingsBlock = findings.length > 0 && (
+      <div>
+        <div className="text-[15px] font-bold mb-2 mt-1">What we found in your Meta ads</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {shown.map(f => {
+            const s = FLAG_STYLE[f.flag];
+            return (
+              <div key={f.title} className={`rounded-xl border ${s.border} bg-white/[0.02] p-4`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[13px] text-white/45">{f.title}</div>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${s.badge}`}>{s.label}</span>
+                </div>
+                <div className={`text-[22px] font-black mt-1 ${s.text}`}>{fmt(f)}</div>
+                <div className="text-[14px] text-white/55 mt-1">{f.why}</div>
+              </div>
+            );
+          })}
+          {hidden > 0 && (
+            <div className="relative rounded-xl border border-[#F97316]/30 bg-white/[0.02] p-4 overflow-hidden">
+              <div className="space-y-2 blur-[3px] select-none" aria-hidden>
+                <div className="h-2.5 w-2/3 rounded bg-white/10" />
+                <div className="h-5 w-1/3 rounded bg-white/15" />
+                <div className="h-2.5 w-full rounded bg-white/10" />
+                <div className="h-2.5 w-4/5 rounded bg-white/10" />
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <Lock size={16} className="text-[#F97316] mb-1" />
+                <div className="text-[14px] font-bold">{hidden} more finding{hidden > 1 ? "s" : ""} in your trial</div>
+                <div className="text-[12px] text-white/50">Plus which ages, placements & times waste money</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+    body = data.shopOrders === 0 && !leadAds ? (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-[#EF4444]/40 bg-[#EF4444]/[0.06] p-4">
+          <div className="text-[13px] text-white/45">Last 30 days</div>
+          <div className="text-[22px] font-black text-[#EF4444]">{money(data.spend, data.metaCurrency)} spent · 0 Shopify orders</div>
+          <div className="text-[14px] text-white/55 mt-1">
+            {data.metaPurchases > 0
+              ? `Meta reports ${data.metaPurchases} purchases, but none reached this Shopify store — your pixel may be tracking a different site.`
+              : "Your Meta ads haven't brought a single order to this store yet. The findings below show where the money went."}
+          </div>
+        </div>
+        {findingsBlock}
+      </div>
+    ) : (
       <div className="space-y-4">
         {data.currencyMismatch && (
           <div className="text-[13px] text-white/50">Note: your ad account is in {data.metaCurrency} and your store in {data.shopCurrency}, so the two numbers aren&apos;t directly comparable.</div>
@@ -537,6 +625,7 @@ function RoasReveal() {
             </div>
           )}
         </div>
+        {findingsBlock}
       </div>
     );
   }
