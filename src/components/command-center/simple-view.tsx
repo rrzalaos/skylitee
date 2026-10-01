@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2, AlertTriangle, AlertCircle, CircleDashed, Check, Clock, ExternalLink,
-  Megaphone, Store, Users, Search, Sparkles, Send, ArrowRight, ChevronDown, Trophy,
+  Megaphone, Store, Users, Search, Sparkles, Send, ArrowRight, ChevronDown, Trophy, MessageCircle, Mail,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { formatINR, cn } from "@/lib/utils";
-import type { PlainReport, PlainAction, Status, HealthTile } from "@/lib/plain-insights";
+import { reportText, type PlainReport, type PlainAction, type Status, type HealthTile } from "@/lib/plain-insights";
 
 type ActionState = { status: "done" | "snoozed"; at: number; impact: number; title: string };
 
@@ -20,7 +20,20 @@ const STATUS_STYLE: Record<Status, { box: string; icon: typeof CheckCircle2; ico
 const AREA_ICON: Record<HealthTile["area"], typeof Store> = { Ads: Megaphone, Store, Customers: Users, Google: Search };
 const FLAG_DOT = { good: "bg-[#22C55E]", warn: "bg-[#EAB308]", bad: "bg-[#EF4444]", info: "bg-[#A1A1AA]" } as const;
 
-export function SimpleView({ report, loading, onAsk }: { report: PlainReport; loading: boolean; onAsk: (q: string) => void }) {
+export function SimpleView({ report, loading, onAsk, storeName, periodTitle }: {
+  report: PlainReport; loading: boolean; onAsk: (q: string) => void; storeName: string; periodTitle: string;
+}) {
+  const [mailState, setMailState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [mailMsg, setMailMsg] = useState("");
+  async function emailMe() {
+    setMailState("sending"); setMailMsg("");
+    try {
+      const r = await fetch("/api/weekly-summary", { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setMailState("error"); setMailMsg(d.error ?? "Couldn't send"); return; }
+      setMailState("sent"); setMailMsg(`Sent to ${d.to}. It also arrives every Monday.`);
+    } catch { setMailState("error"); setMailMsg("Couldn't send"); }
+  }
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -72,6 +85,20 @@ export function SimpleView({ report, loading, onAsk }: { report: PlainReport; lo
             {loading ? "Reading your store, ads and Google data…" : report.summary}
           </p>
         </div>
+        {!loading && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 pl-[28px]">
+            <a href={`https://wa.me/?text=${encodeURIComponent(reportText(report, `${storeName || "My store"} — ${periodTitle}`))}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold border border-[#BBF7D0] text-[#15803D] hover:bg-[#F0FDF4] dark:hover:bg-[#052E16]">
+              <MessageCircle size={13} /> Share on WhatsApp
+            </a>
+            <button onClick={emailMe} disabled={mailState === "sending"}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold border border-black/[0.08] dark:border-white/[0.08] text-[#52525B] dark:text-[#A1A1AA] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] disabled:opacity-50">
+              <Mail size={13} /> {mailState === "sending" ? "Sending…" : "Email me the weekly summary"}
+            </button>
+            {mailMsg && <span className={cn("text-[13px]", mailState === "error" ? "text-[#DC2626]" : "text-[#15803D]")}>{mailMsg}</span>}
+          </div>
+        )}
       </Card>
 
       {/* ── Results this month ── */}

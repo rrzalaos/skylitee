@@ -61,6 +61,17 @@ const shopAdmin = (h: string | undefined, path: string) =>
 // Stable short key from a campaign name — keeps action ids readable and URL-safe.
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
 
+// Plain-text version for WhatsApp (*bold* is WhatsApp markup) and the email's text part.
+export function reportText(r: PlainReport, title: string): string {
+  const lines = [`*${title}*`, "", r.summary];
+  const top = r.actions.slice(0, 3);
+  if (top.length) {
+    lines.push("", "*To do:*");
+    top.forEach((a, n) => lines.push(`${n + 1}. ${a.title}${a.impact > 0 ? ` (≈ ${formatINR(a.impact)})` : ""}`));
+  }
+  return lines.join("\n");
+}
+
 export function buildPlainReport(i: PlainInput): PlainReport {
   const s = i.shop;
   // "today" / "this month" read fine on their own; "the last 7 days" needs "in".

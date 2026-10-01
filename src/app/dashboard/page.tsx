@@ -504,7 +504,7 @@ export default function CommandCenterPage() {
       </div>
 
       {view === "simple" ? (
-        <SimpleView report={plain} loading={loading} onAsk={askAI} />
+        <SimpleView report={plain} loading={loading} onAsk={askAI} storeName={shopName} periodTitle={range.label} />
       ) : (<>
       {/* ── SECTION 1: Active Objectives Strip ── */}
       {activeObjs.length > 0 && (
