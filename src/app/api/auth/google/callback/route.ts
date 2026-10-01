@@ -4,6 +4,8 @@ import { shopKv } from "@/lib/kv";
 import { requireShopPermission } from "@/lib/session";
 import { markOnce } from "@/lib/funnel";
 import { backToAdmin, getEmbeddedOAuthShop } from "@/lib/embedded-server";
+import { setConnector, type ConnService } from "@/lib/connector";
+import { embeddedEmail } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -22,12 +24,15 @@ export async function GET(req: NextRequest) {
   // State format: "{nonce}|{service}" — service is "gsc", "ga4", or "both"
   const service = state.split("|")[1] ?? "both";
   let shop: string;
+  let connectedBy: string;   // who owns this login → only they can pick accounts (lib/connector)
   if (embeddedShop) {
     shop = embeddedShop;
+    connectedBy = embeddedEmail(embeddedShop);
   } else {
     const perm = await requireShopPermission(req, "connections");
     if (!perm.ok) return back("/dashboard/connections?error=view_only");
     shop = perm.shop;
+    connectedBy = perm.email;
   }
 
   try {
@@ -56,6 +61,8 @@ export async function GET(req: NextRequest) {
       setCookie("google_refresh_token", tokens.refresh_token);
     }
 
+    const services: ConnService[] = service === "gsc" || service === "ga4" || service === "gads" ? [service] : ["gsc", "ga4"];
+    await Promise.allSettled(services.map(svc => setConnector(shop, svc, connectedBy)));
     await markOnce(shop, "googleAt");
     res.cookies.delete("google_state");
     return res;

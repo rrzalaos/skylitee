@@ -89,7 +89,7 @@ export default function GA4Page() {
     fetch(`/api/ga4?from=${range.from}&to=${range.to}`)
       .then(r => r.json())
       .then(d => {
-        if (d.error === "not_connected" || d.error === "no_properties") { setNotConnected(true); return; }
+        if (d.error === "not_connected" || d.error === "no_properties" || d.error === "no_property_selected") { setNotConnected(true); return; }
         if (!d.error) setData(d);
       })
       .finally(() => setLoading(false));

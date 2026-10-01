@@ -47,6 +47,10 @@ function ConnectionsContent() {
   const [canEdit, setCanEdit] = useState(true);
   const [role, setRole] = useState<string | null>(null);
 
+  // Locked = someone else (e.g. an agency) connected this login; only they may switch accounts.
+  // Value = who connected it (shown to the user).
+  const [locks, setLocks] = useState<Partial<Record<"gsc" | "ga4" | "gads" | "meta", string>>>({});
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then(r => r.json())
@@ -71,6 +75,11 @@ function ConnectionsContent() {
         setSelectedGa4(d.savedGa4Property ?? d.ga4Properties?.[0]?.id ?? "");
         setGscSaved(!!d.savedGscSite);
         setGa4Saved(!!d.savedGa4Property);
+        setLocks(l => ({
+          ...l,
+          ...(d.gscLocked ? { gsc: d.gscConnectedBy ?? "" } : {}),
+          ...(d.ga4Locked ? { ga4: d.ga4ConnectedBy ?? "" } : {}),
+        }));
       })
       .catch(() => {});
 
@@ -79,6 +88,13 @@ function ConnectionsContent() {
       .then(d => {
         if (d.error === "not_connected") return;
         if (d.error === "google_ads_dev_token_missing") { setGadsError("dev_token"); return; }
+        if (d.locked) {
+          setLocks(l => ({ ...l, gads: d.connectedBy ?? "" }));
+          setGadsCustomers(d.customers ?? []);
+          setSelectedGads(d.savedCustomerId ?? "");
+          setGadsSaved(!!d.savedCustomerId);
+          return;
+        }
         // For test_token/no_customers, still restore any saved customer ID
         if (d.error) {
           setGadsError(d.error);
@@ -100,6 +116,7 @@ function ConnectionsContent() {
         setMetaAccounts(d.accounts ?? []);
         setSelectedMeta(d.selectedAccountId ?? d.accounts?.[0]?.id ?? "");
         setMetaSaved(!!d.selectedAccountId);
+        if (d.locked) setLocks(l => ({ ...l, meta: d.connectedBy ?? "" }));
       })
       .catch(() => {});
   }, []);
@@ -322,8 +339,27 @@ function ConnectionsContent() {
             </div>
           ))}
 
+          {/* Locked: connected by someone else (agency) — show only this store's saved account */}
+          {([
+            ["gsc", gscConnected, "Search Console", gscSites.find(s => s.url === selectedGsc)?.url ?? (gscSaved ? selectedGsc : "")],
+            ["ga4", ga4Connected, "Analytics GA4", (() => { const p = ga4Properties.find(x => x.id === selectedGa4); return p ? `${p.name} · ID ${p.id.replace("properties/", "")}` : ga4Saved ? selectedGa4 : ""; })()],
+            ["gads", gadsConnected, "Google Ads", gadsSaved ? `Customer ID ${selectedGads}` : ""],
+            ["meta", metaConnected, "Meta Ads", (() => { const a = metaAccounts.find(x => x.id === selectedMeta); return metaSaved ? (a ? `${a.name} — ${a.id}` : selectedMeta) : ""; })()],
+          ] as const).map(([svc, connected, label, account]) => locks[svc] !== undefined && connected && (
+            <div key={svc} className="mt-3 pt-3 border-t border-black/[0.06]">
+              <div className="text-[16px] font-semibold text-[#181816] mb-1.5">{label} — account in use</div>
+              <div className="text-[16px] text-[#181816] bg-[#f7f7f5] border border-black/[0.08] rounded-lg px-2.5 py-1.5 mb-1.5 break-all">
+                {account || "No account selected yet"}
+              </div>
+              <div className="text-[15px] text-[#686864]">
+                Connected by {locks[svc] || "another user"} — only they can change which account is used.
+                {canEdit && " To use your own login instead, Disconnect above and connect your account."}
+              </div>
+            </div>
+          ))}
+
           {/* GSC site picker */}
-          {canEdit && gscConnected && gscSites.length > 0 && (
+          {canEdit && locks.gsc === undefined && gscConnected && gscSites.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -351,7 +387,7 @@ function ConnectionsContent() {
           )}
 
           {/* GA4 property picker */}
-          {canEdit && ga4Connected && ga4Properties.length > 0 && (
+          {canEdit && locks.ga4 === undefined && ga4Connected && ga4Properties.length > 0 && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -384,7 +420,7 @@ function ConnectionsContent() {
           )}
 
           {/* Google Ads customer picker */}
-          {canEdit && gadsConnected && (
+          {canEdit && locks.gads === undefined && gadsConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
@@ -447,7 +483,7 @@ function ConnectionsContent() {
           )}
 
           {/* Meta ad account picker */}
-          {canEdit && metaConnected && (
+          {canEdit && locks.meta === undefined && metaConnected && (
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">

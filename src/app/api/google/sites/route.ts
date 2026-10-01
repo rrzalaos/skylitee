@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
 import { getGscRefreshToken, getGa4RefreshToken, getGadsRefreshToken, getAuthorizedShop, requireShopPermission, getGscSite, getGa4Property } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
+import { canManageAccounts, connectorLabel } from "@/lib/connector";
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
@@ -16,8 +17,12 @@ export async function GET(req: NextRequest) {
 
   let gscSites: { url: string; permission?: string }[] = [];
   let ga4Properties: { id: string; name: string; account: string }[] = [];
+  // Only whoever connected the Google login may list everything it can reach (lib/connector).
+  const [gscManage, ga4Manage] = await Promise.all([
+    canManageAccounts(req, shop, "gsc"), canManageAccounts(req, shop, "ga4"),
+  ]);
 
-  if (gscRefresh) {
+  if (gscRefresh && gscManage) {
     try {
       const token = await getGoogleAccessToken(gscRefresh);
       const res = await fetch("https://www.googleapis.com/webmasters/v3/sites", {
@@ -28,7 +33,7 @@ export async function GET(req: NextRequest) {
     } catch { /* token invalid */ }
   }
 
-  if (ga4Refresh) {
+  if (ga4Refresh && ga4Manage) {
     try {
       const token = await getGoogleAccessToken(ga4Refresh);
       // Paginate through all account summaries (default page size is 50, max 200)
@@ -60,6 +65,20 @@ export async function GET(req: NextRequest) {
 
   const savedGscSite = await getGscSite(req, shop);
   const savedGa4Property = await getGa4Property(req, shop);
+  // Locked: show just this store's saved site/property (never the connector's other ones).
+  if (gscRefresh && !gscManage && savedGscSite) gscSites = [{ url: savedGscSite }];
+  if (ga4Refresh && !ga4Manage && savedGa4Property) {
+    let name = savedGa4Property.replace("properties/", "Property ");
+    try {
+      const token = await getGoogleAccessToken(ga4Refresh);
+      const r = await fetch(`https://analyticsadmin.googleapis.com/v1beta/${savedGa4Property}`, { headers: { Authorization: `Bearer ${token}` } });
+      name = ((await r.json()) as { displayName?: string }).displayName ?? name;
+    } catch { /* keep id */ }
+    ga4Properties = [{ id: savedGa4Property, name, account: "" }];
+  }
+  const [gscBy, ga4By] = await Promise.all([
+    gscManage ? null : connectorLabel(shop, "gsc"), ga4Manage ? null : connectorLabel(shop, "ga4"),
+  ]);
 
   return NextResponse.json({
     gscConnected:  !!gscRefresh,
@@ -69,6 +88,10 @@ export async function GET(req: NextRequest) {
     ga4Properties,
     savedGscSite,
     savedGa4Property,
+    gscLocked: !!gscRefresh && !gscManage,
+    ga4Locked: !!ga4Refresh && !ga4Manage,
+    gscConnectedBy: gscBy,
+    ga4ConnectedBy: ga4By,
   });
 }
 
@@ -81,6 +104,9 @@ export async function POST(req: NextRequest) {
   if (!gscRefresh && !ga4Refresh) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const { gscSite, ga4Property } = await req.json() as { gscSite?: string; ga4Property?: string };
+  if ((gscSite && !(await canManageAccounts(req, shop, "gsc"))) || (ga4Property && !(await canManageAccounts(req, shop, "ga4")))) {
+    return NextResponse.json({ error: "locked", message: "Only the person who connected this Google account can change it." }, { status: 403 });
+  }
   const res = NextResponse.json({ ok: true });
   const opts = { httpOnly: true, maxAge: 60 * 60 * 24 * 30, sameSite: "lax" as const };
   if (gscSite) {

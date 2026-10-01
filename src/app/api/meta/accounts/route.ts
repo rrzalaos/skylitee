@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMetaToken, getMetaAdAccount, getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
+import { canManageAccounts, connectorLabel } from "@/lib/connector";
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
@@ -30,14 +31,20 @@ export async function GET(req: NextRequest) {
   }
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = (savedAccount && accounts.find(a => a.id === savedAccount)) || accounts[0];
+  // Only whoever connected this Meta login may see all its ad accounts (lib/connector);
+  // everyone else sees just this store's account.
+  const manage = await canManageAccounts(req, shop, "meta");
+  const visible = manage ? accounts : accounts.filter(a => a.id === savedAccount);
 
   return NextResponse.json({
     connected: true,
-    connectedUserName: meData.name ?? null,
-    connectedUserId: meData.id ?? null,
-    accounts: accounts.map(a => ({ id: a.id, name: a.name, currency: a.currency })),
-    selectedAccountId: selected?.id ?? null,
-    selectedAccountName: selected?.name ?? null,
+    connectedUserName: manage ? meData.name ?? null : null,
+    connectedUserId: manage ? meData.id ?? null : null,
+    locked: !manage,
+    connectedBy: manage ? null : await connectorLabel(shop, "meta"),
+    accounts: visible.map(a => ({ id: a.id, name: a.name, currency: a.currency })),
+    selectedAccountId: manage ? selected?.id ?? null : visible[0]?.id ?? null,
+    selectedAccountName: manage ? selected?.name ?? null : visible[0]?.name ?? null,
   });
 }
 
@@ -48,6 +55,9 @@ export async function POST(req: NextRequest) {
   const token = await getMetaToken(req, shop);
   if (!token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
+  if (!(await canManageAccounts(req, shop, "meta"))) {
+    return NextResponse.json({ error: "locked", message: "Only the person who connected this Meta account can change it." }, { status: 403 });
+  }
   const { adAccount } = await req.json() as { adAccount: string };
   await shopKv.setMetaAccount(shop, adAccount);
 

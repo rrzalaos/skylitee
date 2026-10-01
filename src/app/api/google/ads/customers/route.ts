@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google";
 import { getGadsRefreshToken, getGadsCustomerId, getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
+import { canManageAccounts, connectorLabel } from "@/lib/connector";
 
 const DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
 
@@ -38,6 +39,13 @@ export async function GET(req: NextRequest) {
   if (!refreshToken) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   const savedCustomerId = await getGadsCustomerId(req, shop);
+  // Only whoever connected this Google login may list / pick its Ads accounts (lib/connector).
+  if (!(await canManageAccounts(req, shop, "gads"))) {
+    return NextResponse.json({
+      locked: true, connectedBy: await connectorLabel(shop, "gads"), savedCustomerId,
+      customers: savedCustomerId ? [{ id: savedCustomerId, name: `Account ${savedCustomerId}`, currency: "" }] : [],
+    });
+  }
 
   try {
     const accessToken = await getGoogleAccessToken(refreshToken);
@@ -109,6 +117,9 @@ export async function POST(req: NextRequest) {
   if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: perm.status });
   const shop = perm.shop;
 
+  if (!(await canManageAccounts(req, shop, "gads"))) {
+    return NextResponse.json({ error: "locked", message: "Only the person who connected this Google account can change it." }, { status: 403 });
+  }
   const { customerId } = await req.json() as { customerId?: string };
   if (!customerId) return NextResponse.json({ error: "missing_customer_id" }, { status: 400 });
 

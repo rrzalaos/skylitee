@@ -25,9 +25,12 @@ export async function GET(req: NextRequest) {
   if (sites.length === 0) return NextResponse.json({ error: "no_sites" });
 
   const savedSite = await getGscSite(req, shop);
+  // No saved choice: only auto-pick when the login reaches exactly ONE — an agency login reaches
+  // many brands, and guessing would show another brand's data.
   const siteUrl = savedSite && sites.find(s => s.siteUrl === savedSite)
     ? savedSite
-    : sites[0].siteUrl;
+    : sites.length === 1 ? sites[0].siteUrl : null;
+  if (!siteUrl) return NextResponse.json({ error: "no_site_selected" });
 
   // GSC data lags ~2-3 days and its day boundaries are Pacific Time. Defaulting the end to
   // "today" pulls in empty/partial days, so totals read LOWER than the GSC dashboard. Anchor

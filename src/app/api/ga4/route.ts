@@ -38,7 +38,11 @@ export async function GET(req: NextRequest) {
   if (properties.length === 0) return NextResponse.json({ error: "no_properties" });
 
   const savedProperty = await getGa4Property(req, shop);
-  const selected = (savedProperty && properties.find(p => p.property === savedProperty)) || properties[0];
+  // No saved choice: only auto-pick when the login reaches exactly ONE — an agency login reaches
+  // many brands, and guessing would show another brand's data.
+  const selected = (savedProperty && properties.find(p => p.property === savedProperty))
+    || (properties.length === 1 ? properties[0] : null);
+  if (!selected) return NextResponse.json({ error: "no_property_selected" });
   const propertyId = selected.property;
   const propertyName = selected.displayName;
 

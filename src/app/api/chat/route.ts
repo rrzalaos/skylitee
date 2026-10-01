@@ -81,7 +81,9 @@ async function buildMetaContext(_req: NextRequest, shop: string): Promise<string
     if (accountsData.error || !accountsData.data?.length) return "Meta Ads: token error or no accounts.";
 
     const savedAccount = await shopKv.getMetaAccount(shop);
-    const account = (savedAccount && accountsData.data.find(a => a.id === savedAccount)) || accountsData.data[0];
+    const account = (savedAccount && accountsData.data.find(a => a.id === savedAccount))
+      || (accountsData.data.length === 1 ? accountsData.data[0] : null);
+    if (!account) return "Meta Ads: no ad account selected yet.";
     const cur = account.currency === "INR" ? "₹" : account.currency === "USD" ? "$" : account.currency + " ";
 
     const now = new Date();

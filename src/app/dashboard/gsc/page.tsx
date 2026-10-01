@@ -72,7 +72,7 @@ export default function GSCPage() {
     fetch(`/api/gsc?from=${range.from}&to=${range.to}`)
       .then(r => r.json())
       .then(d => {
-        if (d.error === "not_connected") { setNotConnected(true); return; }
+        if (d.error === "not_connected" || d.error === "no_site_selected") { setNotConnected(true); return; }
         if (!d.error) setData(d);
       })
       .finally(() => setLoading(false));

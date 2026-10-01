@@ -3,6 +3,8 @@ import { shopKv } from "@/lib/kv";
 import { requireShopPermission } from "@/lib/session";
 import { markOnce } from "@/lib/funnel";
 import { backToAdmin, getEmbeddedOAuthShop } from "@/lib/embedded-server";
+import { setConnector } from "@/lib/connector";
+import { embeddedEmail } from "@/lib/auth";
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.vercel.app";
 const META_RETURN_COOKIE = "meta_return";   // set in ../route.ts when connect starts from /welcome
@@ -26,12 +28,15 @@ export async function GET(req: NextRequest) {
   if (error || !code) return back("meta_error=denied");
 
   let shop: string;
+  let connectedBy: string;   // who owns this login → only they can pick accounts (lib/connector)
   if (embeddedShop) {
     shop = embeddedShop;
+    connectedBy = embeddedEmail(embeddedShop);
   } else {
     const perm = await requireShopPermission(req, "connections");
     if (!perm.ok) return back("meta_error=view_only");
     shop = perm.shop;
+    connectedBy = perm.email;
   }
 
   const appId = process.env.META_APP_ID!;
@@ -55,6 +60,7 @@ export async function GET(req: NextRequest) {
 
   await shopKv.setMetaToken(shop, finalToken);
   await markOnce(shop, "metaAt");
+  await setConnector(shop, "meta", connectedBy);
 
   const response = await back(toWelcome ? "connected=meta" : "");
   if (embeddedShop) return response;

@@ -98,7 +98,8 @@ export function leadBreakdown(actions: MetaActionEntry[] | undefined): { type: s
  * Resolve which Meta ad account to use.
  * If savedAccountId exists, use it — never fall back to a different account.
  * Try to fetch name/currency for display; if that fails, use the ID as the name.
- * Only falls back to me/adaccounts[0] when no account has ever been saved.
+ * With nothing saved, auto-picks only when the login reaches exactly ONE ad account (an agency
+ * login reaches many brands — guessing would show another brand's data).
  */
 export async function resolveMetaAccount(
   savedAccountId: string | null,
@@ -117,13 +118,13 @@ export async function resolveMetaAccount(
     };
   }
 
-  // No saved account — use first available
+  // No saved account — use the login's only account, if it has just one
   const res = await fetch(
-    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&limit=1&access_token=${token}`
+    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&limit=2&access_token=${token}`
   );
   const data = await res.json() as {
     data?: { id: string; name: string; currency: string }[];
     error?: unknown;
   };
-  return data.data?.[0] ?? null;
+  return data.data?.length === 1 ? data.data[0] : null;
 }
