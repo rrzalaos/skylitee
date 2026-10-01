@@ -11,6 +11,7 @@ import {
   Store, ChevronRight, Calendar, Filter,
 } from "lucide-react";
 import { FunnelTab } from "./funnel-tab";
+import { isEmbedded, openTop } from "@/lib/embedded-client";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -162,6 +163,8 @@ function ageSince(iso: string | null): string {
 
 export default function AdminPage() {
   const [authed, setAuthed]       = useState(false);
+  const [embedded, setEmbedded]   = useState(false);
+  useEffect(() => { setEmbedded(isEmbedded()); }, []);
   const [pin, setPin]             = useState("");
   const [pinError, setPinError]   = useState(false);
   const [tab, setTab]             = useState<AdminTab>("overview");
@@ -373,6 +376,21 @@ export default function AdminPage() {
       setLoginAsLoading(null);
     }
   };
+
+  // Inside the Shopify admin you're signed in as the store, not as the owner — every admin API
+  // would refuse ("forbidden"). Point to the website instead of showing a dead panel.
+  if (embedded) return (
+    <div className="flex items-center justify-center min-h-[60vh] px-4">
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-black/[0.06] dark:border-white/[0.06] p-6 max-w-[380px] text-center">
+        <div className="text-[20px] font-bold dark:text-[#F4F4F5] mb-1">Admin Panel</div>
+        <div className="text-[16px] text-[#71717A] mb-4">The admin panel only works on the Skylitee website, logged in with the owner account.</div>
+        <button onClick={() => openTop("https://skylitee.io/dashboard/admin")}
+          className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-[17px] rounded-xl py-2.5">
+          Open skylitee.io
+        </button>
+      </div>
+    </div>
+  );
 
   if (!authed) return <PasswordGate pin={pin} setPin={setPin} onLogin={doLogin} error={pinError} />;
 
