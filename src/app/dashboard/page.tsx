@@ -17,6 +17,7 @@ import { useDateRange, getComparisonRange, formatRangeDates } from "@/lib/date-r
 import { cn } from "@/lib/utils";
 import { Sparkline, Donut, Gauge } from "@/components/ui/charts";
 import { SimpleView } from "@/components/command-center/simple-view";
+import type { GlanceData } from "@/components/command-center/glance";
 import { buildPlainReport } from "@/lib/plain-insights";
 
 /* ─── Types ─────────────────────────────────────────────────── */
@@ -41,7 +42,7 @@ interface GscKPIs { clicks: number; impressions: number; ctr: number; avgPositio
 interface GscKeyword { query: string; clicks: number; impressions: number; ctr: number; position: number }
 interface Ga4KPIs { sessions: number; users: number; bounceRate: number; avgSessionMin?: string; newUsers?: number }
 interface Ga4Ecom { itemsViewed: number; itemsAddedToCart: number; itemsCheckedOut: number; itemsPurchased: number; purchases: number; revenue: number }
-interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue?: number }
+interface GadsKPIs { spend: number; roas: number; conversions: number; conversionValue?: number; clicks?: number }
 interface CostModel { cogsPerOrder: number; shippingPerOrder: number; rtoRate: number; rtoCostPerOrder: number; gatewayPct: number; codFeePct: number }
 
 const ASSUMED_LEAD_CONV = 0.12; // industry-rough lead→order rate; labelled "est." wherever used
@@ -105,8 +106,22 @@ const quickActions = [
 
 /* ─── Component ─────────────────────────────────────────────── */
 export default function CommandCenterPage() {
-  const { range, compareWith } = useDateRange();
+  const { range, compareWith, setPreset } = useDateRange();
   const router = useRouter();
+
+  // Command Center opens on TODAY (once per browser session — if the user then picks another
+  // range it sticks). Fetching waits for this so we don't load "This month" first and throw it away.
+  const [rangeReady, setRangeReady] = useState(false);
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem("skylitee-cc-today")) {
+        sessionStorage.setItem("skylitee-cc-today", "1");
+        if (range.preset !== "today") setPreset("today");
+      }
+    } catch { /* storage blocked → keep the current range */ }
+    setRangeReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [shop, setShop] = useState<ShopData | null>(null);
   const [compShop, setCompShop] = useState<ShopData | null>(null);
@@ -121,6 +136,7 @@ export default function CommandCenterPage() {
   const [gscKeywords, setGscKeywords] = useState<GscKeyword[]>([]);
   const [ga4, setGa4] = useState<Ga4KPIs | null>(null);
   const [ga4Ecom, setGa4Ecom] = useState<Ga4Ecom | null>(null);
+  const [ga4Channels, setGa4Channels] = useState<{ channel: string; sessions: number }[]>([]);
   const [funnelSrc, setFunnelSrc] = useState<"meta" | "ga4" | "shopify">("meta");
   const [connections, setConnections] = useState({ shopify: false, meta: false, gads: false, gsc: false, ga4: false });
   const [cost, setCost] = useState<CostModel | null>(null);
@@ -148,6 +164,7 @@ export default function CommandCenterPage() {
   }, []);
 
   useEffect(() => {
+    if (!rangeReady) return;
     setLoading(true);
     const compRange = getComparisonRange(range, compareWith);
     Promise.allSettled([
@@ -170,10 +187,25 @@ export default function CommandCenterPage() {
       }
       if (compMetaRes.status === "fulfilled" && compMetaRes.value && !compMetaRes.value?.error) setCompMeta(compMetaRes.value.kpis ?? null);
       if (gscRes.status === "fulfilled" && !gscRes.value?.error) { setGsc(gscRes.value.kpis ?? null); setGscKeywords(gscRes.value.keywords ?? []); setConnections(c => ({ ...c, gsc: true })); }
-      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) { setGa4(ga4Res.value.kpis ?? null); setGa4Ecom(ga4Res.value.ecommerce ?? null); setConnections(c => ({ ...c, ga4: true })); }
+      if (ga4Res.status === "fulfilled" && !ga4Res.value?.error) { setGa4(ga4Res.value.kpis ?? null); setGa4Ecom(ga4Res.value.ecommerce ?? null); setGa4Channels(ga4Res.value.channels ?? []); setConnections(c => ({ ...c, ga4: true })); }
       if (gadsRes.status === "fulfilled" && !gadsRes.value?.error) { setGads(gadsRes.value.kpis ?? null); setGadsDaily(gadsRes.value.daily ?? []); setConnections(c => ({ ...c, gads: true })); }
     }).finally(() => setLoading(false));
-  }, [range.from, range.to, compareWith]);
+  }, [range.from, range.to, compareWith, rangeReady]);
+
+  // Google Search Console finalises data 2–3 days late, so "today" is always empty there.
+  // For a recent range, the glance card shows the latest 7 FINAL days instead (labelled).
+  const [gscRecent, setGscRecent] = useState<GscKPIs | null>(null);
+  useEffect(() => {
+    if (!rangeReady) return;
+    const lagCut = new Date(); lagCut.setDate(lagCut.getDate() - 3);
+    if (range.to <= lagCut.toISOString().slice(0, 10)) { setGscRecent(null); return; }
+    const end = new Date(); end.setDate(end.getDate() - 3);
+    const start = new Date(end); start.setDate(start.getDate() - 6);
+    const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    fetch(`/api/gsc?from=${ymd(start)}&to=${ymd(end)}`).then(r => r.json())
+      .then(d => setGscRecent(!d?.error ? d.kpis ?? null : null))
+      .catch(() => setGscRecent(null));
+  }, [range.to, rangeReady]);
 
   /* ── Derived ── */
   const shopName = shop?.shop?.replace(".myshopify.com", "") ?? "";
@@ -466,6 +498,25 @@ export default function CommandCenterPage() {
     rto: cost ? { rate: cost.rtoRate, costPerOrder: cost.rtoCostPerOrder } : null,
   }), [range.label, shopName, k, prepaidRev, codRev, salesChange, anomalies, meta, campaigns, gads, gsc, gscOpp, gscPending, connections, econ, configured, cost]);
 
+  /* ── "At a glance" chart data for the Simple view ── */
+  const glance = useMemo<GlanceData>(() => {
+    // Today vs a FULL yesterday isn't like-for-like — say so in the label.
+    const cmp = range.preset === "today" && compareWith === "prev_period" ? "Yesterday (full day)" : `vs ${compLabel}`;
+    // GSC: use the period's own numbers when they exist, else the latest 7 final days.
+    const gscUse = gsc && !gscPending ? { ...gsc, note: undefined as string | undefined }
+      : gscRecent ? { ...gscRecent, note: "Search: last 7 days (Google is 2–3 days late)" } : null;
+    return {
+      periodLabel: range.label,
+      compLabel: cmp,
+      shop: k ? { sales: k.grossSales, orders: k.totalOrders, aov: k.aov, prepaidRevenue: prepaidRev, codRevenue: codRev, prepaidOrders: k.prepaidOrders, codOrders: k.codOrders } : null,
+      compShop: compShop ? { sales: compShop.kpis.grossSales, orders: compShop.kpis.totalOrders } : null,
+      meta: meta ? { spend: meta.spend, clicks: meta.clicks, purchases: meta.purchases, purchaseValue: meta.purchaseValue, leads: meta.leads } : null,
+      gads: gads ? { spend: gads.spend, clicks: gads.clicks ?? 0, conversions: gads.conversions, conversionValue: gads.conversionValue ?? 0 } : null,
+      ga4: ga4 ? { users: ga4.users, sessions: ga4.sessions, bounceRate: ga4.bounceRate, channels: ga4Channels } : null,
+      gsc: connections.gsc ? gscUse : null,
+    };
+  }, [range.preset, range.label, compareWith, compLabel, gsc, gscPending, gscRecent, k, prepaidRev, codRev, compShop, meta, gads, ga4, ga4Channels, connections.gsc]);
+
   return (
     <div className="space-y-3">
       {/* ── Header ── */}
@@ -504,7 +555,7 @@ export default function CommandCenterPage() {
       </div>
 
       {view === "simple" ? (
-        <SimpleView report={plain} loading={loading} onAsk={askAI} storeName={shopName} periodTitle={range.label} />
+        <SimpleView report={plain} glance={glance} loading={loading} onAsk={askAI} storeName={shopName} periodTitle={range.label} />
       ) : (<>
       {/* ── SECTION 1: Active Objectives Strip ── */}
       {activeObjs.length > 0 && (

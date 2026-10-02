@@ -1,15 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import {
-  CheckCircle2, AlertTriangle, AlertCircle, CircleDashed, Check, Clock, ExternalLink,
-  Megaphone, Store, Users, Search, Sparkles, Send, ArrowRight, ChevronDown, Trophy, MessageCircle, Mail,
+  CheckCircle2, AlertTriangle, AlertCircle, CircleDashed,
+  Megaphone, Store, Users, Search, Sparkles, Send, MessageCircle, Mail,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
-import { formatINR, cn } from "@/lib/utils";
-import { reportText, type PlainReport, type PlainAction, type Status, type HealthTile } from "@/lib/plain-insights";
-
-type ActionState = { status: "done" | "snoozed"; at: number; impact: number; title: string };
+import { cn } from "@/lib/utils";
+import { reportText, type PlainReport, type Status, type HealthTile } from "@/lib/plain-insights";
+import { Glance, type GlanceData } from "@/components/command-center/glance";
 
 const STATUS_STYLE: Record<Status, { box: string; icon: typeof CheckCircle2; iconColor: string; word: string }> = {
   good: { box: "bg-[#F0FDF4] dark:bg-[#052E16] border-[#BBF7D0] dark:border-[#14532D]", icon: CheckCircle2, iconColor: "text-[#16A34A]", word: "Good" },
@@ -20,8 +18,8 @@ const STATUS_STYLE: Record<Status, { box: string; icon: typeof CheckCircle2; ico
 const AREA_ICON: Record<HealthTile["area"], typeof Store> = { Ads: Megaphone, Store, Customers: Users, Google: Search };
 const FLAG_DOT = { good: "bg-[#22C55E]", warn: "bg-[#EAB308]", bad: "bg-[#EF4444]", info: "bg-[#A1A1AA]" } as const;
 
-export function SimpleView({ report, loading, onAsk, storeName, periodTitle }: {
-  report: PlainReport; loading: boolean; onAsk: (q: string) => void; storeName: string; periodTitle: string;
+export function SimpleView({ report, glance, loading, onAsk, storeName, periodTitle }: {
+  report: PlainReport; glance: GlanceData; loading: boolean; onAsk: (q: string) => void; storeName: string; periodTitle: string;
 }) {
   const [mailState, setMailState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [mailMsg, setMailMsg] = useState("");
@@ -34,46 +32,7 @@ export function SimpleView({ report, loading, onAsk, storeName, periodTitle }: {
       setMailState("sent"); setMailMsg(`Sent to ${d.to}. It also arrives every Monday.`);
     } catch { setMailState("error"); setMailMsg("Couldn't send"); }
   }
-  const [states, setStates] = useState<Record<string, ActionState>>({});
-  const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState("");
   const [q, setQ] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [stats, setStats] = useState({ fixedThisMonth: 0, savedThisMonth: 0 });
-
-  useEffect(() => {
-    fetch("/api/actions").then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.actions) setStates(d.actions);
-      if (d) setStats({ fixedThisMonth: d.fixedThisMonth ?? 0, savedThisMonth: d.savedThisMonth ?? 0 });
-    }).catch(() => {});
-  }, []);
-
-  const open = report.actions.filter(a => !states[a.id]);
-  const today = open.slice(0, 3);
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-  const doneRecently = Object.entries(states)
-    .filter(([, s]) => s.status === "done" && s.at >= monthStart)
-    .sort((a, b) => b[1].at - a[1].at);
-
-  async function mark(a: Pick<PlainAction, "id" | "impact" | "title">, status: "done" | "snoozed" | "clear") {
-    setBusy(a.id); setNote("");
-    try {
-      const r = await fetch("/api/actions", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: a.id, status, impact: a.impact, title: a.title }),
-      });
-      if (!r.ok) { setNote(r.status === 403 ? "Your role can view but not update this list." : "Couldn't save — please try again."); return; }
-      const d = await r.json().catch(() => null);
-      if (d) setStats({ fixedThisMonth: d.fixedThisMonth ?? 0, savedThisMonth: d.savedThisMonth ?? 0 });
-      setStates(s => {
-        const next = { ...s };
-        if (status === "clear") delete next[a.id];
-        else next[a.id] = { status, at: Date.now(), impact: a.impact, title: a.title };
-        return next;
-      });
-    } catch { setNote("Couldn't save — please try again."); }
-    finally { setBusy(null); }
-  }
 
   return (
     <div className="space-y-3">
@@ -101,17 +60,6 @@ export function SimpleView({ report, loading, onAsk, storeName, periodTitle }: {
         )}
       </Card>
 
-      {/* ── Results this month ── */}
-      {stats.fixedThisMonth > 0 && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-[#F0FDF4] dark:bg-[#052E16] border border-[#BBF7D0] dark:border-[#14532D] px-3 py-2.5">
-          <Trophy size={18} className="text-[#16A34A] shrink-0" />
-          <span className="text-[15px] text-[#14532D] dark:text-[#BBF7D0]">
-            You fixed <b>{stats.fixedThisMonth} {stats.fixedThisMonth === 1 ? "issue" : "issues"}</b> this month
-            {stats.savedThisMonth > 0 && <> — worth about <b>{formatINR(stats.savedThisMonth)}</b></>}. Nice work.
-          </span>
-        </div>
-      )}
-
       {/* ── Health tiles ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         {report.health.map(h => {
@@ -130,84 +78,8 @@ export function SimpleView({ report, loading, onAsk, storeName, periodTitle }: {
         })}
       </div>
 
-      {/* ── Do these today ── */}
-      <Card>
-        <CardHeader
-          title="Do these 3 things today"
-          right={open.length > 3 ? <span className="text-[13px] text-[#A1A1AA]">{open.length - 3} more after these</span> : undefined}
-        />
-        {loading ? <div className="text-[15px] text-[#A1A1AA] py-6 text-center">Working out what matters most…</div>
-          : today.length === 0 ? (
-            <div className="flex items-center gap-2 text-[15px] text-[#15803D] py-4 justify-center"><CheckCircle2 size={16} /> Nothing urgent right now — you&apos;re on top of it.</div>
-          ) : (
-            <div className="space-y-2.5">
-              {today.map((a, i) => (
-                <div key={a.id} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-3">
-                  <div className="flex items-start gap-3">
-                    <span className="w-7 h-7 rounded-full bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[14px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[16px] font-bold text-[#18181B] dark:text-[#F4F4F5] leading-snug">{a.title}</div>
-                      <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] mt-1 leading-relaxed">{a.why}</div>
-                      {a.impact > 0 && (
-                        <div className="inline-block mt-2 text-[13px] font-bold text-[#15803D] bg-[#F0FDF4] dark:bg-[#052E16] px-2 py-0.5 rounded-full">
-                          ≈ {formatINR(a.impact)} {a.impactKind === "save" ? "you could save" : "you could earn"}
-                        </div>
-                      )}
-                      {a.steps.length > 0 && (
-                        <div className="mt-2">
-                          <button onClick={() => setExpanded(expanded === a.id ? null : a.id)} className="inline-flex items-center gap-1 text-[14px] font-bold text-[#EA580C] hover:underline">
-                            <ChevronDown size={14} className={cn("transition-transform", expanded === a.id && "rotate-180")} /> How to fix
-                          </button>
-                          {expanded === a.id && (
-                            <ol className="mt-2 space-y-1.5 pl-1">
-                              {a.steps.map((step, n) => (
-                                <li key={n} className="flex items-start gap-2 text-[14px] text-[#3F3F46] dark:text-[#D4D4D8] leading-snug">
-                                  <span className="w-5 h-5 rounded-full bg-[#F5F5F4] dark:bg-[#262626] text-[12px] font-bold flex items-center justify-center shrink-0">{n + 1}</span>
-                                  {step}
-                                </li>
-                              ))}
-                            </ol>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-2 mt-3">
-                        {a.link && (a.link.external ? (
-                          <a href={a.link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white">
-                            {a.link.label} <ExternalLink size={13} />
-                          </a>
-                        ) : (
-                          <Link href={a.link.href} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white">
-                            {a.link.label} <ArrowRight size={13} />
-                          </Link>
-                        ))}
-                        <button disabled={busy === a.id} onClick={() => mark(a, "done")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold border border-[#BBF7D0] text-[#15803D] hover:bg-[#F0FDF4] dark:hover:bg-[#052E16] disabled:opacity-50">
-                          <Check size={13} /> Done
-                        </button>
-                        <button disabled={busy === a.id} onClick={() => mark(a, "snoozed")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-semibold text-[#71717A] hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] disabled:opacity-50">
-                          <Clock size={13} /> Not now
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        {note && <div className="text-[13px] text-[#DC2626] mt-2">{note}</div>}
-        {doneRecently.length > 0 && (
-          <details className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
-            <summary className="text-[14px] font-semibold text-[#71717A] cursor-pointer">Done this month ({doneRecently.length})</summary>
-            <div className="mt-2 space-y-1.5">
-              {doneRecently.map(([id, s]) => (
-                <div key={id} className="flex items-center justify-between gap-2 text-[14px]">
-                  <span className="flex items-center gap-1.5 text-[#52525B] dark:text-[#A1A1AA] min-w-0"><Check size={13} className="text-[#16A34A] shrink-0" /><span className="truncate">{s.title}</span></span>
-                  <button disabled={busy === id} onClick={() => mark({ id, impact: s.impact, title: s.title }, "clear")} className="text-[13px] text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5] shrink-0">Undo</button>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-      </Card>
+      {/* ── At a glance: one simple chart per question ── */}
+      <Glance d={glance} loading={loading} />
 
       {/* ── Every number, explained ── */}
       {report.explained.length > 0 && (
