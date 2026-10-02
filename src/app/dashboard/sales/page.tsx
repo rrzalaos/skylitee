@@ -48,18 +48,25 @@ export default function SalesPage() {
   const [metaSalesCac, setMetaSalesCac] = useState<number | null>(null);
   const [ga4Connected, setGa4Connected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adsLoading, setAdsLoading] = useState(true);
   const [months, setMonths] = useState(6);
   const [monthly, setMonthly] = useState<SalesMonthRow[] | null>(null);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setAdsLoading(true);
+    // Shopify drives the page — render as soon as it lands; Meta/GA4 fill in when they arrive
+    // instead of the slowest of the three holding the whole page on "Loading…".
+    fetch(`/api/shopify/sales?from=${range.from}&to=${range.to}`)
+      .then(r => r.json())
+      .then(s => { if (!s?.error) setSales(s); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
     Promise.allSettled([
-      fetch(`/api/shopify/sales?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/meta?from=${range.from}&to=${range.to}`).then(r => r.json()),
       fetch(`/api/ga4?from=${range.from}&to=${range.to}`).then(r => r.json()),
-    ]).then(([sRes, mRes, gRes]) => {
-      if (sRes.status === "fulfilled" && !sRes.value?.error) setSales(sRes.value);
+    ]).then(([mRes, gRes]) => {
       if (mRes.status === "fulfilled" && !mRes.value?.error) {
         setMeta(mRes.value.kpis ?? null); setMetaConnected(true);
         // CAC scoped to SALES-objective campaigns (not blended account spend) — awareness/
@@ -71,7 +78,7 @@ export default function SalesPage() {
         setMetaSalesCac(sPurch > 0 ? Math.round(sSpend / sPurch) : null);
       }
       if (gRes.status === "fulfilled" && !gRes.value?.error) { setGa4(gRes.value.kpis ?? null); setGa4Ecom(gRes.value.ecommerce ?? null); setGa4Connected(true); }
-    }).finally(() => setLoading(false));
+    }).finally(() => setAdsLoading(false));
   }, [range.from, range.to]);
 
   // Month-wise store performance (independent of the global range).
@@ -239,9 +246,9 @@ export default function SalesPage() {
         <KPICard label="Avg Order Value" value={formatINR(sales.kpis.aov)} />
         <KPICard label="ROAS" value={meta ? `${meta.roas}x` : "—"}
           change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
-          changeLabel={meta ? (meta.roas >= 3 ? "Strong" : meta.roas >= 2 ? "Average" : "Below target") : "Connect Meta"} />
+          changeLabel={meta ? (meta.roas >= 3 ? "Strong" : meta.roas >= 2 ? "Average" : "Below target") : adsLoading ? "Loading…" : "Connect Meta"} />
         <KPICard label="CAC" value={cacValue !== null ? formatINR(cacValue) : "—"}
-          sub={metaConnected ? (cacIsSalesScoped ? "Per order · Sales ads only" : "Cost per acquisition") : "Connect Meta Ads"} />
+          sub={metaConnected ? (cacIsSalesScoped ? "Per order · Sales ads only" : "Cost per acquisition") : adsLoading ? "Loading…" : "Connect Meta Ads"} />
       </div>
 
       {/* Channel Attribution + COD/Prepaid */}
@@ -415,8 +422,11 @@ export default function SalesPage() {
 
         {/* Conversion Funnel — website behaviour, single source (GA4) */}
         <Card>
-          <CardHeader title="Website Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{ga4Connected ? "GA4 · website" : "Connect GA4"}</span>} />
-          {!hasWebsiteFunnel && (
+          <CardHeader title="Website Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{ga4Connected ? "GA4 · website" : adsLoading ? "Loading…" : "Connect GA4"}</span>} />
+          {adsLoading && !hasWebsiteFunnel && (
+            <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Loading website funnel…</div>
+          )}
+          {!adsLoading && !hasWebsiteFunnel && (
             <div className="text-[14px] text-[#A1A1AA] py-4 text-center">
               {ga4Connected
                 ? "GA4 is connected but has no ecommerce events yet — enable GA4 Enhanced Ecommerce (view_item / add_to_cart / begin_checkout / purchase) to see the website funnel."

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { swrCache } from "@/lib/swr-cache";
 import { fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway, ShopifyOrder } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -16,9 +16,12 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:sales:v6:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
-  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  const cacheKey = `cache:${shop}:sales:v7:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const result = await swrCache(cacheKey, 300, 21600, () => buildSales(shop, token, fromParam, toParam));
+  return NextResponse.json(result);
+}
 
+async function buildSales(shop: string, token: string, fromParam: string | null, toParam: string | null) {
   // Period boundaries in the STORE's timezone so totals match the Shopify admin.
   const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
   const orders = await fetchOrdersInRange(shop, token, startISO, endISO);
@@ -96,6 +99,5 @@ export async function GET(req: NextRequest) {
     topByQty, topByRevenue, allBySku, topCities, topStates, recentOrders,
     period: { days },
   };
-  kv.set(cacheKey, result, { ex: 900 }).catch(() => {});
-  return NextResponse.json(result);
+  return result;
 }

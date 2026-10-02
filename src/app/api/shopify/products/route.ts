@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { swrCache } from "@/lib/swr-cache";
 import { shopifyFetchAll, fetchOrdersInRange, resolveShopifyPeriod, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
 
@@ -12,9 +12,12 @@ export async function GET(req: NextRequest) {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
 
-  const cacheKey = `cache:${shop}:products:v4:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
-  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  const cacheKey = `cache:${shop}:products:v5:${fromParam ?? "mtd"}:${toParam ?? "now"}`;
+  const response = await swrCache(cacheKey, 300, 21600, () => buildProducts(shop, token, fromParam, toParam));
+  return NextResponse.json(response);
+}
 
+async function buildProducts(shop: string, token: string, fromParam: string | null, toParam: string | null) {
   // Sales window follows the selected date range (in the store's timezone).
   const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
 
@@ -88,6 +91,5 @@ export async function GET(req: NextRequest) {
     },
     period: { from: startISO, to: endISO, days },
   };
-  kv.set(cacheKey, response, { ex: 900 }).catch(() => {});
-  return NextResponse.json(response);
+  return response;
 }

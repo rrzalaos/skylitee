@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { swrCache } from "@/lib/swr-cache";
 import { fetchOrdersInRange, orderRevenue, getShopTimezone, isCodGateway } from "@/lib/shopify";
 import { ymdInTz } from "@/lib/timezone";
 import { getShopifySession } from "@/lib/session";
@@ -12,9 +12,12 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   const months = Math.min(12, Math.max(1, parseInt(req.nextUrl.searchParams.get("months") ?? "6", 10)));
-  const cacheKey = `cache:${shop}:shopmonthly:v3:${months}`;
-  try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
+  const cacheKey = `cache:${shop}:shopmonthly:v4:${months}`;
+  const result = await swrCache(cacheKey, 900, 43200, () => buildMonthly(shop, token, months));
+  return NextResponse.json(result);
+}
 
+async function buildMonthly(shop: string, token: string, months: number) {
   const tz = await getShopTimezone(shop, token);
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
@@ -57,6 +60,5 @@ export async function GET(req: NextRequest) {
   });
 
   const result = { shop, months: monthsOut };
-  kv.set(cacheKey, result, { ex: 1800 }).catch(() => {});
-  return NextResponse.json(result);
+  return result;
 }

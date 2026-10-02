@@ -61,13 +61,21 @@ export async function shopifyFetchAll<T = unknown>(
   let url: string | null = shopifyApiUrl(shop, path);
   const all: T[] = [];
   for (let page = 0; page < maxPages && url; page++) {
-    const res = await fetch(url, {
-      headers: {
-        "X-Shopify-Access-Token": accessToken,
-        "Content-Type": "application/json",
-      },
-      next: { revalidate: 120 },
-    });
+    let res: Response | null = null;
+    // Parallel windows can briefly exceed Shopify's REST bucket → back off on 429 and retry.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      res = await fetch(url, {
+        headers: {
+          "X-Shopify-Access-Token": accessToken,
+          "Content-Type": "application/json",
+        },
+        next: { revalidate: 120 },
+      });
+      if (res.status !== 429) break;
+      const wait = parseFloat(res.headers.get("Retry-After") ?? "") || 1 + attempt;
+      await new Promise(r => setTimeout(r, wait * 1000));
+    }
+    if (!res) break;
     rotateTokenIfNeeded(shop, res);
     if (!res.ok) throw new Error(`Shopify API ${res.status}: ${path}`);
     const json = (await res.json()) as Record<string, T[]>;
@@ -349,11 +357,38 @@ export async function fetchOrdersInRange(
   fromISO: string,
   toISO?: string,
 ): Promise<ShopifyOrder[]> {
-  const max = toISO ? `&created_at_max=${encodeURIComponent(toISO)}` : "";
-  const path = `/orders.json?status=any&created_at_min=${encodeURIComponent(fromISO)}${max}&limit=250&fields=${ORDER_FIELDS}`;
-  const orders = await shopifyFetchAll<ShopifyOrder>(shop, accessToken, path, "orders", 100);
+  // Speed: cursor pagination is strictly sequential (~1s per 250-order page), so a busy month
+  // took many round-trips in a row. Split the range into date windows and page through them
+  // IN PARALLEL — same orders, a fraction of the wall-clock time.
+  const startMs = new Date(fromISO).getTime();
+  const endMs = toISO ? new Date(toISO).getTime() : Date.now();
+  const spanDays = Math.max(1, (endMs - startMs) / 86_400_000);
+  const windows = Math.min(MAX_ORDER_WINDOWS, Math.max(1, Math.ceil(spanDays / 5)));
+  const step = (endMs - startMs) / windows;
+
+  const chunks = await Promise.all(Array.from({ length: windows }, (_, i) => {
+    const wFrom = new Date(startMs + step * i).toISOString();
+    // Last window keeps the caller's open end (no max) so "through now" stays live.
+    const wTo = i === windows - 1 ? toISO : new Date(startMs + step * (i + 1)).toISOString();
+    const max = wTo ? `&created_at_max=${encodeURIComponent(wTo)}` : "";
+    const path = `/orders.json?status=any&created_at_min=${encodeURIComponent(wFrom)}${max}&limit=250&fields=${ORDER_FIELDS}`;
+    return shopifyFetchAll<ShopifyOrder>(shop, accessToken, path, "orders", 100);
+  }));
+
+  // Window edges are inclusive on both sides → de-dupe an order created exactly on a boundary.
+  const seen = new Set<number>();
+  const orders: ShopifyOrder[] = [];
+  for (const o of chunks.flat()) {
+    if (seen.has(o.id)) continue;
+    seen.add(o.id);
+    orders.push(o);
+  }
   return orders.filter(isRealOrder);
 }
+
+// Concurrent order windows per request. Shopify's REST bucket is 40 requests (refilling 2/s),
+// and a page can fire 2–3 Shopify routes at once — 6 keeps us well inside it.
+const MAX_ORDER_WINDOWS = 6;
 
 // The store's IANA timezone (e.g. "Asia/Kolkata"), cached. Shopify reports sales by the
 // store's local day, so we need this to build matching date-range boundaries. Falls back to
