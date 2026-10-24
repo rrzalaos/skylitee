@@ -1051,11 +1051,17 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
               ? `${est.google.liveAds} live Google ads · ${est.google.confidence} confidence`
               : "search-ad clicks · Shopping/YouTube not visible"
             : gadsData ? "no live Google ads right now" : "no Google ad data"} />
-        <RangeCard label="Est. revenue / mo" value={est.revenue ? rangeInr(est.revenue) : "—"}
-          sub={est.revenue ? `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV` : "needs traffic + price"} />
+        <RangeCard label="Est. revenue / mo (all)" value={est.revenue ? rangeInr(est.revenue) : "—"}
+          sub={est.revenue
+            ? est.paidRevenue
+              ? `only ${rangeInr(est.paidRevenue)} from ads — rest is free Google traffic`
+              : `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV`
+            : "needs traffic + price"} />
         <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "—"}
           sub={[
-            est.paidRoas ? "ad-driven revenue ÷ ad spend" : "needs ads + price",
+            est.paidRoas && est.paidRevenue && est.totalSpend
+              ? `≈ ${inrShort(est.paidRevenue.mid)} ad sales ÷ ${inrShort(est.totalSpend.mid)} ad spend (middle)`
+              : est.paidRoas ? "ad-driven revenue ÷ ad spend" : "needs ads + price",
             est.blendedRoas && est.blendedMeaningful ? `blended ${rangeX(est.blendedRoas)}` : null,
             own?.roas ? `yours ${own.roas}x (real)` : null,
           ].filter(Boolean).join(" · ")} />
@@ -1063,7 +1069,9 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
 
       {est.blendedRoas && !est.blendedMeaningful && (
         <WarnBanner type="blue">
-          About {Math.round(est.organicShare * 100)}% of their visible visits are free Google traffic, so &ldquo;all revenue ÷ ad spend&rdquo; would just reflect brand size — we show ROAS from ad-driven visits only.
+          About {Math.round(est.organicShare * 100)}% of their visible visits are free Google traffic. Those sales cost them no ad money, so ROAS counts only sales from ad visits
+          {est.paidRevenue && est.revenue ? <> (≈ {inrShort(est.paidRevenue.mid)} of ≈ {inrShort(est.revenue.mid)} total revenue)</> : null}.
+          Ranges don&apos;t multiply end-to-end — high spend doesn&apos;t come with high ROAS; compare the middle values.
         </WarnBanner>
       )}
 
