@@ -175,6 +175,7 @@ export const shopKv = {
       `shop:${shop}:charge_id`,
       `shop:${shop}:grant`,
       `shop:${shop}:team`,
+      `shop:${shop}:competitors`,
     ];
     await Promise.allSettled(keys.map(k => kvDel(k)));
   },
@@ -246,6 +247,23 @@ export const activityKv = {
     const all = (await kvGet<ActivityLog[]>(`user:${email.toLowerCase()}:activity`)) ?? [];
     all.unshift({ ...entry, id: `l_${Date.now()}`, createdAt: new Date().toISOString() });
     await kvSet(`user:${email.toLowerCase()}:activity`, all.slice(0, 100));
+  },
+};
+
+// Competitor Intel — the per-store competitor list, plus a SHARED cache of fetched competitor
+// data (keyed by country + page/domain, not by shop) so the same competitor is paid for once
+// no matter how many stores track it. Refresh locks stop the "Refresh now" button being spammed.
+export const competitorKv = {
+  getList: <T>(shop: string) => kvGet<T[]>(`shop:${shop}:competitors`),
+  setList: <T>(shop: string, v: T[]) => kvSet(`shop:${shop}:competitors`, v),
+  getCache: <T>(key: string) => kvGet<T>(`ci:${key}`),
+  setCache: (key: string, v: unknown, ttlSeconds: number) => kvSet(`ci:${key}`, v, ttlSeconds),
+  // true = lock acquired (caller may fetch); false = refreshed too recently
+  async tryLock(key: string, ttlSeconds: number): Promise<boolean> {
+    try {
+      const ok = await kv.set(`ci:lock:${key}`, Date.now(), { nx: true, ex: ttlSeconds });
+      return ok === "OK";
+    } catch { return true; }
   },
 };
 

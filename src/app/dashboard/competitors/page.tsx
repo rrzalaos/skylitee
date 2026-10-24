@@ -1,0 +1,960 @@
+"use client";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Binoculars, Plus, Trash2, RefreshCw, ExternalLink, Sparkles, Info, Calculator, Megaphone,
+  Search, Play, Images, Image as ImageIcon, Layers, Clock, Zap, Globe, TrendingUp, LoaderCircle, X, Target,
+} from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { KPICard } from "@/components/ui/kpi-card";
+import { WarnBanner } from "@/components/ui/warn-banner";
+import { Tooltip } from "@/components/ui/tooltip";
+import { Donut } from "@/components/ui/charts";
+import { cn, formatINR, formatNumber } from "@/lib/utils";
+import { COUNTRIES, getCountry, type Competitor, type AdsPayload, type AdStats, type CompetitorAd } from "@/lib/competitor-shared";
+import {
+  defaultAssumptions, estimateAll, FX_INR,
+  type Assumptions, type AssumptionSource, type OwnMetrics, type Range, type Confidence,
+} from "@/lib/competitor-estimate";
+import type { TrafficPayload } from "@/lib/dataforseo";
+import type { StorePayload } from "@/lib/shopify-public";
+
+// ── Types for API responses ───────────────────────────────────────────────────
+
+interface Providers { adsAnyCountry: boolean; adsEu: boolean; euReach: boolean; traffic: boolean; ai: boolean }
+type Failed = { status: "setup_needed"; missing: string[]; message: string } | { status: "error"; message: string };
+type AdsResp = ({ status: "ok"; data: AdsPayload; cached: boolean; refreshBlocked?: boolean; stats: AdStats }) | Failed;
+type TrafficResp = ({ status: "ok"; data: TrafficPayload; cached: boolean; refreshBlocked?: boolean }) | Failed;
+type StoreResp = { status: "ok"; data: StorePayload } | { status: "error"; message: string };
+
+interface OwnData {
+  metrics: OwnMetrics;
+  spend: number | null;          // ₹ last 30 days (Meta)
+  roas: number | null;
+  activeAds: number | null;
+  formats: Record<string, number> | null;
+  gscClicks: number | null;
+  ga4Sessions: number | null;
+  inrAccount: boolean;
+}
+
+type Tab = "ads" | "traffic" | "spend";
+
+// ── Formatting ────────────────────────────────────────────────────────────────
+
+function inrShort(n: number): string {
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n >= 1e8 ? 0 : 1)}Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n >= 1e6 ? 0 : 1)}L`;
+  if (n >= 1e3) return `₹${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}K`;
+  return formatINR(Math.round(n));
+}
+function numShort(n: number): string {
+  if (n >= 1e7) return `${(n / 1e7).toFixed(1)}Cr`;
+  if (n >= 1e5) return `${(n / 1e5).toFixed(1)}L`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return formatNumber(Math.round(n));
+}
+const rangeInr = (r: Range) => `${inrShort(r.lo)} – ${inrShort(r.hi)}`;
+const rangeX = (r: Range) => `${r.lo}x – ${r.hi}x`;
+function ago(iso: string): string {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+}
+function last30(): { from: string; to: string } {
+  const to = new Date(Date.now() - 3 * 86_400_000); // GSC finalises with a ~3-day lag
+  const from = new Date(to.getTime() - 29 * 86_400_000);
+  const f = (d: Date) => d.toISOString().slice(0, 10);
+  return { from: f(from), to: f(to) };
+}
+
+const SUB = "text-[15px] text-[#71717A] dark:text-[#A1A1AA]";
+const confVariant: Record<Confidence, "green" | "amber" | "red"> = { High: "green", Medium: "amber", Low: "red" };
+const srcLabel: Record<AssumptionSource, { text: string; variant: "green" | "blue" | "gray" }> = {
+  yours: { text: "Your real data", variant: "green" },
+  competitor: { text: "Their store", variant: "blue" },
+  benchmark: { text: "Benchmark", variant: "gray" },
+};
+
+function EstimateTag() {
+  return <Badge variant="purple" className="uppercase tracking-wide">Estimate</Badge>;
+}
+
+function SetupNeeded({ what, missing, message }: { what: string; missing: string[]; message: string }) {
+  return (
+    <Card className="text-center py-10">
+      <Info size={22} className="mx-auto text-[#3B82F6] mb-2" />
+      <div className="text-[17px] font-semibold mb-1">{what} — setup needed</div>
+      <p className={cn(SUB, "max-w-md mx-auto")}>{message}</p>
+      {missing.length > 0 && (
+        <p className="text-[13px] text-[#A1A1AA] mt-3">Admin: add {missing.join(", ")} in Vercel environment variables.</p>
+      )}
+    </Card>
+  );
+}
+
+function Empty({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return (
+    <Card className="text-center py-10">
+      <div className="mx-auto text-[#A1A1AA] mb-2 flex justify-center">{icon}</div>
+      <div className="text-[17px] font-semibold mb-1">{title}</div>
+      <p className={cn(SUB, "max-w-md mx-auto")}>{body}</p>
+    </Card>
+  );
+}
+
+function Loading({ label }: { label: string }) {
+  return (
+    <div className={cn(SUB, "py-12 text-center flex items-center justify-center gap-2")}>
+      <LoaderCircle size={16} className="animate-spin" /> {label}
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function CompetitorIntelPage() {
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [limit, setLimit] = useState(5);
+  const [providers, setProviders] = useState<Providers | null>(null);
+  const [listLoading, setListLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [country, setCountry] = useState("IN");
+  const [tab, setTab] = useState<Tab>("ads");
+  const [showAdd, setShowAdd] = useState(false);
+
+  const [ads, setAds] = useState<AdsResp | null>(null);
+  const [traffic, setTraffic] = useState<TrafficResp | null>(null);
+  const [store, setStore] = useState<StoreResp | null>(null);
+  const [adsLoading, setAdsLoading] = useState(false);
+  const [trafficLoading, setTrafficLoading] = useState(false);
+  const [own, setOwn] = useState<OwnData | null>(null);
+
+  const selected = competitors.find(c => c.id === selectedId) ?? null;
+  const countryInfo = getCountry(country);
+
+  const loadList = useCallback(() => {
+    return fetch("/api/competitors").then(r => r.json()).then(d => {
+      if (d.error) return;
+      setCompetitors(d.competitors ?? []);
+      setLimit(d.limit ?? 5);
+      setProviders(d.providers ?? null);
+      setSelectedId(prev => prev && d.competitors?.some((c: Competitor) => c.id === prev) ? prev : d.competitors?.[0]?.id ?? null);
+    }).finally(() => setListLoading(false));
+  }, []);
+
+  useEffect(() => { loadList(); }, [loadList]);
+
+  // The user's own real numbers (last 30 days) — used for "vs you" and to calibrate estimates
+  useEffect(() => {
+    const { from, to } = last30();
+    Promise.allSettled([
+      fetch(`/api/meta?from=${from}&to=${to}`).then(r => r.json()),
+      fetch(`/api/shopify/dashboard?from=${from}&to=${to}`).then(r => r.json()),
+      fetch(`/api/ga4?from=${from}&to=${to}`).then(r => r.json()),
+      fetch(`/api/gsc?from=${from}&to=${to}`).then(r => r.json()),
+      fetch(`/api/meta/ads?from=${from}&to=${to}`).then(r => r.json()),
+    ]).then(([metaR, shopR, ga4R, gscR, adsR]) => {
+      const ok = <T,>(r: PromiseSettledResult<T>) => (r.status === "fulfilled" && r.value && !(r.value as { error?: unknown }).error ? r.value : null);
+      const meta = ok(metaR) as { currency?: string; kpis?: { cpm: number; ctr: number; outboundCtr?: number; spend: number; roas: number } } | null;
+      const shop = ok(shopR) as { kpis?: { aov: number; totalOrders: number } } | null;
+      const ga4 = ok(ga4R) as { kpis?: { sessions: number } } | null;
+      const gsc = ok(gscR) as { kpis?: { clicks: number } } | null;
+      const myAds = ok(adsR) as { ads?: { status: string; format: string }[] } | null;
+      const inr = (meta?.currency ?? "INR") === "INR";
+      const sessions = ga4?.kpis?.sessions ?? 0;
+      const orders = shop?.kpis?.totalOrders ?? 0;
+      const active = myAds?.ads?.filter(a => a.status === "ACTIVE") ?? null;
+      const formats: Record<string, number> | null = active ? {} : null;
+      if (active && formats) for (const a of active) formats[a.format] = (formats[a.format] ?? 0) + 1;
+      const k = meta?.kpis;
+      setOwn({
+        metrics: {
+          cpm: inr && k?.cpm ? k.cpm : null,
+          ctr: k ? (k.outboundCtr && k.outboundCtr > 0 ? k.outboundCtr : k.ctr || null) : null,
+          cvr: sessions > 100 && orders > 0 ? Math.round((orders / sessions) * 10000) / 100 : null,
+          aov: shop?.kpis?.aov || null,
+        },
+        spend: inr && k ? k.spend : null,
+        roas: k && k.spend > 0 ? k.roas : null,
+        activeAds: active ? active.length : null,
+        formats,
+        gscClicks: gsc?.kpis?.clicks ?? null,
+        ga4Sessions: ga4?.kpis ? sessions : null,
+        inrAccount: inr,
+      });
+    });
+  }, []);
+
+  const loadAds = useCallback((refresh = false) => {
+    if (!selected?.pageUrl && !selected?.pageId) { setAds(null); return; }
+    setAdsLoading(true);
+    fetch(`/api/competitors/ads?id=${selected.id}&country=${country}${refresh ? "&refresh=1" : ""}`)
+      .then(r => r.json())
+      .then(d => setAds(d.status ? d : { status: "error", message: d.error ?? "Couldn't load ads" }))
+      .catch(() => setAds({ status: "error", message: "Couldn't load ads" }))
+      .finally(() => setAdsLoading(false));
+  }, [selected?.id, selected?.pageUrl, selected?.pageId, country]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadTraffic = useCallback((refresh = false) => {
+    if (!selected?.website) { setTraffic(null); return; }
+    setTrafficLoading(true);
+    fetch(`/api/competitors/traffic?id=${selected.id}&country=${country}${refresh ? "&refresh=1" : ""}`)
+      .then(r => r.json())
+      .then(d => setTraffic(d.status ? d : { status: "error", message: d.error ?? "Couldn't load traffic" }))
+      .catch(() => setTraffic({ status: "error", message: "Couldn't load traffic" }))
+      .finally(() => setTrafficLoading(false));
+  }, [selected?.id, selected?.website, country]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setAds(null); setTraffic(null);
+    if (!selected) return;
+    loadAds();
+    loadTraffic();
+  }, [loadAds, loadTraffic, selected]);
+
+  useEffect(() => {
+    setStore(null);
+    if (!selected?.website) return;
+    fetch(`/api/competitors/store?id=${selected.id}`).then(r => r.json()).then(setStore).catch(() => {});
+  }, [selected?.id, selected?.website]);
+
+  async function removeCompetitor(c: Competitor) {
+    const res = await fetch(`/api/competitors?id=${c.id}`, { method: "DELETE" });
+    if (res.ok) loadList();
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><Binoculars size={18} className="text-[#F97316]" /> Competitor Intel</h2>
+          <p className="text-[17px] text-[#686864] mt-0.5">
+            See competitors&apos; live Meta ads, Google traffic and an <span className="font-medium text-[#181816] dark:text-[#F4F4F5]">estimated</span> spend &amp; ROAS — country by country
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Globe size={16} className="text-[#A1A1AA]" />
+          <select
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+            className="text-[15px] border border-black/10 dark:border-white/10 rounded-lg px-2.5 py-1.5 bg-white dark:bg-[#171717]"
+          >
+            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {providers && !providers.adsAnyCountry && !providers.traffic && (
+        <WarnBanner type="blue">
+          Competitor Intel is built and ready — the data providers just need to be switched on. Until then, sections show &ldquo;setup needed&rdquo; instead of guessing.
+        </WarnBanner>
+      )}
+
+      {/* Competitor chips */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {competitors.map(c => (
+          <div
+            key={c.id}
+            className={cn(
+              "group flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full border text-[15px] cursor-pointer transition-colors",
+              c.id === selectedId
+                ? "bg-[#FFF7ED] border-[#F97316] text-[#C2410C] dark:bg-[#2A1A0E] dark:text-[#FB923C]"
+                : "bg-white dark:bg-[#171717] border-black/10 dark:border-white/10 hover:border-[#F97316]/50",
+            )}
+            onClick={() => setSelectedId(c.id)}
+          >
+            <span className="font-medium">{c.name}</span>
+            <button
+              title="Remove"
+              onClick={e => { e.stopPropagation(); removeCompetitor(c); }}
+              className="p-0.5 rounded-full opacity-50 hover:opacity-100 hover:bg-black/5"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ))}
+        {competitors.length < limit && (
+          <button
+            onClick={() => setShowAdd(v => !v)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-dashed border-[#F97316] text-[#F97316] text-[15px] font-medium hover:bg-[#FFF7ED] dark:hover:bg-[#2A1A0E]"
+          >
+            <Plus size={14} /> Add competitor
+          </button>
+        )}
+        <span className="text-[13px] text-[#A1A1AA]">{competitors.length}/{limit}</span>
+      </div>
+
+      {showAdd && <AddCompetitor onDone={() => { setShowAdd(false); loadList(); }} onCancel={() => setShowAdd(false)} />}
+
+      {listLoading ? (
+        <Loading label="Loading competitors…" />
+      ) : !selected ? (
+        <Empty
+          icon={<Binoculars size={26} />}
+          title="Add your first competitor"
+          body="Add a competitor's Facebook page link and website. We'll pull their live Meta ads, Google traffic and estimate how much they spend."
+        />
+      ) : (
+        <>
+          <div className="flex gap-1 mb-3 border-b border-black/[0.06] dark:border-white/[0.06] overflow-x-auto">
+            {([
+              ["ads", "Meta Ad Spy", <Megaphone key="a" size={15} />],
+              ["traffic", "Traffic Intel", <Search key="t" size={15} />],
+              ["spend", "Est. Spend & ROAS", <Calculator key="s" size={15} />],
+            ] as [Tab, string, React.ReactNode][]).map(([key, label, icon]) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 text-[15px] font-medium border-b-2 -mb-px whitespace-nowrap",
+                  tab === key ? "border-[#F97316] text-[#F97316]" : "border-transparent text-[#71717A] hover:text-[#18181B] dark:hover:text-[#F4F4F5]",
+                )}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === "ads" && (
+            <AdSpyTab competitor={selected} resp={ads} loading={adsLoading} own={own} countryName={countryInfo.name} onRefresh={() => loadAds(true)} />
+          )}
+          {tab === "traffic" && (
+            <TrafficTab competitor={selected} resp={traffic} loading={trafficLoading} own={own} countryCode={country} onRefresh={() => loadTraffic(true)} />
+          )}
+          {tab === "spend" && (
+            <SpendTab
+              key={`${selected.id}-${country}`}
+              competitor={selected}
+              ads={ads} traffic={traffic} store={store} own={own}
+              country={countryInfo}
+              loading={adsLoading || trafficLoading}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Add competitor form ───────────────────────────────────────────────────────
+
+function AddCompetitor({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const [name, setName] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
+  const [website, setWebsite] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const input = "w-full text-[15px] border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 bg-white dark:bg-[#0F0F0F]";
+
+  async function save() {
+    setSaving(true); setError(null);
+    const res = await fetch("/api/competitors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, pageUrl: pageUrl || undefined, website: website || undefined }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setSaving(false);
+    if (!res.ok) { setError(d.error ?? "Couldn't add competitor"); return; }
+    onDone();
+  }
+
+  return (
+    <Card className="mb-3">
+      <CardHeader title="Add a competitor" right={<button onClick={onCancel}><X size={16} /></button>} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div>
+          <label className="text-[13px] font-semibold text-[#71717A]">Brand name *</label>
+          <input className={input} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Brand X" />
+        </div>
+        <div>
+          <label className="text-[13px] font-semibold text-[#71717A]">Facebook page link (for ads)</label>
+          <input className={input} value={pageUrl} onChange={e => setPageUrl(e.target.value)} placeholder="facebook.com/brandx" />
+        </div>
+        <div>
+          <label className="text-[13px] font-semibold text-[#71717A]">Website (for traffic &amp; prices)</label>
+          <input className={input} value={website} onChange={e => setWebsite(e.target.value)} placeholder="brandx.com" />
+        </div>
+      </div>
+      <p className="text-[13px] text-[#A1A1AA] mt-2">
+        Tip: open their Facebook page → &ldquo;Page transparency&rdquo; → &ldquo;Go to Ad Library&rdquo; and paste that link — it&apos;s the most reliable.
+      </p>
+      {error && <div className="text-[14px] text-[#DC2626] mt-2">{error}</div>}
+      <div className="flex justify-end mt-3">
+        <button
+          onClick={save}
+          disabled={saving || !name.trim() || (!pageUrl.trim() && !website.trim())}
+          className="px-4 py-2 rounded-lg bg-[#F97316] text-white text-[15px] font-semibold disabled:opacity-40"
+        >
+          {saving ? "Adding…" : "Add competitor"}
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ── Refresh bar ───────────────────────────────────────────────────────────────
+
+function RefreshBar({ fetchedAt, refreshBlocked, onRefresh, loading, cadence }: {
+  fetchedAt: string; refreshBlocked?: boolean; onRefresh: () => void; loading: boolean; cadence: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div className="text-[14px] text-[#A1A1AA] flex items-center gap-1.5">
+        <Clock size={13} /> Updated {ago(fetchedAt)} · refreshes {cadence}
+        {refreshBlocked && <span className="text-[#B45309]"> · already refreshed recently, showing latest copy</span>}
+      </div>
+      <button
+        onClick={onRefresh}
+        disabled={loading}
+        className="flex items-center gap-1.5 text-[14px] px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:border-[#F97316] disabled:opacity-40"
+      >
+        <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh now
+      </button>
+    </div>
+  );
+}
+
+// ── Tab 1: Meta Ad Spy ────────────────────────────────────────────────────────
+
+const FORMAT_ICON: Record<string, React.ReactNode> = {
+  video: <Play size={12} />, image: <ImageIcon size={12} />, carousel: <Images size={12} />, text: <Layers size={12} />,
+};
+
+function AdSpyTab({ competitor, resp, loading, own, countryName, onRefresh }: {
+  competitor: Competitor; resp: AdsResp | null; loading: boolean; own: OwnData | null; countryName: string; onRefresh: () => void;
+}) {
+  const [sort, setSort] = useState<"days" | "new">("days");
+  const [format, setFormat] = useState<string>("all");
+
+  if (!competitor.pageUrl && !competitor.pageId) {
+    return <Empty icon={<Megaphone size={26} />} title="No Facebook page added" body={`Remove and re-add ${competitor.name} with their Facebook page link to see their ads.`} />;
+  }
+  if (loading && !resp) return <Loading label={`Fetching ${competitor.name}'s live ads in ${countryName}… first fetch can take 1–2 minutes`} />;
+  if (!resp) return null;
+  if (resp.status === "setup_needed") return <SetupNeeded what="Meta Ad Spy" missing={resp.missing} message={resp.message} />;
+  if (resp.status === "error") return <Empty icon={<Info size={26} />} title="Couldn't load ads" body={resp.message} />;
+
+  const { data, stats } = resp;
+  if (data.ads.length === 0) {
+    return (
+      <>
+        <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="weekly" />
+        <Empty icon={<Megaphone size={26} />} title={`No active ads in ${countryName}`} body={`${competitor.name} isn't running any Meta ads that reach ${countryName} right now. Try another country.`} />
+      </>
+    );
+  }
+
+  const shown = data.ads
+    .filter(a => format === "all" || a.format === format)
+    .sort((a, b) => sort === "days"
+      ? (b.daysRunning ?? 0) - (a.daysRunning ?? 0)
+      : new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime());
+  const pct = (n: number) => (stats.active ? Math.round((n / stats.active) * 100) : 0);
+  const ownTotal = own?.formats ? Object.values(own.formats).reduce((s, v) => s + v, 0) : 0;
+  const ownPct = (k: string) => (own?.formats && ownTotal ? Math.round(((own.formats[k] ?? 0) / ownTotal) * 100) : null);
+
+  return (
+    <div>
+      <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="weekly" />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 mb-3">
+        <KPICard label="Active ads" value={formatNumber(stats.active)} sub={`${stats.uniqueCreatives} unique creatives`} icon={<Megaphone size={12} />} />
+        <KPICard label="Launched (7 days)" value={formatNumber(stats.launched7d)} sub={`${stats.launched30d} in last 30 days`} icon={<Zap size={12} />} />
+        <KPICard label="Running 30+ days" value={formatNumber(stats.over30d)} sub={`${stats.over60d} running 60+ days`} icon={<TrendingUp size={12} />} />
+        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "—"} sub="days live" icon={<Clock size={12} />} />
+        <KPICard label="Variations" value={formatNumber(stats.variations)} sub="incl. near-duplicate versions" icon={<Layers size={12} />} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title={<span className="flex items-center gap-1.5"><Sparkles size={16} className="text-[#F97316]" /> What their ads are saying</span>} right="AI read of ad copy" />
+          {data.hooks ? (
+            <div className="space-y-3">
+              {data.hooks.summary && <p className="text-[16px] leading-relaxed">{data.hooks.summary}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <HookList title="Offers" items={data.hooks.offers} empty="No explicit offers in their copy" />
+                <HookList title="Hooks / headlines" items={data.hooks.hooks} empty="—" />
+                <HookList title="Selling angles" items={data.hooks.angles} empty="—" />
+              </div>
+            </div>
+          ) : (
+            <p className={SUB}>AI summary isn&apos;t available for these ads (no ad text found, or AI isn&apos;t switched on).</p>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader title="Them vs you" right="Active ads" />
+          <table className="w-full text-[15px]">
+            <thead>
+              <tr className="text-[13px] text-[#A1A1AA] text-left">
+                <th className="font-semibold pb-1.5"></th>
+                <th className="font-semibold pb-1.5 text-right">{competitor.name}</th>
+                <th className="font-semibold pb-1.5 text-right">You</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+              <tr><td className="py-1.5">Active ads</td><td className="text-right font-semibold">{stats.active}</td><td className="text-right">{own?.activeAds ?? "—"}</td></tr>
+              <tr><td className="py-1.5">Video share</td><td className="text-right font-semibold">{pct(stats.formats.video)}%</td><td className="text-right">{ownPct("video") !== null ? `${ownPct("video")}%` : "—"}</td></tr>
+              <tr><td className="py-1.5">Image share</td><td className="text-right font-semibold">{pct(stats.formats.image)}%</td><td className="text-right">{ownPct("image") !== null ? `${ownPct("image")}%` : "—"}</td></tr>
+              <tr><td className="py-1.5">Carousel share</td><td className="text-right font-semibold">{pct(stats.formats.carousel)}%</td><td className="text-right">{ownPct("carousel") !== null ? `${ownPct("carousel")}%` : "—"}</td></tr>
+              <tr><td className="py-1.5">New ads / 30 days</td><td className="text-right font-semibold">{stats.launched30d}</td><td className="text-right text-[#A1A1AA]">—</td></tr>
+            </tbody>
+          </table>
+          <p className="text-[13px] text-[#A1A1AA] mt-2">
+            Ads running 30+ days are usually profitable — brands switch off losers within 1–2 weeks.
+          </p>
+        </Card>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <span className="text-[15px] font-semibold">{shown.length} ads</span>
+        <div className="flex gap-1 ml-auto">
+          {["all", "video", "image", "carousel"].map(f => (
+            <button key={f} onClick={() => setFormat(f)}
+              className={cn("px-2.5 py-1 rounded-lg text-[13px] capitalize border", format === f ? "border-[#F97316] text-[#F97316]" : "border-black/10 dark:border-white/10 text-[#71717A]")}>
+              {f}
+            </button>
+          ))}
+        </div>
+        <select value={sort} onChange={e => setSort(e.target.value as "days" | "new")}
+          className="text-[13px] border border-black/10 dark:border-white/10 rounded-lg px-2 py-1 bg-white dark:bg-[#171717]">
+          <option value="days">Longest running</option>
+          <option value="new">Newest first</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+        {shown.map(ad => <AdCard key={ad.id} ad={ad} />)}
+      </div>
+    </div>
+  );
+}
+
+function HookList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+  return (
+    <div>
+      <div className="text-[13px] font-bold uppercase tracking-wide text-[#A1A1AA] mb-1.5">{title}</div>
+      {items.length ? (
+        <ul className="space-y-1">
+          {items.map((t, i) => <li key={i} className="text-[15px] flex gap-1.5"><span className="text-[#F97316]">•</span>{t}</li>)}
+        </ul>
+      ) : <div className="text-[14px] text-[#A1A1AA]">{empty}</div>}
+    </div>
+  );
+}
+
+function AdCard({ ad }: { ad: CompetitorAd }) {
+  const [imgOk, setImgOk] = useState(true);
+  const days = ad.daysRunning ?? 0;
+  return (
+    <Card className="p-0 overflow-hidden flex flex-col">
+      <div className="relative aspect-square bg-[#F4F4F5] dark:bg-[#0F0F0F] flex items-center justify-center">
+        {ad.videoUrl ? (
+          <video src={ad.videoUrl} poster={ad.imageUrl ?? undefined} controls preload="none" className="w-full h-full object-cover" />
+        ) : ad.imageUrl && imgOk ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ad.imageUrl} alt="" referrerPolicy="no-referrer" loading="lazy" onError={() => setImgOk(false)} className="w-full h-full object-cover" />
+        ) : (
+          <a href={ad.libraryUrl} target="_blank" rel="noreferrer" className="text-[14px] text-[#71717A] flex items-center gap-1">
+            <ExternalLink size={14} /> View creative in Ad Library
+          </a>
+        )}
+        <div className="absolute top-2 left-2 flex gap-1">
+          <Badge variant="gray" className="bg-white/90 dark:bg-black/70 flex items-center gap-1 capitalize">{FORMAT_ICON[ad.format]} {ad.format}</Badge>
+        </div>
+        <div className="absolute top-2 right-2">
+          <Tooltip content={days > 60 ? "Running 60+ days — very likely a profitable, scaled ad" : days > 30 ? "Running 30+ days — likely profitable" : days <= 7 ? "New — probably still being tested" : "Running 1–4 weeks"} side="left">
+            <Badge variant={days > 30 ? "green" : days <= 7 ? "blue" : "gray"}>{days}d live</Badge>
+          </Tooltip>
+        </div>
+      </div>
+      <div className="p-3 flex-1 flex flex-col gap-1.5">
+        {ad.title && <div className="text-[15px] font-semibold line-clamp-2">{ad.title}</div>}
+        {ad.body && <div className="text-[14px] text-[#52525B] dark:text-[#A1A1AA] line-clamp-4 whitespace-pre-line">{ad.body}</div>}
+        <div className="mt-auto pt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] text-[#A1A1AA]">
+          {ad.cta && <Badge variant="orange">{ad.cta}</Badge>}
+          {ad.collationCount > 1 && <Badge variant="purple">{ad.collationCount} versions</Badge>}
+          {ad.euReach && <Badge variant="teal">{numShort(ad.euReach)} reach</Badge>}
+          {ad.startDate && <span>since {new Date(ad.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}</span>}
+          <a href={ad.libraryUrl} target="_blank" rel="noreferrer" className="ml-auto text-[#F97316] flex items-center gap-0.5 hover:underline">
+            Ad Library <ExternalLink size={11} />
+          </a>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ── Tab 2: Traffic Intel ──────────────────────────────────────────────────────
+
+function TrafficTab({ competitor, resp, loading, own, countryCode, onRefresh }: {
+  competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string; onRefresh: () => void;
+}) {
+  if (!competitor.website) {
+    return <Empty icon={<Globe size={26} />} title="No website added" body={`Remove and re-add ${competitor.name} with their website to see their Google traffic.`} />;
+  }
+  if (loading && !resp) return <Loading label={`Fetching ${competitor.website} traffic estimates…`} />;
+  if (!resp) return null;
+  if (resp.status === "setup_needed") return <SetupNeeded what="Traffic Intel" missing={resp.missing} message={resp.message} />;
+  if (resp.status === "error") return <Empty icon={<Info size={26} />} title="Couldn't load traffic" body={resp.message} />;
+
+  const { data } = resp;
+  const ov = data.overview;
+  if (!ov || (ov.organicTraffic === 0 && ov.paidTraffic === 0 && data.topKeywords.length === 0)) {
+    return (
+      <>
+        <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="monthly" />
+        <Empty icon={<Search size={26} />} title="Not enough data" body={`${data.domain} is too small (or too new) in this country for Google traffic estimates. That's normal for many D2C brands that grow mostly through Meta.`} />
+      </>
+    );
+  }
+  const history = data.history.map(h => ({ ...h, label: new Date(`${h.month}-01`).toLocaleDateString("en-IN", { month: "short", year: "2-digit" }) }));
+  const ownComparable = countryCode === "IN"; // own GSC/GA4 are mostly home-market traffic
+
+  return (
+    <div>
+      <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="monthly" />
+      <WarnBanner type="blue">
+        These are DataForSEO <b>estimates</b> of Google traffic (from rankings × search volume). &ldquo;Paid&rdquo; means Google search ads only — Meta-driven visits aren&apos;t visible to anyone.
+      </WarnBanner>
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
+        <KPICard label="Organic visits / mo" value={numShort(ov.organicTraffic)} sub={`${formatNumber(ov.organicKeywords)} keywords · estimate`} icon={<Search size={12} />} />
+        <KPICard label="Google-ads visits / mo" value={numShort(ov.paidTraffic)} sub={`${formatNumber(ov.paidKeywords)} paid keywords · estimate`} icon={<Megaphone size={12} />} />
+        <KPICard label="Google Ads spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "₹0"} sub="estimate" icon={<Target size={12} />} />
+        <KPICard label="Organic traffic value" value={inrShort(ov.organicValueInr)} sub="what it'd cost as ads" icon={<TrendingUp size={12} />} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Google traffic trend" right={<EstimateTag />} />
+          {history.length >= 2 ? (
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={history} margin={{ top: 5, right: 8, bottom: 0, left: -10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={v => numShort(Number(v))} />
+                  <RTooltip formatter={(v) => numShort(Number(v))} />
+                  <Line type="monotone" dataKey="organic" name="Organic" stroke="#22C55E" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="paid" name="Google ads" stroke="#F97316" strokeWidth={2} dot={false} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : <p className={SUB}>Not enough history yet.</p>}
+        </Card>
+        <Card>
+          <CardHeader title="Them vs you" right="per month" />
+          <table className="w-full text-[15px]">
+            <thead>
+              <tr className="text-[13px] text-[#A1A1AA] text-left">
+                <th className="font-semibold pb-1.5"></th>
+                <th className="font-semibold pb-1.5 text-right">{competitor.name}<div className="font-normal">estimate</div></th>
+                <th className="font-semibold pb-1.5 text-right">You<div className="font-normal">real</div></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+              <tr>
+                <td className="py-1.5">Google organic clicks</td>
+                <td className="text-right font-semibold">{numShort(ov.organicTraffic)}</td>
+                <td className="text-right">{ownComparable && own?.gscClicks != null ? numShort(own.gscClicks) : "—"}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5">Ranking keywords</td>
+                <td className="text-right font-semibold">{numShort(ov.organicKeywords)}</td>
+                <td className="text-right text-[#A1A1AA]">—</td>
+              </tr>
+              <tr>
+                <td className="py-1.5">All website sessions</td>
+                <td className="text-right text-[#A1A1AA]">not visible</td>
+                <td className="text-right">{ownComparable && own?.ga4Sessions != null ? numShort(own.ga4Sessions) : "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-[13px] text-[#A1A1AA] mt-2">
+            Your numbers are last 30 days from Search Console &amp; GA4{!ownComparable && " (shown for India only)"}.
+          </p>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
+        <KeywordTable title="Top organic keywords" rows={data.topKeywords.slice(0, 15)} />
+        <Card>
+          <CardHeader title="Top pages" right="by organic visits" />
+          {data.topPages.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[14px]">
+                <thead><tr className="text-[13px] text-[#A1A1AA] text-left"><th className="font-semibold pb-1.5">Page</th><th className="font-semibold pb-1.5 text-right">Visits</th><th className="font-semibold pb-1.5 text-right">Keywords</th></tr></thead>
+                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                  {data.topPages.map(p => (
+                    <tr key={p.url}>
+                      <td className="py-1.5 max-w-[260px] truncate"><a href={p.url} target="_blank" rel="noreferrer" className="hover:text-[#F97316]">{p.url.replace(/^https?:\/\/(www\.)?/, "")}</a></td>
+                      <td className="text-right font-semibold">{numShort(p.traffic)}</td>
+                      <td className="text-right">{p.keywords}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className={SUB}>No page data.</p>}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+        <Card>
+          <CardHeader title="Keyword gap — they rank, you don't" right={data.gapAgainst ? `vs ${data.gapAgainst}` : undefined} />
+          {data.gap === null ? (
+            <p className={SUB}>Connect Google Search Console in Connections so we know your website — then we&apos;ll list keywords where {competitor.name} ranks and you don&apos;t.</p>
+          ) : data.gap.length === 0 ? (
+            <p className={SUB}>No gap found — you rank for the same keywords they do. 👏</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[14px]">
+                <thead><tr className="text-[13px] text-[#A1A1AA] text-left"><th className="font-semibold pb-1.5">Keyword</th><th className="font-semibold pb-1.5 text-right">Searches/mo</th><th className="font-semibold pb-1.5 text-right">Their rank</th><th className="font-semibold pb-1.5 text-right">CPC</th></tr></thead>
+                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                  {data.gap.slice(0, 15).map(k => (
+                    <tr key={k.keyword}>
+                      <td className="py-1.5">{k.keyword}</td>
+                      <td className="text-right font-semibold">{numShort(k.volume)}</td>
+                      <td className="text-right">#{k.theirPosition}</td>
+                      <td className="text-right">{k.cpcInr != null ? formatINR(k.cpcInr) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+        {data.paidKeywords.length > 0
+          ? <KeywordTable title="Keywords they buy on Google" rows={data.paidKeywords.slice(0, 15)} />
+          : <Card><CardHeader title="Keywords they buy on Google" /><p className={SUB}>No Google search ads found for {data.domain} in this country.</p></Card>}
+      </div>
+    </div>
+  );
+}
+
+function KeywordTable({ title, rows }: { title: string; rows: TrafficPayload["topKeywords"] }) {
+  return (
+    <Card>
+      <CardHeader title={title} right={<EstimateTag />} />
+      {rows.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[14px]">
+            <thead><tr className="text-[13px] text-[#A1A1AA] text-left"><th className="font-semibold pb-1.5">Keyword</th><th className="font-semibold pb-1.5 text-right">Rank</th><th className="font-semibold pb-1.5 text-right">Searches/mo</th><th className="font-semibold pb-1.5 text-right">Visits</th></tr></thead>
+            <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+              {rows.map(k => (
+                <tr key={k.keyword + k.position}>
+                  <td className="py-1.5">{k.keyword}</td>
+                  <td className="text-right">#{k.position}</td>
+                  <td className="text-right">{numShort(k.volume)}</td>
+                  <td className="text-right font-semibold">{numShort(k.traffic)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p className={SUB}>No keywords found.</p>}
+    </Card>
+  );
+}
+
+// ── Tab 3: Estimated Spend & ROAS ─────────────────────────────────────────────
+
+function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
+  competitor: Competitor; ads: AdsResp | null; traffic: TrafficResp | null; store: StoreResp | null;
+  own: OwnData | null; country: ReturnType<typeof getCountry>; loading: boolean;
+}) {
+  const storeData = store?.status === "ok" ? store.data : null;
+  const competitorAov = useMemo(() => {
+    const p = storeData?.bestsellerMedian ?? storeData?.priceMedian ?? null;
+    if (!p) return null;
+    const fx = FX_INR[(storeData?.currency ?? "INR").toUpperCase()];
+    return fx ? Math.round(p * fx) : null;
+  }, [storeData]);
+
+  const defaults = useMemo(() => defaultAssumptions(country, own?.metrics ?? null, competitorAov), [country, own, competitorAov]);
+  const [edited, setEdited] = useState<Partial<Assumptions>>({});
+  const a: Assumptions = { ...defaults.a, ...edited };
+
+  const adsList = ads?.status === "ok" ? ads.data.ads : null;
+  const ov = traffic?.status === "ok" ? traffic.data.overview : null;
+  const est = estimateAll({
+    ads: adsList,
+    traffic: ov ? { organicTraffic: ov.organicTraffic, paidTraffic: ov.paidTraffic, paidCostInr: ov.paidCostInr } : null,
+    country, a,
+  });
+
+  if (loading && !adsList && !ov) return <Loading label="Gathering signals for the estimate…" />;
+  const adsSetup = ads?.status === "setup_needed";
+  const trafficSetup = traffic?.status === "setup_needed";
+  if (!adsList && !ov && (adsSetup || trafficSetup || (!competitor.pageUrl && !competitor.pageId && !competitor.website))) {
+    return (
+      <SetupNeeded
+        what="Spend & ROAS estimate"
+        missing={[...(ads?.status === "setup_needed" ? ads.missing : []), ...(traffic?.status === "setup_needed" ? traffic.missing : [])]}
+        message="The estimate is built from their live ads and Google traffic. Once those data sources are switched on, it appears here automatically."
+      />
+    );
+  }
+
+  const visitsTotal = est.visits ? est.visits.organic + est.visits.googlePaid + est.visits.meta : 0;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <EstimateTag />
+        <Badge variant={confVariant[est.confidence]}>Confidence: {est.confidence}</Badge>
+        <span className="text-[14px] text-[#A1A1AA]">
+          {country.eu && est.meta?.method !== "ad_activity"
+            ? "EU: Meta spend uses real ad reach from Meta's Ad Library."
+            : "Meta spend is inferred from how many ads run and for how long — real figures may be 2–3× off."}
+        </span>
+      </div>
+
+      {est.missing.length > 0 && (
+        <WarnBanner type="amber">{est.missing.join(" ")}</WarnBanner>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
+        <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "—"}
+          sub={est.meta ? `${est.meta.creatives} live creatives · ${est.meta.confidence} confidence` : "no ad data"} />
+        <RangeCard label="Google ad spend / mo" value={est.google ? rangeInr(est.google) : ov ? "₹0" : "—"}
+          sub={est.google ? "from Google search ads" : ov ? "no Google ads found" : "no traffic data"} />
+        <RangeCard label="Est. revenue / mo" value={est.revenue ? rangeInr(est.revenue) : "—"}
+          sub={est.revenue ? `${numShort(visitsTotal)} visits × ${a.cvr}% × ${formatINR(a.aov)}` : "needs traffic + price"} />
+        <RangeCard label="Blended ROAS" value={est.blendedRoas ? rangeX(est.blendedRoas) : "—"}
+          sub={est.paidRoas ? `Paid-only ROAS ${rangeX(est.paidRoas)}${own?.roas ? ` · yours ${own.roas}x (real)` : ""}` : own?.roas ? `Your real ROAS: ${own.roas}x` : "revenue ÷ ad spend"} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+        <Card>
+          <CardHeader title={<span className="flex items-center gap-1.5"><Calculator size={16} className="text-[#F97316]" /> Assumptions</span>}
+            right={Object.keys(edited).length > 0 ? <button className="text-[#F97316] text-[13px]" onClick={() => setEdited({})}>Reset</button> : "editable"} />
+          <div className="space-y-2.5">
+            <NumField label={`CPM (₹ / 1,000 views) — low`} value={a.cpm[0]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [v, (e.cpm ?? a.cpm)[1]] }))} />
+            <NumField label={`CPM — high`} value={a.cpm[1]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [(e.cpm ?? a.cpm)[0], v] }))} />
+            <NumField label="Click-through rate (%)" value={a.ctr} step={0.1} src={defaults.src.ctr} onChange={v => setEdited(e => ({ ...e, ctr: v }))} />
+            <NumField label="Conversion rate (%)" value={a.cvr} step={0.1} src={defaults.src.cvr} onChange={v => setEdited(e => ({ ...e, cvr: v }))} />
+            <NumField label="Average order value (₹)" value={a.aov} src={defaults.src.aov} onChange={v => setEdited(e => ({ ...e, aov: v }))} />
+          </div>
+          <p className="text-[13px] text-[#A1A1AA] mt-3">
+            &ldquo;Your real data&rdquo; = your own last-30-day Meta/Shopify numbers — assumes they perform like you.
+          </p>
+        </Card>
+
+        <Card>
+          <CardHeader title="Where their visits come from" right={<EstimateTag />} />
+          {est.visits && visitsTotal > 0 ? (
+            <Donut
+              size={130}
+              centerValue={numShort(visitsTotal)}
+              centerLabel="visits / mo"
+              segments={[
+                { label: "Google organic", value: est.visits.organic, color: "#22C55E" },
+                { label: "Google ads", value: est.visits.googlePaid, color: "#3B82F6" },
+                { label: "Meta ads", value: est.visits.meta, color: "#F97316" },
+              ]}
+            />
+          ) : <p className={SUB}>Not enough data.</p>}
+          <p className="text-[13px] text-[#A1A1AA] mt-3">Excludes direct, email, WhatsApp, influencer and marketplace traffic — none of it is visible publicly.</p>
+        </Card>
+
+        <Card>
+          <CardHeader title="Their prices" right={storeData?.isShopify ? "live from their store" : undefined} />
+          {!competitor.website ? (
+            <p className={SUB}>Add their website to read real prices.</p>
+          ) : !store ? (
+            <Loading label="Reading their store…" />
+          ) : !storeData?.isShopify ? (
+            <p className={SUB}>Couldn&apos;t read prices — their site isn&apos;t a public Shopify store. Set the AOV manually in Assumptions.</p>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <MiniStat label="Products" value={formatNumber(storeData.productCount)} />
+                <MiniStat label="Median price" value={storeData.priceMedian ? `${storeData.currency ?? "₹"} ${formatNumber(storeData.priceMedian)}` : "—"} />
+                <MiniStat label="On sale" value={storeData.onSalePct != null ? `${storeData.onSalePct}%` : "—"} />
+              </div>
+              {storeData.bestsellers.length > 0 && (
+                <div>
+                  <div className="text-[13px] font-bold uppercase tracking-wide text-[#A1A1AA] mb-1">Their bestsellers</div>
+                  <ul className="space-y-1">
+                    {storeData.bestsellers.slice(0, 6).map(p => (
+                      <li key={p.handle} className="flex items-center justify-between gap-2 text-[14px]">
+                        <a href={p.url} target="_blank" rel="noreferrer" className="truncate hover:text-[#F97316]">{p.title}</a>
+                        <span className="font-semibold whitespace-nowrap">
+                          {formatNumber(p.price)}
+                          {p.compareAt && <span className="text-[#A1A1AA] line-through ml-1 font-normal">{formatNumber(p.compareAt)}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader title={<span className="flex items-center gap-1.5"><Info size={16} className="text-[#3B82F6]" /> How this is calculated &amp; why real ROAS is probably lower</span>} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
+          <ul className="space-y-1.5 list-disc pl-5">
+            <li><b>Meta spend</b>: {country.eu ? "real EU reach × 1.3–2.5 views per person × CPM, last 30 days." : "each live creative gets a daily-budget range based on how long it has run (testing < 7 days, proving < 30, scaled 30+), adjusted for this country's ad costs."}</li>
+            <li><b>Google spend</b>: DataForSEO&apos;s estimate of what their search-ad clicks cost.</li>
+            <li><b>Revenue</b>: (Google organic + Google-ads + Meta-ad visits) × conversion rate × average order value.</li>
+            <li><b>ROAS</b>: revenue ÷ total ad spend. &ldquo;Blended&rdquo; counts all revenue; &ldquo;paid-only&rdquo; counts only visits that came from ads.</li>
+          </ul>
+          <ul className="space-y-1.5 list-disc pl-5">
+            <li>We can&apos;t see their <b>discounts</b>, <b>COD returns (RTO)</b> or <b>repeat customers</b> — real ROAS is usually lower than shown.</li>
+            <li>Marketplace sales (Amazon, Myntra, Nykaa) and influencer spend are invisible.</li>
+            <li>Small or new brands often have too little Google data for a reliable estimate.</li>
+            <li>Use this to compare direction and scale — not as their exact numbers.</li>
+          </ul>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function RangeCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="relative bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 shadow-sm">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#8B5CF6] via-[#A78BFA] to-transparent rounded-t-2xl" />
+      <div className="text-[13px] font-bold text-[#A1A1AA] mb-2 uppercase tracking-[0.12em] flex items-center justify-between">
+        {label} <span className="text-[11px] text-[#8B5CF6]">EST.</span>
+      </div>
+      <div className="text-[24px] font-black leading-tight tracking-tight">{value}</div>
+      <div className="text-[13px] text-[#A1A1AA] mt-1.5">{sub}</div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-[#FAFAFA] dark:bg-[#0F0F0F] p-2">
+      <div className="text-[16px] font-bold">{value}</div>
+      <div className="text-[12px] text-[#A1A1AA]">{label}</div>
+    </div>
+  );
+}
+
+function NumField({ label, value, onChange, src, step = 1 }: {
+  label: string; value: number; onChange: (v: number) => void; src: AssumptionSource; step?: number;
+}) {
+  const s = srcLabel[src];
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-0.5">
+        <label className="text-[13px] font-semibold text-[#71717A]">{label}</label>
+        <Badge variant={s.variant}>{s.text}</Badge>
+      </div>
+      <input
+        type="number" min={0} step={step} value={Number.isFinite(value) ? value : 0}
+        onChange={e => onChange(Math.max(0, Number(e.target.value) || 0))}
+        className="w-full text-[15px] border border-black/10 dark:border-white/10 rounded-lg px-3 py-1.5 bg-white dark:bg-[#0F0F0F]"
+      />
+    </div>
+  );
+}

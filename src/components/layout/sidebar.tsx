@@ -13,7 +13,7 @@ import {
   GitMerge, Receipt, Trophy, CalendarDays,
   Plug, ChevronDown, UserCircle,
   X, ShieldCheck, CreditCard, Plus,
-  FileText, TrendingUp, BarChart3, DollarSign, HelpCircle, FilePlus,
+  FileText, TrendingUp, BarChart3, DollarSign, HelpCircle, FilePlus, Binoculars,
 } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 import { isEmbedded } from "@/lib/embedded-client";
@@ -79,6 +79,7 @@ const navSections: NavSection[] = [
       { href: "/dashboard/sales-analysis", label: "Sales Analysis", icon: BarChart3, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/attribution", label: "Attribution", icon: GitMerge, badge: null, dot: null },
       { href: "/dashboard/financial", label: "Financial P&L", icon: Receipt, badge: null, dot: null },
+      { href: "/dashboard/competitors", label: "Competitor Intel", icon: Binoculars, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/benchmarking", label: "Benchmarking", icon: Trophy, badge: null, dot: null },
       { href: "/dashboard/weekly", label: "Weekly Digest", icon: CalendarDays, badge: null, dot: null },
     ],
