@@ -230,7 +230,9 @@ export default function CompetitorIntelPage() {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2"><Binoculars size={18} className="text-[#F97316]" /> Competitor Intel</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">
-            See competitors&apos; live Meta ads, Google traffic and an <span className="font-medium text-[#181816] dark:text-[#F4F4F5]">estimated</span> spend &amp; ROAS — country by country
+            See competitors&apos; live Meta ads, Google traffic and an{" "}
+            <span className="font-medium text-[#181816] dark:text-[#F4F4F5]">estimated</span>{" "}
+            spend &amp; ROAS — country by country
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -307,7 +309,7 @@ export default function CompetitorIntelPage() {
                 key={key}
                 onClick={() => setTab(key)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 text-[15px] font-medium border-b-2 -mb-px whitespace-nowrap",
+                  "flex items-center gap-1.5 px-3 py-2 text-[15px] font-medium border-b-2 -mb-px whitespace-nowrap outline-none focus:outline-none",
                   tab === key ? "border-[#F97316] text-[#F97316]" : "border-transparent text-[#71717A] hover:text-[#18181B] dark:hover:text-[#F4F4F5]",
                 )}
               >

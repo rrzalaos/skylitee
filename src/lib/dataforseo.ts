@@ -51,13 +51,22 @@ export function dfsConfigured(): boolean {
 type Json = Record<string, unknown>;
 
 async function dfs(endpoint: string, task: Json): Promise<Json[]> {
-  const auth = Buffer.from(`${process.env.DATAFORSEO_LOGIN}:${process.env.DATAFORSEO_PASSWORD}`).toString("base64");
+  // Trim: values pasted into Vercel often carry a stray space/newline, which DataForSEO rejects as 401
+  const login = process.env.DATAFORSEO_LOGIN?.trim();
+  const password = process.env.DATAFORSEO_PASSWORD?.trim();
+  const auth = Buffer.from(`${login}:${password}`).toString("base64");
   const res = await fetch(`${BASE}/${endpoint}/live`, {
     method: "POST",
     headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
     body: JSON.stringify([task]),
   });
   const json = await res.json().catch(() => null) as { status_code?: number; status_message?: string; tasks?: Json[] } | null;
+  if (res.status === 401 || json?.status_code === 40100) {
+    throw new Error("DataForSEO rejected the login — check DATAFORSEO_LOGIN is your account email and DATAFORSEO_PASSWORD is the API password from the dashboard's API Access page (not your sign-in password).");
+  }
+  if (res.status === 402 || json?.status_code === 40200 || json?.status_code === 40210) {
+    throw new Error("DataForSEO balance is empty — add funds in the DataForSEO dashboard (Billing → Add funds).");
+  }
   if (!res.ok || !json) throw new Error(`DataForSEO ${endpoint} failed (${res.status})`);
   const t = json.tasks?.[0] as { status_code?: number; status_message?: string; result?: Json[] } | undefined;
   // 20000 = ok; 40102 = "no search results" (small/unknown site) → treat as empty, not an error

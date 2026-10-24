@@ -150,7 +150,7 @@ function adLibrarySearchUrl(c: Competitor, country: string): string | null {
 }
 
 async function fetchViaApify(c: Competitor, country: string): Promise<CompetitorAd[]> {
-  const token = process.env.APIFY_TOKEN!;
+  const token = process.env.APIFY_TOKEN!.trim();
   const actor = (process.env.APIFY_FB_ADS_ACTOR || "curious_coder~facebook-ads-library-scraper").replace("/", "~");
   const url = adLibrarySearchUrl(c, country);
   if (!url) throw new Error("Add the competitor's Facebook page URL first");
@@ -307,7 +307,7 @@ export async function getCompetitorAds(
   }
   if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock);
 
-  const libToken = process.env.META_AD_LIBRARY_TOKEN || opts.shopMetaToken;
+  const libToken = process.env.META_AD_LIBRARY_TOKEN?.trim() || opts.shopMetaToken;
   try {
     let ads: CompetitorAd[] = [];
     let source: AdsPayload["source"] = "apify";
