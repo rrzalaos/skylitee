@@ -344,7 +344,8 @@ export default function CompetitorIntelPage() {
             <GoogleAdSpyTab competitor={selected} resp={gads} loading={gadsLoading} countryName={countryInfo.name} onRefresh={() => loadGads(true)} />
           )}
           {tab === "traffic" && (
-            <TrafficTab competitor={selected} resp={traffic} loading={trafficLoading} own={own} countryCode={country} onRefresh={() => loadTraffic(true)} />
+            <TrafficTab competitor={selected} resp={traffic} loading={trafficLoading} own={own} countryCode={country}
+              googleLive={gads?.status === "ok" ? gads.data.totals?.live ?? gads.stats.active : 0} onRefresh={() => loadTraffic(true)} />
           )}
           {tab === "spend" && (
             <SpendTab
@@ -646,8 +647,12 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
     );
   }
 
-  const tagged = stats.platforms.search + stats.platforms.shopping + stats.platforms.youtube;
-  const used = (Object.keys(GPLATFORM) as GoogleAdPlatform[]).filter(p => stats.platforms[p] > 0);
+  // Google's own totals where available (the fetched list stops at 120 ads)
+  const platformN = (p: GoogleAdPlatform) => Math.max(data.totals?.[p] ?? 0, stats.platforms[p]);
+  const seen90d = Math.max(data.totals?.seen90d ?? 0, stats.seen90d);
+  const liveN = data.totals?.live ?? stats.active;
+  const tagged = platformN("search") + platformN("shopping") + platformN("youtube");
+  const used = (Object.keys(GPLATFORM) as GoogleAdPlatform[]).filter(p => platformN(p) > 0);
   const shown = data.ads
     .filter(a => filter === "all" ? true
       : filter === "live" ? a.isActive
@@ -666,7 +671,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
       </WarnBanner>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 mb-3">
-        <KPICard label="Live now" value={formatNumber(stats.active)} sub={`${stats.seen90d}${data.capped ? "+" : ""} shown in last 90 days`} icon={<Target size={12} />} />
+        <KPICard label="Live now" value={formatNumber(liveN)} sub={`${formatNumber(seen90d)} shown in last 90 days`} icon={<Target size={12} />} />
         <KPICard label="Launched (30 days)" value={formatNumber(stats.launched30d)} sub="new ads started" icon={<Zap size={12} />} />
         <KPICard label="Running 30+ days" value={formatNumber(stats.over30d)} sub={`${stats.over60d} running 60+ days`} icon={<TrendingUp size={12} />} />
         <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "—"} sub="first to last shown" icon={<Clock size={12} />} />
@@ -681,8 +686,8 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
           ) : (
             <div className="space-y-2.5">
               {(Object.keys(GPLATFORM) as GoogleAdPlatform[]).map(p => {
-                const n = stats.platforms[p];
-                const pctOf = Math.round((n / Math.max(1, stats.seen90d)) * 100);
+                const n = platformN(p);
+                const pctOf = Math.round((n / Math.max(1, seen90d)) * 100);
                 return (
                   <div key={p}>
                     <div className="flex items-center justify-between text-[15px] mb-1">
@@ -701,7 +706,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
           {used.length > 0 && (
             <p className="text-[15px] mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
               <b>{competitor.name}</b> runs Google ads on {used.map(p => GPLATFORM[p].label).join(", ").replace(/, ([^,]*)$/, " and $1")}
-              {stats.platforms.shopping > 0 && stats.platforms.search === 0 ? " — Shopping/PMax only, so their Google spend never shows in keyword tools." : "."}
+              {platformN("shopping") > 0 && platformN("search") === 0 ?" — Shopping/PMax only, so their Google spend never shows in keyword tools." : "."}
               {stats.over30d > 0 && ` ${stats.over30d} ad${stats.over30d > 1 ? "s have" : " has"} run 30+ days — likely working for them.`}
             </p>
           )}
@@ -743,7 +748,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
         {shown.map(ad => <GoogleAdCard key={ad.id} ad={ad} />)}
       </div>
-      {data.capped && <p className="text-[13px] text-[#A1A1AA] mt-2">Showing the latest {data.ads.length} ads — they ran more in this period.</p>}
+      {data.capped && <p className="text-[13px] text-[#A1A1AA] mt-2">Showing {data.ads.length} of their {formatNumber(seen90d)} ads (every live one included) — Google returns at most 120 per lookup.</p>}
     </div>
   );
 }
@@ -799,8 +804,10 @@ function GoogleAdCard({ ad }: { ad: GoogleAd }) {
 
 // ── Tab 3: Traffic Intel ──────────────────────────────────────────────────────
 
-function TrafficTab({ competitor, resp, loading, own, countryCode, onRefresh }: {
-  competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string; onRefresh: () => void;
+function TrafficTab({ competitor, resp, loading, own, countryCode, googleLive, onRefresh }: {
+  competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string;
+  googleLive: number; // live Google ads from Ad Spy — keyword tools miss Shopping/PMax/YouTube
+  onRefresh: () => void;
 }) {
   if (!competitor.website) {
     return <Empty icon={<Globe size={26} />} title="No website added" body={`Remove and re-add ${competitor.name} with their website to see their Google traffic.`} />;
@@ -827,13 +834,18 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, onRefresh }: 
     <div>
       <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="monthly" />
       <WarnBanner type="blue">
-        These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume). &ldquo;Paid&rdquo; means Google search ads only — Meta-driven visits aren&apos;t visible to anyone.
+        These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume). &ldquo;Search-ad&rdquo; means keyword ads only — Shopping, YouTube and Meta clicks aren&apos;t in this data; the Est. Spend tab adds them.
       </WarnBanner>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
         <KPICard label="Organic visits / mo" value={numShort(ov.organicTraffic)} sub={`${formatNumber(ov.organicKeywords)} keywords · estimate`} icon={<Search size={12} />} />
-        <KPICard label="Google-ads visits / mo" value={numShort(ov.paidTraffic)} sub={`${formatNumber(ov.paidKeywords)} paid keywords · estimate`} icon={<Megaphone size={12} />} />
-        <KPICard label="Google Ads spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "Not seen"} sub={ov.paidCostInr > 0 ? "estimate" : "no search ads found · Shopping/PMax not visible"} icon={<Target size={12} />} />
+        <KPICard label="Search-ad visits / mo" value={ov.paidTraffic > 0 ? numShort(ov.paidTraffic) : googleLive > 0 ? "Not seen" : "0"}
+          sub={ov.paidTraffic > 0 ? `${formatNumber(ov.paidKeywords)} paid keywords · estimate`
+            : googleLive > 0 ? `${googleLive} live Google ads, but no tracked keyword clicks · see Est. Spend` : "no Google search ads found"}
+          icon={<Megaphone size={12} />} />
+        <KPICard label="Search-ad spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "Not seen"}
+          sub={ov.paidCostInr > 0 ? "keyword ads only · estimate" : googleLive > 0 ? "Shopping/PMax/YouTube spend → see Est. Spend" : "no search ads found"}
+          icon={<Target size={12} />} />
         <KPICard label="Organic traffic value" value={inrShort(ov.organicValueInr)} sub="what it'd cost as ads" icon={<TrendingUp size={12} />} />
       </div>
 
@@ -989,9 +1001,12 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
   const a: Assumptions = { ...defaults.a, ...edited };
 
   const adsList = ads?.status === "ok" ? ads.data.ads : null;
+  const gadsData = gads?.status === "ok" ? gads.data : null;
   const ov = traffic?.status === "ok" ? traffic.data.overview : null;
   const est = estimateAll({
     ads: adsList,
+    googleAds: gadsData?.ads ?? null,
+    googleLive: gadsData?.totals?.live ?? null,
     traffic: ov ? { organicTraffic: ov.organicTraffic, paidTraffic: ov.paidTraffic, paidCostInr: ov.paidCostInr } : null,
     country, a,
   });
@@ -1010,7 +1025,6 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
   }
 
   const visitsTotal = est.visits ? est.visits.organic + est.visits.googlePaid + est.visits.meta : 0;
-  const gadsActive = gads?.status === "ok" ? gads.stats.active : 0;
 
   return (
     <div>
@@ -1020,7 +1034,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
         <span className="text-[14px] text-[#A1A1AA]">
           {country.eu && est.meta?.method !== "ad_activity"
             ? "EU: Meta spend uses real ad reach from Meta's Ad Library."
-            : "Meta spend is inferred from how many ads run and for how long — real figures may be 2–3× off."}
+            : "Ad spend is inferred from how many ads run and for how long — real figures may be 2–3× off."}
         </span>
       </div>
 
@@ -1031,10 +1045,12 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
         <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "—"}
           sub={est.meta ? `${est.meta.creatives} live creatives · ${est.meta.confidence} confidence` : "no ad data"} />
-        <RangeCard label="Google search-ad spend / mo" value={est.google ? rangeInr(est.google) : ov ? "Not seen" : "—"}
-          sub={gadsActive
-            ? `${gadsActive} live Google ads seen · ${est.google ? "Shopping/YouTube spend not visible" : "spend not visible"}`
-            : est.google ? "Shopping / PMax spend not visible" : ov ? "no search ads found · Shopping/PMax not visible" : "no traffic data"} />
+        <RangeCard label="Google ad spend / mo" value={est.google ? rangeInr(est.google.range) : gadsData ? "₹0" : ov ? "Not seen" : "—"}
+          sub={est.google
+            ? est.google.method === "ad_activity"
+              ? `${est.google.liveAds} live Google ads · ${est.google.confidence} confidence`
+              : "search-ad clicks · Shopping/YouTube not visible"
+            : gadsData ? "no live Google ads right now" : "no Google ad data"} />
         <RangeCard label="Est. revenue / mo" value={est.revenue ? rangeInr(est.revenue) : "—"}
           sub={est.revenue ? `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV` : "needs traffic + price"} />
         <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "—"}
@@ -1059,6 +1075,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
             <NumField label={`CPM (₹ / 1,000 views) — low`} value={a.cpm[0]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [v, (e.cpm ?? a.cpm)[1]] }))} />
             <NumField label={`CPM — high`} value={a.cpm[1]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [(e.cpm ?? a.cpm)[0], v] }))} />
             <NumField label="Click-through rate (%)" value={a.ctr} step={0.1} src={defaults.src.ctr} onChange={v => setEdited(e => ({ ...e, ctr: v }))} />
+            <NumField label="Google cost per click (₹)" value={a.gCpc} src={defaults.src.gCpc} onChange={v => setEdited(e => ({ ...e, gCpc: v }))} />
             <NumField label="Conversion rate (%)" value={a.cvr} step={0.1} src={defaults.src.cvr} onChange={v => setEdited(e => ({ ...e, cvr: v }))} />
             <NumField label="Average order value (₹)" value={a.aov} src={defaults.src.aov} onChange={v => setEdited(e => ({ ...e, aov: v }))} />
           </div>
@@ -1125,7 +1142,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
           <ul className="space-y-1.5 list-disc pl-5">
             <li><b>Meta spend</b>: {country.eu ? "real EU reach × 1.3–2.5 views per person × CPM, last 30 days." : "each live creative gets a daily-budget range based on how long it has run (testing < 7 days, proving < 30, scaled 30+) × 30 days, adjusted for this country's ad costs."}</li>
-            <li><b>Google spend</b>: DataForSEO&apos;s estimate of what their search-ad clicks cost.</li>
+            <li><b>Google spend</b>: each live Google ad (Search, Shopping/PMax, YouTube) gets a smaller daily-budget range than Meta — several Google ads share one campaign budget — by how long it has run, × 30 days. Never below DataForSEO&apos;s search-click cost. Google visits = spend ÷ cost per click.</li>
             <li><b>Conversion rate</b>: your own rate only if they sell at a similar price; otherwise a benchmark for their price level (e.g. 0.35% for ₹30,000+ products). Ad visits convert at 70% of that.</li>
             <li><b>Revenue</b>: (Google organic + Google-ads + Meta-ad visits) × conversion rate × average order value.</li>
             <li><b>ROAS from ads</b>: revenue from ad visits ÷ ad spend. Blended (all revenue ÷ spend) is shown only when most traffic isn&apos;t free.</li>

@@ -248,7 +248,7 @@ export async function getCompetitorTraffic(
 
 const ADS_URL = "https://api.dataforseo.com/v3/serp/google/ads_search/live/advanced";
 const ADS_DEPTH = 120;           // DataForSEO max; billed per 40 results
-const PLATFORM_DEPTH = 40;
+const PLATFORM_DEPTH = 120;
 const MAX_VIDEO_LOOKUPS = 30;
 const DAY_MS = 86_400_000;
 
@@ -264,13 +264,15 @@ const isoOrNull = (v: unknown): string | null => {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
-async function adsSearch(domain: string, country: CountryInfo, platform: "all" | "google_search" | "google_shopping" | "youtube", depth: number) {
+async function adsSearch(domain: string, country: CountryInfo, platform: "all" | "google_search" | "google_shopping" | "youtube", depth: number, days = 90) {
   const day = (offset: number) => new Date(Date.now() - offset * DAY_MS).toISOString().slice(0, 10);
   const result = await dfsPost(ADS_URL, {
     target: domain, location_code: country.dfsLocation, platform, depth,
-    date_from: day(90), date_to: day(0),
+    date_from: day(days), date_to: day(0),
   }, "ads_search");
-  return (get(result[0], "items") as Json[] | undefined ?? []).filter(i => i.type === "ads_search" && i.creative_id);
+  const items = (get(result[0], "items") as Json[] | undefined ?? []).filter(i => i.type === "ads_search" && i.creative_id);
+  // se_results_count = Google's full count, beyond the fetched depth
+  return { items, total: Math.max(Number(get(result[0], "se_results_count")) || 0, items.length) };
 }
 
 export async function getCompetitorGoogleAds(
@@ -278,7 +280,7 @@ export async function getCompetitorGoogleAds(
   country: CountryInfo,
   opts: { refresh: boolean },
 ): Promise<GoogleAdsResult> {
-  const cacheKey = `gads:${country.code}:${domain}`;
+  const cacheKey = `gads2:${country.code}:${domain}`; // v2: real totals + live lookup
   const cached = await competitorKv.getCache<GoogleAdsPayload>(cacheKey);
   let refreshBlocked = false;
   if (cached && opts.refresh) refreshBlocked = !(await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock));
@@ -292,8 +294,10 @@ export async function getCompetitorGoogleAds(
   }
   if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock);
 
-  const [all, search, shopping, youtube] = await Promise.allSettled([
+  // "live" = shown in the last 7 days, fetched separately so no live ad falls past the 90-day cap
+  const [all, live, search, shopping, youtube] = await Promise.allSettled([
     adsSearch(domain, country, "all", ADS_DEPTH),
+    adsSearch(domain, country, "all", ADS_DEPTH, 7),
     adsSearch(domain, country, "google_search", PLATFORM_DEPTH),
     adsSearch(domain, country, "google_shopping", PLATFORM_DEPTH),
     adsSearch(domain, country, "youtube", PLATFORM_DEPTH),
@@ -302,11 +306,14 @@ export async function getCompetitorGoogleAds(
     if (cached) return { status: "ok", data: cached, cached: true };
     return { status: "error", message: all.reason instanceof Error ? all.reason.message : "Couldn't fetch Google ads" };
   }
+  const liveItems = live.status === "fulfilled" ? live.value.items : [];
+  const liveIds = new Set(liveItems.map(i => String(i.creative_id)));
+  const items = [...liveItems, ...all.value.items];
 
   const tags = new Map<string, Set<GoogleAdPlatform>>();
-  const tag = (r: PromiseSettledResult<Json[]>, p: GoogleAdPlatform) => {
+  const tag = (r: PromiseSettledResult<{ items: Json[] }>, p: GoogleAdPlatform) => {
     if (r.status !== "fulfilled") return;
-    for (const i of r.value) {
+    for (const i of r.value.items) {
       const id = String(i.creative_id);
       if (!tags.has(id)) tags.set(id, new Set());
       tags.get(id)!.add(p);
@@ -316,7 +323,7 @@ export async function getCompetitorGoogleAds(
 
   const now = Date.now();
   const byId = new Map<string, GoogleAd>();
-  for (const i of all.value) {
+  for (const i of items) {
     const id = String(i.creative_id);
     if (byId.has(id)) continue;
     const firstShown = isoOrNull(i.first_shown);
@@ -332,7 +339,7 @@ export async function getCompetitorGoogleAds(
       youtubeId: null,
       firstShown, lastShown,
       daysRunning: firstShown ? Math.max(1, Math.round(((lastShown ? new Date(lastShown).getTime() : now) - new Date(firstShown).getTime()) / DAY_MS)) : null,
-      isActive: !!lastShown && now - new Date(lastShown).getTime() <= 7 * DAY_MS,
+      isActive: liveIds.has(id) || (!!lastShown && now - new Date(lastShown).getTime() <= 7 * DAY_MS),
       platforms: [...(tags.get(id) ?? [])],
       transparencyUrl: typeof i.url === "string" ? i.url
         : `https://adstransparency.google.com/advertiser/${i.advertiser_id}/creative/${id}?region=${country.code}`,
@@ -342,7 +349,7 @@ export async function getCompetitorGoogleAds(
 
   // Video ads come with no preview image — only Google's preview script, which embeds the
   // YouTube video id. Pull it for a real thumbnail + watch link.
-  const previewById = new Map(all.value.map(i => [String(i.creative_id), typeof i.preview_url === "string" ? i.preview_url : null]));
+  const previewById = new Map(items.map(i => [String(i.creative_id), typeof i.preview_url === "string" ? i.preview_url : null]));
   const videos = ads.filter(a => a.format === "video" && !a.imageUrl && previewById.get(a.id)).slice(0, MAX_VIDEO_LOOKUPS);
   await Promise.allSettled(videos.map(async a => {
     const res = await fetch(previewById.get(a.id)!, { signal: AbortSignal.timeout(6000) });
@@ -362,7 +369,14 @@ export async function getCompetitorGoogleAds(
     country: country.code, domain,
     advertisers: [...adv.values()].sort((a, b) => b.ads - a.ads),
     ads,
-    capped: all.value.length >= ADS_DEPTH,
+    capped: all.value.total > all.value.items.length,
+    totals: {
+      seen90d: Math.max(all.value.total, ads.length),
+      live: live.status === "fulfilled" ? live.value.total : ads.filter(a => a.isActive).length,
+      search: search.status === "fulfilled" ? search.value.total : 0,
+      shopping: shopping.status === "fulfilled" ? shopping.value.total : 0,
+      youtube: youtube.status === "fulfilled" ? youtube.value.total : 0,
+    },
   };
   await competitorKv.setCache(cacheKey, data, CI_LIMITS.adsTtl);
   return { status: "ok", data, cached: false };

@@ -110,8 +110,10 @@ export interface GoogleAdsPayload {
   country: string;
   domain: string;
   advertisers: { id: string; name: string; verified: boolean; ads: number }[];
-  ads: GoogleAd[];           // shown in the last 90 days
-  capped: boolean;           // hit the lookup cap — they may run more
+  ads: GoogleAd[];           // shown in the last 90 days (every live ad included)
+  capped: boolean;           // more ads exist than were fetched
+  // Google's own result counts — real totals even when the ad list is capped
+  totals: { seen90d: number; live: number } & Record<GoogleAdPlatform, number>;
 }
 
 export interface GoogleAdStats {

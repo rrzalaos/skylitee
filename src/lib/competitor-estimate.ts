@@ -1,4 +1,4 @@
-import type { CompetitorAd, CountryInfo } from "./competitor-shared";
+import type { CompetitorAd, CountryInfo, GoogleAd } from "./competitor-shared";
 
 // ── Competitor spend & ROAS ESTIMATE model (pure, runs in the browser) ───────
 // Nobody can see a competitor's real spend or revenue. This turns public signals
@@ -15,6 +15,7 @@ export interface Assumptions {
   cvr: number;             // site conversion rate, %
   aov: number;             // ₹ average order value
   frequency: [number, number];
+  gCpc: number;            // ₹ per Google ad click (Search + Shopping + YouTube blended)
 }
 
 export type AssumptionSource = "yours" | "competitor" | "benchmark";
@@ -31,7 +32,7 @@ export const FX_INR: Record<string, number> = {
   INR: 1, USD: 88, EUR: 95, GBP: 112, AED: 24, SAR: 23.5, CAD: 64, AUD: 58, SGD: 67,
 };
 
-export const BENCHMARK = { ctr: 1.0 }; // Indian D2C ballpark — labelled "benchmark"
+export const BENCHMARK = { ctr: 1.0, gCpcIn: 20 }; // Indian D2C ballparks — labelled "benchmark"
 
 // Site conversion rate falls steeply with price — a ₹500 impulse buy and a ₹50,000
 // appliance don't convert alike. Indian D2C ballparks, labelled "benchmark".
@@ -51,7 +52,7 @@ export function defaultAssumptions(
   own: OwnMetrics | null,
   competitorAovInr: number | null,
   ownCountry = "IN",
-): { a: Assumptions; src: Record<"cpm" | "ctr" | "cvr" | "aov", AssumptionSource> } {
+): { a: Assumptions; src: Record<"cpm" | "ctr" | "cvr" | "aov" | "gCpc", AssumptionSource> } {
   // The user's own CPM/CTR only describe the market they advertise in — and only when
   // they're in a normal range for it (a very cheap niche audience says nothing about a competitor's).
   const sameMarket = country.code === ownCountry;
@@ -71,8 +72,11 @@ export function defaultAssumptions(
       cvr: ownCvr ?? benchmarkCvr(aov),
       aov,
       frequency: [1.3, 2.5],
+      // click prices track the country's media cost
+      gCpc: Math.round(BENCHMARK.gCpcIn * mid(country.cpmInr) / IN_CPM_MID),
     },
     src: {
+      gCpc: "benchmark",
       cpm: ownCpm ? "yours" : "benchmark",
       ctr: ownCtr ? "yours" : "benchmark",
       cvr: ownCvr ? "yours" : "benchmark",
@@ -142,11 +146,55 @@ export function estimateMetaSpend(ads: CompetitorAd[], country: CountryInfo, a: 
   };
 }
 
+// Google per live creative (₹/day, India). Lower than Meta: on Google several ads share one
+// ad group / campaign budget, and Performance Max spins out many creatives per campaign.
+const GOOGLE_TIERS_IN: { maxDays: number; budget: [number, number] }[] = [
+  { maxDays: 7, budget: [100, 400] },
+  { maxDays: 30, budget: [200, 800] },
+  { maxDays: Infinity, budget: [300, 1500] },
+];
+
+export interface GoogleSpendEstimate {
+  range: Range;              // ₹ per month
+  confidence: Confidence;
+  method: "search_traffic" | "ad_activity";
+  liveAds: number;
+}
+
+export function estimateGoogleSpend(
+  ads: GoogleAd[] | null,
+  liveTotal: number | null,
+  searchCostInr: number,
+  country: CountryInfo,
+): GoogleSpendEstimate | null {
+  const live = (ads ?? []).filter(a => a.isActive);
+  let act: Range | null = null;
+  if (live.length > 0) {
+    const scale = Math.pow(mid(country.cpmInr) / IN_CPM_MID, 0.7);
+    let lo = 0, hi = 0;
+    for (const ad of live) {
+      const tier = GOOGLE_TIERS_IN.find(t => Math.max(1, ad.daysRunning ?? 1) <= t.maxDays)!;
+      lo += tier.budget[0] * scale * 30;
+      hi += tier.budget[1] * scale * 30;
+    }
+    // Live ads past the fetch cap spend too — extrapolate from the ones we have
+    const k = liveTotal && liveTotal > live.length ? liveTotal / live.length : 1;
+    act = { lo: Math.round(lo * k), mid: Math.round(Math.sqrt(lo * hi) * k), hi: Math.round(hi * k) };
+  }
+  const search = searchCostInr > 0 ? scaleRange(searchCostInr, 0.7, 1.4) : null;
+  // DataForSEO's search-click cost is a floor — it misses Shopping, PMax and YouTube
+  if (act && (!search || act.mid >= search.mid)) {
+    return { range: act, confidence: "Low", method: "ad_activity", liveAds: liveTotal ?? live.length };
+  }
+  if (search) return { range: search, confidence: "Medium", method: "search_traffic", liveAds: liveTotal ?? live.length };
+  return null;
+}
+
 export interface TrafficInputs { organicTraffic: number; paidTraffic: number; paidCostInr: number }
 
 export interface FullEstimate {
   meta: MetaSpendEstimate | null;
-  google: Range | null;               // ₹/month, Google search ads
+  google: GoogleSpendEstimate | null; // ₹/month, all Google ads
   totalSpend: Range | null;
   visits: { organic: number; googlePaid: number; meta: number } | null;
   revenue: Range | null;              // ₹/month, all channels
@@ -163,29 +211,35 @@ const scaleRange = (m: number, lo = 0.6, hi = 1.6): Range => ({ lo: Math.round(m
 
 export function estimateAll(input: {
   ads: CompetitorAd[] | null;
+  googleAds: GoogleAd[] | null;
+  googleLive: number | null;       // Google's own live-ad count
   traffic: TrafficInputs | null;
   country: CountryInfo;
   a: Assumptions;
 }): FullEstimate {
-  const { ads, traffic, country, a } = input;
+  const { ads, googleAds, googleLive, traffic, country, a } = input;
   const missing: string[] = [];
   const meta = ads ? estimateMetaSpend(ads, country, a) : null;
   if (!ads) missing.push("No Meta ad data yet for this country.");
   else if (!meta) missing.push("No active Meta ads found in this country — Meta spend is likely ₹0 right now.");
 
-  const google = traffic && traffic.paidCostInr > 0 ? scaleRange(traffic.paidCostInr, 0.7, 1.4) : null;
+  const google = estimateGoogleSpend(googleAds, googleLive, traffic?.paidCostInr ?? 0, country);
   if (!traffic) missing.push("No Google traffic data yet.");
+  if (googleAds && !google) missing.push("No live Google ads right now — Google spend is likely ₹0.");
 
-  const spendMid = (meta?.range.mid ?? 0) + (google?.mid ?? 0);
+  const g = google?.range;
+  const spendMid = (meta?.range.mid ?? 0) + (g?.mid ?? 0);
   const totalSpend = spendMid > 0
-    ? { lo: (meta?.range.lo ?? 0) + (google?.lo ?? 0), mid: spendMid, hi: (meta?.range.hi ?? 0) + (google?.hi ?? 0) }
+    ? { lo: (meta?.range.lo ?? 0) + (g?.lo ?? 0), mid: spendMid, hi: (meta?.range.hi ?? 0) + (g?.hi ?? 0) }
     : null;
 
   // Meta clicks = spend ÷ CPC, CPC = CPM ÷ (CTR% × 10)
   const cpc = mid(a.cpm) / Math.max(0.05, a.ctr * 10);
   const metaVisits = meta ? Math.round(meta.range.mid / cpc) : 0;
-  const visits = traffic || meta
-    ? { organic: traffic?.organicTraffic ?? 0, googlePaid: traffic?.paidTraffic ?? 0, meta: metaVisits }
+  // Google clicks = spend ÷ Google CPC; DataForSEO's search-ad clicks are the floor
+  const googleVisits = Math.max(traffic?.paidTraffic ?? 0, g && a.gCpc > 0 ? Math.round(g.mid / a.gCpc) : 0);
+  const visits = traffic || meta || google
+    ? { organic: traffic?.organicTraffic ?? 0, googlePaid: googleVisits, meta: metaVisits }
     : null;
 
   let revenue: Range | null = null, paidRevenue: Range | null = null;
@@ -220,7 +274,7 @@ export function estimateAll(input: {
   // Overall confidence = weakest link; Google-only estimates are Medium at best
   const parts: Confidence[] = [];
   if (meta) parts.push(meta.confidence);
-  if (google) parts.push("Medium");
+  if (google) parts.push(google.confidence);
   const confidence: Confidence =
     parts.length === 0 || parts.includes("Low") ? "Low" : parts.includes("Medium") ? "Medium" : "High";
 
