@@ -127,8 +127,8 @@ function CompetitorMockup() {
 }
 
 const competitorPoints = [
-  { icon: Megaphone, title: "Every live ad they run", desc: "Meta and Google ads (Search, Shopping, YouTube) — with how long each has run, so you spot their proven winners." },
-  { icon: Scale, title: "Estimated spend & ROAS", desc: "Monthly ad-spend and revenue ranges with a confidence badge — never a fake exact number." },
+  { icon: Megaphone, title: "Every live ad they run", desc: "Meta and Google ads (Search, Shopping, YouTube) - with how long each has run, so you spot their proven winners." },
+  { icon: Scale, title: "Estimated spend & ROAS", desc: "Monthly ad-spend and revenue ranges with a confidence badge - never a fake exact number." },
   { icon: Globe, title: "Google traffic & keywords", desc: "Their free vs paid Google traffic, ranking keywords and what that traffic is worth." },
   { icon: Tag, title: "Store & pricing", desc: "Product count, typical price, bestseller prices and how much of their catalogue is on discount." },
 ];
@@ -147,13 +147,13 @@ function CompetitorIntel() {
               <Binoculars size={12} /> New · Competitor Intel
             </div>
             <h2 className="text-[28px] sm:text-[32px] lg:text-[38px] font-black leading-tight mb-4">
-              See what your competitors run, spend and earn —{" "}
+              See what your competitors run, spend and earn -{" "}
               <span style={{ background: "linear-gradient(135deg, #F97316 0%, #FBBF24 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 next to your own numbers.
               </span>
             </h2>
             <p className="text-[17px] sm:text-[18px] text-[#A1A1AA] leading-relaxed mb-7">
-              Add up to 5 competitors. Skylitee puts your real store, ads and Google data side by side with theirs, colours each measure green or red, and tells you exactly where you&apos;re behind — and how to catch up.
+              Add up to 5 competitors. Skylitee puts your real store, ads and Google data side by side with theirs, colours each measure green or red, and tells you exactly where you&apos;re behind - and how to catch up.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {competitorPoints.map(p => (
@@ -477,7 +477,7 @@ export default function HomePage() {
             </div>
             <div className="text-[15px] text-[#22C55E] font-semibold mb-6">14-day free trial — no credit card</div>
             <ul className="text-left space-y-2.5 mb-6">
-              {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "Competitor Intel — their ads, traffic & you-vs-them", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
+              {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "Competitor Intel - their ads, traffic & you-vs-them", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
                 <li key={feat} className="flex items-center gap-2.5 text-[16px] text-[#52525B]">
                   <Check size={13} className="text-[#22C55E] shrink-0" /> {feat}
                 </li>
