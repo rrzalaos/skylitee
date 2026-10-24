@@ -9,6 +9,10 @@ export const maxDuration = 30;
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
   if (!shop) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+  // Own catalogue read the same public way as a competitor's, so prices compare like for like
+  if (req.nextUrl.searchParams.get("own") === "1") {
+    return NextResponse.json({ status: "ok", data: await getCompetitorStore(shop) });
+  }
   const list = (await competitorKv.getList<Competitor>(shop)) ?? [];
   const c = list.find(x => x.id === req.nextUrl.searchParams.get("id"));
   if (!c) return NextResponse.json({ error: "Competitor not found" }, { status: 404 });

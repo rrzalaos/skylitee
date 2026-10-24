@@ -1,9 +1,9 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Binoculars, Plus, Trash2, RefreshCw, ExternalLink, Sparkles, Info, Calculator, Megaphone,
   Search, Play, Images, Image as ImageIcon, Layers, Clock, Zap, Globe, TrendingUp, LoaderCircle, X, Target,
-  ShoppingBag, MonitorPlay, Type, BadgeCheck,
+  ShoppingBag, MonitorPlay, Type, BadgeCheck, Scale, Trophy, TrendingDown,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import {
 } from "@/lib/competitor-shared";
 import {
   defaultAssumptions, estimateAll, estimateGoogleSpend, FX_INR,
-  type Assumptions, type AssumptionSource, type OwnMetrics, type Range, type Confidence,
+  type Assumptions, type AssumptionSource, type OwnMetrics, type Range, type Confidence, type FullEstimate,
 } from "@/lib/competitor-estimate";
 import type { TrafficPayload } from "@/lib/dataforseo";
 import type { StorePayload } from "@/lib/shopify-public";
@@ -42,9 +42,13 @@ interface OwnData {
   gscClicks: number | null;
   ga4Sessions: number | null;
   inrAccount: boolean;
+  revenue: number | null;        // ₹ last 30 days (Shopify)
+  googleSpend: number | null;    // ₹ last 30 days (Google Ads, when connected)
+  googleConvValue: number | null;
+  store: StorePayload | null;    // own catalogue, read the same public way as competitors'
 }
 
-type Tab = "ads" | "gads" | "traffic" | "spend";
+type Tab = "ads" | "gads" | "traffic" | "spend" | "compare";
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 
@@ -161,10 +165,15 @@ export default function CompetitorIntelPage() {
       fetch(`/api/ga4?from=${from}&to=${to}`).then(r => r.json()),
       fetch(`/api/gsc?from=${from}&to=${to}`).then(r => r.json()),
       fetch(`/api/meta/ads?from=${from}&to=${to}`).then(r => r.json()),
-    ]).then(([metaR, shopR, ga4R, gscR, adsR]) => {
+      fetch(`/api/google/ads?from=${from}&to=${to}`).then(r => r.json()),
+      fetch(`/api/competitors/store?own=1`).then(r => r.json()),
+    ]).then(([metaR, shopR, ga4R, gscR, adsR, gadsR, storeR]) => {
       const ok = <T,>(r: PromiseSettledResult<T>) => (r.status === "fulfilled" && r.value && !(r.value as { error?: unknown }).error ? r.value : null);
       const meta = ok(metaR) as { currency?: string; kpis?: { cpm: number; ctr: number; outboundCtr?: number; spend: number; roas: number } } | null;
-      const shop = ok(shopR) as { kpis?: { aov: number; totalOrders: number } } | null;
+      const shop = ok(shopR) as { kpis?: { aov: number; totalOrders: number; grossSales: number } } | null;
+      const myGads = ok(gadsR) as { currency?: string; kpis?: { spend: number; conversionValue: number } } | null;
+      const myStore = ok(storeR) as StoreResp | null;
+      const gInr = myGads?.kpis && (myGads.currency ?? "INR") === "INR" ? myGads.kpis : null;
       const ga4 = ok(ga4R) as { kpis?: { sessions: number } } | null;
       const gsc = ok(gscR) as { kpis?: { clicks: number } } | null;
       const myAds = ok(adsR) as { ads?: { status: string; format: string }[] } | null;
@@ -189,6 +198,10 @@ export default function CompetitorIntelPage() {
         gscClicks: gsc?.kpis?.clicks ?? null,
         ga4Sessions: ga4?.kpis ? sessions : null,
         inrAccount: inr,
+        revenue: shop?.kpis ? shop.kpis.grossSales : null,
+        googleSpend: gInr ? gInr.spend : null,
+        googleConvValue: gInr ? gInr.conversionValue : null,
+        store: myStore?.status === "ok" && myStore.data.isShopify ? myStore.data : null,
       });
     });
   }, []);
@@ -323,6 +336,7 @@ export default function CompetitorIntelPage() {
               ["gads", "Google Ad Spy", <Target key="g" size={15} />],
               ["traffic", "Traffic Intel", <Search key="t" size={15} />],
               ["spend", "Est. Spend & ROAS", <Calculator key="s" size={15} />],
+              ["compare", "You vs Competitors", <Scale key="c" size={15} />],
             ] as [Tab, string, React.ReactNode][]).map(([key, label, icon]) => (
               <button
                 key={key}
@@ -356,6 +370,7 @@ export default function CompetitorIntelPage() {
               loading={adsLoading || trafficLoading}
             />
           )}
+          {tab === "compare" && <CompareTab competitors={competitors} own={own} country={countryInfo} />}
         </>
       )}
     </div>
@@ -1000,6 +1015,318 @@ function KeywordTable({ title, rows }: { title: string; rows: TrafficPayload["to
         </div>
       ) : <p className={SUB}>No keywords found.</p>}
     </Card>
+  );
+}
+
+// ── Tab 5: You vs Competitors ─────────────────────────────────────────────────
+
+type Slot<T> = T | "loading" | null;  // null = not applicable (no page/website added)
+interface CompData { ads: Slot<AdsResp>; gads: Slot<GadsResp>; traffic: Slot<TrafficResp>; store: Slot<StoreResp> }
+interface Cell { v: number | null; text: string; est?: boolean }
+type CellOrLoading = Cell | "loading";
+interface RowDef {
+  key: string; group: string; label: string; hint?: string;
+  better: "higher" | "neutral";
+  you: Cell;
+  them: (d: CompData, e: FullEstimate | null) => CellOrLoading;
+  fix?: { behind: string; ahead: string };
+}
+
+const DASH: Cell = { v: null, text: "—" };
+function okOf<T extends { status: string }>(s: Slot<T>): Extract<T, { status: "ok" }> | null {
+  return s && s !== "loading" && s.status === "ok" ? (s as Extract<T, { status: "ok" }>) : null;
+}
+function fromSlot<T extends { status: string }>(s: Slot<T>, f: (ok: Extract<T, { status: "ok" }>) => Cell): CellOrLoading {
+  if (s === "loading") return "loading";
+  const ok = okOf(s);
+  return ok ? f(ok) : DASH;
+}
+const estCell = (r: Range | null | undefined, fmt: (r: Range) => string): Cell => (r ? { v: r.mid, text: fmt(r), est: true } : DASH);
+
+function CompareTab({ competitors, own, country }: {
+  competitors: Competitor[]; own: OwnData | null; country: ReturnType<typeof getCountry>;
+}) {
+  const [data, setData] = useState<Record<string, CompData>>({});
+  const depKey = competitors.map(c => `${c.id}|${c.website ?? ""}|${c.pageUrl ?? ""}|${c.pageId ?? ""}`).join(",") + `@${country.code}`;
+
+  // Everything comes from the same cached endpoints the other tabs use — no extra provider cost once cached
+  useEffect(() => {
+    let alive = true;
+    const init: Record<string, CompData> = {};
+    for (const c of competitors) {
+      const hasPage = !!(c.pageUrl || c.pageId);
+      init[c.id] = { ads: hasPage ? "loading" : null, gads: c.website ? "loading" : null, traffic: c.website ? "loading" : null, store: c.website ? "loading" : null };
+    }
+    setData(init);
+    const put = (id: string, key: keyof CompData, v: CompData[keyof CompData]) => {
+      if (alive) setData(prev => ({ ...prev, [id]: { ...prev[id], [key]: v } }));
+    };
+    const get = (url: string, fallback: string) => fetch(url).then(r => r.json())
+      .then(d => (d.status ? d : { status: "error", message: d.error ?? fallback }))
+      .catch(() => ({ status: "error", message: fallback }));
+    for (const c of competitors) {
+      if (c.pageUrl || c.pageId) get(`/api/competitors/ads?id=${c.id}&country=${country.code}`, "Couldn't load ads").then(d => put(c.id, "ads", d));
+      if (c.website) {
+        get(`/api/competitors/google-ads?id=${c.id}&country=${country.code}`, "Couldn't load Google ads").then(d => put(c.id, "gads", d));
+        get(`/api/competitors/traffic?id=${c.id}&country=${country.code}`, "Couldn't load traffic").then(d => put(c.id, "traffic", d));
+        get(`/api/competitors/store?id=${c.id}`, "Couldn't load store").then(d => put(c.id, "store", d));
+      }
+    }
+    return () => { alive = false; };
+  }, [depKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Per-competitor spend / revenue / ROAS estimate — same model as the Est. Spend tab (default assumptions)
+  const estimates = useMemo(() => {
+    const out: Record<string, FullEstimate | null> = {};
+    for (const c of competitors) {
+      const d = data[c.id];
+      if (!d || d.ads === "loading" || d.gads === "loading" || d.traffic === "loading") { out[c.id] = null; continue; }
+      const adsOk = okOf(d.ads), gOk = okOf(d.gads), tOk = okOf(d.traffic), sOk = okOf(d.store);
+      const p = sOk?.data.bestsellerMedian ?? sOk?.data.priceMedian ?? null;
+      const fx = FX_INR[(sOk?.data.currency ?? "INR").toUpperCase()];
+      const aov = p && fx ? Math.round(p * fx) : null;
+      const a = defaultAssumptions(country, own?.metrics ?? null, aov).a;
+      const ov = tOk?.data.overview ?? null;
+      out[c.id] = estimateAll({
+        ads: adsOk?.data.ads ?? null,
+        googleAds: gOk?.data.ads ?? null,
+        googleLive: gOk?.data.totals?.live ?? null,
+        traffic: ov ? { organicTraffic: ov.organicTraffic, paidTraffic: ov.paidTraffic, paidCostInr: ov.paidCostInr } : null,
+        country, a,
+      });
+    }
+    return out;
+  }, [competitors, data, country, own]);
+
+  const spendRowLoading = (d: CompData) => d.ads === "loading" || d.gads === "loading" || d.traffic === "loading";
+  const homeMarket = country.code === "IN"; // own GSC is mostly home-market traffic
+  const ownTotalSpend = own?.spend != null || own?.googleSpend != null ? (own?.spend ?? 0) + (own?.googleSpend ?? 0) : null;
+  const ownRoas = (() => {
+    if (!own) return null;
+    const metaSales = own.spend != null && own.roas != null ? own.spend * own.roas : 0;
+    const gSales = own.googleConvValue ?? 0;
+    return ownTotalSpend && ownTotalSpend > 0 && (metaSales + gSales) > 0 ? Math.round(((metaSales + gSales) / ownTotalSpend) * 10) / 10 : null;
+  })();
+  const ownFormats = own?.formats ? Object.values(own.formats).reduce((s, n) => s + n, 0) : 0;
+  const pctOf = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : null);
+  const inrCell = (n: number | null | undefined): Cell => (n != null ? { v: n, text: inrShort(n) } : DASH);
+  const numCell = (n: number | null | undefined): Cell => (n != null ? { v: n, text: numShort(n) } : DASH);
+  const pctCell = (n: number | null): Cell => (n != null ? { v: n, text: `${n}%` } : DASH);
+  const storeInr = (s: StorePayload, n: number | null): Cell => {
+    const fx = FX_INR[(s.currency ?? "INR").toUpperCase()];
+    return n != null && fx ? inrCell(Math.round(n * fx)) : DASH;
+  };
+
+  const rows: RowDef[] = [
+    // Ads activity
+    {
+      key: "metaLive", group: "Ads activity", label: "Live Meta ads", better: "higher",
+      you: numCell(own?.activeAds),
+      them: d => fromSlot(d.ads, ok => numCell(ok.stats.active)),
+      fix: { behind: "Test more creatives — leaders keep many ads live and add new ones every week.", ahead: "You're testing more creatives than them — keep the winners running 30+ days." },
+    },
+    {
+      key: "metaNew", group: "Ads activity", label: "New Meta ads (30 days)", hint: "How fast they test new creatives", better: "neutral",
+      you: DASH,
+      them: d => fromSlot(d.ads, ok => numCell(ok.stats.launched30d)),
+    },
+    {
+      key: "metaWinners", group: "Ads activity", label: "Meta ads running 30+ days", hint: "Long-running ads are usually their profitable ones", better: "neutral",
+      you: DASH,
+      them: d => fromSlot(d.ads, ok => numCell(ok.stats.over30d)),
+    },
+    {
+      key: "metaVideo", group: "Ads activity", label: "Video share of Meta ads", better: "neutral",
+      you: pctCell(own?.formats ? pctOf(own.formats.video ?? 0, ownFormats) : null),
+      them: d => fromSlot(d.ads, ok => {
+        const total = Object.values(ok.stats.formats).reduce((s, n) => s + n, 0);
+        return pctCell(pctOf(ok.stats.formats.video, total));
+      }),
+    },
+    {
+      key: "gLive", group: "Ads activity", label: "Live Google ads", better: "neutral",
+      you: DASH,
+      them: d => fromSlot(d.gads, ok => numCell(ok.data.totals?.live ?? ok.stats.active)),
+    },
+    // Spend & returns
+    {
+      key: "metaSpend", group: "Ad spend & returns / month", label: "Meta ad spend", better: "neutral",
+      you: inrCell(own?.spend),
+      them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.meta?.range, rangeInr)),
+    },
+    {
+      key: "gSpend", group: "Ad spend & returns / month", label: "Google ad spend", better: "neutral",
+      you: inrCell(own?.googleSpend),
+      them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.google?.range, rangeInr)),
+    },
+    {
+      key: "totalSpend", group: "Ad spend & returns / month", label: "Total ad spend", better: "neutral",
+      you: inrCell(ownTotalSpend),
+      them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.totalSpend, rangeInr)),
+    },
+    {
+      key: "roas", group: "Ad spend & returns / month", label: "ROAS (ad sales ÷ ad spend)", hint: "Yours is platform-reported; theirs is a Low-confidence estimate", better: "higher",
+      you: ownRoas != null ? { v: ownRoas, text: `${ownRoas}x` } : DASH,
+      them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.paidRoas, rangeX)),
+      fix: { behind: "Pause ads below break-even ROAS and move that budget to your ads that have run 30+ days.", ahead: "Each ₹ of your ads returns more than theirs — you have room to scale budget." },
+    },
+    // Google search
+    {
+      key: "organic", group: "Google search", label: "Google organic visits / month", hint: "Yours: Search Console clicks · theirs: DataForSEO estimate", better: "higher",
+      you: homeMarket ? numCell(own?.gscClicks) : DASH,
+      them: d => fromSlot(d.traffic, ok => (ok.data.overview ? { ...numCell(ok.data.overview.organicTraffic), est: true } : DASH)),
+      fix: { behind: "SEO gap — create pages for the keywords they rank for (Traffic Intel → keyword gap). This is free traffic they don't pay ads for.", ahead: "You win more free Google traffic than them — protect those rankings." },
+    },
+    {
+      key: "keywords", group: "Google search", label: "Ranking keywords", better: "neutral",
+      you: DASH,
+      them: d => fromSlot(d.traffic, ok => (ok.data.overview ? { ...numCell(ok.data.overview.organicKeywords), est: true } : DASH)),
+    },
+    {
+      key: "orgValue", group: "Google search", label: "Free-traffic value / month", hint: "What their organic traffic would cost as ads", better: "neutral",
+      you: DASH,
+      them: d => fromSlot(d.traffic, ok => (ok.data.overview ? { ...inrCell(ok.data.overview.organicValueInr), est: true } : DASH)),
+    },
+    // Store & sales
+    {
+      key: "revenue", group: "Store & sales", label: "Revenue / month", hint: "Yours: Shopify last 30 days · theirs: estimate", better: "higher",
+      you: inrCell(own?.revenue),
+      them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.revenue, rangeInr)),
+      fix: { behind: "They sell more — study their long-running ads (proven angles) and their bestseller prices below.", ahead: "You're out-selling them on these estimates." },
+    },
+    {
+      key: "aov", group: "Store & sales", label: "Order value", hint: "Yours: real AOV · theirs: median bestseller price", better: "neutral",
+      you: inrCell(own?.metrics.aov),
+      them: d => fromSlot(d.store, ok => (ok.data.isShopify ? { ...storeInr(ok.data, ok.data.bestsellerMedian ?? ok.data.priceMedian), est: true } : DASH)),
+    },
+    {
+      key: "products", group: "Store & sales", label: "Products in store", better: "neutral",
+      you: numCell(own?.store?.productCount),
+      them: d => fromSlot(d.store, ok => (ok.data.isShopify ? numCell(ok.data.productCount) : DASH)),
+    },
+    {
+      key: "price", group: "Store & sales", label: "Typical product price", hint: "Median price across the catalogue", better: "neutral",
+      you: own?.store ? storeInr(own.store, own.store.priceMedian) : DASH,
+      them: d => fromSlot(d.store, ok => (ok.data.isShopify ? storeInr(ok.data, ok.data.priceMedian) : DASH)),
+    },
+    {
+      key: "sale", group: "Store & sales", label: "Products on discount", better: "neutral",
+      you: pctCell(own?.store?.onSalePct ?? null),
+      them: d => fromSlot(d.store, ok => (ok.data.isShopify ? pctCell(ok.data.onSalePct) : DASH)),
+    },
+  ];
+
+  // Resolve every cell once, then score "higher is better" rows: you vs the competitor average
+  const table = rows.map(r => {
+    const cells = competitors.map(c => (data[c.id] ? r.them(data[c.id], estimates[c.id]) : "loading" as const));
+    const vals = cells.map((x, i) => ({ v: x === "loading" ? null : x.v, name: competitors[i].name })).filter(x => x.v != null) as { v: number; name: string }[];
+    let verdict: "ahead" | "behind" | null = null;
+    let leader: { v: number; name: string } | null = null;
+    if (r.better === "higher" && r.you.v != null && vals.length > 0) {
+      const avg = vals.reduce((s, x) => s + x.v, 0) / vals.length;
+      verdict = r.you.v >= avg ? "ahead" : "behind";
+      leader = vals.reduce((a, b) => (b.v > a.v ? b : a));
+    }
+    return { r, cells, verdict, leader };
+  });
+  const scored = table.filter(t => t.verdict);
+  const aheadN = scored.filter(t => t.verdict === "ahead").length;
+  const anyLoading = table.some(t => t.cells.includes("loading"));
+  const groups = [...new Set(rows.map(r => r.group))];
+
+  if (competitors.length === 0) return null;
+
+  const cellText = (x: CellOrLoading) =>
+    x === "loading" ? <LoaderCircle size={14} className="animate-spin inline text-[#A1A1AA]" />
+      : <span className={x.v == null ? "text-[#A1A1AA]" : ""}>{x.est && x.v != null ? "~" : ""}{x.text}</span>;
+
+  return (
+    <div>
+      <WarnBanner type="blue">
+        <b>You</b> = your real numbers (last 30 days from Shopify, Meta, Google Ads &amp; Search Console). <b>Competitors</b> = estimates from their live ads, Google traffic and public store (marked ~).
+        Green = you&apos;re ahead of the competitor average, red = behind. Ad spend is never colour-coded — spending more isn&apos;t better by itself.
+      </WarnBanner>
+
+      {scored.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <KPICard label="Ahead on" value={`${aheadN} of ${scored.length}`} sub="key measures vs competitor average" icon={<Trophy size={12} />} />
+          <KPICard label="Behind on" value={`${scored.length - aheadN} of ${scored.length}`} sub="see fixes below" icon={<TrendingDown size={12} />} />
+          <KPICard label="Compared with" value={`${competitors.length} competitor${competitors.length > 1 ? "s" : ""}`} sub={country.name} icon={<Scale size={12} />} />
+        </div>
+      )}
+
+      <Card className="mb-3 !p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[15px] min-w-[560px]">
+            <thead>
+              <tr className="text-[13px] text-[#71717A] text-left border-b border-black/[0.06] dark:border-white/[0.06]">
+                <th className="font-semibold px-3 py-2 sticky left-0 bg-white dark:bg-[#171717] min-w-[180px]">Measure</th>
+                <th className="font-semibold px-3 py-2 text-right bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#C2410C] dark:text-[#FB923C]">You<div className="font-normal text-[12px]">real</div></th>
+                {competitors.map(c => (
+                  <th key={c.id} className="font-semibold px-3 py-2 text-right whitespace-nowrap">{c.name}<div className="font-normal text-[12px] text-[#A1A1AA]">estimate</div></th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(g => (
+                <Fragment key={g}>
+                  <tr><td colSpan={competitors.length + 2} className="px-3 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide text-[#A1A1AA] sticky left-0">{g}</td></tr>
+                  {table.filter(t => t.r.group === g).map(({ r, cells, verdict, leader }) => (
+                    <tr key={r.key} className="border-t border-black/[0.04] dark:border-white/[0.04]">
+                      <td className="px-3 py-2 sticky left-0 bg-white dark:bg-[#171717]">
+                        {r.label}
+                        {r.hint && <div className="text-[12px] text-[#A1A1AA]">{r.hint}</div>}
+                      </td>
+                      <td className={cn(
+                        "px-3 py-2 text-right font-semibold whitespace-nowrap",
+                        verdict === "ahead" ? "bg-[#F0FDF4] text-[#16A34A] dark:bg-[#052e16]" : verdict === "behind" ? "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#450a0a]" : "bg-[#FFF7ED]/60 dark:bg-[#2A1A0E]/60",
+                      )}>
+                        {cellText(r.you)}
+                      </td>
+                      {cells.map((x, i) => (
+                        <td key={competitors[i].id} className={cn("px-3 py-2 text-right whitespace-nowrap", leader && x !== "loading" && x.v === leader.v && leader.name === competitors[i].name && "font-semibold")}>
+                          {cellText(x)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[13px] text-[#A1A1AA] px-3 py-2 border-t border-black/[0.04] dark:border-white/[0.04]">
+          {anyLoading ? "Still loading some competitor data… " : ""}
+          &ldquo;—&rdquo; = not visible for that brand (no Facebook page / website added, not a Shopify store, or not measurable for you).
+          {!homeMarket && " Your Search Console clicks are compared in India only."}
+        </p>
+      </Card>
+
+      {scored.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {(["behind", "ahead"] as const).map(kind => {
+            const list = scored.filter(t => t.verdict === kind);
+            if (list.length === 0) return null;
+            return (
+              <Card key={kind}>
+                <CardHeader title={kind === "behind" ? "Where you're behind — and the fix" : "Where you're ahead"} />
+                <div className="space-y-2.5">
+                  {list.map(({ r, leader }) => (
+                    <div key={r.key} className={cn("rounded-lg p-2.5 border", kind === "behind" ? "border-[#FECACA] bg-[#FEF2F2] dark:bg-[#450a0a]/40 dark:border-[#7f1d1d]" : "border-[#BBF7D0] bg-[#F0FDF4] dark:bg-[#052e16]/40 dark:border-[#14532d]")}>
+                      <div className="text-[15px] font-semibold">{r.label}</div>
+                      <div className={SUB}>
+                        You: <b>{r.you.text}</b>{leader ? <> · best competitor: <b>{leader.name}</b> (~{r.key === "roas" ? `${leader.v}x` : r.key === "revenue" ? inrShort(leader.v) : numShort(leader.v)})</> : null}
+                      </div>
+                      {r.fix && <div className="text-[14px] mt-1">{kind === "behind" ? r.fix.behind : r.fix.ahead}</div>}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
