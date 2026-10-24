@@ -844,7 +844,7 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, googleLive, o
             : googleLive > 0 ? `${googleLive} live Google ads, but no tracked keyword clicks · see Est. Spend` : "no Google search ads found"}
           icon={<Megaphone size={12} />} />
         <KPICard label="Search-ad spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "Not seen"}
-          sub={ov.paidCostInr > 0 ? "keyword ads only · estimate" : googleLive > 0 ? "Shopping/PMax/YouTube spend → see Est. Spend" : "no search ads found"}
+          sub={ov.paidCostInr > 0 ? "keyword ads only · estimate" : googleLive > 0 ? "not in keyword data · full Google estimate → Est. Spend" : "no search ads found"}
           icon={<Target size={12} />} />
         <KPICard label="Organic traffic value" value={inrShort(ov.organicValueInr)} sub="what it'd cost as ads" icon={<TrendingUp size={12} />} />
       </div>
