@@ -31,7 +31,20 @@ export const FX_INR: Record<string, number> = {
   INR: 1, USD: 88, EUR: 95, GBP: 112, AED: 24, SAR: 23.5, CAD: 64, AUD: 58, SGD: 67,
 };
 
-export const BENCHMARK = { ctr: 1.0, cvr: 1.5 }; // Indian D2C ballparks — labelled "benchmark"
+export const BENCHMARK = { ctr: 1.0 }; // Indian D2C ballpark — labelled "benchmark"
+
+// Site conversion rate falls steeply with price — a ₹500 impulse buy and a ₹50,000
+// appliance don't convert alike. Indian D2C ballparks, labelled "benchmark".
+export function benchmarkCvr(aovInr: number): number {
+  if (aovInr <= 1000) return 2.0;
+  if (aovInr <= 3000) return 1.5;
+  if (aovInr <= 10000) return 1.0;
+  if (aovInr <= 30000) return 0.6;
+  return 0.35;
+}
+
+// Cold paid traffic converts worse than the site average (which includes brand searches and returning buyers)
+const PAID_CVR_FACTOR = 0.7;
 
 export function defaultAssumptions(
   country: CountryInfo,
@@ -39,22 +52,30 @@ export function defaultAssumptions(
   competitorAovInr: number | null,
   ownCountry = "IN",
 ): { a: Assumptions; src: Record<"cpm" | "ctr" | "cvr" | "aov", AssumptionSource> } {
-  // The user's own CPM/CTR only describe the market they advertise in.
+  // The user's own CPM/CTR only describe the market they advertise in — and only when
+  // they're in a normal range for it (a very cheap niche audience says nothing about a competitor's).
   const sameMarket = country.code === ownCountry;
-  const ownCpm = sameMarket && own?.cpm ? own.cpm : null;
+  const [bLo, bHi] = country.cpmInr;
+  const ownCpm = sameMarket && own?.cpm && own.cpm >= bLo * 0.6 && own.cpm <= bHi * 1.5 ? own.cpm : null;
   const ownCtr = sameMarket && own?.ctr ? own.ctr : null;
+
+  const aov = competitorAovInr ?? own?.aov ?? 0;
+  // Own CVR only transfers to a competitor selling at a similar price point
+  const similarPrice = !competitorAovInr || (own?.aov ? competitorAovInr / own.aov >= 0.5 && competitorAovInr / own.aov <= 2 : false);
+  const ownCvr = own?.cvr && similarPrice ? own.cvr : null;
+
   return {
     a: {
       cpm: ownCpm ? [Math.round(ownCpm * 0.8), Math.round(ownCpm * 1.25)] : country.cpmInr,
       ctr: ownCtr ?? BENCHMARK.ctr,
-      cvr: own?.cvr ?? BENCHMARK.cvr,
-      aov: competitorAovInr ?? own?.aov ?? 0,
+      cvr: ownCvr ?? benchmarkCvr(aov),
+      aov,
       frequency: [1.3, 2.5],
     },
     src: {
       cpm: ownCpm ? "yours" : "benchmark",
       ctr: ownCtr ? "yours" : "benchmark",
-      cvr: own?.cvr ? "yours" : "benchmark",
+      cvr: ownCvr ? "yours" : "benchmark",
       aov: competitorAovInr ? "competitor" : own?.aov ? "yours" : "benchmark",
     },
   };
@@ -90,22 +111,25 @@ export function estimateMetaSpend(ads: CompetitorAd[], country: CountryInfo, a: 
   });
   if (creatives.length === 0) return null;
 
-  // Budgets scale with media cost, but less than 1:1 (brands buy fewer impressions in costly markets)
-  const scale = Math.pow(mid(a.cpm) / IN_CPM_MID, 0.7);
+  // Budgets scale with the country's media cost, but less than 1:1 (brands buy fewer impressions
+  // in costly markets). Uses the country benchmark, not the editable CPM — budget size is about the
+  // market, while CPM only decides how many clicks that budget buys.
+  const scale = Math.pow(mid(country.cpmInr) / IN_CPM_MID, 0.7);
   let lo = 0, hi = 0, withReach = 0;
   for (const ad of creatives) {
     const days = Math.max(1, ad.daysRunning ?? 1);
     if (ad.euReach && country.eu) {
-      // lifetime spend = reach × frequency × CPM, normalised to the last 30 days
+      // lifetime spend = reach × frequency × CPM, share falling in the last 30 days
+      // (reach grows sub-linearly, so young ads aren't extrapolated upward)
       const share = Math.min(30, days) / days;
       lo += (ad.euReach * a.frequency[0] * a.cpm[0] / 1000) * share;
       hi += (ad.euReach * a.frequency[1] * a.cpm[1] / 1000) * share;
       withReach++;
     } else {
+      // Live ads keep spending — monthly run-rate = daily budget × 30, not × days run so far
       const tier = TIERS_IN.find(t => days <= t.maxDays)!;
-      const activeDays = Math.min(30, days);
-      lo += tier.budget[0] * scale * activeDays;
-      hi += tier.budget[1] * scale * activeDays;
+      lo += tier.budget[0] * scale * 30;
+      hi += tier.budget[1] * scale * 30;
     }
   }
   const coverage = withReach / creatives.length;
@@ -128,6 +152,8 @@ export interface FullEstimate {
   revenue: Range | null;              // ₹/month, all channels
   paidRevenue: Range | null;          // ₹/month, from paid traffic only
   blendedRoas: Range | null;          // all revenue ÷ ad spend (MER)
+  blendedMeaningful: boolean;         // false when free traffic dominates — MER then just reflects brand size
+  organicShare: number;               // share of visible visits that are Google organic, 0-1
   paidRoas: Range | null;             // paid-traffic revenue ÷ ad spend
   confidence: Confidence;
   missing: string[];                  // plain-English reasons parts couldn't be estimated
@@ -165,8 +191,8 @@ export function estimateAll(input: {
   let revenue: Range | null = null, paidRevenue: Range | null = null;
   if (visits && a.aov > 0 && a.cvr > 0) {
     const perVisit = (a.cvr / 100) * a.aov;
-    const all = (visits.organic + visits.googlePaid + visits.meta) * perVisit;
-    const paid = (visits.googlePaid + visits.meta) * perVisit;
+    const paid = (visits.googlePaid + visits.meta) * perVisit * PAID_CVR_FACTOR;
+    const all = visits.organic * perVisit + paid;
     if (all > 0) revenue = scaleRange(all);
     if (paid > 0) paidRevenue = scaleRange(paid);
   } else if (visits && !(a.aov > 0)) {
@@ -182,6 +208,15 @@ export function estimateAll(input: {
   const blendedRoas = roas(revenue);
   const paidRoas = roas(paidRevenue);
 
+  // When most visits are free Google traffic, revenue ÷ ad spend just measures brand size,
+  // and their unseen spend (Shopping/PMax, influencers, marketplace ads) makes it worse.
+  const totalVisits = visits ? visits.organic + visits.googlePaid + visits.meta : 0;
+  const organicShare = totalVisits > 0 ? visits!.organic / totalVisits : 0;
+  const blendedMeaningful = !!blendedRoas && organicShare < 0.6 && blendedRoas.mid <= 20;
+  if (paidRoas && paidRoas.mid > 12) {
+    missing.push(`Paid ROAS above 12x is rare — their real cost per click is probably higher or conversion lower than assumed. Adjust the assumptions if you know better.`);
+  }
+
   // Overall confidence = weakest link; Google-only estimates are Medium at best
   const parts: Confidence[] = [];
   if (meta) parts.push(meta.confidence);
@@ -189,5 +224,5 @@ export function estimateAll(input: {
   const confidence: Confidence =
     parts.length === 0 || parts.includes("Low") ? "Low" : parts.includes("Medium") ? "Medium" : "High";
 
-  return { meta, google, totalSpend, visits, revenue, paidRevenue, blendedRoas, paidRoas, confidence, missing };
+  return { meta, google, totalSpend, visits, revenue, paidRevenue, blendedRoas, blendedMeaningful, organicShare, paidRoas, confidence, missing };
 }

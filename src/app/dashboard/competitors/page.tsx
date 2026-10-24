@@ -822,13 +822,23 @@ function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
         <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "—"}
           sub={est.meta ? `${est.meta.creatives} live creatives · ${est.meta.confidence} confidence` : "no ad data"} />
-        <RangeCard label="Google ad spend / mo" value={est.google ? rangeInr(est.google) : ov ? "₹0" : "—"}
-          sub={est.google ? "from Google search ads" : ov ? "no Google ads found" : "no traffic data"} />
+        <RangeCard label="Google search-ad spend / mo" value={est.google ? rangeInr(est.google) : ov ? "Not seen" : "—"}
+          sub={est.google ? "Shopping / PMax spend not visible" : ov ? "no search ads found · Shopping/PMax not visible" : "no traffic data"} />
         <RangeCard label="Est. revenue / mo" value={est.revenue ? rangeInr(est.revenue) : "—"}
-          sub={est.revenue ? `${numShort(visitsTotal)} visits × ${a.cvr}% × ${formatINR(a.aov)}` : "needs traffic + price"} />
-        <RangeCard label="Blended ROAS" value={est.blendedRoas ? rangeX(est.blendedRoas) : "—"}
-          sub={est.paidRoas ? `Paid-only ROAS ${rangeX(est.paidRoas)}${own?.roas ? ` · yours ${own.roas}x (real)` : ""}` : own?.roas ? `Your real ROAS: ${own.roas}x` : "revenue ÷ ad spend"} />
+          sub={est.revenue ? `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV` : "needs traffic + price"} />
+        <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "—"}
+          sub={[
+            est.paidRoas ? "ad-driven revenue ÷ ad spend" : "needs ads + price",
+            est.blendedRoas && est.blendedMeaningful ? `blended ${rangeX(est.blendedRoas)}` : null,
+            own?.roas ? `yours ${own.roas}x (real)` : null,
+          ].filter(Boolean).join(" · ")} />
       </div>
+
+      {est.blendedRoas && !est.blendedMeaningful && (
+        <WarnBanner type="blue">
+          About {Math.round(est.organicShare * 100)}% of their visible visits are free Google traffic, so &ldquo;all revenue ÷ ad spend&rdquo; would just reflect brand size — we show ROAS from ad-driven visits only.
+        </WarnBanner>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
         <Card>
@@ -903,10 +913,11 @@ function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
         <CardHeader title={<span className="flex items-center gap-1.5"><Info size={16} className="text-[#3B82F6]" /> How this is calculated &amp; why real ROAS is probably lower</span>} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
           <ul className="space-y-1.5 list-disc pl-5">
-            <li><b>Meta spend</b>: {country.eu ? "real EU reach × 1.3–2.5 views per person × CPM, last 30 days." : "each live creative gets a daily-budget range based on how long it has run (testing < 7 days, proving < 30, scaled 30+), adjusted for this country's ad costs."}</li>
+            <li><b>Meta spend</b>: {country.eu ? "real EU reach × 1.3–2.5 views per person × CPM, last 30 days." : "each live creative gets a daily-budget range based on how long it has run (testing < 7 days, proving < 30, scaled 30+) × 30 days, adjusted for this country's ad costs."}</li>
             <li><b>Google spend</b>: DataForSEO&apos;s estimate of what their search-ad clicks cost.</li>
+            <li><b>Conversion rate</b>: your own rate only if they sell at a similar price; otherwise a benchmark for their price level (e.g. 0.35% for ₹30,000+ products). Ad visits convert at 70% of that.</li>
             <li><b>Revenue</b>: (Google organic + Google-ads + Meta-ad visits) × conversion rate × average order value.</li>
-            <li><b>ROAS</b>: revenue ÷ total ad spend. &ldquo;Blended&rdquo; counts all revenue; &ldquo;paid-only&rdquo; counts only visits that came from ads.</li>
+            <li><b>ROAS from ads</b>: revenue from ad visits ÷ ad spend. Blended (all revenue ÷ spend) is shown only when most traffic isn&apos;t free.</li>
           </ul>
           <ul className="space-y-1.5 list-disc pl-5">
             <li>We can&apos;t see their <b>discounts</b>, <b>COD returns (RTO)</b> or <b>repeat customers</b> — real ROAS is usually lower than shown.</li>
