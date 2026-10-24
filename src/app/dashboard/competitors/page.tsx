@@ -619,13 +619,13 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, onRefresh }: 
     <div>
       <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="monthly" />
       <WarnBanner type="blue">
-        These are DataForSEO <b>estimates</b> of Google traffic (from rankings × search volume). &ldquo;Paid&rdquo; means Google search ads only — Meta-driven visits aren&apos;t visible to anyone.
+        These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume). &ldquo;Paid&rdquo; means Google search ads only — Meta-driven visits aren&apos;t visible to anyone.
       </WarnBanner>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
         <KPICard label="Organic visits / mo" value={numShort(ov.organicTraffic)} sub={`${formatNumber(ov.organicKeywords)} keywords · estimate`} icon={<Search size={12} />} />
         <KPICard label="Google-ads visits / mo" value={numShort(ov.paidTraffic)} sub={`${formatNumber(ov.paidKeywords)} paid keywords · estimate`} icon={<Megaphone size={12} />} />
-        <KPICard label="Google Ads spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "₹0"} sub="estimate" icon={<Target size={12} />} />
+        <KPICard label="Google Ads spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "Not seen"} sub={ov.paidCostInr > 0 ? "estimate" : "no search ads found · Shopping/PMax not visible"} icon={<Target size={12} />} />
         <KPICard label="Organic traffic value" value={inrShort(ov.organicValueInr)} sub="what it'd cost as ads" icon={<TrendingUp size={12} />} />
       </div>
 
