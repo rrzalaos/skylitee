@@ -67,7 +67,7 @@ function HourTooltip({ active, payload, currency }: { active?: boolean; payload?
     <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[15px]">
       <div className="font-semibold text-[#181816] mb-1">{d.label}</div>
       <div className="text-[#686864]">Spend: <span className="text-[#181816] font-medium">{fmt(d.spend)}</span></div>
-      <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "—"}</span></div>
+      <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "-"}</span></div>
       <div className="text-[#686864]">Purchases: <span className="text-[#181816] font-medium">{d.purchases}</span></div>
       <div className="text-[#686864]">CTR: <span className="text-[#181816] font-medium">{d.ctr.toFixed(2)}%</span></div>
     </div>
@@ -83,7 +83,7 @@ function DowTooltip({ active, payload, currency }: { active?: boolean; payload?:
     <div className="bg-white border border-black/[0.09] rounded-lg px-3 py-2 shadow-sm text-[15px]">
       <div className="font-semibold text-[#181816] mb-1">{d.label}</div>
       <div className="text-[#686864]">Avg spend/day: <span className="text-[#181816] font-medium">{fmt(d.spendPerDay)}</span></div>
-      <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "—"}</span></div>
+      <div className="text-[#686864]">ROAS: <span className="text-[#181816] font-medium">{d.roas > 0 ? `${d.roas}×` : "-"}</span></div>
       <div className="text-[#686864]">Total purchases: <span className="text-[#181816] font-medium">{d.purchases}</span></div>
     </div>
   );
@@ -132,7 +132,7 @@ export default function TimingPage() {
         const end = (h + 1) === 12 ? "1pm" : (h + 1) < 12 ? `${h + 1}am` : (h + 1) === 12 ? "12pm" : `${(h + 1) - 12}pm`;
         return `${start}–${end}`;
       })()
-    : "—";
+    : "-";
 
   function buildSections() {
     if (!data) return [];
@@ -154,7 +154,7 @@ export default function TimingPage() {
         rows: data.hourly.map(h => [
           h.label, fmt(h.spend), h.impressions.toLocaleString("en-IN"),
           h.clicks, h.purchases, fmt(h.purchaseValue),
-          h.roas > 0 ? `${h.roas}x` : "—", `${h.ctr.toFixed(2)}%`,
+          h.roas > 0 ? `${h.roas}x` : "-", `${h.ctr.toFixed(2)}%`,
         ]),
       },
       {
@@ -162,7 +162,7 @@ export default function TimingPage() {
         headers: ["Day", "Days Sampled", "Total Spend", "Spend / Day", "Purchases", "Revenue", "ROAS"],
         rows: data.dayOfWeek.map(d => [
           d.label, d.days, fmt(d.spend), fmt(d.spendPerDay),
-          d.purchases, fmt(d.purchaseValue), d.roas > 0 ? `${d.roas}x` : "—",
+          d.purchases, fmt(d.purchaseValue), d.roas > 0 ? `${d.roas}x` : "-",
         ]),
       },
     ];
@@ -207,7 +207,7 @@ export default function TimingPage() {
         <NotConnected
           platform="meta"
           label="Meta Business Suite"
-          description="Connect Meta to see hourly conversion heatmaps and discover the best time windows to maximise your ad budget — day-parting recommendations included."
+          description="Connect Meta to see hourly conversion heatmaps and discover the best time windows to maximise your ad budget - day-parting recommendations included."
         />
       ) : loading ? (
         <div className="text-[17px] text-[#686864] py-16 text-center">Loading timing data…</div>
@@ -227,7 +227,7 @@ export default function TimingPage() {
               {
                 label: "Best Day (ROAS)",
                 value: data.peaks.day,
-                sub: `ROAS ${data.peaks.dayRoas > 0 ? data.peaks.dayRoas + "×" : "—"}`,
+                sub: `ROAS ${data.peaks.dayRoas > 0 ? data.peaks.dayRoas + "×" : "-"}`,
                 icon: <Calendar size={14} />,
               },
               {
@@ -322,7 +322,7 @@ export default function TimingPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-[#181816] font-medium">{h.purchases} orders</span>
                           <span className={`text-[15px] font-medium ${h.roas >= 1.5 ? "text-[#0d6b4f]" : "text-[#e89820]"}`}>
-                            {h.roas > 0 ? `ROAS ${h.roas}×` : "—"}
+                            {h.roas > 0 ? `ROAS ${h.roas}×` : "-"}
                           </span>
                         </div>
                       </div>
@@ -385,7 +385,7 @@ export default function TimingPage() {
                       <td className="py-1.5 px-2 text-[#686864]">{h.purchases}</td>
                       <td className="py-1.5 px-2">
                         <span className={`font-semibold ${h.roas >= 1.5 ? "text-[#0d6b4f]" : h.roas >= 1 ? "text-[#e89820]" : h.roas > 0 ? "text-[#d94040]" : "text-[#9e9e9a]"}`}>
-                          {h.roas > 0 ? `${h.roas}×` : "—"}
+                          {h.roas > 0 ? `${h.roas}×` : "-"}
                         </span>
                       </td>
                     </tr>

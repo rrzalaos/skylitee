@@ -2,9 +2,9 @@ import { competitorKv } from "./kv";
 import { CI_LIMITS, type CountryInfo } from "./competitors";
 import type { GoogleAd, GoogleAdFormat, GoogleAdPlatform, GoogleAdsPayload } from "./competitor-shared";
 
-// ── DataForSEO Labs — competitor organic + Google-paid traffic estimates ─────
+// ── DataForSEO Labs - competitor organic + Google-paid traffic estimates ─────
 // Pay-as-you-go (DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD). Every number here is
-// DataForSEO's MODEL of Google traffic (rankings × search volume × CTR curves) —
+// DataForSEO's MODEL of Google traffic (rankings × search volume × CTR curves) -
 // the UI labels it "Estimate". Results are cached monthly in the shared ci:* cache.
 
 const BASE = "https://api.dataforseo.com/v3/dataforseo_labs/google";
@@ -65,10 +65,10 @@ async function dfsPost(url: string, task: Json, endpoint: string): Promise<Json[
   });
   const json = await res.json().catch(() => null) as { status_code?: number; status_message?: string; tasks?: Json[] } | null;
   if (res.status === 401 || json?.status_code === 40100) {
-    throw new Error("DataForSEO rejected the login — check DATAFORSEO_LOGIN is your account email and DATAFORSEO_PASSWORD is the API password from the dashboard's API Access page (not your sign-in password).");
+    throw new Error("DataForSEO rejected the login - check DATAFORSEO_LOGIN is your account email and DATAFORSEO_PASSWORD is the API password from the dashboard's API Access page (not your sign-in password).");
   }
   if (res.status === 402 || json?.status_code === 40200 || json?.status_code === 40210) {
-    throw new Error("DataForSEO balance is empty — add funds in the DataForSEO dashboard (Billing → Add funds).");
+    throw new Error("DataForSEO balance is empty - add funds in the DataForSEO dashboard (Billing → Add funds).");
   }
   if (!res.ok || !json) throw new Error(`DataForSEO ${endpoint} failed (${res.status})`);
   const t = json.tasks?.[0] as { status_code?: number; status_message?: string; result?: Json[] } | undefined;
@@ -206,7 +206,7 @@ export async function getCompetitorTraffic(
   if (!dfsConfigured()) {
     return {
       status: "setup_needed", missing: ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"],
-      message: "Traffic estimates aren't switched on yet — the traffic data provider still needs to be connected.",
+      message: "Traffic estimates aren't switched on yet - the traffic data provider still needs to be connected.",
     };
   }
   if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.trafficLock);
@@ -240,9 +240,9 @@ export async function getCompetitorTraffic(
   return { status: "ok", data: { ...data, gap: gapValue, gapAgainst: own }, cached: false };
 }
 
-// ── Google Ads Transparency Center — a competitor's live Google ads ──────────
+// ── Google Ads Transparency Center - a competitor's live Google ads ──────────
 // SERP API "ads_search": every ad Google has shown for the domain, with first/last shown
-// dates and a rendered preview (text ads included). No spend or impressions — Google
+// dates and a rendered preview (text ads included). No spend or impressions - Google
 // publishes those only for political ads. Items carry no platform, so Search/Shopping/
 // YouTube are tagged from three extra platform-filtered lookups.
 
@@ -289,7 +289,7 @@ export async function getCompetitorGoogleAds(
   if (!dfsConfigured()) {
     return {
       status: "setup_needed", missing: ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"],
-      message: "Google ad tracking isn't switched on yet — the data provider still needs to be connected.",
+      message: "Google ad tracking isn't switched on yet - the data provider still needs to be connected.",
     };
   }
   if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock);
@@ -347,7 +347,7 @@ export async function getCompetitorGoogleAds(
   }
   const ads = [...byId.values()].sort((a, b) => (b.daysRunning ?? 0) - (a.daysRunning ?? 0));
 
-  // Video ads come with no preview image — only Google's preview script, which embeds the
+  // Video ads come with no preview image - only Google's preview script, which embeds the
   // YouTube video id. Pull it for a real thumbnail + watch link.
   const previewById = new Map(items.map(i => [String(i.creative_id), typeof i.preview_url === "string" ? i.preview_url : null]));
   const videos = ads.filter(a => a.format === "video" && !a.imageUrl && previewById.get(a.id)).slice(0, MAX_VIDEO_LOOKUPS);

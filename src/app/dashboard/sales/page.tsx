@@ -56,7 +56,7 @@ export default function SalesPage() {
   useEffect(() => {
     setLoading(true);
     setAdsLoading(true);
-    // Shopify drives the page — render as soon as it lands; Meta/GA4 fill in when they arrive
+    // Shopify drives the page - render as soon as it lands; Meta/GA4 fill in when they arrive
     // instead of the slowest of the three holding the whole page on "Loading…".
     fetch(`/api/shopify/sales?from=${range.from}&to=${range.to}`)
       .then(r => r.json())
@@ -69,7 +69,7 @@ export default function SalesPage() {
     ]).then(([mRes, gRes]) => {
       if (mRes.status === "fulfilled" && !mRes.value?.error) {
         setMeta(mRes.value.kpis ?? null); setMetaConnected(true);
-        // CAC scoped to SALES-objective campaigns (not blended account spend) — awareness/
+        // CAC scoped to SALES-objective campaigns (not blended account spend) - awareness/
         // traffic spend shouldn't inflate the cost-per-order figure.
         const camps = (mRes.value.campaigns ?? []) as { objective: string; spend: number; purchases: number }[];
         const salesC = camps.filter(c => /SALES|CONVERSION/i.test(c.objective ?? ""));
@@ -101,7 +101,7 @@ export default function SalesPage() {
   // Prefer the sales-objective CAC; fall back to account-level only if no sales campaigns.
   const cacValue = metaSalesCac ?? meta?.cac ?? null;
   const cacIsSalesScoped = metaSalesCac !== null;
-  // Website funnel = one source, GA4 (on-site behaviour) — not Meta-tracked events stitched in.
+  // Website funnel = one source, GA4 (on-site behaviour) - not Meta-tracked events stitched in.
   // GA4 needs ecommerce events configured; if absent we show a clear empty state.
   const sessions = ga4?.sessions ?? 0;
   const hasWebsiteFunnel = !!ga4Ecom && (ga4Ecom.itemsViewed > 0 || ga4Ecom.itemsAddedToCart > 0 || ga4Ecom.itemsPurchased > 0);
@@ -135,9 +135,9 @@ export default function SalesPage() {
         title: "Channel Attribution",
         headers: ["Channel", "Orders", "Revenue", "Ad Spend", "ROAS", "CTR"],
         rows: [
-          ["Shopify Total", sales.kpis.totalOrders, formatINR(sales.kpis.grossSales), "—", "—", "—"],
-          ["Meta Ads", metaConnected ? metaOrders : "—", metaConnected ? formatINR(metaRevenue) : "—", metaConnected && meta ? formatINR(meta.spend) : "—", metaConnected && meta ? `${meta.roas}x` : "—", metaConnected && meta ? `${meta.ctr}%` : "—"],
-          ["Organic / Direct", organicOrders, formatINR(organicRevenue), "—", "—", "—"],
+          ["Shopify Total", sales.kpis.totalOrders, formatINR(sales.kpis.grossSales), "-", "-", "-"],
+          ["Meta Ads", metaConnected ? metaOrders : "-", metaConnected ? formatINR(metaRevenue) : "-", metaConnected && meta ? formatINR(meta.spend) : "-", metaConnected && meta ? `${meta.roas}x` : "-", metaConnected && meta ? `${meta.ctr}%` : "-"],
+          ["Organic / Direct", organicOrders, formatINR(organicRevenue), "-", "-", "-"],
         ],
       },
       {
@@ -174,7 +174,7 @@ export default function SalesPage() {
       {
         title: "Recent Orders",
         headers: ["Order", "Date", "Amount", "Payment", "City", "Status"],
-        rows: sales.recentOrders.map(o => [o.name, o.date, formatINR(o.total), o.isCod ? "COD" : "Prepaid", o.city || "—", o.status]),
+        rows: sales.recentOrders.map(o => [o.name, o.date, formatINR(o.total), o.isCod ? "COD" : "Prepaid", o.city || "-", o.status]),
       },
       {
         title: "Top Cities by Revenue",
@@ -218,7 +218,7 @@ export default function SalesPage() {
     { label: "Organic/Direct", icon: TrendingUp, color: "text-[#22C55E]", bg: "bg-[#F0FDF4] dark:bg-[#052E16]", orders: organicOrders, revenue: organicRevenue, spend: null, roas: null },
   ];
 
-  // Pure GA4 website funnel — every step measured on-site by Google Analytics (no Meta mixing).
+  // Pure GA4 website funnel - every step measured on-site by Google Analytics (no Meta mixing).
   const funnel = hasWebsiteFunnel && ga4Ecom ? [
     { label: "Website Sessions", value: sessions, color: "#6366F1", source: "GA4", barPct: 100 },
     { label: "Product Views", value: ga4Ecom.itemsViewed, color: "#8B5CF6", source: "GA4", barPct: fp(ga4Ecom.itemsViewed, Math.max(sessions, 1)) },
@@ -244,10 +244,10 @@ export default function SalesPage() {
         <KPICard label="Gross Sales" value={formatINR(sales.kpis.grossSales)} />
         <KPICard label="Total Orders" value={sales.kpis.totalOrders.toString()} />
         <KPICard label="Avg Order Value" value={formatINR(sales.kpis.aov)} />
-        <KPICard label="ROAS" value={meta ? `${meta.roas}x` : "—"}
+        <KPICard label="ROAS" value={meta ? `${meta.roas}x` : "-"}
           change={meta ? (meta.roas >= 2 ? 1 : -1) : undefined}
           changeLabel={meta ? (meta.roas >= 3 ? "Strong" : meta.roas >= 2 ? "Average" : "Below target") : adsLoading ? "Loading…" : "Connect Meta"} />
-        <KPICard label="CAC" value={cacValue !== null ? formatINR(cacValue) : "—"}
+        <KPICard label="CAC" value={cacValue !== null ? formatINR(cacValue) : "-"}
           sub={metaConnected ? (cacIsSalesScoped ? "Per order · Sales ads only" : "Cost per acquisition") : adsLoading ? "Loading…" : "Connect Meta Ads"} />
       </div>
 
@@ -267,7 +267,7 @@ export default function SalesPage() {
                   <span className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide truncate">{ch.label}</span>
                 </div>
                 <div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">
-                  {ch.revenue !== null ? formatINR(ch.revenue) : <span className="text-[#A1A1AA] text-[15px]">—</span>}
+                  {ch.revenue !== null ? formatINR(ch.revenue) : <span className="text-[#A1A1AA] text-[15px]">-</span>}
                 </div>
                 <div className="text-[13px] text-[#A1A1AA]">{ch.orders !== null ? `${ch.orders} orders` : <Link href="/dashboard/connections" className="text-[#F97316] font-semibold">Connect →</Link>}</div>
                 {ch.spend !== null && (
@@ -291,10 +291,10 @@ export default function SalesPage() {
             </thead>
             <tbody>
               {[
-                { label: "Shopify Total", Icon: ShoppingCart, ic: "text-[#F97316]", orders: sales.kpis.totalOrders, revenue: sales.kpis.grossSales, spend: "—", roas: "—", ctr: "—" },
-                { label: "Meta Ads", Icon: Share2, ic: "text-[#1877F2]", orders: metaConnected ? metaOrders : "—", revenue: metaConnected ? formatINR(metaRevenue) : "—", spend: metaConnected && meta ? formatINR(meta.spend) : "—", roas: metaConnected && meta ? meta.roas : "—", ctr: metaConnected && meta ? `${meta.ctr}%` : "—" },
-                { label: "Google Ads", Icon: Megaphone, ic: "text-[#4285F4]", orders: "—", revenue: "—", spend: "—", roas: "—", ctr: "—" },
-                { label: "Organic/Direct", Icon: TrendingUp, ic: "text-[#22C55E]", orders: organicOrders, revenue: formatINR(organicRevenue), spend: "—", roas: "—", ctr: "—" },
+                { label: "Shopify Total", Icon: ShoppingCart, ic: "text-[#F97316]", orders: sales.kpis.totalOrders, revenue: sales.kpis.grossSales, spend: "-", roas: "-", ctr: "-" },
+                { label: "Meta Ads", Icon: Share2, ic: "text-[#1877F2]", orders: metaConnected ? metaOrders : "-", revenue: metaConnected ? formatINR(metaRevenue) : "-", spend: metaConnected && meta ? formatINR(meta.spend) : "-", roas: metaConnected && meta ? meta.roas : "-", ctr: metaConnected && meta ? `${meta.ctr}%` : "-" },
+                { label: "Google Ads", Icon: Megaphone, ic: "text-[#4285F4]", orders: "-", revenue: "-", spend: "-", roas: "-", ctr: "-" },
+                { label: "Organic/Direct", Icon: TrendingUp, ic: "text-[#22C55E]", orders: organicOrders, revenue: formatINR(organicRevenue), spend: "-", roas: "-", ctr: "-" },
               ].map((row, i) => (
                 <tr key={i} className="border-b border-black/[0.04] dark:border-white/[0.04] last:border-0 hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] transition-colors">
                   <td className="py-2 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5]">
@@ -304,7 +304,7 @@ export default function SalesPage() {
                   <td className="py-2 px-2 font-semibold">{typeof row.revenue === "number" ? formatINR(row.revenue) : row.revenue}</td>
                   <td className="py-2 px-2 text-[#A1A1AA]">{row.spend}</td>
                   <td className="py-2 px-2">
-                    {row.roas === "—" ? <span className="text-[#A1A1AA]">—</span> :
+                    {row.roas === "-" ? <span className="text-[#A1A1AA]">-</span> :
                       <span className={cn("font-bold", Number(row.roas) >= 3 ? "text-[#22C55E]" : Number(row.roas) >= 2 ? "text-[#EAB308]" : "text-[#EF4444]")}>{row.roas}x</span>}
                   </td>
                   <td className="py-2 px-2 text-[#A1A1AA]">{row.ctr}</td>
@@ -353,7 +353,7 @@ export default function SalesPage() {
             </div>
             {codPct > 50 && (
               <div className="bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] dark:border-[#92400E] rounded-xl p-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D] leading-relaxed">
-                High COD ratio — consider a ₹75 prepaid discount to shift buyers and reduce return risk.
+                High COD ratio - consider a ₹75 prepaid discount to shift buyers and reduce return risk.
               </div>
             )}
           </div>
@@ -420,7 +420,7 @@ export default function SalesPage() {
       {/* Funnel + Geography */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        {/* Conversion Funnel — website behaviour, single source (GA4) */}
+        {/* Conversion Funnel - website behaviour, single source (GA4) */}
         <Card>
           <CardHeader title="Website Funnel" right={<span className="text-[13px] text-[#A1A1AA]">{ga4Connected ? "GA4 · website" : adsLoading ? "Loading…" : "Connect GA4"}</span>} />
           {adsLoading && !hasWebsiteFunnel && (
@@ -429,7 +429,7 @@ export default function SalesPage() {
           {!adsLoading && !hasWebsiteFunnel && (
             <div className="text-[14px] text-[#A1A1AA] py-4 text-center">
               {ga4Connected
-                ? "GA4 is connected but has no ecommerce events yet — enable GA4 Enhanced Ecommerce (view_item / add_to_cart / begin_checkout / purchase) to see the website funnel."
+                ? "GA4 is connected but has no ecommerce events yet - enable GA4 Enhanced Ecommerce (view_item / add_to_cart / begin_checkout / purchase) to see the website funnel."
                 : <>Connect GA4 to see the website session → cart → checkout → purchase funnel. <Link href="/dashboard/connections" className="text-[#F97316] font-semibold">Connect →</Link></>}
             </div>
           )}
@@ -475,7 +475,7 @@ export default function SalesPage() {
               {[
                 { label: "Users", value: ga4.users.toLocaleString("en-IN") },
                 { label: "Bounce (GA4)", value: `${ga4.bounceRate.toFixed(0)}%` },
-                { label: "Avg session", value: ga4.avgSessionMin ?? "—" },
+                { label: "Avg session", value: ga4.avgSessionMin ?? "-" },
               ].map(kpi => (
                 <div key={kpi.label} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2">
                   <div className="text-[14px] font-black text-[#18181B] dark:text-[#F4F4F5]">{kpi.value}</div>
@@ -593,7 +593,7 @@ export default function SalesPage() {
                       o.isCod ? "bg-[#FFFBEB] dark:bg-[#2D1C00] text-[#92400E] dark:text-[#FCD34D]" : "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C]"
                     )}>{o.isCod ? "COD" : "Prepaid"}</span>
                   </td>
-                  <td className="py-2 px-2 text-[#71717A]">{o.city || "—"}</td>
+                  <td className="py-2 px-2 text-[#71717A]">{o.city || "-"}</td>
                   <td className="py-2 px-2">
                     <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-bold capitalize",
                       o.status === "paid" ? "bg-[#F0FDF4] dark:bg-[#052E16] text-[#166534] dark:text-[#4ADE80]" :
@@ -666,7 +666,7 @@ export default function SalesPage() {
                         {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums">{row.fmt(m[row.key] as number)}</td>)}
                         {monthly.length > 1 && (
                           <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
-                            {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                            {mom === null ? "-" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
                           </td>
                         )}
                       </tr>

@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// PATCH — deactivate/reactivate a coupon
+// PATCH - deactivate/reactivate a coupon
 export async function PATCH(req: NextRequest) {
   if (!await checkAdmin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 

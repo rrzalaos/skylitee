@@ -61,7 +61,7 @@ export async function buildWeekly(shop: string): Promise<WeeklyResult | null> {
   const returning = [...customers.values()].filter(n => n > 1).length;
   const newCustomers = customers.size - returning;
 
-  // Meta (best effort — the email still goes out with store data alone).
+  // Meta (best effort - the email still goes out with store data alone).
   let meta: { spend: number; purchaseValue: number; leads: number; clicks: number; impressions: number; frequency: number } | null = null;
   let campaigns: PlainCampaign[] = [];
   if (metaToken) {
@@ -103,7 +103,7 @@ export async function buildWeekly(shop: string): Promise<WeeklyResult | null> {
     meta, campaigns,
     gads: null,
     gsc: null,
-    connected: { meta: !!meta, google: true }, // Google isn't fetched here — don't nag about connecting it
+    connected: { meta: !!meta, google: true }, // Google isn't fetched here - don't nag about connecting it
     breakEvenRoas: null,
     costsSet: true,                             // cost model lives in the browser; skip the setup nudge
     rto: null,
@@ -120,7 +120,7 @@ export async function buildWeekly(shop: string): Promise<WeeklyResult | null> {
   };
 }
 
-export const weeklyText = (r: PlainReport, storeName: string) => reportText(r, `${storeName} — this week`);
+export const weeklyText = (r: PlainReport, storeName: string) => reportText(r, `${storeName} - this week`);
 
 export async function sendWeekly(w: WeeklyResult, to: string): Promise<void> {
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -160,7 +160,7 @@ export function weeklyHtml(w: WeeklyResult): string {
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;padding:20px">
     <tr><td style="font-size:13px;color:#A1A1AA">Skylitee · weekly summary</td></tr>
-    <tr><td style="font-size:20px;font-weight:800;color:#18181B;padding:4px 0 12px">${esc(w.storeName)} — your week in plain English</td></tr>
+    <tr><td style="font-size:20px;font-weight:800;color:#18181B;padding:4px 0 12px">${esc(w.storeName)} - your week in plain English</td></tr>
     <tr><td style="font-size:15px;color:#18181B;line-height:1.6;padding:12px;background:#FFF7ED;border-radius:10px">${esc(w.report.summary)}</td></tr>
     <tr><td style="height:16px"></td></tr>
     <tr><td><table width="100%" cellpadding="0" cellspacing="0">${tiles}</table></td></tr>

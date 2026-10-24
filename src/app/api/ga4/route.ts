@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   if (properties.length === 0) return NextResponse.json({ error: "no_properties" });
 
   const savedProperty = await getGa4Property(req, shop);
-  // No saved choice: only auto-pick when the login reaches exactly ONE — an agency login reaches
+  // No saved choice: only auto-pick when the login reaches exactly ONE - an agency login reaches
   // many brands, and guessing would show another brand's data.
   const selected = (savedProperty && properties.find(p => p.property === savedProperty))
     || (properties.length === 1 ? properties[0] : null);
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   const propertyId = selected.property;
   const propertyName = selected.displayName;
 
-  // Default to GA4 relative dates — GA4 resolves "today"/"NdaysAgo" in the PROPERTY's
+  // Default to GA4 relative dates - GA4 resolves "today"/"NdaysAgo" in the PROPERTY's
   // timezone, so the default window matches the GA4 UI instead of the server's UTC day.
   const startDate = req.nextUrl.searchParams.get("from") ?? "28daysAgo";
   const endDate = req.nextUrl.searchParams.get("to") ?? "today";

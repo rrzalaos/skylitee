@@ -23,7 +23,7 @@ export default function InsightsPage() {
   const [error, setError] = useState("");
   const [adsConnected, setAdsConnected] = useState(false);
 
-  // Reflect real connection status — don't hard-show a "Connect Meta/Google Ads"
+  // Reflect real connection status - don't hard-show a "Connect Meta/Google Ads"
   // prompt when those platforms are already linked.
   useEffect(() => {
     Promise.allSettled([
@@ -42,7 +42,7 @@ export default function InsightsPage() {
     fetch("/api/ai/insights")
       .then(r => r.json())
       .then(d => {
-        if (d.error) { setError("Could not load — check Shopify connection"); return; }
+        if (d.error) { setError("Could not load - check Shopify connection"); return; }
         setInsights(d.insights);
         setMetrics(d.metrics);
       })
@@ -117,7 +117,7 @@ export default function InsightsPage() {
               </div>
               {adsConnected ? (
                 <Link href="/dashboard/attribution" className="block text-[17px] text-[#686864] bg-[#f0faf4] border border-[#bbf7d0] rounded-lg px-3 py-2">
-                  <span className="font-medium text-[#15803d]">Meta / Google Ads connected</span> — view ROAS & channel attribution →
+                  <span className="font-medium text-[#15803d]">Meta / Google Ads connected</span> - view ROAS & channel attribution →
                 </Link>
               ) : (
                 <Link href="/dashboard/connections" className="block text-[17px] text-[#686864] bg-[#fff7ed] border border-[#fed7aa] rounded-lg px-3 py-2">

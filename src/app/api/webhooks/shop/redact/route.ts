@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(rawBody) as { shop_domain?: string };
     const shop = payload.shop_domain;
     if (shop) await shopKv.delAllShopData(shop);
-  } catch { /* invalid JSON — still return 200 to Shopify */ }
+  } catch { /* invalid JSON - still return 200 to Shopify */ }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

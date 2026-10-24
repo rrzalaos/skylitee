@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       detail: `Accepted invitation as ${(invite?.role ?? "member").replace("_", " ")}`,
     });
 
-    // Switch the session to the accepted store — an invitee with no store of
+    // Switch the session to the accepted store - an invitee with no store of
     // their own otherwise has no active shop cookie and sees an empty dashboard.
     await updateSessionShop(token, shop);
     const res = NextResponse.json({ ok: true });

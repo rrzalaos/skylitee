@@ -1,4 +1,4 @@
-// Embedded app (Skylitee inside the Shopify admin) — shared helpers.
+// Embedded app (Skylitee inside the Shopify admin) - shared helpers.
 // EDGE-SAFE: imported by middleware, so only Web APIs here (no Node crypto, no KV).
 //
 // Inside the admin iframe our first-party cookies aren't sent, so a merchant is identified by

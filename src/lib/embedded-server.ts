@@ -9,7 +9,7 @@ import { isEmbeddedSessionToken, isValidShopDomain, shopAdminAppUrl } from "./em
 //
 // Meta/Google login and Shopify's billing page can't load inside the admin iframe, so those
 // flows run top-level and then return the merchant to the admin. Top-level there's no session,
-// so the store travels in a SIGNED short-lived cookie (never in the user's website session —
+// so the store travels in a SIGNED short-lived cookie (never in the user's website session -
 // that would log a website user out of their own account), and the page to reopen is parked
 // in KV for the embedded landing route (/embedded) to pick up.
 
@@ -55,7 +55,7 @@ export function setEmbeddedOAuthCookie(res: NextResponse, shop: string) {
   });
 }
 
-// The store an admin-started OAuth is for — checked BEFORE the website session, so a browser
+// The store an admin-started OAuth is for - checked BEFORE the website session, so a browser
 // also logged into the website can't save the tokens to its other active store.
 export async function getEmbeddedOAuthShop(req: NextRequest): Promise<string | null> {
   const parts = req.cookies.get(EMBEDDED_OAUTH_COOKIE)?.value?.split("|");

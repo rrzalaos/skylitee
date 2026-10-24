@@ -16,7 +16,7 @@ export const PLANS: Plan[] = [
     trialDays: 14,
     features: [
       "Shopify sales, orders & revenue dashboard",
-      "Meta Ads — ROAS, CAC, CTR, spend & creatives",
+      "Meta Ads - ROAS, CAC, CTR, spend & creatives",
       "Google Search Console & Analytics 4",
       "AI Insights & Chat assistant",
       "Cohort retention analysis",

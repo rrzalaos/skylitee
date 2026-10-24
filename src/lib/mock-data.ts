@@ -239,24 +239,24 @@ export const benchmarks = [
 // ── Anomalies ─────────────────────────────────────────────────────────────────
 export const anomalies = {
   critical: [
-    { title: "ROAS dropped 23% in last 48 hours — CBO69", desc: "Expected ROAS: 1.28. Actual: 0.98. Possible cause: creative fatigue (frequency hit 2.1) or audience saturation. Suggested action: pause and test new creative variant.", meta: "Detected 2h ago · Meta Ads · Confidence 94%", type: "critical" },
+    { title: "ROAS dropped 23% in last 48 hours - CBO69", desc: "Expected ROAS: 1.28. Actual: 0.98. Possible cause: creative fatigue (frequency hit 2.1) or audience saturation. Suggested action: pause and test new creative variant.", meta: "Detected 2h ago · Meta Ads · Confidence 94%", type: "critical" },
     { title: "Combo Fabric selling 3.2× faster than restocked rate", desc: "Velocity spiked from 1.8 to 3.2 orders/day after Meta campaign went live. At this pace, stockout in 10.6 days. Immediately reorder minimum 150 units.", meta: "Detected 4h ago · Shopify · Confidence 97%", type: "critical" },
-    { title: "Mobile bounce spiked 12pts on Position Print page", desc: "Bounce went from 54% → 66% in 3 days. Likely cause: slow image load (page size increased after new product photos). Compress images immediately — est. CVR impact: −0.4%.", meta: "Detected 6h ago · GA4 · Confidence 88%", type: "warning" },
+    { title: "Mobile bounce spiked 12pts on Position Print page", desc: "Bounce went from 54% → 66% in 3 days. Likely cause: slow image load (page size increased after new product photos). Compress images immediately - est. CVR impact: −0.4%.", meta: "Detected 6h ago · GA4 · Confidence 88%", type: "warning" },
   ],
   positive: [
-    { title: "Organic CTR spiked 40% — 'fabric sets' keyword", desc: "GSC shows 'fabric sets online' CTR jumped from 4.8% to 6.8% after product page update. Replicate this approach on other product pages immediately.", meta: "Detected 1d ago · GSC · Confidence 91%", type: "positive" },
+    { title: "Organic CTR spiked 40% - 'fabric sets' keyword", desc: "GSC shows 'fabric sets online' CTR jumped from 4.8% to 6.8% after product page update. Replicate this approach on other product pages immediately.", meta: "Detected 1d ago · GSC · Confidence 91%", type: "positive" },
     { title: "Repeat purchase rate up 18% this week", desc: "32 returning customers placed orders vs 27 last week. Cohort from June 2025 is showing strong retention. Nurture this cohort with loyalty offers.", meta: "Detected 12h ago · Shopify · Confidence 85%", type: "info" },
   ],
 };
 
 // ── AI Insights ───────────────────────────────────────────────────────────────
 export const aiInsights = [
-  { type: "scale", title: "Scale CBO67 by 20% every 3 days — it's learning", body: "ROAS 1.53, CTR improving week-over-week. Algorithm exited learning phase. Safe to scale: ₹9K → ₹10.8K → ₹12.9K → ₹15.5K. Do NOT change targeting or creative.", color: "blue" },
-  { type: "danger", title: "Pause CBO68 immediately — CPM 4× benchmark", body: "CPM ₹1,185 vs benchmark ₹280. Zero orders from ₹2,310 spend. Every day active = ₹120 wasted with zero return. Pause and reallocate to CBO67.", color: "red" },
-  { type: "warning", title: "Creative fatigue alert — Embroidery static (28 days)", body: "Frequency 2.8, CTR declining 0.3pts/week. Prepare 2 new creatives. Audience has seen this ad an average of 2.8 times — diminishing returns confirmed.", color: "amber" },
-  { type: "audience", title: "Duplicate CBO67 for 25–34 female segment", body: "Your 35–44 female segment converts at 2.1× average. 25–34 female is currently underspent — similar buying patterns but only 26 orders. New CBO with identical creative targeting 25–34 could add 30–40 orders/month.", color: "purple" },
-  { type: "seo", title: "3 keywords in striking distance — run ads now", body: "\"buy embroidery dress\" (pos 7.1), \"cotton print fabric\" (pos 9.4), \"embroidery salwar\" (pos 8.6) — all have commercial intent. Google Ads on these at exact match = est. ROAS 2.4+.", color: "teal" },
-  { type: "customer", title: "Your best customers spend 4.1× more — nurture them", body: "Top 20% customers (Champions segment) have LTV ₹4,480 vs store avg ₹1,091. Create a VIP WhatsApp group with early access to new drops. Cost: ₹0. Expected revenue lift: ₹18–25K/month.", color: "pink" },
+  { type: "scale", title: "Scale CBO67 by 20% every 3 days - it's learning", body: "ROAS 1.53, CTR improving week-over-week. Algorithm exited learning phase. Safe to scale: ₹9K → ₹10.8K → ₹12.9K → ₹15.5K. Do NOT change targeting or creative.", color: "blue" },
+  { type: "danger", title: "Pause CBO68 immediately - CPM 4× benchmark", body: "CPM ₹1,185 vs benchmark ₹280. Zero orders from ₹2,310 spend. Every day active = ₹120 wasted with zero return. Pause and reallocate to CBO67.", color: "red" },
+  { type: "warning", title: "Creative fatigue alert - Embroidery static (28 days)", body: "Frequency 2.8, CTR declining 0.3pts/week. Prepare 2 new creatives. Audience has seen this ad an average of 2.8 times - diminishing returns confirmed.", color: "amber" },
+  { type: "audience", title: "Duplicate CBO67 for 25–34 female segment", body: "Your 35–44 female segment converts at 2.1× average. 25–34 female is currently underspent - similar buying patterns but only 26 orders. New CBO with identical creative targeting 25–34 could add 30–40 orders/month.", color: "purple" },
+  { type: "seo", title: "3 keywords in striking distance - run ads now", body: "\"buy embroidery dress\" (pos 7.1), \"cotton print fabric\" (pos 9.4), \"embroidery salwar\" (pos 8.6) - all have commercial intent. Google Ads on these at exact match = est. ROAS 2.4+.", color: "teal" },
+  { type: "customer", title: "Your best customers spend 4.1× more - nurture them", body: "Top 20% customers (Champions segment) have LTV ₹4,480 vs store avg ₹1,091. Create a VIP WhatsApp group with early access to new drops. Cost: ₹0. Expected revenue lift: ₹18–25K/month.", color: "pink" },
 ];
 
 // ── Timing heatmap data ───────────────────────────────────────────────────────
@@ -295,22 +295,22 @@ CHANNEL BREAKDOWN:
 - Google Ads: NOT CONNECTED (estimated ₹40–60K missed)
 
 META CAMPAIGNS:
-- CBO67: ROAS 1.53, ₹19,622 spend — SCALE this
-- CBO68: ROAS 0.00, ₹2,310 spend — PAUSE this
+- CBO67: ROAS 1.53, ₹19,622 spend - SCALE this
+- CBO68: ROAS 0.00, ₹2,310 spend - PAUSE this
 - CBO69: ROAS 1.04, monitoring
 - 3 paused campaigns with zero conversions wasted ₹14,692
 
 TOP PRODUCTS:
 - Position Print Set: 66 orders, ₹72,006, stock 142 (safe)
 - Embroidery Classic: 57 orders, ₹62,187, stock 88 (monitor)
-- Combo Fabric: 53 orders, ₹57,823, stock 34 (REORDER URGENTLY — 10 days)
+- Combo Fabric: 53 orders, ₹57,823, stock 34 (REORDER URGENTLY - 10 days)
 - Combo Embroidery: 40 orders, ₹43,640, stock 210 (overstocked)
 
 CUSTOMERS (6,820 total):
-- Champions (412): LTV ₹4,480 — send VIP early access
+- Champions (412): LTV ₹4,480 - send VIP early access
 - Loyal (834): LTV ₹2,840
-- At Risk (680): LTV ₹1,091 — win-back campaign needed
-- Dormant (920): LTV ₹540 — last-chance offer
+- At Risk (680): LTV ₹1,091 - win-back campaign needed
+- Dormant (920): LTV ₹540 - last-chance offer
 - New (2,734): need nurture sequence
 
 GOOGLE SEARCH CONSOLE:
@@ -325,8 +325,8 @@ GA4 WEBSITE:
 - Returning users convert 3.8× more than new users
 
 KEY URGENT ACTIONS:
-1. Connect Google Ads — est. ₹40–60K immediate impact
-2. Reorder Combo Fabric (150 units) — 10 days to stockout
+1. Connect Google Ads - est. ₹40–60K immediate impact
+2. Reorder Combo Fabric (150 units) - 10 days to stockout
 3. Pause Embroidery static creative (frequency 2.8)
 4. Scale CBO67 by 20%
 5. Launch ₹75 prepaid incentive to reduce 54% COD ratio

@@ -113,7 +113,7 @@ function GadsContent() {
           <AlertCircle size={32} className="text-amber-500 mx-auto mb-3" />
           <div className="text-[19px] font-semibold text-[#181816] mb-1">Select your Google Ads account</div>
           <div className="text-[16px] text-[#686864] mb-4">
-            Connected — but no account selected. Pick one in Connections.
+            Connected - but no account selected. Pick one in Connections.
           </div>
           <a href="/dashboard/connections"
             className="inline-block px-5 py-2.5 bg-[#34A853] text-white rounded-xl text-[16px] font-semibold hover:bg-[#2d9248] transition-colors">
@@ -148,7 +148,7 @@ function GadsContent() {
             </div>
             <div>
               <div className="text-[18px] font-semibold text-[#181816] mb-1">
-                Token in test mode — data pending
+                Token in test mode - data pending
               </div>
               <div className="text-[16px] text-[#686864] space-y-2">
                 <p>Your Google Ads developer token is under review. Google does not allow querying real account data until the token is approved.</p>
@@ -159,7 +159,7 @@ function GadsContent() {
                   <li>Data queries ✗ Blocked (test token)</li>
                 </ul>
                 <p className="text-[15px] bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg px-3 py-2 text-[#1b5e20]">
-                  ✓ Google will email you at <strong>digital@yellowsky.in</strong> once approved (usually 1–3 business days). No action needed — data will auto-load after approval.
+                  ✓ Google will email you at <strong>digital@yellowsky.in</strong> once approved (usually 1–3 business days). No action needed - data will auto-load after approval.
                 </p>
               </div>
             </div>
@@ -298,7 +298,7 @@ function GadsContent() {
                       <td className="py-2 px-2 text-[#181816] whitespace-nowrap">{sym(c)}{camp.spend.toFixed(0)}</td>
                       <td className="py-2 px-2 whitespace-nowrap">
                         <span className={`font-semibold ${camp.roas >= 3 ? "text-[#0d6b4f]" : camp.roas >= 1.5 ? "text-amber-600" : "text-red-500"}`}>
-                          {camp.roas > 0 ? `${camp.roas.toFixed(1)}x` : "—"}
+                          {camp.roas > 0 ? `${camp.roas.toFixed(1)}x` : "-"}
                         </span>
                       </td>
                       <td className="py-2 px-2 text-[#181816]">{camp.clicks.toLocaleString()}</td>
@@ -331,7 +331,7 @@ function GadsContent() {
                 <tbody>
                   {data.keywords.map((kw, i) => (
                     <tr key={i} className="border-b border-black/[0.04] hover:bg-[#f9f9f7]">
-                      <td className="py-2 px-2 font-medium text-[#181816] max-w-[130px] truncate" title={kw.keyword}>{kw.keyword || "—"}</td>
+                      <td className="py-2 px-2 font-medium text-[#181816] max-w-[130px] truncate" title={kw.keyword}>{kw.keyword || "-"}</td>
                       <td className="py-2 px-2 text-[#181816]">{kw.clicks.toLocaleString()}</td>
                       <td className="py-2 px-2 text-[#181816]">{kw.ctr.toFixed(1)}%</td>
                       <td className="py-2 px-2 text-[#181816] whitespace-nowrap">{sym(c)}{kw.avgCpc.toFixed(2)}</td>

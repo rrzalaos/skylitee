@@ -5,7 +5,7 @@ export type DurationType = "days" | "months" | "forever";
 
 export interface Coupon {
   code: string;
-  kind?: CouponKind;            // "free" (100% off) | "discount" (partial). Absent on legacy coupons — derive from discountPct.
+  kind?: CouponKind;            // "free" (100% off) | "discount" (partial). Absent on legacy coupons - derive from discountPct.
   discountPct: number;          // 1–100
   durationType?: DurationType;  // how long the benefit lasts once redeemed. Absent on legacy coupons → treat as "forever".
   durationValue?: number;       // e.g. 14 (days) or 3 (months); ignored when durationType is "forever"
@@ -17,7 +17,7 @@ export interface Coupon {
   redemptions: string[];        // shops that redeemed
 }
 
-// Per-shop access grant — the benefit a redeemed coupon (or admin comp) confers.
+// Per-shop access grant - the benefit a redeemed coupon (or admin comp) confers.
 export interface Grant {
   couponCode: string;           // source code, or "ADMIN" for a hand-granted comp
   kind: CouponKind;
@@ -74,7 +74,7 @@ async function kvDel(key: string): Promise<void> {
 
 // Shopify offline access token record. Shopify is retiring permanent offline tokens in favour
 // of EXPIRING ones (access token ~1h + 90-day refresh token; required for public apps by
-// 2027-01-01). Legacy records were stored as a bare access-token string — getTokenRecord
+// 2027-01-01). Legacy records were stored as a bare access-token string - getTokenRecord
 // normalizes those to `{ access_token }` (no expiry/refresh) so lib/shopify can migrate them.
 export interface ShopifyToken {
   access_token: string;
@@ -143,13 +143,13 @@ export const shopKv = {
   setPendingCoupon: (shop: string, v: string) => kvSet(`shop:${shop}:pending_coupon`, v, 3600),
   delPendingCoupon: (shop: string) => kvDel(`shop:${shop}:pending_coupon`),
 
-  // Store IANA timezone (e.g. "Asia/Kolkata") — cached 7 days so date ranges match the
+  // Store IANA timezone (e.g. "Asia/Kolkata") - cached 7 days so date ranges match the
   // Shopify admin's local-day boundaries without re-fetching /shop.json each request.
   getTz: (shop: string) => kvGet<string>(`shop:${shop}:tz`),
   setTz: (shop: string, v: string) => kvSet(`shop:${shop}:tz`, v, 7 * 24 * 60 * 60),
 
   // When the store first connected Shopify, and the owner who connected it (the account
-  // that ran OAuth). Set once on connect — used by the admin store view for age & ownership.
+  // that ran OAuth). Set once on connect - used by the admin store view for age & ownership.
   getConnectedAt: (shop: string) => kvGet<string>(`shop:${shop}:connected_at`),
   setConnectedAt: (shop: string, v: string) => kvSet(`shop:${shop}:connected_at`, v),
   getOwner: (shop: string) => kvGet<string>(`shop:${shop}:owner`),
@@ -212,7 +212,7 @@ export interface ActivityLog {
   createdAt: string;
 }
 
-// Pending store invitations — shown in dashboard bell, user must explicitly accept
+// Pending store invitations - shown in dashboard bell, user must explicitly accept
 export const inviteKv = {
   getInvites: (email: string) => kvGet<InviteRecord[]>(`user:${email.toLowerCase()}:invites`),
   setInvites: (email: string, v: InviteRecord[]) => kvSet(`user:${email.toLowerCase()}:invites`, v),
@@ -234,7 +234,7 @@ export const notificationKv = {
   },
 };
 
-// Activity logs — per-shop (team/invite events) and per-user (logins)
+// Activity logs - per-shop (team/invite events) and per-user (logins)
 export const activityKv = {
   getShop: (shop: string) => kvGet<ActivityLog[]>(`shop:${shop}:activity`),
   getUser: (email: string) => kvGet<ActivityLog[]>(`user:${email.toLowerCase()}:activity`),
@@ -250,7 +250,7 @@ export const activityKv = {
   },
 };
 
-// Competitor Intel — the per-store competitor list, plus a SHARED cache of fetched competitor
+// Competitor Intel - the per-store competitor list, plus a SHARED cache of fetched competitor
 // data (keyed by country + page/domain, not by shop) so the same competitor is paid for once
 // no matter how many stores track it. Refresh locks stop the "Refresh now" button being spammed.
 export const competitorKv = {

@@ -118,14 +118,14 @@ export function PrintablePerformance({ model, site, rangeLabel, generatedAt }: {
               segments={[{ label: "Prepaid", value: M.payment.prepaid, color: "#F97316" }, { label: "COD", value: M.payment.cod, color: "#EAB308" }]}
               centerValue={`${100 - M.payment.codPct}%`} centerLabel="prepaid" size={150}
             />
-            {M.payment.codPct > 50 && <p className="text-[13px] text-[#92400E] mt-2">High COD ({M.payment.codPct}%) — offer a prepaid discount to cut RTO risk.</p>}
+            {M.payment.codPct > 50 && <p className="text-[13px] text-[#92400E] mt-2">High COD ({M.payment.codPct}%) - offer a prepaid discount to cut RTO risk.</p>}
           </Section>
         </div>
 
         {/* Blended ROAS gauge + Meta funnel */}
         <div className="grid grid-cols-2 gap-3">
           <Section title="Blended ROAS" color="#22C55E" icon={<TrendingUp size={16} />} right="store ÷ total ad spend" span={1}>
-            <Gauge value={Math.min(100, (M.blendedRoas / 3) * 100)} color={M.blendedRoas >= 2 ? "#22C55E" : M.blendedRoas >= 1 ? "#EAB308" : "#EF4444"} centerValue={M.blendedRoas ? `${M.blendedRoas}x` : "—"} centerLabel={M.blendedRoas >= 2 ? "profitable" : "below target"} size={150} />
+            <Gauge value={Math.min(100, (M.blendedRoas / 3) * 100)} color={M.blendedRoas >= 2 ? "#22C55E" : M.blendedRoas >= 1 ? "#EAB308" : "#EF4444"} centerValue={M.blendedRoas ? `${M.blendedRoas}x` : "-"} centerLabel={M.blendedRoas >= 2 ? "profitable" : "below target"} size={150} />
             <p className="text-[13px] text-[#71717A] text-center mt-1">Total spend {inr(M.totalSpend)}{M.googlePending ? " · Google pending" : ""}</p>
           </Section>
           {M.funnel ? (
@@ -147,9 +147,9 @@ export function PrintablePerformance({ model, site, rangeLabel, generatedAt }: {
                   <td className={`${td} font-bold`}><span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />{c.channel}</span></td>
                   <td className={`${td} text-right`}>{c.orders.toLocaleString("en-IN")}</td>
                   <td className={`${td} text-right font-semibold`}>{inr(c.revenue)}</td>
-                  <td className={`${td} text-right text-[#71717A]`}>{c.spend == null ? "—" : inr(c.spend)}</td>
-                  <td className={`${td} text-right font-bold`} style={{ color: c.roas == null ? "#A1A1AA" : c.roas >= 2 ? "#16A34A" : "#DC2626" }}>{c.roas == null ? "—" : `${c.roas}x`}</td>
-                  <td className={`${td} text-right text-[#71717A]`}>{c.ctr == null ? "—" : `${c.ctr}%`}</td>
+                  <td className={`${td} text-right text-[#71717A]`}>{c.spend == null ? "-" : inr(c.spend)}</td>
+                  <td className={`${td} text-right font-bold`} style={{ color: c.roas == null ? "#A1A1AA" : c.roas >= 2 ? "#16A34A" : "#DC2626" }}>{c.roas == null ? "-" : `${c.roas}x`}</td>
+                  <td className={`${td} text-right text-[#71717A]`}>{c.ctr == null ? "-" : `${c.ctr}%`}</td>
                 </tr>
               ))}
             </tbody>
@@ -194,7 +194,7 @@ export function PrintablePerformance({ model, site, rangeLabel, generatedAt }: {
 
         {/* 3-month comparison */}
         {M.months.length >= 2 && (
-          <Section title="Last 3 Months — Progress" color="#0EA5E9" icon={<TrendingUp size={16} />} right="vs previous month">
+          <Section title="Last 3 Months - Progress" color="#0EA5E9" icon={<TrendingUp size={16} />} right="vs previous month">
             <MonthwiseTable headers={M.months.map(m => m.label)} rows={perfMonthRows(M.months)} accent="#0EA5E9" zebra="#F0F9FF" print />
           </Section>
         )}
@@ -218,7 +218,7 @@ export function PrintablePerformance({ model, site, rangeLabel, generatedAt }: {
             </div>
             <div>
               <div className="text-[15px] font-extrabold text-[#DC2626] mb-2">⚠ To improve</div>
-              <ul className="space-y-1.5">{M.conclusion.improvements.length ? M.conclusion.improvements.map((p, i) => <li key={i} className="text-[14px] text-[#3F3F46] leading-snug">• {p}</li>) : <li className="text-[14px] text-[#A1A1AA]">Nothing critical — keep scaling what works.</li>}</ul>
+              <ul className="space-y-1.5">{M.conclusion.improvements.length ? M.conclusion.improvements.map((p, i) => <li key={i} className="text-[14px] text-[#3F3F46] leading-snug">• {p}</li>) : <li className="text-[14px] text-[#A1A1AA]">Nothing critical - keep scaling what works.</li>}</ul>
             </div>
           </div>
         </Section>

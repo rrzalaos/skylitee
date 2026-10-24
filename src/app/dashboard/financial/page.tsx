@@ -48,7 +48,7 @@ function Row({ label, value, sub, deduct = false, bold = false, separator = fals
   deduct?: boolean; bold?: boolean; separator?: boolean; highlight?: boolean; muted?: boolean;
 }) {
   const isNegative = deduct || (value !== null && value < 0);
-  const display = value === null ? "—" : `${isNegative && value > 0 ? "−" : ""}${formatINR(Math.abs(value))}`;
+  const display = value === null ? "-" : `${isNegative && value > 0 ? "−" : ""}${formatINR(Math.abs(value))}`;
   return (
     <div className={cn(
       "flex items-start justify-between py-2 border-b border-black/[0.05] dark:border-white/[0.05] last:border-0",
@@ -271,23 +271,23 @@ export default function FinancialPage() {
         <Card className="mb-4 border-[#F97316]/30">
           <CardHeader title="Your cost setup" right="Saved to your browser" />
           <div className="text-[14px] text-[#A1A1AA] mb-4">
-            We have your sales, ad spend, and orders from Shopify/Meta. Tell us your costs — we&apos;ll calculate the real profit.
+            We have your sales, ad spend, and orders from Shopify/Meta. Tell us your costs - we&apos;ll calculate the real profit.
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InputField
               label="Product cost per order (₹)"
-              hint="What you paid to make or buy the products in each order — raw material, printing, packaging"
+              hint="What you paid to make or buy the products in each order - raw material, printing, packaging"
               value={inputs.cogsPerOrder}
               onChange={v => setInputs(i => ({ ...i, cogsPerOrder: v }))}
             />
             <InputField
               label="Shipping cost per order (₹)"
-              hint="Average cost to ship one order out — BlueDart, Delhivery, Shiprocket etc."
+              hint="Average cost to ship one order out - BlueDart, Delhivery, Shiprocket etc."
               value={inputs.shippingPerOrder}
               onChange={v => setInputs(i => ({ ...i, shippingPerOrder: v }))}
             />
             <InputField
-              label="RTO rate — COD orders that come back (%)"
+              label="RTO rate - COD orders that come back (%)"
               hint="What % of your COD orders are returned undelivered? Print-on-demand typically 20–40%"
               value={inputs.rtoRate}
               onChange={v => setInputs(i => ({ ...i, rtoRate: v }))}
@@ -301,7 +301,7 @@ export default function FinancialPage() {
             />
             <InputField
               label="Monthly overheads (₹)"
-              hint="Rent, team salaries, tools, subscriptions — all fixed costs per month"
+              hint="Rent, team salaries, tools, subscriptions - all fixed costs per month"
               value={inputs.monthlyOverheads}
               onChange={v => setInputs(i => ({ ...i, monthlyOverheads: v }))}
             />
@@ -347,8 +347,8 @@ export default function FinancialPage() {
 
           <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-2 mb-1">Money In</div>
           <Row label="Total sales" value={grossSales} bold sub={`${totalOrders} orders · from Shopify`} />
-          <Row label="Discounts given to customers" value={discounts} deduct sub="Real from Shopify — coupons, offers applied" />
-          <Row label="Refunds paid back" value={refunds} deduct sub="Real from Shopify — orders you refunded" />
+          <Row label="Discounts given to customers" value={discounts} deduct sub="Real from Shopify - coupons, offers applied" />
+          <Row label="Refunds paid back" value={refunds} deduct sub="Real from Shopify - orders you refunded" />
           <Row label="What you actually collected" value={netRevenue} bold separator />
 
           <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-widest mt-3 mb-1">What It Cost to Fulfil Orders</div>
@@ -356,14 +356,14 @@ export default function FinancialPage() {
             label="Product / manufacturing cost"
             value={cogsTotal}
             deduct
-            sub={saved.cogsPerOrder > 0 ? `₹${saved.cogsPerOrder} × ${totalOrders} orders` : "Not set — click Your Costs"}
+            sub={saved.cogsPerOrder > 0 ? `₹${saved.cogsPerOrder} × ${totalOrders} orders` : "Not set - click Your Costs"}
             muted={saved.cogsPerOrder === 0}
           />
           <Row
             label="Shipping (outward)"
             value={shippingTotal}
             deduct
-            sub={saved.shippingPerOrder > 0 ? `₹${saved.shippingPerOrder} × ${totalOrders} orders` : "Not set — click Your Costs"}
+            sub={saved.shippingPerOrder > 0 ? `₹${saved.shippingPerOrder} × ${totalOrders} orders` : "Not set - click Your Costs"}
             muted={saved.shippingPerOrder === 0}
           />
           <Row
@@ -386,7 +386,7 @@ export default function FinancialPage() {
             label="Meta ad spend"
             value={adSpend}
             deduct
-            sub={metaConnected ? `ROAS ${currentRoas}x · ₹1 spent → ₹${currentRoas} in sales` : "Meta not connected — connect for real ad spend"}
+            sub={metaConnected ? `ROAS ${currentRoas}x · ₹1 spent → ₹${currentRoas} in sales` : "Meta not connected - connect for real ad spend"}
             muted={!metaConnected}
           />
           <Row label="After-ads profit" value={afterAdsProfit} bold separator />
@@ -436,7 +436,7 @@ export default function FinancialPage() {
               {
                 label: "Profit margin",
                 value: `${Math.abs(netMarginPct).toFixed(1)}%`,
-                sub: netMarginPct >= 15 ? "Healthy" : netMarginPct >= 5 ? "Thin — room to improve" : netMarginPct >= 0 ? "Very thin" : "Currently losing money",
+                sub: netMarginPct >= 15 ? "Healthy" : netMarginPct >= 5 ? "Thin - room to improve" : netMarginPct >= 0 ? "Very thin" : "Currently losing money",
                 good: netMarginPct >= 10,
               },
               {
@@ -447,13 +447,13 @@ export default function FinancialPage() {
               },
               {
                 label: meta ? `ROAS ${currentRoas}x` : "Ad ROAS",
-                value: meta ? (currentRoas >= 3 ? "Good" : currentRoas >= 2 ? "OK" : "Below target") : "—",
+                value: meta ? (currentRoas >= 3 ? "Good" : currentRoas >= 2 ? "OK" : "Below target") : "-",
                 sub: meta ? `₹1 ad → ₹${currentRoas} sales` : "Connect Meta",
                 good: currentRoas >= 3,
               },
               {
                 label: "Break-even ROAS",
-                value: beRoas ? `${beRoas}x` : "—",
+                value: beRoas ? `${beRoas}x` : "-",
                 sub: beRoas && currentRoas > 0
                   ? currentRoas >= beRoas ? "✓ You're above break-even" : `Need ${beRoas}x, have ${currentRoas}x`
                   : "Need ad + cost data",
@@ -493,32 +493,32 @@ export default function FinancialPage() {
             <div className="space-y-2.5">
               {netProfit >= 0 && netMarginPct >= 15 && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Healthy business</span> — your margin of {netMarginPct.toFixed(1)}% means you&apos;re covering all costs with a solid buffer. Focus on scaling profitably.
+                  <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Healthy business</span> - your margin of {netMarginPct.toFixed(1)}% means you&apos;re covering all costs with a solid buffer. Focus on scaling profitably.
                 </div>
               )}
               {netProfit >= 0 && netMarginPct > 0 && netMarginPct < 15 && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EAB308] bg-[#FFFBEB] dark:bg-[#2D1C00] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#92400E] dark:text-[#FCD34D]">Thin margins</span> — you&apos;re profitable but any spike in ad costs or returns could flip it. The biggest lever is usually reducing RTO or improving ROAS.
+                  <span className="font-bold text-[#92400E] dark:text-[#FCD34D]">Thin margins</span> - you&apos;re profitable but any spike in ad costs or returns could flip it. The biggest lever is usually reducing RTO or improving ROAS.
                 </div>
               )}
               {netProfit < 0 && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">Currently unprofitable</span> — you&apos;re spending more than you&apos;re making. Don&apos;t increase ad spend yet. First figure out your biggest cost leak above.
+                  <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">Currently unprofitable</span> - you&apos;re spending more than you&apos;re making. Don&apos;t increase ad spend yet. First figure out your biggest cost leak above.
                 </div>
               )}
               {rtoTotal > adSpend && rtoTotal > 0 && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#EF4444] bg-[#FEF2F2] dark:bg-[#2D0A0A] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">RTO is costing you more than ads</span> — {formatINR(rtoTotal)} lost to returns vs {formatINR(adSpend)} in ads. Add prepaid incentives (discount, free shipping on UPI) to reduce COD %.
+                  <span className="font-bold text-[#DC2626] dark:text-[#FCA5A5]">RTO is costing you more than ads</span> - {formatINR(rtoTotal)} lost to returns vs {formatINR(adSpend)} in ads. Add prepaid incentives (discount, free shipping on UPI) to reduce COD %.
                 </div>
               )}
               {meta && beRoas && currentRoas < beRoas && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#F97316] bg-[#FFF7ED] dark:bg-[#2A1A0E] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#EA580C] dark:text-[#FB923C]">Ads not yet profitable</span> — you need {beRoas}x ROAS to break even, currently at {currentRoas}x. Pause low-ROAS campaigns and tighten targeting before scaling.
+                  <span className="font-bold text-[#EA580C] dark:text-[#FB923C]">Ads not yet profitable</span> - you need {beRoas}x ROAS to break even, currently at {currentRoas}x. Pause low-ROAS campaigns and tighten targeting before scaling.
                 </div>
               )}
               {meta && beRoas && currentRoas >= beRoas && (
                 <div className="text-[14px] leading-relaxed border-l-[3px] border-l-[#22C55E] bg-[#F0FDF4] dark:bg-[#052E16] rounded-r-xl pl-3 py-2 pr-2">
-                  <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Ads are profitable</span> — your {currentRoas}x ROAS is above the {beRoas}x break-even. You can safely increase spend by 20–30% on winning campaigns.
+                  <span className="font-bold text-[#15803D] dark:text-[#86EFAC]">Ads are profitable</span> - your {currentRoas}x ROAS is above the {beRoas}x break-even. You can safely increase spend by 20–30% on winning campaigns.
                 </div>
               )}
               {!inputsConfigured && (
@@ -535,19 +535,19 @@ export default function FinancialPage() {
               <CardHeader title="Per-order economics" />
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { label: "Avg order value", value: aov > 0 ? formatINR(aov) : "—" },
-                  { label: "Product cost", value: saved.cogsPerOrder > 0 ? formatINR(saved.cogsPerOrder) : "—" },
-                  { label: "Shipping cost", value: saved.shippingPerOrder > 0 ? formatINR(saved.shippingPerOrder) : "—" },
-                  { label: "CAC (from Meta)", value: meta?.cac ? formatINR(meta.cac) : "—" },
+                  { label: "Avg order value", value: aov > 0 ? formatINR(aov) : "-" },
+                  { label: "Product cost", value: saved.cogsPerOrder > 0 ? formatINR(saved.cogsPerOrder) : "-" },
+                  { label: "Shipping cost", value: saved.shippingPerOrder > 0 ? formatINR(saved.shippingPerOrder) : "-" },
+                  { label: "CAC (from Meta)", value: meta?.cac ? formatINR(meta.cac) : "-" },
                   {
                     label: "Profit per order",
                     value: totalOrders > 0 && (saved.cogsPerOrder > 0 || saved.shippingPerOrder > 0)
                       ? formatINR(Math.round(netProfit / totalOrders))
-                      : "—",
+                      : "-",
                   },
                   {
                     label: "LTV estimate",
-                    value: aov > 0 ? formatINR(aov * 2) : "—",
+                    value: aov > 0 ? formatINR(aov * 2) : "-",
                   },
                 ].map((s, i) => (
                   <div key={i} className="text-center bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-2.5">

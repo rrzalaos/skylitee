@@ -80,14 +80,14 @@ export default function FinancialReportPage() {
   const working: { metric: string; value: string; detail: string }[] = [];
   const attention: { metric: string; value: string; detail: string }[] = [];
 
-  if (s.grossSales > 0) working.push({ metric: "Gross Revenue", value: formatINR(s.grossSales), detail: `${s.totalOrders} orders at ${formatINR(s.aov)} AOV — revenue engine is active. Avg daily revenue: ${formatINR(Math.round(dailyRevenue))}.` });
-  if (m?.roas && m.roas >= 3) working.push({ metric: "Ad ROAS", value: `${m.roas}x`, detail: "Meta ads return more than 3x spend — ad investment is profitable. Safe to scale budget." });
-  if (s.returningCustomers > 0) working.push({ metric: "Returning Customers", value: s.returningCustomers.toString(), detail: `${s.returningCustomers} repeat buyers — organic repeat revenue with zero acquisition cost.` });
-  if (codPct < 40) working.push({ metric: "Prepaid Rate", value: `${100 - codPct}%`, detail: "Majority of orders are prepaid — faster cash collection and lower RTO-related losses." });
+  if (s.grossSales > 0) working.push({ metric: "Gross Revenue", value: formatINR(s.grossSales), detail: `${s.totalOrders} orders at ${formatINR(s.aov)} AOV - revenue engine is active. Avg daily revenue: ${formatINR(Math.round(dailyRevenue))}.` });
+  if (m?.roas && m.roas >= 3) working.push({ metric: "Ad ROAS", value: `${m.roas}x`, detail: "Meta ads return more than 3x spend - ad investment is profitable. Safe to scale budget." });
+  if (s.returningCustomers > 0) working.push({ metric: "Returning Customers", value: s.returningCustomers.toString(), detail: `${s.returningCustomers} repeat buyers - organic repeat revenue with zero acquisition cost.` });
+  if (codPct < 40) working.push({ metric: "Prepaid Rate", value: `${100 - codPct}%`, detail: "Majority of orders are prepaid - faster cash collection and lower RTO-related losses." });
 
-  if (codPct > 50) attention.push({ metric: "COD Rate", value: `${codPct}%`, detail: "More than half your orders are COD — ties up cash and risks RTO losses. Offer Rs.75 prepaid discount to shift preference." });
-  if (m && m.roas < 2) attention.push({ metric: "Ad ROAS", value: `${m.roas}x`, detail: "Below 2x — spending more on ads than the revenue they generate. Pause underperforming campaigns immediately." });
-  if (adSpend > 0 && adSpend / s.grossSales > 0.3) attention.push({ metric: "Ad-to-Revenue Ratio", value: `${Math.round((adSpend / s.grossSales) * 100)}%`, detail: "Ad spend is consuming more than 30% of revenue — leaves little room for COGS and margin. Improve ROAS or reduce spend." });
+  if (codPct > 50) attention.push({ metric: "COD Rate", value: `${codPct}%`, detail: "More than half your orders are COD - ties up cash and risks RTO losses. Offer Rs.75 prepaid discount to shift preference." });
+  if (m && m.roas < 2) attention.push({ metric: "Ad ROAS", value: `${m.roas}x`, detail: "Below 2x - spending more on ads than the revenue they generate. Pause underperforming campaigns immediately." });
+  if (adSpend > 0 && adSpend / s.grossSales > 0.3) attention.push({ metric: "Ad-to-Revenue Ratio", value: `${Math.round((adSpend / s.grossSales) * 100)}%`, detail: "Ad spend is consuming more than 30% of revenue - leaves little room for COGS and margin. Improve ROAS or reduce spend." });
 
   function buildSections() {
     if (!sales) return [];
@@ -141,7 +141,7 @@ export default function FinancialReportPage() {
       {/* COGS disclaimer */}
       <div className="flex items-start gap-2.5 bg-[#EFF6FF] dark:bg-[#1E3A5F]/30 border border-[#BFDBFE] rounded-xl p-3">
         <Info size={14} className="text-[#3B82F6] shrink-0 mt-0.5" />
-        <p className="text-[14px] text-[#1D4ED8] dark:text-[#93C5FD]">This report shows <strong>revenue vs. ad spend</strong>. COGS, fulfillment costs, and returns are not included — consult your accountant for a full profit and loss statement.</p>
+        <p className="text-[14px] text-[#1D4ED8] dark:text-[#93C5FD]">This report shows <strong>revenue vs. ad spend</strong>. COGS, fulfillment costs, and returns are not included - consult your accountant for a full profit and loss statement.</p>
       </div>
 
       {/* KPI strip */}
@@ -166,7 +166,7 @@ export default function FinancialReportPage() {
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
             {working.length === 0
-              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals — connect Shopify to load revenue data.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals - connect Shopify to load revenue data.</p>
               : working.map((s, i) => <Signal key={i} type="good" {...s} />)}
           </div>
         </Card>
@@ -223,7 +223,7 @@ export default function FinancialReportPage() {
             <div className="bg-[#22C55E]" style={{ width: `${100 - codPct}%` }} />
             <div className="bg-[#EAB308]" style={{ width: `${codPct}%` }} />
           </div>
-          {codPct > 50 && <p className="mt-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D] bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5">High COD rate risks RTO losses — offer a small prepaid discount to shift preference.</p>}
+          {codPct > 50 && <p className="mt-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D] bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5">High COD rate risks RTO losses - offer a small prepaid discount to shift preference.</p>}
         </Card>
       </div>
 

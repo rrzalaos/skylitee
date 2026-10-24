@@ -15,19 +15,19 @@ function ConnectionsContent() {
 
   const [shopName, setShopName] = useState<string | null>(null);
 
-  // GSC — independent connection
+  // GSC - independent connection
   const [gscConnected, setGscConnected] = useState(false);
   const [gscSites, setGscSites] = useState<GoogleSite[]>([]);
   const [selectedGsc, setSelectedGsc] = useState("");
   const [gscSaved, setGscSaved] = useState(false);
 
-  // GA4 — independent connection
+  // GA4 - independent connection
   const [ga4Connected, setGa4Connected] = useState(false);
   const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([]);
   const [selectedGa4, setSelectedGa4] = useState("");
   const [ga4Saved, setGa4Saved] = useState(false);
 
-  // Google Ads — independent connection
+  // Google Ads - independent connection
   const [gadsConnected, setGadsConnected] = useState(false);
   const [gadsCustomers, setGadsCustomers] = useState<GadsCustomer[]>([]);
   const [selectedGads, setSelectedGads] = useState("");
@@ -130,7 +130,7 @@ function ConnectionsContent() {
     if (!confirm("Disconnect Shopify? The dashboard will lose access to your store data.")) return;
     await fetch("/api/auth/shopify/disconnect", { method: "POST" });
     setShopName(null);
-    showToast("Shopify disconnected — redirecting to install page");
+    showToast("Shopify disconnected - redirecting to install page");
     setTimeout(() => router.push("/install"), 1500);
   };
 
@@ -235,7 +235,7 @@ function ConnectionsContent() {
       status: gscConnected ? "connected" : "disconnected",
       detail: gscConnected
         ? `Connected · ${gscSaved ? "site selected" : "select site below"}`
-        : "Not connected — can use a different Google account than GA4",
+        : "Not connected - can use a different Google account than GA4",
       href: "/api/auth/google?service=gsc",
       disconnectFn: gscConnected ? disconnectGsc : null,
     },
@@ -246,7 +246,7 @@ function ConnectionsContent() {
       status: ga4Connected ? "connected" : "disconnected",
       detail: ga4Connected
         ? `Connected · ${ga4Saved ? "property selected" : "select property below"}`
-        : "Not connected — can use a different Google account than GSC",
+        : "Not connected - can use a different Google account than GSC",
       href: "/api/auth/google?service=ga4",
       disconnectFn: ga4Connected ? disconnectGa4 : null,
     },
@@ -268,7 +268,7 @@ function ConnectionsContent() {
       status: gadsConnected ? "connected" : "disconnected",
       detail: gadsConnected
         ? `Connected · ${gadsSaved ? "account selected" : "select account below"}`
-        : "Not connected — track campaign spend, ROAS & keywords",
+        : "Not connected - track campaign spend, ROAS & keywords",
       href: "/api/auth/google?service=gads",
       disconnectFn: gadsConnected ? disconnectGads : null,
     },
@@ -339,20 +339,20 @@ function ConnectionsContent() {
             </div>
           ))}
 
-          {/* Locked: connected by someone else (agency) — show only this store's saved account */}
+          {/* Locked: connected by someone else (agency) - show only this store's saved account */}
           {([
             ["gsc", gscConnected, "Search Console", gscSites.find(s => s.url === selectedGsc)?.url ?? (gscSaved ? selectedGsc : "")],
             ["ga4", ga4Connected, "Analytics GA4", (() => { const p = ga4Properties.find(x => x.id === selectedGa4); return p ? `${p.name} · ID ${p.id.replace("properties/", "")}` : ga4Saved ? selectedGa4 : ""; })()],
             ["gads", gadsConnected, "Google Ads", gadsSaved ? `Customer ID ${selectedGads}` : ""],
-            ["meta", metaConnected, "Meta Ads", (() => { const a = metaAccounts.find(x => x.id === selectedMeta); return metaSaved ? (a ? `${a.name} — ${a.id}` : selectedMeta) : ""; })()],
+            ["meta", metaConnected, "Meta Ads", (() => { const a = metaAccounts.find(x => x.id === selectedMeta); return metaSaved ? (a ? `${a.name} - ${a.id}` : selectedMeta) : ""; })()],
           ] as const).map(([svc, connected, label, account]) => locks[svc] !== undefined && connected && (
             <div key={svc} className="mt-3 pt-3 border-t border-black/[0.06]">
-              <div className="text-[16px] font-semibold text-[#181816] mb-1.5">{label} — account in use</div>
+              <div className="text-[16px] font-semibold text-[#181816] mb-1.5">{label} - account in use</div>
               <div className="text-[16px] text-[#181816] bg-[#f7f7f5] border border-black/[0.08] rounded-lg px-2.5 py-1.5 mb-1.5 break-all">
                 {account || "No account selected yet"}
               </div>
               <div className="text-[15px] text-[#686864]">
-                Connected by {locks[svc] || "another user"} — only they can change which account is used.
+                Connected by {locks[svc] || "another user"} - only they can change which account is used.
                 {canEdit && " To use your own login instead, Disconnect above and connect your account."}
               </div>
             </div>
@@ -363,7 +363,7 @@ function ConnectionsContent() {
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
-                  <Search size={11} className="text-[#4285F4]" /> Search Console — select site
+                  <Search size={11} className="text-[#4285F4]" /> Search Console - select site
                 </div>
                 {gscSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
@@ -381,7 +381,7 @@ function ConnectionsContent() {
                 disabled={saving || gscSaved}
                 className="w-full py-2 bg-[#4285F4] text-white rounded-lg text-[16px] font-semibold hover:bg-[#3367d6] disabled:opacity-50 transition-colors"
               >
-                {saving ? "Saving..." : gscSaved ? "✓ Saved — change dropdown to update" : "Save GSC Site"}
+                {saving ? "Saving..." : gscSaved ? "✓ Saved - change dropdown to update" : "Save GSC Site"}
               </button>
             </div>
           )}
@@ -391,7 +391,7 @@ function ConnectionsContent() {
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
-                  <BarChart2 size={11} className="text-[#E37400]" /> Analytics GA4 — select property
+                  <BarChart2 size={11} className="text-[#E37400]" /> Analytics GA4 - select property
                 </div>
                 {ga4Saved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
@@ -404,7 +404,7 @@ function ConnectionsContent() {
                     const numericId = p.id.replace("properties/", "");
                     return (
                       <option key={p.id} value={p.id}>
-                        {p.name} — {p.account} · ID {numericId}
+                        {p.name} - {p.account} · ID {numericId}
                       </option>
                     );
                   })}
@@ -414,7 +414,7 @@ function ConnectionsContent() {
                 disabled={saving || ga4Saved}
                 className="w-full py-2 bg-[#E37400] text-white rounded-lg text-[16px] font-semibold hover:bg-[#c85f00] disabled:opacity-50 transition-colors"
               >
-                {saving ? "Saving..." : ga4Saved ? "✓ Saved — change dropdown to update" : "Save GA4 Property"}
+                {saving ? "Saving..." : ga4Saved ? "✓ Saved - change dropdown to update" : "Save GA4 Property"}
               </button>
             </div>
           )}
@@ -424,7 +424,7 @@ function ConnectionsContent() {
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
-                  <Megaphone size={11} className="text-[#34A853]" /> Google Ads — select account
+                  <Megaphone size={11} className="text-[#34A853]" /> Google Ads - select account
                 </div>
                 {gadsSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
@@ -433,11 +433,11 @@ function ConnectionsContent() {
                   Add <code className="font-mono text-[14px]">GOOGLE_ADS_DEVELOPER_TOKEN</code> in Vercel environment variables to enable Google Ads.
                 </div>
               ) : (gadsError === "test_token" || (gadsError && gadsCustomers.length === 0)) ? (
-                /* Test token mode — auto-detect blocked, allow manual entry */
+                /* Test token mode - auto-detect blocked, allow manual entry */
                 <div className="space-y-2">
                   <div className="text-[15px] text-[#7a5a00] bg-[#fffbe6] border border-[#ffe58f] rounded-lg px-3 py-2.5">
                     <div className="font-semibold mb-0.5">Developer token in test mode</div>
-                    <div>Google is reviewing your token (1–3 business days). Meanwhile, enter your Customer ID manually — find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
+                    <div>Google is reviewing your token (1–3 business days). Meanwhile, enter your Customer ID manually - find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
                   </div>
                   <input
                     type="text"
@@ -452,7 +452,7 @@ function ConnectionsContent() {
                     disabled={saving || !selectedGads || gadsSaved}
                     className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[16px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
                   >
-                    {saving ? "Saving..." : gadsSaved ? "✓ Saved — type new ID to update" : "Save Customer ID"}
+                    {saving ? "Saving..." : gadsSaved ? "✓ Saved - type new ID to update" : "Save Customer ID"}
                   </button>
                 </div>
               ) : gadsCustomers.length === 0 ? (
@@ -475,7 +475,7 @@ function ConnectionsContent() {
                     disabled={saving || gadsSaved}
                     className="w-full py-2 bg-[#34A853] text-white rounded-lg text-[16px] font-semibold hover:bg-[#2d9248] disabled:opacity-50 transition-colors"
                   >
-                    {saving ? "Saving..." : gadsSaved ? "✓ Saved — change dropdown to update" : "Save Google Ads Account"}
+                    {saving ? "Saving..." : gadsSaved ? "✓ Saved - change dropdown to update" : "Save Google Ads Account"}
                   </button>
                 </>
               )}
@@ -487,7 +487,7 @@ function ConnectionsContent() {
             <div className="mt-3 pt-3 border-t border-black/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-[16px] font-semibold text-[#181816] flex items-center gap-1.5">
-                  <Share2 size={11} className="text-[#1877F2]" /> Meta — select ad account
+                  <Share2 size={11} className="text-[#1877F2]" /> Meta - select ad account
                 </div>
                 {metaSaved && <span className="text-[15px] text-[#0d6b4f]">✓ Saved</span>}
               </div>
@@ -503,7 +503,7 @@ function ConnectionsContent() {
                     className="w-full text-[17px] border border-black/[0.12] rounded-lg px-2.5 py-1.5 bg-white mb-2"
                   >
                     {metaAccounts.map(a => (
-                      <option key={a.id} value={a.id}>{a.name} — {a.id} ({a.currency})</option>
+                      <option key={a.id} value={a.id}>{a.name} - {a.id} ({a.currency})</option>
                     ))}
                   </select>
                   <button
@@ -511,7 +511,7 @@ function ConnectionsContent() {
                     disabled={saving || metaSaved}
                     className="w-full py-2 bg-[#1877F2] text-white rounded-lg text-[16px] font-semibold hover:bg-[#1565c0] disabled:opacity-50 transition-colors"
                   >
-                    {saving ? "Saving..." : metaSaved ? "✓ Saved — change dropdown to update" : "Save Ad Account"}
+                    {saving ? "Saving..." : metaSaved ? "✓ Saved - change dropdown to update" : "Save Ad Account"}
                   </button>
                 </>
               )}
@@ -547,7 +547,7 @@ function ConnectionsContent() {
               {[
                 "Search Console and GA4 connect independently",
                 "Each can use a completely different Google account",
-                "Skylitee stores a separate token per service — no conflicts",
+                "Skylitee stores a separate token per service - no conflicts",
                 "Disconnect and reconnect each service individually at any time",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-1.5">

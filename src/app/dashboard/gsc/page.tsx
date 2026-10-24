@@ -78,7 +78,7 @@ export default function GSCPage() {
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  // Month-wise — lazy load on tab open / window change.
+  // Month-wise - lazy load on tab open / window change.
   useEffect(() => {
     if (tab !== "monthly") return;
     setMonthlyLoading(true);
@@ -291,7 +291,7 @@ export default function GSCPage() {
             </Card>
           )}
           <Card>
-            <CardHeader title="Top keywords" right="Top 10 by clicks — see Keywords tab for all" />
+            <CardHeader title="Top keywords" right="Top 10 by clicks - see Keywords tab for all" />
             <div className="overflow-x-auto">
               <table className="w-full text-[15px] border-collapse">
                 <thead>
@@ -352,7 +352,7 @@ export default function GSCPage() {
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={13} className="text-[#EAB308]" />
                 <span className="text-[14px] font-bold text-[#92400E] dark:text-[#FCD34D]">CTR Opportunities</span>
-                <span className="text-[14px] text-[#A1A1AA]">High impressions, low clicks — fix title/description</span>
+                <span className="text-[14px] text-[#A1A1AA]">High impressions, low clicks - fix title/description</span>
               </div>
               <table className="w-full text-[14px] border-collapse">
                 <thead>
@@ -553,7 +553,7 @@ export default function GSCPage() {
                       </div>
                       {indexRatio < 80 && (
                         <div className="text-[13px] text-[#A1A1AA] mt-1.5">
-                          {sm.submitted - sm.indexed} URL{sm.submitted - sm.indexed > 1 ? "s" : ""} not indexed — check Google Search Console for coverage errors.
+                          {sm.submitted - sm.indexed} URL{sm.submitted - sm.indexed > 1 ? "s" : ""} not indexed - check Google Search Console for coverage errors.
                         </div>
                       )}
                     </div>
@@ -630,7 +630,7 @@ export default function GSCPage() {
                           {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums dark:text-[#F4F4F5]">{row.fmt(m[row.key] as number)}</td>)}
                           {monthly.length > 1 && (
                             <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
-                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                              {mom === null ? "-" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
                             </td>
                           )}
                         </tr>

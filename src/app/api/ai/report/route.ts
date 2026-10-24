@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { plainDashes } from "@/lib/utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -63,41 +64,41 @@ export async function POST(req: NextRequest) {
   if (ga4) {
     const k = ga4.kpis as Record<string, number | string>;
     lines.push("=== GOOGLE ANALYTICS 4 ===");
-    lines.push(`Sessions: ${k.sessions ?? 0}, Users: ${k.users ?? 0}, Bounce: ${Number(k.bounceRate ?? 0).toFixed(1)}%, Avg session: ${k.avgSessionMin ?? "—"}`);
+    lines.push(`Sessions: ${k.sessions ?? 0}, Users: ${k.users ?? 0}, Bounce: ${Number(k.bounceRate ?? 0).toFixed(1)}%, Avg session: ${k.avgSessionMin ?? "-"}`);
     lines.push(`New users: ${k.newUsers ?? 0}, Pageviews: ${k.pageviews ?? 0}`);
     const channels = ga4.channels as {channel: string; sessions: number}[];
     if (channels?.length) lines.push(`Channels: ${channels.slice(0, 4).map(c => `${c.channel} (${c.sessions} sessions)`).join(", ")}`);
     const ec = ga4.ecommerce as Record<string, number> | null;
-    if (ec) lines.push(`Ecommerce — ATC rate: ${ec.atcRate ?? 0}%, Checkout: ${ec.checkoutRate ?? 0}%, Purchase: ${ec.purchaseRate ?? 0}%`);
+    if (ec) lines.push(`Ecommerce - ATC rate: ${ec.atcRate ?? 0}%, Checkout: ${ec.checkoutRate ?? 0}%, Purchase: ${ec.purchaseRate ?? 0}%`);
     lines.push("");
   }
 
   const dataContext = lines.join("\n");
 
   const systemPrompt = `You are Skylitee AI, an expert D2C ecommerce performance advisor for Indian brands.
-Return ONLY valid JSON — no markdown fences, no extra text outside the JSON object.`;
+Return ONLY valid JSON - no markdown fences, no extra text outside the JSON object.`;
 
   const userPrompt = `Analyse this D2C brand data and return ONLY a JSON object:
 
 {
-  "executiveSummary": "2-3 sentences — overall performance assessment with specific numbers",
+  "executiveSummary": "2-3 sentences - overall performance assessment with specific numbers",
   "overallScore": 72,
   "scoreLabel": "Good",
   "working": [
-    { "metric": "ROAS", "value": "3.2x", "insight": "Above the 3x profitability mark — campaigns are efficient and can scale." }
+    { "metric": "ROAS", "value": "3.2x", "insight": "Above the 3x profitability mark - campaigns are efficient and can scale." }
   ],
   "notWorking": [
     { "metric": "COD Rate", "value": "72%", "insight": "High COD increases RTO risk and ties up cash. Target is below 40%.", "severity": "high" }
   ],
   "recommendations": [
-    { "action": "Add Rs.75 prepaid discount", "why": "Shifts COD buyers — reduces return rate and unlocks cash faster", "priority": "high", "effort": "low" }
+    { "action": "Add Rs.75 prepaid discount", "why": "Shifts COD buyers - reduces return rate and unlocks cash faster", "priority": "high", "effort": "low" }
   ],
   "priorities": ["Top action this week", "Second action", "Third action"],
   "channelSummary": {
     "bestChannel": "Meta Ads",
     "bestChannelReason": "Driving purchases at 3.2x ROAS",
     "weakestChannel": "Organic Search",
-    "weakestChannelReason": "Low CTR of 1.1% — titles need optimisation"
+    "weakestChannelReason": "Low CTR of 1.1% - titles need optimisation"
   }
 }
 
@@ -119,7 +120,7 @@ ${dataContext}`;
     messages: [{ role: "user", content: userPrompt }],
   });
 
-  const rawText = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  const rawText = response.content[0].type === "text" ? plainDashes(response.content[0].text.trim()) : "";
 
   let report;
   try {

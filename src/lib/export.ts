@@ -29,7 +29,7 @@ function csvEscape(v: string | number): string {
 }
 
 export function exportToCSV(filename: string, sections: ExportSection[]): void {
-  const BOM = "﻿"; // UTF-8 BOM — makes ₹ and special chars render correctly in Excel
+  const BOM = "﻿"; // UTF-8 BOM - makes ₹ and special chars render correctly in Excel
   const lines: string[] = [];
 
   for (const section of sections) {
@@ -77,7 +77,7 @@ export async function exportToPDF(
   const MUTED: [number, number, number] = [113, 113, 122];
   const brandName = branding?.brandName?.trim() || "Skylitee";
 
-  // Determine orientation — landscape for wide tables
+  // Determine orientation - landscape for wide tables
   const maxCols = Math.max(...sections.map(s => s.headers.length), 0);
   const orientation = maxCols > 7 ? "landscape" : "portrait";
 
@@ -105,7 +105,7 @@ export async function exportToPDF(
       const h = 12;
       const w = Math.min(40, (props.width / props.height) * h);
       doc.addImage(branding.logoDataUrl, props.fileType || "PNG", pageW - 14 - w, 19, w, h);
-    } catch { /* bad image — skip */ }
+    } catch { /* bad image - skip */ }
   }
 
   // Title block

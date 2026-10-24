@@ -1,4 +1,4 @@
-// ── Competitor Intel — types + pure helpers shared by API routes and the page ──
+// ── Competitor Intel - types + pure helpers shared by API routes and the page ──
 // Browser-safe: no SDKs, no KV. Server-side fetching lives in competitors.ts.
 
 const DAY = 86_400_000;
@@ -20,7 +20,7 @@ export interface CountryInfo {
   cpmInr: [number, number]; // Meta CPM benchmark range, ₹ per 1,000 impressions (D2C, 2026)
 }
 
-// CPM ranges are public-benchmark ballparks converted at ~₹88/$ — shown in the UI as
+// CPM ranges are public-benchmark ballparks converted at ~₹88/$ - shown in the UI as
 // editable assumptions, never as facts.
 export const COUNTRIES: CountryInfo[] = [
   { code: "IN", name: "India",          eu: false, dfsLocation: 2356, dfsLanguage: "en", cpmInr: [80, 200] },
@@ -63,7 +63,7 @@ export interface CompetitorAd {
   collationCount: number;   // how many near-identical variants Meta groups under this ad
   collationId: string | null;
   libraryUrl: string;       // public Ad Library link (stable, unlike fbcdn media URLs)
-  euReach: number | null;   // official EU reach — EU countries only
+  euReach: number | null;   // official EU reach - EU countries only
 }
 
 export interface AdHooks {
@@ -101,7 +101,7 @@ export interface GoogleAd {
   lastShown: string | null;  // ISO
   daysRunning: number | null;
   isActive: boolean;         // shown in the last 7 days
-  platforms: GoogleAdPlatform[]; // only from the per-platform lookups — may be incomplete
+  platforms: GoogleAdPlatform[]; // only from the per-platform lookups - may be incomplete
   transparencyUrl: string;
 }
 
@@ -112,7 +112,7 @@ export interface GoogleAdsPayload {
   advertisers: { id: string; name: string; verified: boolean; ads: number }[];
   ads: GoogleAd[];           // shown in the last 90 days (every live ad included)
   capped: boolean;           // more ads exist than were fetched
-  // Google's own result counts — real totals even when the ad list is capped
+  // Google's own result counts - real totals even when the ad list is capped
   totals: { seen90d: number; live: number } & Record<GoogleAdPlatform, number>;
 }
 
@@ -152,7 +152,7 @@ export function googleAdStats(ads: GoogleAd[]): GoogleAdStats {
   };
 }
 
-// ── Ad-level analytics (pure — used by route + UI) ────────────────────────────
+// ── Ad-level analytics (pure - used by route + UI) ────────────────────────────
 
 export interface AdStats {
   active: number;

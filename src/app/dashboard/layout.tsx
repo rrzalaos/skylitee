@@ -9,7 +9,7 @@ import { Eye, X } from "lucide-react";
 
 interface ImpersonateData { id: string; name: string; brand: string; }
 
-// Pages a gated (unsubscribed / expired) user may still reach — to subscribe or connect.
+// Pages a gated (unsubscribed / expired) user may still reach - to subscribe or connect.
 function isExemptPath(pathname: string): boolean {
   return pathname.startsWith("/dashboard/pricing") || pathname.startsWith("/dashboard/connections");
 }
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <DateRangeProvider>
       <div className="flex h-screen overflow-hidden bg-[#F5F5F4] dark:bg-[#0C0C0C]">
-        {/* Sidebar hidden for admin — they have a single-page panel */}
+        {/* Sidebar hidden for admin - they have a single-page panel */}
         {!isAdmin && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="bg-[#1877F2] text-white text-[15px] font-semibold px-4 py-2 flex items-center gap-2 shrink-0 flex-wrap">
               <Eye size={13} className="shrink-0" />
               <span>
-                Admin view — <strong>{impersonate.brand}</strong> ({impersonate.name}).
+                Admin view - <strong>{impersonate.brand}</strong> ({impersonate.name}).
                 Data shown is your own connected store.
               </span>
               <button onClick={exitImpersonate}

@@ -6,16 +6,16 @@ export interface MetaAccount {
 
 export type MetaActionEntry = { action_type: string; value: string };
 
-// Meta reports several "lead-ish" events per campaign — on-Meta Instant-Form leads, a
+// Meta reports several "lead-ish" events per campaign - on-Meta Instant-Form leads, a
 // website "Lead" pixel that fires loosely, messaging conversations, registrations, calls.
 // Ads Manager's headline "Results" counts ONLY the one the campaign was optimized for.
-// Taking the max of all of them (our old behaviour) over-counts badly — e.g. a campaign
+// Taking the max of all of them (our old behaviour) over-counts badly - e.g. a campaign
 // with 6 form leads but a Lead pixel that fired 48 times showed 48.
 // So we mirror Ads Manager: walk a priority list (most-specific result first) and return
-// the FIRST event that's present. Order matters — on-Meta form leads outrank the website
+// the FIRST event that's present. Order matters - on-Meta form leads outrank the website
 // pixel, which outranks the generic aggregate.
 const LEAD_RESULT_PRIORITY = [
-  "onsite_conversion.lead_grouped",                  // Instant Form leads (on-Meta) — Ads Manager "Leads"
+  "onsite_conversion.lead_grouped",                  // Instant Form leads (on-Meta) - Ads Manager "Leads"
   "leadgen.other",                                   // older Instant Form lead type
   "onsite_conversion.lead",
   "offsite_conversion.fb_pixel_lead",                // website pixel leads (only when no on-Meta form leads)
@@ -50,7 +50,7 @@ export function leadCount(actions: MetaActionEntry[] | undefined): number {
 }
 
 /**
- * Split leads by channel — on-Meta/website FORM leads vs MESSAGING (WhatsApp/Messenger/IG
+ * Split leads by channel - on-Meta/website FORM leads vs MESSAGING (WhatsApp/Messenger/IG
  * DM) vs CALL leads. Messaging leads are higher-intent and convert differently, so the
  * Command Center shows them separately instead of one blended lead count.
  */
@@ -74,7 +74,7 @@ export function leadChannels(actions: MetaActionEntry[] | undefined): { form: nu
   return { form, messaging, calls };
 }
 
-/** Every lead-ish event + value — for the debug/audit view so a mismatch is diagnosable. */
+/** Every lead-ish event + value - for the debug/audit view so a mismatch is diagnosable. */
 export function leadBreakdown(actions: MetaActionEntry[] | undefined): { type: string; value: number; chosen: boolean }[] {
   if (!actions?.length) return [];
   const rel = actions
@@ -96,10 +96,10 @@ export function leadBreakdown(actions: MetaActionEntry[] | undefined): { type: s
 
 /**
  * Resolve which Meta ad account to use.
- * If savedAccountId exists, use it — never fall back to a different account.
+ * If savedAccountId exists, use it - never fall back to a different account.
  * Try to fetch name/currency for display; if that fails, use the ID as the name.
  * With nothing saved, auto-picks only when the login reaches exactly ONE ad account (an agency
- * login reaches many brands — guessing would show another brand's data).
+ * login reaches many brands - guessing would show another brand's data).
  */
 export async function resolveMetaAccount(
   savedAccountId: string | null,
@@ -118,7 +118,7 @@ export async function resolveMetaAccount(
     };
   }
 
-  // No saved account — use the login's only account, if it has just one
+  // No saved account - use the login's only account, if it has just one
   const res = await fetch(
     `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name,currency&limit=2&access_token=${token}`
   );

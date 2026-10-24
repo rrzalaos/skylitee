@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   if (sites.length === 0) return NextResponse.json({ error: "no_sites" });
 
   const savedSite = await getGscSite(req, shop);
-  // No saved choice: only auto-pick when the login reaches exactly ONE — an agency login reaches
+  // No saved choice: only auto-pick when the login reaches exactly ONE - an agency login reaches
   // many brands, and guessing would show another brand's data.
   const siteUrl = savedSite && sites.find(s => s.siteUrl === savedSite)
     ? savedSite
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Achievements — computed from real data
+  // Achievements - computed from real data
   const kwRows = keywords.rows ?? [];
   const pageRows = pages.rows ?? [];
   const clicksTotal = aggRow?.clicks ?? 0;
@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
   }
   const branded = { brandLabel, brandedClicks, brandedImpr, nonBrandedClicks, nonBrandedImpr };
 
-  // Clicks distribution by ranking position — shows where your traffic actually comes from.
+  // Clicks distribution by ranking position - shows where your traffic actually comes from.
   const posBuckets = [
     { label: "1–3", min: 0, max: 3 },
     { label: "4–10", min: 3, max: 10 },
@@ -172,19 +172,19 @@ export async function GET(req: NextRequest) {
   const achievements = [];
   if (clicksTotal >= 10000) achievements.push({ icon: "🏆", label: `${(clicksTotal / 1000).toFixed(1)}K clicks milestone`, type: "good" });
   else if (clicksTotal >= 1000) achievements.push({ icon: "✅", label: "1,000+ clicks", type: "good" });
-  if (avgPos > 0 && avgPos <= 5) achievements.push({ icon: "🥇", label: `Avg position ${avgPos} — Top 5!`, type: "good" });
-  else if (avgPos <= 10) achievements.push({ icon: "✅", label: `Avg position ${avgPos} — Page 1`, type: "good" });
-  if (ctrPct >= 5) achievements.push({ icon: "🔥", label: `CTR ${ctrPct}% — excellent`, type: "good" });
-  else if (ctrPct >= 3) achievements.push({ icon: "✅", label: `CTR ${ctrPct}% — above average`, type: "good" });
+  if (avgPos > 0 && avgPos <= 5) achievements.push({ icon: "🥇", label: `Avg position ${avgPos} - Top 5!`, type: "good" });
+  else if (avgPos <= 10) achievements.push({ icon: "✅", label: `Avg position ${avgPos} - Page 1`, type: "good" });
+  if (ctrPct >= 5) achievements.push({ icon: "🔥", label: `CTR ${ctrPct}% - excellent`, type: "good" });
+  else if (ctrPct >= 3) achievements.push({ icon: "✅", label: `CTR ${ctrPct}% - above average`, type: "good" });
   if (top3Keywords > 0) achievements.push({ icon: "🎯", label: `${top3Keywords} keyword${top3Keywords > 1 ? "s" : ""} in top 3`, type: "good" });
   if (page1Keywords > 5) achievements.push({ icon: "📈", label: `${page1Keywords} keywords on page 1`, type: "good" });
   if (highCtrKws > 0) achievements.push({ icon: "⚡", label: `${highCtrKws} keyword${highCtrKws > 1 ? "s" : ""} with CTR ≥ 5%`, type: "good" });
 
   // Issues
   if (opportunityKws > 0) achievements.push({ icon: "⚠️", label: `${opportunityKws} keywords with high impressions but low CTR`, type: "warn" });
-  if (lowCtrPages > 0) achievements.push({ icon: "⚠️", label: `${lowCtrPages} pages with low CTR — improve meta titles`, type: "warn" });
-  if (avgPos > 20) achievements.push({ icon: "🔴", label: `Avg position ${avgPos} — most content not on page 1`, type: "bad" });
-  if (ctrPct < 1 && clicksTotal > 0) achievements.push({ icon: "🔴", label: `CTR ${ctrPct}% — very low, review page titles and descriptions`, type: "bad" });
+  if (lowCtrPages > 0) achievements.push({ icon: "⚠️", label: `${lowCtrPages} pages with low CTR - improve meta titles`, type: "warn" });
+  if (avgPos > 20) achievements.push({ icon: "🔴", label: `Avg position ${avgPos} - most content not on page 1`, type: "bad" });
+  if (ctrPct < 1 && clicksTotal > 0) achievements.push({ icon: "🔴", label: `CTR ${ctrPct}% - very low, review page titles and descriptions`, type: "bad" });
   const sitemapErrors = sitemaps.reduce((s, m) => s + m.errors, 0);
   if (sitemapErrors > 0) achievements.push({ icon: "🔴", label: `${sitemapErrors} sitemap error${sitemapErrors > 1 ? "s" : ""} detected`, type: "bad" });
 

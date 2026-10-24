@@ -80,29 +80,29 @@ function buildPlacementInsights(placements: Placement[], totalSpend: number): PI
   const share = (p: Placement) => (p.spend / totalSpend) * 100;
   const withRoas = spending.filter(p => p.roas > 0);
 
-  // Best placement — highest ROAS, preferring ones with meaningful spend share
+  // Best placement - highest ROAS, preferring ones with meaningful spend share
   const best = [...withRoas].filter(p => share(p) >= 5).sort((a, b) => b.roas - a.roas)[0]
     ?? [...withRoas].sort((a, b) => b.roas - a.roas)[0];
   if (best && best.roas >= 2) {
-    out.push({ good: true, title: `${best.label} is your best placement — ROAS ${best.roas}x`, body: `Best return on spend (${best.roas}× on ${share(best).toFixed(0)}% of budget). This is working — shift more budget here and build more creatives sized for this surface to scale efficiently.` });
+    out.push({ good: true, title: `${best.label} is your best placement - ROAS ${best.roas}x`, body: `Best return on spend (${best.roas}× on ${share(best).toFixed(0)}% of budget). This is working - shift more budget here and build more creatives sized for this surface to scale efficiently.` });
   }
 
-  // Budget drain — big spend share but ROAS below the 1.5x line
+  // Budget drain - big spend share but ROAS below the 1.5x line
   const drain = spending.filter(p => share(p) >= 15 && p.roas > 0 && p.roas < 1.5).sort((a, b) => b.spend - a.spend)[0];
   if (drain) {
-    out.push({ good: false, title: `${drain.label} is draining budget — ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5x line while eating a big share of budget. Why: weak audience/creative fit for this surface. Cut its budget and move it to ${best ? best.label : "your best placement"}.` });
+    out.push({ good: false, title: `${drain.label} is draining budget - ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5x line while eating a big share of budget. Why: weak audience/creative fit for this surface. Cut its budget and move it to ${best ? best.label : "your best placement"}.` });
   }
 
   // Landing-page leak on a specific surface
   const lpLeak = spending.filter(p => p.lpv > 0 && p.lpRatio > 0 && p.lpRatio < 45).sort((a, b) => b.spend - a.spend)[0];
   if (lpLeak) {
-    out.push({ good: false, title: `${lpLeak.label} — landing page rate ${lpLeak.lpRatio}%`, body: `Below the 65% avg: clicks from this surface aren't reaching your site, usually mobile load speed. Test your page speed (<3s) and the link for this placement.` });
+    out.push({ good: false, title: `${lpLeak.label} - landing page rate ${lpLeak.lpRatio}%`, body: `Below the 65% avg: clicks from this surface aren't reaching your site, usually mobile load speed. Test your page speed (<3s) and the link for this placement.` });
   }
 
   // Strong engagement surface (different from best ROAS one)
   const ctrStar = spending.filter(p => p.ctr >= 1.5 && p.clicks > 0).sort((a, b) => b.ctr - a.ctr)[0];
   if (ctrStar && (!best || ctrStar.label !== best.label)) {
-    out.push({ good: true, title: `${ctrStar.label} has strong engagement — CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates on this surface — keep it running and reuse this creative style on other placements.` });
+    out.push({ good: true, title: `${ctrStar.label} has strong engagement - CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates on this surface - keep it running and reuse this creative style on other placements.` });
   }
 
   return out.slice(0, 5);
@@ -112,7 +112,7 @@ function barColor(roas: number) { return roas >= 3 ? "#16A34A" : roas >= 1.5 ? "
 
 interface WinnerItem { label: string; purchases: number; leads: number; purchaseValue: number; spend: number; }
 
-// Headline "who wins" banner for the top of each tab — answers the plain question:
+// Headline "who wins" banner for the top of each tab - answers the plain question:
 // which segment drives the most orders (or leads, for a leads account) and the most spend.
 // Outcome auto-switches to leads when the account books more leads than orders.
 function WinnerHeadline({ items, dimWord, cur }: { items: WinnerItem[]; dimWord: string; cur: string }) {
@@ -168,7 +168,7 @@ function WinnerHeadline({ items, dimWord, cur }: { items: WinnerItem[]; dimWord:
         );
       })}
       <div className="col-span-full text-[13px] text-[#A1A1AA] -mt-1">
-        Winner by {dimWord}. {useLeads ? "Showing leads — your account books more leads than orders." : "Showing orders."}
+        Winner by {dimWord}. {useLeads ? "Showing leads - your account books more leads than orders." : "Showing orders."}
       </div>
     </div>
   );
@@ -185,35 +185,35 @@ function buildBucketInsights(buckets: BBucket[], dimWord: string): PInsight[] {
   const share = (b: BBucket) => (b.spend / total) * 100;
   const withRoas = spending.filter(b => b.roas > 0);
 
-  // Winner — best ROAS, preferring buckets with a meaningful spend share
+  // Winner - best ROAS, preferring buckets with a meaningful spend share
   const best = [...withRoas].filter(b => share(b) >= 5).sort((a, b) => b.roas - a.roas)[0]
     ?? [...withRoas].sort((a, b) => b.roas - a.roas)[0];
   if (best && best.roas >= 2) {
-    out.push({ good: true, title: `${best.label} is your winning ${dimWord} — ROAS ${best.roas}x`, body: `Best return (${best.roas}× on ${share(best).toFixed(0)}% of budget${best.purchases > 0 ? `, ${best.purchases} orders` : ""}). This is working — push more budget toward this ${dimWord} to scale efficiently.` });
+    out.push({ good: true, title: `${best.label} is your winning ${dimWord} - ROAS ${best.roas}x`, body: `Best return (${best.roas}× on ${share(best).toFixed(0)}% of budget${best.purchases > 0 ? `, ${best.purchases} orders` : ""}). This is working - push more budget toward this ${dimWord} to scale efficiently.` });
   }
 
-  // Best converter — highest click→order rate, if it isn't already the ROAS winner
+  // Best converter - highest click→order rate, if it isn't already the ROAS winner
   const conv = spending.filter(b => b.convRate > 0).sort((a, b) => b.convRate - a.convRate)[0];
   if (conv && conv.convRate >= 1 && (!best || conv.label !== best.label)) {
-    out.push({ good: true, title: `${conv.label} converts best — ${conv.convRate}% click→order`, body: `Highest conversion rate of any ${dimWord}. Visitors from this ${dimWord} are the most likely to buy — prioritise it in your targeting.` });
+    out.push({ good: true, title: `${conv.label} converts best - ${conv.convRate}% click→order`, body: `Highest conversion rate of any ${dimWord}. Visitors from this ${dimWord} are the most likely to buy - prioritise it in your targeting.` });
   }
 
-  // Strongest engagement — CTR star, if distinct from the above
+  // Strongest engagement - CTR star, if distinct from the above
   const ctrStar = spending.filter(b => b.ctr >= 1.5 && b.clicks > 0).sort((a, b) => b.ctr - a.ctr)[0];
   if (ctrStar && (!best || ctrStar.label !== best.label) && (!conv || ctrStar.label !== conv.label)) {
-    out.push({ good: true, title: `${ctrStar.label} engages most — CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates with this ${dimWord} — keep serving it here.` });
+    out.push({ good: true, title: `${ctrStar.label} engages most - CTR ${ctrStar.ctr}%`, body: `Above the 1.5% good mark. Your creative resonates with this ${dimWord} - keep serving it here.` });
   }
 
-  // Budget drain — big spend share but ROAS below the 1.5x line
+  // Budget drain - big spend share but ROAS below the 1.5x line
   const drain = spending.filter(b => share(b) >= 15 && b.roas > 0 && b.roas < 1.5).sort((a, b) => b.spend - a.spend)[0];
   if (drain) {
-    out.push({ good: false, title: `${drain.label} is draining budget — ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5× line while eating a big share of budget. Cut spend on this ${dimWord} and move it to ${best ? best.label : "your best segment"}.` });
+    out.push({ good: false, title: `${drain.label} is draining budget - ROAS ${drain.roas}x on ${share(drain).toFixed(0)}% of spend`, body: `Below the 1.5× line while eating a big share of budget. Cut spend on this ${dimWord} and move it to ${best ? best.label : "your best segment"}.` });
   }
 
   return out.slice(0, 5);
 }
 
-// Generic breakdown view (Age / Gender / Time / Device) — Spend chart + full metric table.
+// Generic breakdown view (Age / Gender / Time / Device) - Spend chart + full metric table.
 function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: string; dimLabel: string; dimWord: string; buckets: BBucket[]; cur: string }) {
   const fmt = (n: number) => n.toLocaleString("en-IN");
   const fmtC = (n: number) => `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -294,19 +294,19 @@ function BreakdownView({ title, dimLabel, dimWord, buckets, cur }: { title: stri
                   <td className="py-2.5 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{b.label}</td>
                   <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{fmtC(b.spend)}</td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.spendPct}%</td>
-                  <td className="py-2.5 px-2">{b.roas > 0 ? <span className={cn("font-bold", b.roas >= 3 ? "text-[#16A34A]" : b.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{b.roas}x</span> : <span className="text-[#A1A1AA]">—</span>}</td>
-                  <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{b.purchases > 0 ? b.purchases : <span className="text-[#A1A1AA]">—</span>}</td>
-                  <td className="py-2.5 px-2 whitespace-nowrap">{b.cac > 0 ? fmtC(b.cac) : <span className="text-[#A1A1AA]">—</span>}</td>
-                  <td className="py-2.5 px-2 whitespace-nowrap">{b.purchaseValue > 0 ? fmtC(b.purchaseValue) : <span className="text-[#A1A1AA]">—</span>}</td>
+                  <td className="py-2.5 px-2">{b.roas > 0 ? <span className={cn("font-bold", b.roas >= 3 ? "text-[#16A34A]" : b.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{b.roas}x</span> : <span className="text-[#A1A1AA]">-</span>}</td>
+                  <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{b.purchases > 0 ? b.purchases : <span className="text-[#A1A1AA]">-</span>}</td>
+                  <td className="py-2.5 px-2 whitespace-nowrap">{b.cac > 0 ? fmtC(b.cac) : <span className="text-[#A1A1AA]">-</span>}</td>
+                  <td className="py-2.5 px-2 whitespace-nowrap">{b.purchaseValue > 0 ? fmtC(b.purchaseValue) : <span className="text-[#A1A1AA]">-</span>}</td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.impressions >= 1000 ? `${(b.impressions / 1000).toFixed(1)}K` : b.impressions}</td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.reach >= 1000 ? `${(b.reach / 1000).toFixed(1)}K` : b.reach}</td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{fmtC(b.cpm)}</td>
                   <td className="py-2.5 px-2"><span className={cn(b.ctr >= 1.5 ? "text-[#16A34A] font-semibold" : b.ctr >= 0.9 ? "text-[#71717A] dark:text-[#A1A1AA]" : "text-[#EF4444]")}>{b.ctr}%</span></td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{fmt(b.clicks)}</td>
                   <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{fmtC(b.cpc)}</td>
-                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.lpv > 0 ? fmt(b.lpv) : "—"}</td>
-                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "—"}</td>
-                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.convRate > 0 ? `${b.convRate}%` : "—"}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.lpv > 0 ? fmt(b.lpv) : "-"}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">{b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "-"}</td>
+                  <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{b.convRate > 0 ? `${b.convRate}%` : "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -358,9 +358,9 @@ export default function PlacementPage() {
       title,
       headers: [dimLabel, "Spend", "Spend %", "ROAS", "Orders", "Cost/Order", "Revenue", "Impressions", "Reach", "CPM", "CTR", "Clicks", "CPC", "LP Views", "Cost/LPV", "Conv %"],
       rows: (buckets ?? []).map(b => [
-        b.label, fmtC(b.spend), `${b.spendPct}%`, b.roas > 0 ? `${b.roas}x` : "—",
-        b.purchases, b.cac > 0 ? fmtC(b.cac) : "—", fmtC(b.purchaseValue), fmt(b.impressions), fmt(b.reach),
-        fmtC(b.cpm), `${b.ctr}%`, fmt(b.clicks), fmtC(b.cpc), fmt(b.lpv), b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "—", `${b.convRate}%`,
+        b.label, fmtC(b.spend), `${b.spendPct}%`, b.roas > 0 ? `${b.roas}x` : "-",
+        b.purchases, b.cac > 0 ? fmtC(b.cac) : "-", fmtC(b.purchaseValue), fmt(b.impressions), fmt(b.reach),
+        fmtC(b.cpm), `${b.ctr}%`, fmt(b.clicks), fmtC(b.cpc), fmt(b.lpv), b.costPerLpv > 0 ? fmtC(b.costPerLpv) : "-", `${b.convRate}%`,
       ]),
     };
   }
@@ -374,7 +374,7 @@ export default function PlacementPage() {
         rows: data.placements.map(p => [
           p.label, p.group, fmtC(p.spend),
           `${(data.totalSpend > 0 ? p.spend / data.totalSpend * 100 : 0).toFixed(1)}%`,
-          p.roas > 0 ? `${p.roas}x` : "—",
+          p.roas > 0 ? `${p.roas}x` : "-",
           p.purchases, fmtC(p.purchaseValue), p.atc, fmt(p.lpv),
           `${p.lpRatio}%`, fmt(p.clicks), `${p.ctr}%`, fmtC(p.cpc), fmtC(p.cpm), fmt(p.reach),
         ]),
@@ -474,7 +474,7 @@ export default function PlacementPage() {
       {tab === "device" && <BreakdownView title="Performance by Device" dimLabel="Device" dimWord="device" buckets={data.breakdowns?.device ?? []} cur={cur} />}
 
       {tab === "placement" && (<>
-      {/* Objective filter — placement performance per objective, never blended */}
+      {/* Objective filter - placement performance per objective, never blended */}
       {objectives.length > 1 && (
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mr-1">Objective</span>
@@ -489,7 +489,7 @@ export default function PlacementPage() {
           ))}
         </div>
       )}
-      {/* Headline winner — which platform drives the most orders/leads & spend */}
+      {/* Headline winner - which platform drives the most orders/leads & spend */}
       <WinnerHeadline items={platformWinnerItems} dimWord="platform" cur={cur} />
       {/* Platform group summary */}
       {groupData.length > 0 && (
@@ -507,7 +507,7 @@ export default function PlacementPage() {
               <div className="flex items-center gap-3 mt-1.5">
                 <span className="text-[14px] text-[#71717A]">
                   ROAS: <span className={cn("font-bold", g.roas >= 3 ? "text-[#16A34A]" : g.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
-                    {g.roas > 0 ? `${g.roas}x` : "—"}
+                    {g.roas > 0 ? `${g.roas}x` : "-"}
                   </span>
                 </span>
                 {g.purchases > 0 && <span className="text-[14px] text-[#A1A1AA]">{g.purchases} orders</span>}
@@ -517,7 +517,7 @@ export default function PlacementPage() {
         </div>
       )}
 
-      {/* What's working & what's not — across placements */}
+      {/* What's working & what's not - across placements */}
       {(() => {
         const ins = buildPlacementInsights(activePlacements, activeTotal);
         if (ins.length === 0) return null;
@@ -634,25 +634,25 @@ export default function PlacementPage() {
                     </td>
                     <td className="py-2.5 px-2 font-semibold text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{fmtC(p.spend)}</td>
                     <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">
-                      {activeTotal > 0 ? `${(p.spend / activeTotal * 100).toFixed(1)}%` : "—"}
+                      {activeTotal > 0 ? `${(p.spend / activeTotal * 100).toFixed(1)}%` : "-"}
                     </td>
                     <td className="py-2.5 px-2">
                       {p.roas > 0 ? (
                         <span className={cn("font-bold", p.roas >= 3 ? "text-[#16A34A]" : p.roas >= 1.5 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>
                           {p.roas}x
                         </span>
-                      ) : <span className="text-[#A1A1AA]">—</span>}
+                      ) : <span className="text-[#A1A1AA]">-</span>}
                     </td>
-                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{p.purchases > 0 ? p.purchases : <span className="text-[#A1A1AA]">—</span>}</td>
-                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{p.purchaseValue > 0 ? fmtC(p.purchaseValue) : <span className="text-[#A1A1AA]">—</span>}</td>
-                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{p.atc > 0 ? p.atc : <span className="text-[#A1A1AA]">—</span>}</td>
-                    <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{p.lpv > 0 ? fmt(p.lpv) : "—"}</td>
+                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{p.purchases > 0 ? p.purchases : <span className="text-[#A1A1AA]">-</span>}</td>
+                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5] whitespace-nowrap">{p.purchaseValue > 0 ? fmtC(p.purchaseValue) : <span className="text-[#A1A1AA]">-</span>}</td>
+                    <td className="py-2.5 px-2 text-[#18181B] dark:text-[#F4F4F5]">{p.atc > 0 ? p.atc : <span className="text-[#A1A1AA]">-</span>}</td>
+                    <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{p.lpv > 0 ? fmt(p.lpv) : "-"}</td>
                     <td className="py-2.5 px-2">
                       {p.lpRatio > 0 ? (
                         <span className={cn("font-semibold", p.lpRatio >= 65 ? "text-[#16A34A]" : p.lpRatio >= 45 ? "text-[#EAB308]" : "text-[#EF4444]")}>
                           {p.lpRatio}%
                         </span>
-                      ) : <span className="text-[#A1A1AA]">—</span>}
+                      ) : <span className="text-[#A1A1AA]">-</span>}
                     </td>
                     <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.clicks)}</td>
                     <td className="py-2.5 px-2">

@@ -8,7 +8,7 @@ import { migrateShopToken } from "@/lib/shopify";
 // for any legacy token; re-running is a no-op for already-migrated stores.
 //
 // Admin-only (same gate as the admin Stores tab): just open this URL in a browser while logged
-// in to skylitee.io as the admin account — no secret needed.
+// in to skylitee.io as the admin account - no secret needed.
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

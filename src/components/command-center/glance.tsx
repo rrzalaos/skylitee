@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Donut } from "@/components/ui/charts";
 import { formatINR, cn } from "@/lib/utils";
 
-// "At a glance" — the Simple view's chart section. One small card per question a store owner
+// "At a glance" - the Simple view's chart section. One small card per question a store owner
 // asks ("how much did I sell?", "what did ads cost?", "how did people pay?"…), each with a
 // simple bar/donut chart and plain labels. Pure presentation: the page passes plain numbers.
 
@@ -22,7 +22,7 @@ export interface GlanceData {
 
 const n = (v: number) => Math.round(v).toLocaleString("en-IN");
 
-/** Horizontal bar rows — the bar length is the value relative to the biggest row. */
+/** Horizontal bar rows - the bar length is the value relative to the biggest row. */
 function Bars({ rows, money = false }: { rows: { label: string; value: number; color: string; hint?: string }[]; money?: boolean }) {
   const max = Math.max(...rows.map(r => r.value), 1);
   return (
@@ -187,7 +187,7 @@ export function Glance({ d, loading }: { d: GlanceData; loading: boolean }) {
                 {d.gsc.avgPosition > 0 && (
                   <div className="text-[13px] text-[#52525B] dark:text-[#A1A1AA] mt-2">
                     Average Google rank: <b className="text-[#18181B] dark:text-[#F4F4F5]">#{Math.round(d.gsc.avgPosition)}</b>
-                    {d.gsc.avgPosition <= 10 ? " — page 1" : ` — page ${Math.ceil(d.gsc.avgPosition / 10)}`}
+                    {d.gsc.avgPosition <= 10 ? " - page 1" : ` - page ${Math.ceil(d.gsc.avgPosition / 10)}`}
                   </div>
                 )}
               </div>

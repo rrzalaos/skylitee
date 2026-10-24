@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const { shop, token } = session;
 
   // ?refresh=1 forces a live pull from Shopify (the page's "Refresh" button); otherwise we
-  // serve the short cache — this endpoint paginates the FULL customer base (~250/page), so
+  // serve the short cache - this endpoint paginates the FULL customer base (~250/page), so
   // re-pulling on every open would be slow and risk Shopify rate limits.
   const refresh = req.nextUrl.searchParams.get("refresh") === "1";
   const cacheKey = `cache:${shop}:customers`;
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
   }
 
-  // Paginate through the FULL customer base — not just the first 250 — so totals,
+  // Paginate through the FULL customer base - not just the first 250 - so totals,
   // LTV, repeat rate and city splits reflect every customer.
   const customers = await shopifyFetchAll<ShopifyCustomer>(
     shop, token,

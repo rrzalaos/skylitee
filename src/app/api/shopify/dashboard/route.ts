@@ -32,7 +32,7 @@ async function buildDashboard(shop: string, token: string, fromParam: string | n
   const aov = totalOrders ? grossSales / totalOrders : 0;
   // Returning = a buyer Shopify already knows (lifetime orders_count > 1). Everyone else
   // (first-time buyers AND guest/COD checkouts with no linked customer) counts as new, so
-  // new + returning always equals total orders — never "both 0" on a 28-order store.
+  // new + returning always equals total orders - never "both 0" on a 28-order store.
   const returningCustomers = orders.filter(o => (o.customer?.orders_count ?? 0) > 1).length;
   const newCustomers = totalOrders - returningCustomers;
 

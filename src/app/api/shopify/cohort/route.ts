@@ -3,7 +3,7 @@ import { shopifyFetchAll, isRealOrder, orderRevenue, ShopifyOrder, ORDER_FIELDS 
 import { getShopifySession } from "@/lib/session";
 
 // Cohorts need each customer's FULL order history (to find their true first order), so we
-// fetch all-time rather than a window — but paginated (up to 25k orders) and filtered to
+// fetch all-time rather than a window - but paginated (up to 25k orders) and filtered to
 // real sales, instead of the old hand-rolled 10-page (2,500-order) cap that truncated.
 async function fetchAllOrders(shop: string, token: string): Promise<ShopifyOrder[]> {
   const orders = await shopifyFetchAll<ShopifyOrder>(
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     for (let offset = 0; offset <= 5; offset++) {
       const targetKey = addMonths(cohort, offset);
 
-      // Future month — no data yet
+      // Future month - no data yet
       if (targetKey > nowKey) {
         retention.push(null);
         continue;

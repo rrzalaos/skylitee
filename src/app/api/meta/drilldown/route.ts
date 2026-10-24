@@ -4,7 +4,7 @@ import { getMetaToken, getMetaAdAccount, getAuthorizedShop } from "@/lib/session
 import { resolveMetaAccount, leadCount } from "@/lib/meta";
 
 // Drill-down: given a campaign id returns its ad sets, given an ad set id returns its
-// ads (with parsed creative — image / carousel / video + CTA + copy). Lazy-loaded by
+// ads (with parsed creative - image / carousel / video + CTA + copy). Lazy-loaded by
 // the Meta Campaigns page as the user clicks down the Campaign → Ad Set → Ad tree.
 
 type ActionEntry = { action_type: string; value: string };
@@ -48,7 +48,7 @@ function actInt(arr: ActionEntry[] | undefined, type: string): number {
 function sumArr(arr: ActionEntry[] | undefined): number {
   return (arr ?? []).reduce((s, a) => s + parseFloat(a.value), 0);
 }
-// leadCount shared from @/lib/meta — matches Ads Manager "Results" (priority, not max).
+// leadCount shared from @/lib/meta - matches Ads Manager "Results" (priority, not max).
 function purchasesOf(arr: ActionEntry[] | undefined): number {
   return Math.max(actInt(arr, "offsite_conversion.fb_pixel_purchase"), actInt(arr, "purchase"));
 }
@@ -80,7 +80,7 @@ function metricsFromRow(row: InsightRow) {
     cac: purchases > 0 ? +(spend / purchases).toFixed(2) : 0,
     atc: Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_add_to_cart"), actInt(row.actions, "add_to_cart")),
     atcValue: +Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_add_to_cart"), actVal(row.action_values, "add_to_cart")).toFixed(2),
-    // Checkout (a.k.a. CI — Checkout Initiated) enables CI Ratio and P Ratio downstream.
+    // Checkout (a.k.a. CI - Checkout Initiated) enables CI Ratio and P Ratio downstream.
     checkout: Math.max(actInt(row.actions, "offsite_conversion.fb_pixel_initiate_checkout"), actInt(row.actions, "initiate_checkout")),
     checkoutValue: +Math.max(actVal(row.action_values, "offsite_conversion.fb_pixel_initiate_checkout"), actVal(row.action_values, "initiate_checkout")).toFixed(2),
   };
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
   const cacheKey = `cache:${shop}:meta:drill:v3:${level}:${parentId}:${from}:${to}`;
   try { const cached = await kv.get(cacheKey); if (cached) return NextResponse.json(cached); } catch { /* skip */ }
 
-  // Verify the saved Meta account is still resolvable (token sanity) — parentId is the scope.
+  // Verify the saved Meta account is still resolvable (token sanity) - parentId is the scope.
   const savedAccount = await getMetaAdAccount(req, shop);
   const selected = await resolveMetaAccount(savedAccount, token);
   if (!selected) return NextResponse.json({ error: "no_accounts" });
@@ -235,7 +235,7 @@ export async function GET(req: NextRequest) {
     } catch { /* video source is best-effort; thumbnail still shows */ }
   }
 
-  // Batch-resolve catalog (product set) names for DPA / catalog ads — "if possible" intel.
+  // Batch-resolve catalog (product set) names for DPA / catalog ads - "if possible" intel.
   const setIds = Array.from(new Set(Array.from(parsed.values()).map(p => p.productSetId).filter((v): v is string => !!v)));
   if (setIds.length > 0) {
     try {

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { plainDashes } from "@/lib/utils";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -44,7 +45,7 @@ Each insight must be under 50 words. Use the actual numbers from the data. Be sp
     });
     const content = response.content[0];
     if (content.type !== "text") throw new Error("unexpected");
-    return NextResponse.json({ insights: content.text });
+    return NextResponse.json({ insights: plainDashes(content.text) });
   } catch {
     return NextResponse.json({ error: "Failed to generate insights" }, { status: 500 });
   }

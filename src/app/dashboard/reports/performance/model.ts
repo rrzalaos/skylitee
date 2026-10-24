@@ -1,4 +1,4 @@
-// Performance Marketing report model — one place that turns the raw API responses into the
+// Performance Marketing report model - one place that turns the raw API responses into the
 // store-owner-friendly structure rendered by both the on-screen report and the PDF.
 import { formatINR } from "@/lib/utils";
 import { buildRows, type MwRow } from "../seo/monthwise";
@@ -112,15 +112,15 @@ export function buildPerfModel(input: {
   const totalUnits = s.totalItems ?? 0;
   const totalLeads = m?.leads ?? 0;
 
-  /* hero KPIs — main summary. Each card shows only when its data is available
+  /* hero KPIs - main summary. Each card shows only when its data is available
      (e.g. Total Leads appears only when the store runs lead-gen ads). */
   const hero: KpiCard[] = [
     { label: "Gross Sales", value: inr(s.grossSales), accent: "#F97316" },
     { label: "Total Orders", value: s.totalOrders.toLocaleString("en-IN"), accent: "#3B82F6", sub: `${unitsPerOrder} items/order` },
     ...(s.grossSales > 0 ? [{ label: "AOV", value: inr(s.aov), accent: "#8B5CF6" }] : []),
     { label: "Total Ad Spend", value: inr(totalSpend), accent: "#EF4444", sub: googleSpend > 0 ? "Meta + Google" : "Meta" },
-    { label: "Blended ROAS", value: blendedRoas ? `${blendedRoas}x` : "—", accent: blendedRoas >= 2 ? "#22C55E" : "#EF4444", sub: "store ÷ ad spend" },
-    { label: "Units Sold", value: totalUnits ? totalUnits.toLocaleString("en-IN") : "—", accent: "#14B8A6", sub: s.distinctSkus ? `${s.distinctSkus} SKUs` : undefined },
+    { label: "Blended ROAS", value: blendedRoas ? `${blendedRoas}x` : "-", accent: blendedRoas >= 2 ? "#22C55E" : "#EF4444", sub: "store ÷ ad spend" },
+    { label: "Units Sold", value: totalUnits ? totalUnits.toLocaleString("en-IN") : "-", accent: "#14B8A6", sub: s.distinctSkus ? `${s.distinctSkus} SKUs` : undefined },
     ...(totalLeads > 0 ? [{ label: "Total Leads", value: totalLeads.toLocaleString("en-IN"), accent: "#8B5CF6", sub: "from Meta ads" }] : []),
   ];
 
@@ -140,25 +140,25 @@ export function buildPerfModel(input: {
       const meta = OBJ_META[k];
       let cards: { label: string; value: string }[] = [];
       if (k === "Sales") cards = [
-        { label: "ROAS", value: a.spend > 0 ? `${(a.purchaseValue / a.spend).toFixed(2)}x` : "—" },
+        { label: "ROAS", value: a.spend > 0 ? `${(a.purchaseValue / a.spend).toFixed(2)}x` : "-" },
         { label: "Orders", value: a.purchases.toLocaleString("en-IN") },
-        { label: "Cost / Order", value: a.purchases > 0 ? inr(a.spend / a.purchases) : "—" },
+        { label: "Cost / Order", value: a.purchases > 0 ? inr(a.spend / a.purchases) : "-" },
         { label: "Revenue", value: inr(a.purchaseValue) },
       ];
       else if (k === "Leads") cards = [
         { label: "Leads", value: a.leads.toLocaleString("en-IN") },
-        { label: "Cost / Lead", value: a.leads > 0 ? inr(a.spend / a.leads) : "—" },
+        { label: "Cost / Lead", value: a.leads > 0 ? inr(a.spend / a.leads) : "-" },
         { label: "Spend", value: inr(a.spend) },
       ];
       else if (k === "Traffic") cards = [
         { label: "Clicks", value: a.clicks.toLocaleString("en-IN") },
-        { label: "Cost / Click", value: a.clicks > 0 ? inr(a.spend / a.clicks) : "—" },
-        { label: "CTR", value: a.impressions > 0 ? pct(+(a.clicks / a.impressions * 100).toFixed(2)) : "—" },
+        { label: "Cost / Click", value: a.clicks > 0 ? inr(a.spend / a.clicks) : "-" },
+        { label: "CTR", value: a.impressions > 0 ? pct(+(a.clicks / a.impressions * 100).toFixed(2)) : "-" },
       ];
       else if (k === "Awareness") cards = [
         { label: "Reach", value: a.reach.toLocaleString("en-IN") },
         { label: "Impressions", value: a.impressions.toLocaleString("en-IN") },
-        { label: "CPM", value: a.impressions > 0 ? inr(a.spend / a.impressions * 1000) : "—" },
+        { label: "CPM", value: a.impressions > 0 ? inr(a.spend / a.impressions * 1000) : "-" },
       ];
       else cards = [{ label: "Spend", value: inr(a.spend) }, { label: "Orders", value: a.purchases.toLocaleString("en-IN") }];
       return { key: k, label: meta.label, color: meta.color, spend: Math.round(a.spend), spendPct: +(a.spend / objSpendTotal * 100).toFixed(0), cards };
@@ -213,7 +213,7 @@ export function buildPerfModel(input: {
     .slice(0, 8)
     .map(c => ({ name: c.name, status: c.status, objective: normObjective(c.objective), spend: Math.round(c.spend), roas: c.roas, purchases: c.purchases, leads: c.leads }));
 
-  /* last 3 months — merge shopify + meta monthly by ym */
+  /* last 3 months - merge shopify + meta monthly by ym */
   const metaByYm = new Map(metaMonthly.map(x => [x.ym, x]));
   const months: PerfMonth[] = shopMonthly
     .map(sm => {
@@ -232,24 +232,24 @@ export function buildPerfModel(input: {
   /* signals */
   const working: Signal[] = [];
   const attention: Signal[] = [];
-  if (blendedRoas >= 2) working.push({ type: "good", metric: "Blended ROAS", value: `${blendedRoas}x`, detail: `Your store earns ${inr(blendedRoas)} for every ₹1 of ad spend — marketing is profitable overall.` });
-  if (m && m.roas >= 3) working.push({ type: "good", metric: "Meta ROAS", value: `${m.roas}x`, detail: "Above the 3x benchmark — eligible for budget scaling on winning campaigns." });
-  if (s.totalOrders > 0) working.push({ type: "good", metric: "Orders", value: `${s.totalOrders}`, detail: `${s.totalOrders} orders at ${inr(s.aov)} AOV. ${unitsPerOrder} items/order — bundle to lift it further.` });
-  if (s.returningCustomers > 0) working.push({ type: "good", metric: "Repeat Buyers", value: `${s.returningCustomers}`, detail: "Repeat purchases this period — strong retention signal. Nurture with WhatsApp / loyalty." });
-  if (organicRevenue > 0) working.push({ type: "good", metric: "Organic Sales", value: inr(organicRevenue), detail: `${organicOrders} orders came without ad spend — a free, compounding channel worth growing.` });
-  if (winners[0]) working.push({ type: "good", metric: winners[0].title, value: winners[0].value, detail: `Your best-performing placement — ${winners[0].detail}. Shift more budget here.` });
+  if (blendedRoas >= 2) working.push({ type: "good", metric: "Blended ROAS", value: `${blendedRoas}x`, detail: `Your store earns ${inr(blendedRoas)} for every ₹1 of ad spend - marketing is profitable overall.` });
+  if (m && m.roas >= 3) working.push({ type: "good", metric: "Meta ROAS", value: `${m.roas}x`, detail: "Above the 3x benchmark - eligible for budget scaling on winning campaigns." });
+  if (s.totalOrders > 0) working.push({ type: "good", metric: "Orders", value: `${s.totalOrders}`, detail: `${s.totalOrders} orders at ${inr(s.aov)} AOV. ${unitsPerOrder} items/order - bundle to lift it further.` });
+  if (s.returningCustomers > 0) working.push({ type: "good", metric: "Repeat Buyers", value: `${s.returningCustomers}`, detail: "Repeat purchases this period - strong retention signal. Nurture with WhatsApp / loyalty." });
+  if (organicRevenue > 0) working.push({ type: "good", metric: "Organic Sales", value: inr(organicRevenue), detail: `${organicOrders} orders came without ad spend - a free, compounding channel worth growing.` });
+  if (winners[0]) working.push({ type: "good", metric: winners[0].title, value: winners[0].value, detail: `Your best-performing placement - ${winners[0].detail}. Shift more budget here.` });
 
-  if (m && m.roas < 2) attention.push({ type: "bad", metric: "Meta ROAS", value: `${m.roas}x`, detail: "Below 2x — ads are losing money. Pause the weakest campaigns, refresh creative, tighten targeting." });
-  if (codPct > 50) attention.push({ type: "warn", metric: "COD Rate", value: `${codPct}%`, detail: "Over half your orders are COD — RTO risk. Offer a small prepaid discount to shift payment preference." });
-  if (m && m.atcRatio < 30) attention.push({ type: "warn", metric: "Add-to-Cart Rate", value: `${m.atcRatio}%`, detail: "Low ATC — product pages may have friction (pricing clarity, social proof, load speed). Run a CRO audit." });
-  if (m && m.checkoutRatio < 40) attention.push({ type: "warn", metric: "Checkout Drop-off", value: `${m.checkoutRatio}%`, detail: "Shoppers add to cart but abandon — show total cost upfront and add more payment options." });
-  if (sessions > 0 && s.totalOrders / sessions < 0.01) attention.push({ type: "warn", metric: "Site Conversion", value: `${(s.totalOrders / sessions * 100).toFixed(2)}%`, detail: "Traffic isn't converting — review landing pages, speed, and product–audience fit." });
+  if (m && m.roas < 2) attention.push({ type: "bad", metric: "Meta ROAS", value: `${m.roas}x`, detail: "Below 2x - ads are losing money. Pause the weakest campaigns, refresh creative, tighten targeting." });
+  if (codPct > 50) attention.push({ type: "warn", metric: "COD Rate", value: `${codPct}%`, detail: "Over half your orders are COD - RTO risk. Offer a small prepaid discount to shift payment preference." });
+  if (m && m.atcRatio < 30) attention.push({ type: "warn", metric: "Add-to-Cart Rate", value: `${m.atcRatio}%`, detail: "Low ATC - product pages may have friction (pricing clarity, social proof, load speed). Run a CRO audit." });
+  if (m && m.checkoutRatio < 40) attention.push({ type: "warn", metric: "Checkout Drop-off", value: `${m.checkoutRatio}%`, detail: "Shoppers add to cart but abandon - show total cost upfront and add more payment options." });
+  if (sessions > 0 && s.totalOrders / sessions < 0.01) attention.push({ type: "warn", metric: "Site Conversion", value: `${(s.totalOrders / sessions * 100).toFixed(2)}%`, detail: "Traffic isn't converting - review landing pages, speed, and product–audience fit." });
   const losing = (meta?.campaigns ?? []).filter(c => c.status === "ACTIVE" && c.spend > 0 && c.roas > 0 && c.roas < 1);
   if (losing.length) attention.push({ type: "warn", metric: "Loss-making Campaigns", value: `${losing.length} active`, detail: `${losing.length} active campaign(s) under 1x ROAS are burning budget. Pause or rework them.` });
 
   const conclusion = {
-    positives: working.slice(0, 3).map(w => `${w.metric}: ${w.value} — ${w.detail}`),
-    improvements: attention.slice(0, 3).map(a => `${a.metric}: ${a.value} — ${a.detail}`),
+    positives: working.slice(0, 3).map(w => `${w.metric}: ${w.value} - ${w.detail}`),
+    improvements: attention.slice(0, 3).map(a => `${a.metric}: ${a.value} - ${a.detail}`),
   };
 
   return {

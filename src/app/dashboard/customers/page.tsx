@@ -35,7 +35,7 @@ export default function CustomersPage() {
   const [periodData, setPeriodData] = useState<PeriodData | null>(null);
   const [loadingPeriod, setLoadingPeriod] = useState(false);
 
-  // All-time base — lifetime data, served from a short cache. `refresh` forces a live pull.
+  // All-time base - lifetime data, served from a short cache. `refresh` forces a live pull.
   const loadAll = (refresh = false) => {
     if (refresh) setRefreshing(true); else setLoadingAll(true);
     fetch(`/api/shopify/customers${refresh ? "?refresh=1" : ""}`)
@@ -45,7 +45,7 @@ export default function CustomersPage() {
   };
   useEffect(() => { loadAll(); }, []);
 
-  // Period view — refetched whenever the range changes, only while that tab is active.
+  // Period view - refetched whenever the range changes, only while that tab is active.
   useEffect(() => {
     if (mode !== "period") return;
     setLoadingPeriod(true);
@@ -129,7 +129,7 @@ export default function CustomersPage() {
           </div>
           <p className="text-[17px] text-[#686864] mt-0.5">
             {mode === "all"
-              ? <>Lifetime customer data from Shopify · cached up to 10 min <span className="text-[#a3a39e]">(not affected by the date range — hit Refresh for live)</span></>
+              ? <>Lifetime customer data from Shopify · cached up to 10 min <span className="text-[#a3a39e]">(not affected by the date range - hit Refresh for live)</span></>
               : <>Customers who ordered during <span className="font-medium text-[#181816]">{range.label}</span> · change the date range up top</>}
           </p>
         </div>
@@ -238,16 +238,16 @@ export default function CustomersPage() {
           {m === "all" && allData && (
             <>
               {allData.kpis.repeat > 0 && (
-                <InsightCard title={`${allData.kpis.repeat} repeat buyers — reward them`} body="Send a WhatsApp or email with early access to new drops. Repeat buyers spend 3× more on average." />
+                <InsightCard title={`${allData.kpis.repeat} repeat buyers - reward them`} body="Send a WhatsApp or email with early access to new drops. Repeat buyers spend 3× more on average." />
               )}
               {allData.kpis.oneTime > 0 && (
-                <InsightCard type="info" title={`${allData.kpis.oneTime} one-time buyers — trigger 2nd purchase`} body="Email Day 7 post-purchase with complementary product suggestion. 2nd purchase rate increases from ~18% → 31% with this nudge." />
+                <InsightCard type="info" title={`${allData.kpis.oneTime} one-time buyers - trigger 2nd purchase`} body="Email Day 7 post-purchase with complementary product suggestion. 2nd purchase rate increases from ~18% → 31% with this nudge." />
               )}
               {allData.kpis.newThisMonth > 0 && (
                 <InsightCard type="purple" title={`${allData.kpis.newThisMonth} new customers this month`} body="Welcome flow: send a personalised thank-you with brand story + product care tips. Sets the tone for long-term loyalty." />
               )}
               {repeatRate < 25 && (
-                <InsightCard type="warning" title={`Repeat rate ${repeatRate}% — below 25% benchmark`} body="Focus on post-purchase flows: 7-day follow-up email, loyalty points, or a small discount on the next order." />
+                <InsightCard type="warning" title={`Repeat rate ${repeatRate}% - below 25% benchmark`} body="Focus on post-purchase flows: 7-day follow-up email, loyalty points, or a small discount on the next order." />
               )}
             </>
           )}
@@ -257,7 +257,7 @@ export default function CustomersPage() {
                 <InsightCard type="purple" title={`${periodData.kpis.newBuyers} new buyers in ${range.label}`} body="Trigger a welcome flow now while they're warm: thank-you note, brand story, and a small nudge toward a 2nd order." />
               )}
               {periodData.kpis.returningBuyers > 0 && (
-                <InsightCard title={`${periodData.kpis.returningBuyers} returning buyers — keep them loyal`} body="Returning buyers drove repeat revenue this period. Reward with early access or loyalty points to protect retention." />
+                <InsightCard title={`${periodData.kpis.returningBuyers} returning buyers - keep them loyal`} body="Returning buyers drove repeat revenue this period. Reward with early access or loyalty points to protect retention." />
               )}
               {periodData.kpis.repeatShare < 25 && periodData.kpis.activeBuyers > 0 && (
                 <InsightCard type="warning" title={`Only ${periodData.kpis.repeatShare}% of buyers were returning`} body="Acquisition is carrying this period. Strengthen post-purchase flows so more of these buyers come back." />

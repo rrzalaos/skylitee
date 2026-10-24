@@ -5,7 +5,7 @@ import { isEmbeddedEmail } from "@/lib/auth";
 import { buildWeekly, sendWeekly } from "@/lib/weekly-summary";
 
 // Email this week's summary to the signed-in user now (or the store email when inside the
-// Shopify admin) — lets a merchant preview what arrives on Monday. Once per 10 min per store.
+// Shopify admin) - lets a merchant preview what arrives on Monday. Once per 10 min per store.
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const lock = `shop:${auth.shop}:weekly_test`;
   if (await kv.get(lock).catch(() => null)) {
-    return NextResponse.json({ error: "Just sent one — try again in a few minutes." }, { status: 429 });
+    return NextResponse.json({ error: "Just sent one - try again in a few minutes." }, { status: 429 });
   }
   const w = await buildWeekly(auth.shop).catch(() => null);
   if (!w) return NextResponse.json({ error: "Couldn't build the summary" }, { status: 502 });

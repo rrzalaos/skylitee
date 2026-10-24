@@ -67,9 +67,9 @@ export default function CohortPage() {
         headers: ["Metric", "Value"],
         rows: [
           ["Total Customers", ins?.totalCustomers ?? 0],
-          ["Avg Order Value", ins?.avgOrderValue ? formatINR(ins.avgOrderValue) : "—"],
-          ["Best Month-1 Cohort", ins?.bestMonth1 ? `${ins.bestMonth1.month} (${ins.bestMonth1.val}%)` : "—"],
-          ["Avg Month-2 Retention", ins?.avgMonth2 !== null && ins?.avgMonth2 !== undefined ? `${ins.avgMonth2}%` : "—"],
+          ["Avg Order Value", ins?.avgOrderValue ? formatINR(ins.avgOrderValue) : "-"],
+          ["Best Month-1 Cohort", ins?.bestMonth1 ? `${ins.bestMonth1.month} (${ins.bestMonth1.val}%)` : "-"],
+          ["Avg Month-2 Retention", ins?.avgMonth2 !== null && ins?.avgMonth2 !== undefined ? `${ins.avgMonth2}%` : "-"],
         ],
       },
       {
@@ -78,7 +78,7 @@ export default function CohortPage() {
         rows: data.matrix.map(row => [
           row.month,
           row.customers,
-          ...row.retention.map(v => v !== null ? `${v}%` : "—"),
+          ...row.retention.map(v => v !== null ? `${v}%` : "-"),
         ]),
       },
       {
@@ -100,7 +100,7 @@ export default function CohortPage() {
         <div>
           <h2 className="text-lg font-semibold dark:text-[#F4F4F5] flex items-center gap-2"><BarChart2 size={18} className="text-[#F97316]" /> Cohort Analysis</h2>
           <p className="text-[17px] text-[#686864] dark:text-[#A1A1AA] mt-0.5">
-            Customer retention curves by acquisition month — real Shopify data
+            Customer retention curves by acquisition month - real Shopify data
           </p>
         </div>
         <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} disabled={!data} />
@@ -134,12 +134,12 @@ export default function CohortPage() {
                     <tr key={i} className="border-b border-black/[0.06] dark:border-white/[0.04] last:border-0">
                       <td className="py-1.5 px-2 font-medium dark:text-[#F4F4F5]">{row.month}</td>
                       <td className="py-1.5 px-2 dark:text-[#A1A1AA]">
-                        {row.customers === 0 ? "—" : row.customers.toLocaleString()}
+                        {row.customers === 0 ? "-" : row.customers.toLocaleString()}
                       </td>
                       {row.retention.map((val, j) => (
                         <td key={j} className="py-1 px-1">
                           <div className={`text-center px-2 py-1 rounded text-[15px] ${retentionColor(val)}`}>
-                            {val !== null ? `${val}%` : "—"}
+                            {val !== null ? `${val}%` : "-"}
                           </div>
                         </td>
                       ))}
@@ -159,7 +159,7 @@ export default function CohortPage() {
                   body="Check what was different that month: post-purchase email, product mix, or seasonal offer? Replicate this acquisition strategy."
                 />
               ) : (
-                <InsightCard title="Not enough repeat orders yet" body="Keep acquiring customers — cohort data will populate as repeat purchases come in." />
+                <InsightCard title="Not enough repeat orders yet" body="Keep acquiring customers - cohort data will populate as repeat purchases come in." />
               )}
               {ins?.avgMonth2 !== null && ins?.avgMonth2 !== undefined ? (
                 <InsightCard

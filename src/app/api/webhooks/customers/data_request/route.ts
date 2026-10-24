@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyShopifyWebhook } from "@/lib/webhook";
 
 // Shopify GDPR: merchant's customer requests a copy of their data.
-// We don't store customer PII — all customer data lives in Shopify.
+// We don't store customer PII - all customer data lives in Shopify.
 // Acknowledge with 200; no data export needed on our end.
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();

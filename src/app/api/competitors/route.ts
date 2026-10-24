@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
   const list = (await competitorKv.getList<Competitor>(auth.shop)) ?? [];
   if (list.length >= CI_LIMITS.maxCompetitors) {
-    return NextResponse.json({ error: `You can track up to ${CI_LIMITS.maxCompetitors} competitors — remove one first` }, { status: 400 });
+    return NextResponse.json({ error: `You can track up to ${CI_LIMITS.maxCompetitors} competitors - remove one first` }, { status: 400 });
   }
   const dupe = list.find(c => (website && c.website === website) || (pageUrl && c.pageUrl === pageUrl) || (pageId && c.pageId === pageId));
   if (dupe) return NextResponse.json({ error: `${dupe.name} is already on your list` }, { status: 400 });

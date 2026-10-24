@@ -42,7 +42,7 @@ function sumArr(arr: ActionEntry[] | undefined): number {
 }
 // leadCount / leadBreakdown live in @/lib/meta so every Meta route counts leads the same
 // way and matches Ads Manager's "Results" (first result-event in priority order, not the
-// max of all lead-ish events — which over-counts when a website Lead pixel fires loosely).
+// max of all lead-ish events - which over-counts when a website Lead pixel fires loosely).
 
 export async function GET(req: NextRequest) {
   const shop = await getAuthorizedShop(req);

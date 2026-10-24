@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
     const daily     = safe(dailyData);
     const keywords  = safe(keywordData);
 
-    // Detect test token — if the first query returns PERMISSION_DENIED, surface that
+    // Detect test token - if the first query returns PERMISSION_DENIED, surface that
     if (overview && isTestTokenError(overview as GadsResponse)) {
       return NextResponse.json({
         error: "test_token",
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Any other API error (expired/invalid token → UNAUTHENTICATED 401, INVALID_CUSTOMER_ID,
-    // RESOURCE_EXHAUSTED quota, version sunset) must NOT fall through to summed zeros — that
+    // RESOURCE_EXHAUSTED quota, version sunset) must NOT fall through to summed zeros - that
     // reads as a real "no spend" account and would be cached for 15 min. Fail loudly instead.
     if (!overview || (overview as GadsResponse).error) {
       const err = (overview as GadsResponse | null)?.error;
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Overview aggregates (sum across all rows — customer query returns one row per date)
+    // Overview aggregates (sum across all rows - customer query returns one row per date)
     let totalImpressions = 0, totalClicks = 0, totalCost = 0, totalConversions = 0, totalConvValue = 0;
     let accountName = `Account ${customerId}`, currency = "USD";
 

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   }).catch(() => {});
 
   const isAdmin = user.email === ADMIN_EMAIL;
-  // Invited clients have no store of their own yet — send them to the dashboard
+  // Invited clients have no store of their own yet - send them to the dashboard
   // (where the invite bell lives) instead of the "connect your store" screen.
   const pendingInvites = user.shops.length === 0 ? (await inviteKv.getInvites(user.email) ?? []).length : 0;
   const res = NextResponse.json({ ok: true, hasShop: user.shops.length > 0 || pendingInvites > 0, isAdmin, next });

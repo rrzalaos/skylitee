@@ -21,7 +21,7 @@ async function buildProducts(shop: string, token: string, fromParam: string | nu
   // Sales window follows the selected date range (in the store's timezone).
   const { startISO, endISO, days } = await resolveShopifyPeriod(shop, token, fromParam, toParam);
 
-  // Paginate ALL products (Shopify caps each page at 250) — a single page silently capped a
+  // Paginate ALL products (Shopify caps each page at 250) - a single page silently capped a
   // 450-product catalog at 250 and dropped units sold for any product past the first page.
   const [products, orders] = await Promise.all([
     shopifyFetchAll<ShopifyProduct>(shop, token, "/products.json?limit=250&fields=id,title,variants", "products"),

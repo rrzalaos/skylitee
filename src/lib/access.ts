@@ -6,7 +6,7 @@ export interface AccessState {
   source: "subscription" | "grant" | "none";
   grant: Grant | null;
   grantExpiresAt: string | null;     // when the active grant ends (null = forever / none)
-  discountRevertPending: boolean;    // an expired discount grant — must re-subscribe at full price
+  discountRevertPending: boolean;    // an expired discount grant - must re-subscribe at full price
 }
 
 function isExpired(iso: string | null): boolean {
@@ -19,7 +19,7 @@ function isExpired(iso: string | null): boolean {
  * Rules:
  *  - An active (non-expired) grant always grants access.
  *  - An expired grant revokes access. If it was a discount grant, the merchant must
- *    re-subscribe at full price (discountRevertPending) — Shopify can't auto-raise a price.
+ *    re-subscribe at full price (discountRevertPending) - Shopify can't auto-raise a price.
  *  - With no grant, a "growth" plan (a real paid subscription, or a store grandfathered
  *    in before access codes existed) grants access. Everything else is gated.
  */
@@ -54,7 +54,7 @@ export async function getAccessState(shop: string): Promise<AccessState> {
     };
   }
 
-  // No grant — a paid/grandfathered "growth" plan keeps access.
+  // No grant - a paid/grandfathered "growth" plan keeps access.
   if (plan === "growth") {
     return { hasAccess: true, plan, source: "subscription", grant: null, grantExpiresAt: null, discountRevertPending: false };
   }

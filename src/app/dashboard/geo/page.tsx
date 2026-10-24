@@ -49,8 +49,8 @@ export default function GeoPage() {
         title: `Geo KPIs (${range.label})`,
         headers: ["Metric", "Value"],
         rows: [
-          ["Top City", topCity?.city ?? "—"],
-          ["Top City Revenue", topCity ? formatINR(topCity.revenue) : "—"],
+          ["Top City", topCity?.city ?? "-"],
+          ["Top City Revenue", topCity ? formatINR(topCity.revenue) : "-"],
           ["Cities with Orders", revenueByCity.length],
           ["Total Revenue", formatINR(totalRevenue)],
           ["Buyers Tracked", totalBuyers],
@@ -59,7 +59,7 @@ export default function GeoPage() {
       {
         title: "City Performance",
         headers: ["#", "City", "Revenue", "Revenue Share", "Buyers"],
-        rows: mergedData.map((g, i) => [i + 1, g.city, formatINR(g.revenue), `${g.share}%`, g.customers > 0 ? g.customers : "—"]),
+        rows: mergedData.map((g, i) => [i + 1, g.city, formatINR(g.revenue), `${g.share}%`, g.customers > 0 ? g.customers : "-"]),
       },
     ];
   }
@@ -91,15 +91,15 @@ export default function GeoPage() {
       {loading ? (
         <div className="text-[17px] text-[#686864] py-8 text-center">Loading real geo data...</div>
       ) : revenueByCity.length === 0 ? (
-        <div className="text-[17px] text-[#686864] py-8 text-center">No geo data for {range.label} — orders need shipping addresses to show city data.</div>
+        <div className="text-[17px] text-[#686864] py-8 text-center">No geo data for {range.label} - orders need shipping addresses to show city data.</div>
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-            <KPICard label="Top city" value={topCity?.city ?? "—"} sub={topCity ? formatINR(topCity.revenue) : ""} />
+            <KPICard label="Top city" value={topCity?.city ?? "-"} sub={topCity ? formatINR(topCity.revenue) : ""} />
             <KPICard label="Cities with orders" value={revenueByCity.length.toString()} sub="Unique delivery cities" />
             <KPICard
               label="Top city share"
-              value={topCity ? `${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}%` : "—"}
+              value={topCity ? `${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}%` : "-"}
               sub="of total revenue"
             />
             <KPICard label="Buyers tracked" value={totalBuyers.toString()} sub={`With location data · ${range.label}`} />
@@ -122,7 +122,7 @@ export default function GeoPage() {
                       <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
                         <td className="py-1.5 px-1.5 font-medium">{g.city}</td>
                         <td className="py-1.5 px-1.5 font-semibold">{formatINR(g.revenue)}</td>
-                        <td className="py-1.5 px-1.5">{g.customers > 0 ? g.customers : "—"}</td>
+                        <td className="py-1.5 px-1.5">{g.customers > 0 ? g.customers : "-"}</td>
                         <td className="py-1.5 px-1.5">
                           <div className="flex items-center gap-1.5">
                             <div className="flex-1 h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
@@ -158,7 +158,7 @@ export default function GeoPage() {
                   <InsightCard title={`${topCity.city} is your top market`} body={`${Math.round((topCity.revenue / Math.max(totalRevenue, 1)) * 100)}% of revenue in ${range.label}. Run city-specific Meta ads targeting ${topCity.city} for higher relevance and lower CPMs.`} />
                 )}
                 {revenueByCity.length >= 3 && (
-                  <InsightCard type="info" title="Multi-city presence detected" body={`Revenue spread across ${revenueByCity.length} cities. Consider city-specific delivery speed messaging in ads — converts better in metros.`} />
+                  <InsightCard type="info" title="Multi-city presence detected" body={`Revenue spread across ${revenueByCity.length} cities. Consider city-specific delivery speed messaging in ads - converts better in metros.`} />
                 )}
                 <InsightCard type="warning" title="Add ROAS by city" body="Connect Meta Ads and Google Ads to see which cities give the best return on ad spend." />
               </Card>

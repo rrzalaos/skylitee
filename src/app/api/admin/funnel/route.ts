@@ -13,7 +13,7 @@ async function kvExists(key: string): Promise<boolean> {
 // (installed → account → plan → Meta → Google → came back after day 7) and whether it
 // uninstalled (plus the reason, if the merchant answered the feedback email).
 //
-// Stores that connected before funnel tracking existed have no funnel record — their steps
+// Stores that connected before funnel tracking existed have no funnel record - their steps
 // are derived from live state (tokens, plan, connect date) and flagged `tracked: false`.
 export async function GET(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;

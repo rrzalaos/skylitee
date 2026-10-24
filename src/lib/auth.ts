@@ -20,7 +20,7 @@ export interface SessionRecord {
   embedded?: boolean;   // inside the Shopify admin (session token, see lib/embedded.ts)
 }
 
-// ── Password helpers (PBKDF2 — no extra deps) ────────────────────────────────
+// ── Password helpers (PBKDF2 - no extra deps) ────────────────────────────────
 
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -111,7 +111,7 @@ export async function getSession(token: string): Promise<SessionRecord | null> {
 }
 
 // ── Embedded (inside Shopify admin) sessions ─────────────────────────────────
-// A verified Shopify session token acts as a per-store account that can see ONLY that store —
+// A verified Shopify session token acts as a per-store account that can see ONLY that store -
 // never the owner's personal account, so Shopify staff can't reach the owner's other stores.
 // It has no password: login / signup / password reset all refuse embedded emails.
 

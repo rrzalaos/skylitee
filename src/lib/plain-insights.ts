@@ -2,7 +2,7 @@ import { formatINR } from "@/lib/utils";
 
 // Plain-language layer for non-technical merchants. Pure functions over plain numbers so the
 // same wording drives the Command Center "Simple" view AND the weekly summary email.
-// Rule of thumb for every sentence here: no jargon (ROAS, CTR, CAC…) — say what it means in ₹.
+// Rule of thumb for every sentence here: no jargon (ROAS, CTR, CAC…) - say what it means in ₹.
 
 export type Status = "good" | "warn" | "bad" | "off";
 
@@ -58,7 +58,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const shopAdmin = (h: string | undefined, path: string) =>
   h ? `https://admin.shopify.com/store/${h}${path}` : "https://admin.shopify.com";
 
-// Stable short key from a campaign name — keeps action ids readable and URL-safe.
+// Stable short key from a campaign name - keeps action ids readable and URL-safe.
 const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
 
 // Plain-text version for WhatsApp (*bold* is WhatsApp markup) and the email's text part.
@@ -105,8 +105,8 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     health.push({
       area: "Ads", status: st,
       headline: `${per100(adRoas)} back per ₹100`,
-      line: st === "good" ? `Above the ${per100(target)} healthy mark — ads are paying off.`
-        : st === "warn" ? `Below the ${per100(target)} healthy mark — some campaigns need fixing.`
+      line: st === "good" ? `Above the ${per100(target)} healthy mark - ads are paying off.`
+        : st === "warn" ? `Below the ${per100(target)} healthy mark - some campaigns need fixing.`
         : `Ads cost more than they bring. Healthy is ${per100(target)}+.`,
     });
   } else if (totalLeads > 0) {
@@ -127,7 +127,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
       area: "Store", status: st,
       headline: `${formatINR(s.sales)} · ${plural(s.orders, "order")}`,
       line: ch !== undefined && ch < 0 ? `Sales down ${Math.abs(ch)}% vs the period before.`
-        : codPct > 60 ? `${codPct}% pay cash on delivery — money comes late, some orders return.`
+        : codPct > 60 ? `${codPct}% pay cash on delivery - money comes late, some orders return.`
         : ch !== undefined ? `Sales up ${ch}% vs the period before.` : "Orders are coming in.",
     });
   }
@@ -140,7 +140,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     health.push({
       area: "Customers", status: st,
       headline: `${r}% buy again`,
-      line: st === "good" ? "Healthy stores are at 25%+ — customers like you." : "Healthy stores are at 25%+. A thank-you offer brings buyers back.",
+      line: st === "good" ? "Healthy stores are at 25%+ - customers like you." : "Healthy stores are at 25%+. A thank-you offer brings buyers back.",
     });
   }
 
@@ -154,8 +154,8 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     health.push({
       area: "Google", status: st,
       headline: p <= 10 ? "On page 1 of Google" : `On page ${Math.ceil(p / 10)} of Google`,
-      line: i.gsc.nearPage1 > 0 ? `${plural(i.gsc.nearPage1, "search")} almost on page 1 — a small push gets more visitors.`
-        : st === "good" ? "Most people find you without scrolling." : "Few people look past page 1 — better product pages help.",
+      line: i.gsc.nearPage1 > 0 ? `${plural(i.gsc.nearPage1, "search")} almost on page 1 - a small push gets more visitors.`
+        : st === "good" ? "Most people find you without scrolling." : "Few people look past page 1 - better product pages help.",
     });
   }
 
@@ -166,13 +166,13 @@ export function buildPlainReport(i: PlainInput): PlainReport {
   if (pixelBroken) {
     actions.push({
       id: "fix-pixel", source: "Meta", impactKind: "save", impact: Math.round(salesSpend),
-      title: "Fix your Meta pixel — Meta can't see your orders",
+      title: "Fix your Meta pixel - Meta can't see your orders",
       why: `You spent ${formatINR(salesSpend)} on sales ads, but Meta recorded ₹0 in sales while your store got ${plural(s!.orders, "order")}. Without this, Meta can't find buyers for you.`,
       steps: [
         "In Shopify, open the Facebook & Instagram app (Sales channels).",
         "Go to Settings → Data sharing and set it to Maximum.",
         "In Meta Events Manager, open your pixel and click Test events.",
-        "Place a small test order — check that a Purchase event shows up.",
+        "Place a small test order - check that a Purchase event shows up.",
       ],
       link: { label: "Open Events Manager", href: EVENTS_MANAGER, external: true },
     });
@@ -186,7 +186,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     const waste = Math.round(dead.reduce((t, c) => t + c.spend, 0));
     actions.push({
       id: `pause-dead:${key(dead[0].name)}`, source: "Meta", impactKind: "save", impact: waste,
-      title: dead.length === 1 ? `Pause "${dead[0].name}" — it brought nothing back` : `Pause ${dead.length} campaigns that brought nothing back`,
+      title: dead.length === 1 ? `Pause "${dead[0].name}" - it brought nothing back` : `Pause ${dead.length} campaigns that brought nothing back`,
       why: `${dead.length === 1 ? "It" : "Together they"} spent ${formatINR(waste)} ${inP} with zero orders or leads${dead.length > 1 ? ` (biggest: "${dead[0].name}")` : ""}.`,
       steps: [
         "Open Meta Ads Manager → Campaigns tab.",
@@ -206,10 +206,10 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     actions.push({
       id: `fix-losing:${key(c.name)}`, source: "Meta", impactKind: "save", impact: loss,
       title: losing.length === 1 ? `Stop "${c.name}" losing money` : `${losing.length} campaigns are losing money`,
-      why: `"${c.name}" got back ${per100(c.purchaseValue / c.spend)} for every ₹100 spent — less than it cost.${losing.length > 1 ? ` Together these lost ${formatINR(loss)}.` : ""}`,
+      why: `"${c.name}" got back ${per100(c.purchaseValue / c.spend)} for every ₹100 spent - less than it cost.${losing.length > 1 ? ` Together these lost ${formatINR(loss)}.` : ""}`,
       steps: [
         "Open Meta Ads Manager → Campaigns.",
-        `Open "${c.name}" and look at its ads — turn off the ones with no purchases.`,
+        `Open "${c.name}" and look at its ads - turn off the ones with no purchases.`,
         "If the whole campaign stays below ₹100 back per ₹100 for 3 more days, turn it off.",
       ],
       link: adsLink,
@@ -228,7 +228,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
       why: `It's your best campaign: every ₹100 here brought back ${per100(r)}. A bit more budget should bring more of the same.`,
       steps: [
         "Open Meta Ads Manager → Campaigns.",
-        `Click the budget of "${w.name}" and raise it by 20% (not more — big jumps reset Meta's learning).`,
+        `Click the budget of "${w.name}" and raise it by 20% (not more - big jumps reset Meta's learning).`,
         "Wait 3–4 days, check it still brings good returns, then repeat.",
       ],
       link: adsLink,
@@ -274,7 +274,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     actions.push({
       id: "prepaid-offer", source: "Shopify", impactKind: "save", impact: rtoSave,
       title: "Offer ₹50–100 off for paying online",
-      why: `${codPct}% of orders are cash on delivery — ${formatINR(s.codRevenue)} you haven't collected yet, and some will be returned unopened.${rtoSave > 0 ? " Moving even a third of them to prepaid cuts those returns." : ""}`,
+      why: `${codPct}% of orders are cash on delivery - ${formatINR(s.codRevenue)} you haven't collected yet, and some will be returned unopened.${rtoSave > 0 ? " Moving even a third of them to prepaid cuts those returns." : ""}`,
       steps: [
         "In Shopify, go to Discounts → Create discount → Amount off order.",
         "Name it PREPAID, set ₹50–100, and limit it to online payment (or use your checkout app's prepaid offer).",
@@ -306,10 +306,10 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     actions.push({
       id: "reply-leads", source: "Meta", impactKind: "earn", impact: Math.round(pipeline * 0.25),
       title: `Reply to your ${plural(totalLeads, "lead")} within an hour`,
-      why: `People who asked about your products are hot for a few hours only. Replying fast can turn about 12 in 100 into orders — around ${formatINR(pipeline)}.`,
+      why: `People who asked about your products are hot for a few hours only. Replying fast can turn about 12 in 100 into orders - around ${formatINR(pipeline)}.`,
       steps: [
         "Open Meta Business Suite → Inbox (WhatsApp, Messenger) and Leads Center.",
-        "Reply to every new lead the same day — ideally within an hour.",
+        "Reply to every new lead the same day - ideally within an hour.",
         "Save quick replies for common questions (price, delivery time, COD).",
       ],
       link: { label: "Open Meta Business Suite", href: "https://business.facebook.com/latest/inbox", external: true },
@@ -332,7 +332,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     });
   }
 
-  // Setup gaps — no ₹ yet, so they rank last.
+  // Setup gaps - no ₹ yet, so they rank last.
   if (!i.connected.meta) actions.push({
     id: "connect-meta", source: "Setup", impactKind: "save", impact: 0,
     title: "Connect your Meta ads account",
@@ -343,14 +343,14 @@ export function buildPlainReport(i: PlainInput): PlainReport {
   if (!i.costsSet && s && s.orders > 0) actions.push({
     id: "set-costs", source: "Setup", impactKind: "earn", impact: 0,
     title: "Add your product costs (2 minutes)",
-    why: "Then we can tell you if each sale makes profit — not just revenue.",
-    steps: ["Open Financial P&L.", "Enter product cost, shipping and return cost per order.", "Save — the numbers here update automatically."],
+    why: "Then we can tell you if each sale makes profit - not just revenue.",
+    steps: ["Open Financial P&L.", "Enter product cost, shipping and return cost per order.", "Save - the numbers here update automatically."],
     link: { label: "Open Financial P&L", href: "/dashboard/financial", external: false },
   });
   if (!i.connected.google) actions.push({
     id: "connect-google", source: "Setup", impactKind: "earn", impact: 0,
     title: "Connect Google",
-    why: "See which Google searches bring you customers — free traffic you can grow.",
+    why: "See which Google searches bring you customers - free traffic you can grow.",
     steps: ["Go to Connections.", "Click Connect next to Google and pick your site."],
     link: { label: "Go to Connections", href: "/dashboard/connections", external: false },
   });
@@ -369,7 +369,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     const cac = Math.round(adSpend / s.newCustomers);
     explained.push({
       label: "Cost to win a new customer", value: formatINR(cac),
-      sentence: `You spent ${formatINR(cac)} on ads for each new customer. Their first order is worth about ${formatINR(s.aov)}.${cac > s.aov ? " That's more than they spend — you need them to buy again." : ""}`,
+      sentence: `You spent ${formatINR(cac)} on ads for each new customer. Their first order is worth about ${formatINR(s.aov)}.${cac > s.aov ? " That's more than they spend - you need them to buy again." : ""}`,
       flag: cac <= s.aov * 0.4 ? "good" : cac <= s.aov ? "warn" : "bad",
     });
   }
@@ -377,7 +377,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     explained.push({ label: "Average order", value: formatINR(s.aov), sentence: `An average customer spends ${formatINR(s.aov)} per order.`, flag: "info" });
     explained.push({
       label: "Money already in your account", value: formatINR(s.prepaidRevenue),
-      sentence: `${formatINR(s.prepaidRevenue)} of your ${formatINR(s.sales)} sales is already paid. ${formatINR(s.codRevenue)} is cash on delivery — collected only when delivered.`,
+      sentence: `${formatINR(s.prepaidRevenue)} of your ${formatINR(s.sales)} sales is already paid. ${formatINR(s.codRevenue)} is cash on delivery - collected only when delivered.`,
       flag: codPct > 60 ? "bad" : codPct > 40 ? "warn" : "good",
     });
   }
@@ -391,8 +391,8 @@ export function buildPlainReport(i: PlainInput): PlainReport {
   }
   if (i.meta && i.meta.frequency > 0) explained.push({
     label: "Times each person saw your ads", value: `${i.meta.frequency.toFixed(1)}×`,
-    sentence: i.meta.frequency > 3 ? "Above 3 — people are getting bored of the same ads, so each sale costs more. Time for new ads."
-      : "Under 3 — people aren't tired of your ads yet.",
+    sentence: i.meta.frequency > 3 ? "Above 3 - people are getting bored of the same ads, so each sale costs more. Time for new ads."
+      : "Under 3 - people aren't tired of your ads yet.",
     flag: i.meta.frequency > 3 ? "bad" : "good",
   });
   if (totalLeads > 0) explained.push({
@@ -421,7 +421,7 @@ export function buildPlainReport(i: PlainInput): PlainReport {
     ? `You spent ${formatINR(adSpend)} on ads and got back ${per100(adRoas)} for every ₹100.`
     : `You spent ${formatINR(adSpend)} on ads.`);
   const issues = health.filter(h => h.status === "bad" || h.status === "warn").length;
-  parts.push(issues === 0 ? "Everything we can see looks healthy." : `${plural(issues, "area needs", "areas need")} your attention — start with the list below.`);
+  parts.push(issues === 0 ? "Everything we can see looks healthy." : `${plural(issues, "area needs", "areas need")} your attention - start with the list below.`);
 
   return { summary: parts.join(" "), health, actions, explained };
 }

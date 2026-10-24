@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     );
     const listData = await listRes.json() as { resourceNames?: string[]; error?: { message?: string; status?: string } };
 
-    // Test token returns PERMISSION_DENIED — fall back to manual entry mode
+    // Test token returns PERMISSION_DENIED - fall back to manual entry mode
     if (listData.error) {
       const msg = listData.error.message ?? "";
       const isTestToken = listRes.status === 403 || listRes.status === 401 ||

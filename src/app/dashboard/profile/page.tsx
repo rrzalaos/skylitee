@@ -76,7 +76,7 @@ function Select({ label, hint, value, onChange, options }: {
         value={value} onChange={e => onChange(e.target.value)}
         className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] text-[#18181B] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] transition-all appearance-none"
       >
-        <option value="">— Select —</option>
+        <option value="">- Select -</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
@@ -443,7 +443,7 @@ export default function ProfilePage() {
           <Info size={13} className="text-[#F97316] shrink-0 mt-0.5" />
           <div className="text-[14px] text-[#EA580C] dark:text-[#FB923C]">
             <span className="font-bold">Complete your profile for smarter AI insights.</span>
-            {" "}The more we know about your brand, audience, and goals — the better our recommendations. You&apos;re {completion}% done.
+            {" "}The more we know about your brand, audience, and goals - the better our recommendations. You&apos;re {completion}% done.
           </div>
         </div>
       )}
@@ -550,7 +550,7 @@ export default function ProfilePage() {
             <Info size={13} className="text-[#3B82F6] shrink-0 mt-0.5" />
             <div className="text-[14px] text-[#1E40AF] dark:text-[#93C5FD]">
               <span className="font-bold">These details power your AI recommendations.</span>
-              {" "}When we know your product category, audience, and revenue scale — the AI gives you industry-specific benchmarks.
+              {" "}When we know your product category, audience, and revenue scale - the AI gives you industry-specific benchmarks.
             </div>
           </div>
 
@@ -618,7 +618,7 @@ export default function ProfilePage() {
               <Field label="Website URL" value={data.website} onChange={set("website")} placeholder="https://yourbrand.com" />
               <Field label="Instagram handle" value={data.instagram} onChange={set("instagram")} placeholder="@yourbrand" />
               <Field label="Facebook page URL" value={data.facebook} onChange={set("facebook")} placeholder="facebook.com/yourbrand" />
-              <Field label="GST number" hint="Optional — for GST-inclusive P&L" value={data.gstNumber} onChange={set("gstNumber")} placeholder="22AAAAA0000A1Z5" />
+              <Field label="GST number" hint="Optional - for GST-inclusive P&L" value={data.gstNumber} onChange={set("gstNumber")} placeholder="22AAAAA0000A1Z5" />
               <div className="col-span-2">
                 <label className="text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5] block mb-0.5">Business address</label>
                 <textarea
@@ -669,14 +669,14 @@ export default function ProfilePage() {
           <Card>
             <CardHeader title="Team Members" right={`${1 + teamMembers.length} member${teamMembers.length ? "s" : ""}`} />
 
-            {/* Owner row — always first (only when the viewer is the owner) */}
+            {/* Owner row - always first (only when the viewer is the owner) */}
             {myRole === "owner" && (
             <div className="flex items-center justify-between py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-center gap-3">
                 <Avatar photoUrl={data.photoUrl} name={meName || "Owner"} size={40} />
                 <div>
                   <div className="text-[15px] font-semibold dark:text-[#F4F4F5]">{meName || "Account Owner"} <span className="text-[13px] text-[#A1A1AA] font-normal">(you)</span></div>
-                  <div className="text-[13px] text-[#A1A1AA]">{meEmail || "—"}</div>
+                  <div className="text-[13px] text-[#A1A1AA]">{meEmail || "-"}</div>
                 </div>
               </div>
               <span className="flex items-center gap-1 text-[13px] font-bold bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] dark:text-[#FB923C] px-2.5 py-1 rounded-full">
@@ -786,9 +786,9 @@ export default function ProfilePage() {
             <CardHeader title="Why add team members?" />
             <div className="space-y-2 mt-1">
               {[
-                { icon: "👩‍💼", text: "Give your performance marketing agency View-only or Marketing access — they can see data but can't change your connections or billing." },
-                { icon: "📊", text: "Add a business partner as Admin — they get full data access but you stay as the controlling Owner." },
-                { icon: "🔒", text: "Your Shopify token and Meta credentials stay protected — team members access through Skylitee, not your accounts directly." },
+                { icon: "👩‍💼", text: "Give your performance marketing agency View-only or Marketing access - they can see data but can't change your connections or billing." },
+                { icon: "📊", text: "Add a business partner as Admin - they get full data access but you stay as the controlling Owner." },
+                { icon: "🔒", text: "Your Shopify token and Meta credentials stay protected - team members access through Skylitee, not your accounts directly." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2 text-[14px] text-[#52525B] dark:text-[#A1A1AA] py-2 border-b border-black/[0.04] dark:border-white/[0.04] last:border-0">
                   <span className="text-base">{item.icon}</span>

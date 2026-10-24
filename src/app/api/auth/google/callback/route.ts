@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return back("/dashboard/connections?error=google");
   }
 
-  // State format: "{nonce}|{service}" — service is "gsc", "ga4", or "both"
+  // State format: "{nonce}|{service}" - service is "gsc", "ga4", or "both"
   const service = state.split("|")[1] ?? "both";
   let shop: string;
   let connectedBy: string;   // who owns this login → only they can pick accounts (lib/connector)
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     } else if (service === "gads") {
       await shopKv.setGadsToken(shop, tokens.refresh_token);
     } else {
-      // "both" — legacy path
+      // "both" - legacy path
       await shopKv.setGscToken(shop, tokens.refresh_token);
       await shopKv.setGa4Token(shop, tokens.refresh_token);
       setCookie("google_refresh_token", tokens.refresh_token);

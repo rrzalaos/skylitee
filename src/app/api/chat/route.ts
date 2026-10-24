@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getShopifySession } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 import { getGoogleAccessToken } from "@/lib/google";
+import { plainDashes } from "@/lib/utils";
 
 const GADS_DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
 
@@ -339,7 +340,7 @@ Rules:
 
     const content = response.content[0];
     if (content.type !== "text") return Response.json({ error: "Unexpected response type" }, { status: 500 });
-    return Response.json({ reply: content.text, shop: shop ?? "your store" });
+    return Response.json({ reply: plainDashes(content.text), shop: shop ?? "your store" });
   } catch (error) {
     console.error("Chat API error:", error);
     return Response.json({ error: "Failed to get AI response" }, { status: 500 });

@@ -210,7 +210,7 @@ export default function GoalsPage() {
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Lightbulb size={13} className="text-[#F97316]" />
-                <span className="text-[14px] font-bold text-[#EA580C] uppercase tracking-[0.1em]">{lmMonthName} Actuals — use as baseline</span>
+                <span className="text-[14px] font-bold text-[#EA580C] uppercase tracking-[0.1em]">{lmMonthName} Actuals - use as baseline</span>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 {[
@@ -412,7 +412,7 @@ export default function GoalsPage() {
                         </div>
                       </td>
                       <td className="py-2 px-2">{formatINR(rec.salesTarget)}</td>
-                      <td className="py-2 px-2 font-semibold">{actualSales !== undefined ? formatINR(actualSales) : <span className="text-[#A1A1AA]">—</span>}</td>
+                      <td className="py-2 px-2 font-semibold">{actualSales !== undefined ? formatINR(actualSales) : <span className="text-[#A1A1AA]">-</span>}</td>
                       <td className="py-2 px-2">
                         {achPct !== null ? (
                           <span className={cn("px-2 py-0.5 rounded-full text-[12px] font-black",
@@ -420,15 +420,15 @@ export default function GoalsPage() {
                             achPct >= 80 ? "bg-[#FFF7ED] text-[#EA580C]" :
                             "bg-[#FEF2F2] text-[#DC2626]"
                           )}>{achPct}%</span>
-                        ) : <span className="text-[#A1A1AA]">—</span>}
+                        ) : <span className="text-[#A1A1AA]">-</span>}
                       </td>
-                      <td className="py-2 px-2">{rec.ordersTarget || <span className="text-[#A1A1AA]">—</span>}</td>
-                      <td className="py-2 px-2 font-semibold">{actualOrders !== undefined ? actualOrders : <span className="text-[#A1A1AA]">—</span>}</td>
+                      <td className="py-2 px-2">{rec.ordersTarget || <span className="text-[#A1A1AA]">-</span>}</td>
+                      <td className="py-2 px-2 font-semibold">{actualOrders !== undefined ? actualOrders : <span className="text-[#A1A1AA]">-</span>}</td>
                       <td className="py-2 px-2">{rec.roasTarget}x</td>
                       <td className="py-2 px-2">
                         {actualRoas !== null && actualRoas !== undefined ? (
                           <span className={cn("font-bold", actualRoas >= rec.roasTarget ? "text-[#22C55E]" : "text-[#EF4444]")}>{actualRoas}x</span>
-                        ) : <span className="text-[#A1A1AA]">—</span>}
+                        ) : <span className="text-[#A1A1AA]">-</span>}
                       </td>
                     </tr>
                   );

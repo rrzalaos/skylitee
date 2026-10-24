@@ -1,4 +1,4 @@
-// Visual PDF export — captures a rendered report element (charts, gauges, donuts and all)
+// Visual PDF export - captures a rendered report element (charts, gauges, donuts and all)
 // and lays it into a branded, multi-page A4 PDF so the PDF matches the on-screen design.
 // Uses html2canvas-pro (handles Tailwind v4 oklch/color-mix, which classic html2canvas can't).
 
@@ -23,7 +23,7 @@ export async function exportElementToPDF(
     import("jspdf"),
   ]);
 
-  // Capture at 2x in a forced light theme (clone-only mutation — the live page is untouched).
+  // Capture at 2x in a forced light theme (clone-only mutation - the live page is untouched).
   const canvas = await html2canvas(el, {
     scale: 2,
     backgroundColor: "#ffffff",

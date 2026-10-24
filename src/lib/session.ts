@@ -3,13 +3,13 @@ import { shopKv } from "./kv";
 import { getValidToken } from "./shopify";
 import { getSession, getUser, SESSION_COOKIE } from "./auth";
 
-// ── Shop identity (cookies are correct here — shop domain is a UI cookie, not a secret token) ──
+// ── Shop identity (cookies are correct here - shop domain is a UI cookie, not a secret token) ──
 
 export function getShopFromRequest(req: NextRequest): string | null {
   return process.env.SHOPIFY_STORE ?? req.cookies.get("shopify_shop")?.value ?? null;
 }
 
-// Verified version — confirms the session user actually owns this shop cookie.
+// Verified version - confirms the session user actually owns this shop cookie.
 // Use this on every data API route instead of getShopFromRequest.
 export async function getAuthorizedShop(req: NextRequest): Promise<string | null> {
   if (process.env.SHOPIFY_STORE) return process.env.SHOPIFY_STORE;
@@ -71,7 +71,7 @@ export async function requireShopPermission(
       ok: false, status: 403,
       error: role === "view_only"
         ? "You have view-only access to this store"
-        : "Your role on this store doesn't allow this — ask the store owner",
+        : "Your role on this store doesn't allow this - ask the store owner",
     };
   }
   return { ok: true, shop, email, role };
@@ -89,7 +89,7 @@ export async function getShopifySession(
   return { shop, token };
 }
 
-// ── Platform token helpers — KV only, no cookie fallbacks ────────────────────
+// ── Platform token helpers - KV only, no cookie fallbacks ────────────────────
 // All platform tokens are stored in KV after OAuth. Cookies are never written
 // for tokens and must not be used as a fallback (they don't exist post-migration).
 

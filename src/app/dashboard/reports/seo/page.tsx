@@ -41,7 +41,7 @@ function SignalCard({ type, metric, value, detail }: { type: "good" | "warn" | "
   );
 }
 
-/** Horizontal "pole" bar — track + fill, with a label and value. */
+/** Horizontal "pole" bar - track + fill, with a label and value. */
 function PoleBar({ label, value, pct, color, sub }: { label: string; value: string; pct: number; color: string; sub?: string }) {
   return (
     <div>
@@ -88,18 +88,18 @@ export default function SEOReportPage() {
     if (!data) return [];
     const secs = [
       { title: "SEO KPIs", headers: ["Metric", "Value", "Benchmark"], rows: [
-        ["Total Clicks", data.kpis.clicks, "—"],
-        ["Total Impressions", data.kpis.impressions, "—"],
+        ["Total Clicks", data.kpis.clicks, "-"],
+        ["Total Impressions", data.kpis.impressions, "-"],
         ["CTR", `${data.kpis.ctr}%`, "Target: > 2%"],
         ["Avg Position", data.kpis.avgPosition.toFixed(1), "Target: < 10"],
-        ["Site", data.site, "—"],
-        ["Period", `${data.period.startDate} → ${data.period.endDate}`, "—"],
+        ["Site", data.site, "-"],
+        ["Period", `${data.period.startDate} → ${data.period.endDate}`, "-"],
       ]},
     ];
     if (ga4?.organic) secs.push({ title: "Organic (GA4)", headers: ["Metric", "Value", "Benchmark"], rows: [
-      ["Organic Sessions", ga4.organic.sessions, "—"],
-      ["Organic Orders", ga4.organic.purchases, "—"],
-      ["Organic Revenue", inr(ga4.organic.revenue), "—"],
+      ["Organic Sessions", ga4.organic.sessions, "-"],
+      ["Organic Orders", ga4.organic.purchases, "-"],
+      ["Organic Revenue", inr(ga4.organic.revenue), "-"],
       ["Engagement Rate", `${ga4.organic.engagementRate}%`, "Target: > 55%"],
       ["Bounce Rate", `${ga4.organic.bounceRate}%`, "Lower is better"],
     ]});
@@ -137,7 +137,7 @@ export default function SEOReportPage() {
   const top10kws = data.keywords.filter(kw => kw.position <= 10).length;
   const highImpLowClick = data.keywords.filter(kw => kw.impressions > 100 && kw.ctr < 1).length;
 
-  // CTR opportunity keywords — visible (high impressions) but under-clicked (low CTR), still close-ish to page 1.
+  // CTR opportunity keywords - visible (high impressions) but under-clicked (low CTR), still close-ish to page 1.
   const opportunities = data.keywords
     .filter(kw => kw.impressions >= 100 && kw.ctr < 2)
     .map(kw => ({ ...kw, potential: Math.max(0, Math.round(kw.impressions * 0.03) - kw.clicks) }))
@@ -166,19 +166,19 @@ export default function SEOReportPage() {
   const workingSignals: { metric: string; value: string; detail: string }[] = [];
   const attentionSignals: { metric: string; value: string; detail: string; type: "warn" | "bad" }[] = [];
 
-  if (ctrGood) workingSignals.push({ metric: "CTR", value: `${k.ctr}%`, detail: "Above the 2% benchmark — your titles and meta descriptions are compelling enough to earn clicks." });
-  if (posGood) workingSignals.push({ metric: "Avg Position", value: k.avgPosition.toFixed(1), detail: "Top-10 rankings — your content is on page 1 for most queries." });
-  if (top10kws > 0) workingSignals.push({ metric: "Page-1 Keywords", value: `${top10kws} keywords`, detail: `${top10kws} tracked keywords rank on page 1 — strong presence for these terms.` });
-  if (org && org.revenue > 0) workingSignals.push({ metric: "Organic Revenue", value: inr(org.revenue), detail: `Search is driving real money — ${org.purchases} orders from organic visits, ${inr(org.revenue / Math.max(org.purchases, 1))} avg order.` });
-  if (org && org.engagementRate >= 55) workingSignals.push({ metric: "Engagement", value: `${org.engagementRate}%`, detail: "Organic visitors are engaged — your landing pages match search intent well." });
-  if (topKeyword) workingSignals.push({ metric: "Best Keyword", value: `"${topKeyword.query}"`, detail: `${topKeyword.clicks} clicks at position ${topKeyword.position.toFixed(1)} — your top organic traffic driver.` });
+  if (ctrGood) workingSignals.push({ metric: "CTR", value: `${k.ctr}%`, detail: "Above the 2% benchmark - your titles and meta descriptions are compelling enough to earn clicks." });
+  if (posGood) workingSignals.push({ metric: "Avg Position", value: k.avgPosition.toFixed(1), detail: "Top-10 rankings - your content is on page 1 for most queries." });
+  if (top10kws > 0) workingSignals.push({ metric: "Page-1 Keywords", value: `${top10kws} keywords`, detail: `${top10kws} tracked keywords rank on page 1 - strong presence for these terms.` });
+  if (org && org.revenue > 0) workingSignals.push({ metric: "Organic Revenue", value: inr(org.revenue), detail: `Search is driving real money - ${org.purchases} orders from organic visits, ${inr(org.revenue / Math.max(org.purchases, 1))} avg order.` });
+  if (org && org.engagementRate >= 55) workingSignals.push({ metric: "Engagement", value: `${org.engagementRate}%`, detail: "Organic visitors are engaged - your landing pages match search intent well." });
+  if (topKeyword) workingSignals.push({ metric: "Best Keyword", value: `"${topKeyword.query}"`, detail: `${topKeyword.clicks} clicks at position ${topKeyword.position.toFixed(1)} - your top organic traffic driver.` });
 
   if (!ctrGood) attentionSignals.push({ type: k.ctr < 1 ? "bad" : "warn", metric: "CTR", value: `${k.ctr}%`, detail: "Below the 2% target. Rewrite title tags with action words and search intent; add review/product schema to stand out." });
   if (!posWarn) attentionSignals.push({ type: "bad", metric: "Avg Position", value: k.avgPosition.toFixed(1), detail: "Beyond page 2. Focus link-building and on-page work on your top 5 keywords." });
-  else if (!posGood) attentionSignals.push({ type: "warn", metric: "Avg Position", value: k.avgPosition.toFixed(1), detail: "Page-2 territory. Push the keywords closest to position 10 — small gains can double clicks." });
-  if (highImpLowClick > 0) attentionSignals.push({ type: "warn", metric: "Impression Leak", value: `${highImpLowClick} keywords`, detail: `${highImpLowClick} keywords get 100+ impressions but under 1% CTR — you're seen, not clicked. Rewrite their titles/meta.` });
+  else if (!posGood) attentionSignals.push({ type: "warn", metric: "Avg Position", value: k.avgPosition.toFixed(1), detail: "Page-2 territory. Push the keywords closest to position 10 - small gains can double clicks." });
+  if (highImpLowClick > 0) attentionSignals.push({ type: "warn", metric: "Impression Leak", value: `${highImpLowClick} keywords`, detail: `${highImpLowClick} keywords get 100+ impressions but under 1% CTR - you're seen, not clicked. Rewrite their titles/meta.` });
   if (brandedTotal > 0 && (b.nonBrandedClicks / brandedTotal) < 0.4) attentionSignals.push({ type: "warn", metric: "Brand Dependence", value: `${Math.round((b.brandedClicks / brandedTotal) * 100)}% branded`, detail: "Most clicks come from people already searching your name. Build non-branded content to capture new demand." });
-  if (org && org.engagementRate > 0 && org.engagementRate < 45) attentionSignals.push({ type: "warn", metric: "Organic Engagement", value: `${org.engagementRate}%`, detail: "Search visitors leave quickly — landing pages may not match what they searched for. Align content to query intent." });
+  if (org && org.engagementRate > 0 && org.engagementRate < 45) attentionSignals.push({ type: "warn", metric: "Organic Engagement", value: `${org.engagementRate}%`, detail: "Search visitors leave quickly - landing pages may not match what they searched for. Align content to query intent." });
 
   const monthlyChart = monthly.map(m => ({ label: m.label.replace(/ \d{4}$/, ""), Clicks: m.clicks, Impressions: m.impressions }));
   const maxBucket = Math.max(1, ...data.positionBuckets.map(x => x.clicks));
@@ -215,8 +215,8 @@ export default function SEOReportPage() {
         {[
           { label: "Total Clicks", value: k.clicks.toLocaleString("en-IN"), icon: <MousePointerClick size={14} className="text-[#4285F4]" /> },
           { label: "Impressions", value: k.impressions.toLocaleString("en-IN"), icon: <Eye size={14} className="text-[#A1A1AA]" /> },
-          { label: "Organic Sessions", value: org ? org.sessions.toLocaleString("en-IN") : "—", icon: <Users size={14} className="text-[#F97316]" /> },
-          { label: "Organic Revenue", value: org ? inr(org.revenue) : "—", icon: <IndianRupee size={14} className="text-[#22C55E]" /> },
+          { label: "Organic Sessions", value: org ? org.sessions.toLocaleString("en-IN") : "-", icon: <Users size={14} className="text-[#F97316]" /> },
+          { label: "Organic Revenue", value: org ? inr(org.revenue) : "-", icon: <IndianRupee size={14} className="text-[#22C55E]" /> },
         ].map(item => (
           <div key={item.label} className="bg-white dark:bg-[#171717] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-2">{item.icon}<span className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide">{item.label}</span></div>
@@ -285,7 +285,7 @@ export default function SEOReportPage() {
               { label: "Non-branded (new demand)", value: b.nonBrandedClicks, color: "#F97316" },
               { label: "Branded (existing demand)", value: b.brandedClicks, color: "#3B82F6" },
             ]}
-            centerValue={brandedTotal > 0 ? `${Math.round((b.nonBrandedClicks / brandedTotal) * 100)}%` : "—"}
+            centerValue={brandedTotal > 0 ? `${Math.round((b.nonBrandedClicks / brandedTotal) * 100)}%` : "-"}
             centerLabel="non-branded"
           />
           <p className="text-[13px] text-[#A1A1AA] mt-3 leading-relaxed">Non-branded clicks are <strong>new customers discovering you</strong>; branded clicks are people already looking for your name.</p>
@@ -294,17 +294,17 @@ export default function SEOReportPage() {
 
       {/* Month-wise progress tables */}
       {(monthly.length >= 2 || ga4Monthly.length >= 2) && (
-        <p className="text-[13px] text-[#A1A1AA] -mb-1">Month-wise progress · <span className="text-[#16A34A] font-semibold">green</span> = improved vs prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (Avg Position &amp; Bounce Rate inverted — lower is better). Latest month may be partial.</p>
+        <p className="text-[13px] text-[#A1A1AA] -mb-1">Month-wise progress · <span className="text-[#16A34A] font-semibold">green</span> = improved vs prior month, <span className="text-[#DC2626] font-semibold">red</span> = declined (Avg Position &amp; Bounce Rate inverted - lower is better). Latest month may be partial.</p>
       )}
       {monthly.length >= 2 && (
         <Card>
-          <CardHeader title="Search Console — Month-wise" right={`last ${monthly.length} months`} />
+          <CardHeader title="Search Console - Month-wise" right={`last ${monthly.length} months`} />
           <MonthwiseTable headers={monthly.map(m => m.label)} rows={buildGscRows(monthly)} />
         </Card>
       )}
       {ga4Monthly.length >= 2 && (
         <Card>
-          <CardHeader title="Analytics — Month-wise" right={`last ${ga4Monthly.length} months`} />
+          <CardHeader title="Analytics - Month-wise" right={`last ${ga4Monthly.length} months`} />
           <MonthwiseTable headers={ga4Monthly.map(m => m.label)} rows={buildGa4Rows(ga4Monthly)} />
         </Card>
       )}
@@ -413,9 +413,9 @@ export default function SEOReportPage() {
                     <td className="py-2 px-2 font-bold text-[#4285F4]">{p.clicks}</td>
                     <td className="py-2 px-2 font-semibold">{p.ctr}%</td>
                     <td className="py-2 px-2 text-[#A1A1AA]">{p.position.toFixed(1)}</td>
-                    <td className="py-2 px-2 font-semibold text-[#F97316]">{ga ? ga.sessions.toLocaleString("en-IN") : "—"}</td>
-                    <td className="py-2 px-2 text-[#A1A1AA]">{ga ? `${ga.bounceRate}%` : "—"}</td>
-                    <td className="py-2 px-2 font-bold text-[#22C55E]">{ga && ga.purchases > 0 ? ga.purchases : "—"}</td>
+                    <td className="py-2 px-2 font-semibold text-[#F97316]">{ga ? ga.sessions.toLocaleString("en-IN") : "-"}</td>
+                    <td className="py-2 px-2 text-[#A1A1AA]">{ga ? `${ga.bounceRate}%` : "-"}</td>
+                    <td className="py-2 px-2 font-bold text-[#22C55E]">{ga && ga.purchases > 0 ? ga.purchases : "-"}</td>
                   </tr>
                 );
               })}
@@ -445,7 +445,7 @@ export default function SEOReportPage() {
                 { label: "Engagement", value: `${org.engagementRate}%`, color: org.engagementRate >= 55 ? "text-[#22C55E]" : "text-[#EAB308]" },
                 { label: "Bounce rate", value: `${org.bounceRate}%`, color: "text-[#8B5CF6]" },
                 { label: "Organic orders", value: org.purchases.toLocaleString("en-IN"), color: "text-[#22C55E]" },
-                { label: "Conv. rate", value: org.sessions > 0 ? `${((org.purchases / org.sessions) * 100).toFixed(2)}%` : "—", color: "text-[#EC4899]" },
+                { label: "Conv. rate", value: org.sessions > 0 ? `${((org.purchases / org.sessions) * 100).toFixed(2)}%` : "-", color: "text-[#EC4899]" },
               ].map(s => (
                 <div key={s.label} className="rounded-xl bg-[#FAFAF9] dark:bg-[#1C1C1C] p-3">
                   <div className="text-[13px] text-[#A1A1AA] mb-1">{s.label}</div>
@@ -465,7 +465,7 @@ export default function SEOReportPage() {
       <p className="text-[12px] text-[#A1A1AA] text-center pt-2">GSC reflects Google Search (≈3-day lag, Pacific Time). GA4 organic = Organic Search channel only. Branded split inferred from the &quot;{b.brandLabel}&quot; domain term.</p>
     </div>
 
-    {/* Off-screen, PDF-optimized layout — captured for the PDF export (bigger fonts, color, dense). */}
+    {/* Off-screen, PDF-optimized layout - captured for the PDF export (bigger fonts, color, dense). */}
     <div ref={printRef} aria-hidden style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
       <PrintableSEO data={data} ga4={ga4} monthly={monthly} ga4Monthly={ga4Monthly} site={data.site} rangeLabel={range.label} generatedAt={generatedAt} />
     </div>

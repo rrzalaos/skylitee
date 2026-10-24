@@ -7,7 +7,7 @@ import {
 } from "@/lib/shopify";
 import { markOnce } from "@/lib/funnel";
 
-// Store X-Ray: the first "magic moment" for a new install — what Shopify alone already tells
+// Store X-Ray: the first "magic moment" for a new install - what Shopify alone already tells
 // us about the last 90 days, before any ad account is connected. Real orders only; every
 // insight is flagged good (green) / needs attention (red) against a simple D2C benchmark.
 
@@ -66,7 +66,7 @@ function build(all: ShopifyOrder[], currency: string, shopName: string): XRay {
     if (idx >= 0 && idx < weeks) { weekly[idx].revenue += orderRevenue(o); weekly[idx].orders++; }
   }
   weekly.forEach(w => { w.revenue = round(w.revenue); });
-  // Oldest bucket may be partial — skip it for best/worst.
+  // Oldest bucket may be partial - skip it for best/worst.
   const full = weekly.slice(1);
   const sorted = [...full].sort((a, b) => b.revenue - a.revenue);
   const bestWeek = orders ? { start: sorted[0].start, revenue: sorted[0].revenue } : null;
@@ -125,7 +125,7 @@ function build(all: ShopifyOrder[], currency: string, shopName: string): XRay {
     .map(p => ({ title: p.title, last30Units: p.last30, prev30Units: p.prev30, dropPct: Math.round(((p.prev30 - p.last30) / p.prev30) * 100) }))
     .sort((a, b) => b.dropPct - a.dropPct || b.prev30Units - a.prev30Units)[0] ?? null;
 
-  // Money leak = refunds on kept orders + value of cancelled orders (not RTO — Shopify can't see that).
+  // Money leak = refunds on kept orders + value of cancelled orders (not RTO - Shopify can't see that).
   const refunds = real.reduce((s, o) => s + Math.max(0, num(o.total_price) - orderRevenue(o)), 0);
   const cancelled = cancelledOrders.reduce((s, o) => s + num(o.total_price), 0);
   const leakTotal = refunds + cancelled;
@@ -173,7 +173,7 @@ export async function GET(req: NextRequest) {
   try {
     const from = new Date(Date.now() - WINDOW_DAYS * DAY).toISOString();
     const [orders, shopInfo] = await Promise.all([
-      // status=any includes cancelled orders — needed for the money-leak number.
+      // status=any includes cancelled orders - needed for the money-leak number.
       shopifyFetchAll<ShopifyOrder>(shop, token,
         `/orders.json?status=any&created_at_min=${encodeURIComponent(from)}&limit=250&fields=${ORDER_FIELDS}`, "orders", 100),
       shopifyFetch<{ shop?: { currency?: string; name?: string } }>(shop, token, "/shop.json?fields=currency,name")

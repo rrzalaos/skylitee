@@ -88,14 +88,14 @@ export default function WeeklyPage() {
   const actionItems: { color: string; title: string; sub: string }[] = [];
   if (metaConnected && campaigns.length > 0) {
     const zero = campaigns.filter(c => c.spend > 500 && c.roas === 0);
-    if (zero.length) actionItems.push({ color: "bg-[#d94040]", title: `Pause ${zero.length} campaign${zero.length > 1 ? "s" : ""} with zero conversions`, sub: `${zero.map(c => c.name).join(", ")} — spending without returns. Reallocate budget.` });
+    if (zero.length) actionItems.push({ color: "bg-[#d94040]", title: `Pause ${zero.length} campaign${zero.length > 1 ? "s" : ""} with zero conversions`, sub: `${zero.map(c => c.name).join(", ")} - spending without returns. Reallocate budget.` });
     const best = campaigns.filter(c => c.roas >= 1.5).sort((a, b) => b.roas - a.roas)[0];
-    if (best) actionItems.push({ color: "bg-[#e89820]", title: `Scale "${best.name}" — ROAS ${best.roas}×`, sub: "Top performer this week. Increase budget ~20% every 3 days while ROAS holds." });
+    if (best) actionItems.push({ color: "bg-[#e89820]", title: `Scale "${best.name}" - ROAS ${best.roas}×`, sub: "Top performer this week. Increase budget ~20% every 3 days while ROAS holds." });
   }
-  if (blendedRoas !== null && blendedRoas < 1) actionItems.push({ color: "bg-[#d94040]", title: `Ads aren't paying back — blended ROAS ${blendedRoas}×`, sub: `You spent ${fmt(adSpend)} and the store made ${fmt(s?.grossSales ?? 0)}. Pause sub-1× campaigns and fix the worst funnel stage before adding budget.` });
-  if (codPct > 50) actionItems.push({ color: "bg-[#3478d4]", title: `COD at ${codPct}% — add a prepaid incentive`, sub: "Offer ₹50–75 off prepaid orders to cut RTO and improve cash flow." });
-  if ((s?.returningCustomers ?? 0) > 0) actionItems.push({ color: "bg-[#3478d4]", title: `Nurture ${s!.returningCustomers} repeat buyers`, sub: "They ordered again this week — enrol them in a VIP / loyalty flow." });
-  actionItems.push({ color: "bg-[#d94040]", title: "Connect Google Ads — capture intent-based buyers", sub: "Search demand on your top GSC keywords converts higher than social. Adds a profitable channel + true blended ROAS." });
+  if (blendedRoas !== null && blendedRoas < 1) actionItems.push({ color: "bg-[#d94040]", title: `Ads aren't paying back - blended ROAS ${blendedRoas}×`, sub: `You spent ${fmt(adSpend)} and the store made ${fmt(s?.grossSales ?? 0)}. Pause sub-1× campaigns and fix the worst funnel stage before adding budget.` });
+  if (codPct > 50) actionItems.push({ color: "bg-[#3478d4]", title: `COD at ${codPct}% - add a prepaid incentive`, sub: "Offer ₹50–75 off prepaid orders to cut RTO and improve cash flow." });
+  if ((s?.returningCustomers ?? 0) > 0) actionItems.push({ color: "bg-[#3478d4]", title: `Nurture ${s!.returningCustomers} repeat buyers`, sub: "They ordered again this week - enrol them in a VIP / loyalty flow." });
+  actionItems.push({ color: "bg-[#d94040]", title: "Connect Google Ads - capture intent-based buyers", sub: "Search demand on your top GSC keywords converts higher than social. Adds a profitable channel + true blended ROAS." });
 
   const headline = (() => {
     if (loading) return "";
@@ -103,9 +103,9 @@ export default function WeeklyPage() {
     const base = `${fmt(s.grossSales)} revenue from ${s.totalOrders} orders this week`;
     if (!metaConnected || !m || m.spend === 0) return `${base}. Connect Meta to see ad ROAS.`;
     const verdict = blendedRoas !== null
-      ? blendedRoas >= 1.5 ? `Ads are working — ${blendedRoas}× blended ROAS.`
-        : blendedRoas >= 1 ? `Ads roughly break even — ${blendedRoas}× blended ROAS.`
-        : `Ads are losing money — ${blendedRoas}× blended ROAS (spent ${fmt(adSpend)}).`
+      ? blendedRoas >= 1.5 ? `Ads are working - ${blendedRoas}× blended ROAS.`
+        : blendedRoas >= 1 ? `Ads roughly break even - ${blendedRoas}× blended ROAS.`
+        : `Ads are losing money - ${blendedRoas}× blended ROAS (spent ${fmt(adSpend)}).`
       : "";
     return `${base}. ${verdict}`;
   })();
@@ -113,16 +113,16 @@ export default function WeeklyPage() {
   // ── Export ──
   function buildSections(): ExportSection[] {
     return [
-      { title: `Weekly Digest — ${thisW.label}`, headers: ["Metric", "This week", "Last week"], rows: [
+      { title: `Weekly Digest - ${thisW.label}`, headers: ["Metric", "This week", "Last week"], rows: [
         ["Shopify Revenue", fmt(s?.grossSales ?? 0), fmt(sl?.grossSales ?? 0)],
         ["Orders", String(s?.totalOrders ?? 0), String(sl?.totalOrders ?? 0)],
         ["AOV", fmt(s?.aov ?? 0), fmt(sl?.aov ?? 0)],
         ["Meta Spend", fmt(m?.spend ?? 0), fmt(ml?.spend ?? 0)],
-        ["Blended ROAS", blendedRoas !== null ? `${blendedRoas}x` : "—", blendedRoasLast !== null ? `${blendedRoasLast}x` : "—"],
-        ["Meta ROAS (attributed)", m ? `${m.roas}x` : "—", ml ? `${ml.roas}x` : "—"],
-        ["COD %", `${codPct}%`, "—"],
+        ["Blended ROAS", blendedRoas !== null ? `${blendedRoas}x` : "-", blendedRoasLast !== null ? `${blendedRoasLast}x` : "-"],
+        ["Meta ROAS (attributed)", m ? `${m.roas}x` : "-", ml ? `${ml.roas}x` : "-"],
+        ["COD %", `${codPct}%`, "-"],
       ]},
-      { title: "Campaigns this week", headers: ["Campaign", "Status", "Spend", "ROAS"], rows: campaigns.map(c => [c.name, c.status, fmt(c.spend), c.roas > 0 ? `${c.roas}x` : "—"]) },
+      { title: "Campaigns this week", headers: ["Campaign", "Status", "Spend", "ROAS"], rows: campaigns.map(c => [c.name, c.status, fmt(c.spend), c.roas > 0 ? `${c.roas}x` : "-"]) },
       { title: "Action items", headers: ["#", "Action", "Detail"], rows: actionItems.map((a, i) => [i + 1, a.title, a.sub]) },
     ];
   }
@@ -130,18 +130,18 @@ export default function WeeklyPage() {
   const handlePDF = () => exportToPDF("skylitee-weekly", "Weekly Digest", `${thisW.label} · Shopify + Meta live`, buildSections());
 
   const tiles = [
-    { label: "Shopify Revenue", value: s ? fmt(s.grossSales) : "—", sub: `${s?.totalOrders ?? 0} orders · ${deltaStr(revenueDelta)}`, bg: "bg-[#e0f5ee]", color: "text-[#0d6b4f]" },
-    { label: "Orders", value: s ? String(s.totalOrders) : "—", sub: `AOV ${fmt(s?.aov ?? 0)} · ${deltaStr(ordersDelta)}`, bg: "bg-[#f7f7f5]", color: "text-[#181816]" },
+    { label: "Shopify Revenue", value: s ? fmt(s.grossSales) : "-", sub: `${s?.totalOrders ?? 0} orders · ${deltaStr(revenueDelta)}`, bg: "bg-[#e0f5ee]", color: "text-[#0d6b4f]" },
+    { label: "Orders", value: s ? String(s.totalOrders) : "-", sub: `AOV ${fmt(s?.aov ?? 0)} · ${deltaStr(ordersDelta)}`, bg: "bg-[#f7f7f5]", color: "text-[#181816]" },
     { label: "Meta Spend", value: fmt(adSpend), sub: deltaStr(spendDelta), bg: "bg-[#f7f7f5]", color: adSpend > 0 ? "text-[#181816]" : "text-[#9e9e9a]" },
-    { label: "Blended ROAS", value: blendedRoas !== null ? `${blendedRoas}×` : "—", sub: `store ÷ ad spend · ${deltaStr(blendedDelta)}`,
+    { label: "Blended ROAS", value: blendedRoas !== null ? `${blendedRoas}×` : "-", sub: `store ÷ ad spend · ${deltaStr(blendedDelta)}`,
       bg: (blendedRoas ?? 0) >= 1.5 ? "bg-[#e0f5ee]" : (blendedRoas ?? 0) >= 1 ? "bg-[#fff3e0]" : "bg-[#fce8e8]",
       color: (blendedRoas ?? 0) >= 1.5 ? "text-[#0d6b4f]" : (blendedRoas ?? 0) >= 1 ? "text-[#e89820]" : "text-[#d94040]" },
-    { label: "Meta ROAS", value: m && m.roas > 0 ? `${m.roas}×` : "—", sub: `attributed · ${deltaStr(roasDelta)}`, bg: "bg-[#f7f7f5]", color: "text-[#686864]" },
-    { label: "COD share", value: s ? `${codPct}%` : "—", sub: `${s?.prepaidOrders ?? 0} prepaid · ${s?.codOrders ?? 0} COD`, bg: codPct > 50 ? "bg-[#fce8e8]" : "bg-[#f7f7f5]", color: codPct > 50 ? "text-[#d94040]" : "text-[#181816]" },
+    { label: "Meta ROAS", value: m && m.roas > 0 ? `${m.roas}×` : "-", sub: `attributed · ${deltaStr(roasDelta)}`, bg: "bg-[#f7f7f5]", color: "text-[#686864]" },
+    { label: "COD share", value: s ? `${codPct}%` : "-", sub: `${s?.prepaidOrders ?? 0} prepaid · ${s?.codOrders ?? 0} COD`, bg: codPct > 50 ? "bg-[#fce8e8]" : "bg-[#f7f7f5]", color: codPct > 50 ? "text-[#d94040]" : "text-[#181816]" },
   ];
 
   const fc = [
-    { label: "Revenue", val: s ? fmt(Math.round(s.grossSales * 1.05)) : "—", now: s?.grossSales ?? 0, color: "bg-[#17a773]" },
+    { label: "Revenue", val: s ? fmt(Math.round(s.grossSales * 1.05)) : "-", now: s?.grossSales ?? 0, color: "bg-[#17a773]" },
     { label: "Ad Spend", val: fmt(Math.round(adSpend * 1.1)), now: adSpend, color: "bg-[#d94040]" },
     { label: "Orders", val: String(Math.round((s?.totalOrders ?? 0) * 1.05)), now: s?.totalOrders ?? 0, color: "bg-[#3478d4]" },
   ];
@@ -150,7 +150,7 @@ export default function WeeklyPage() {
     <div>
       {!metaConnected && !loading && (
         <WarnBanner type="amber">
-          <span className="font-semibold">Meta Ads not connected</span> — ad spend & ROAS are hidden. Shopify figures below are live. Connect Meta in Settings → Connections.
+          <span className="font-semibold">Meta Ads not connected</span> - ad spend & ROAS are hidden. Shopify figures below are live. Connect Meta in Settings → Connections.
         </WarnBanner>
       )}
 
@@ -204,7 +204,7 @@ export default function WeeklyPage() {
                       <div className="flex items-center gap-2 shrink-0 ml-2">
                         <span className="text-[#9e9e9a]">{fmt(c.spend)}</span>
                         <span className={`font-semibold ${c.roas >= 1.5 ? "text-[#0d6b4f]" : c.roas >= 1 ? "text-[#e89820]" : c.roas > 0 ? "text-[#d94040]" : "text-[#9e9e9a]"}`}>
-                          {c.roas > 0 ? `${c.roas}×` : "—"}
+                          {c.roas > 0 ? `${c.roas}×` : "-"}
                         </span>
                       </div>
                     </div>

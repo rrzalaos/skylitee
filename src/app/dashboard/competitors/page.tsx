@@ -93,7 +93,7 @@ function SetupNeeded({ what, missing, message }: { what: string; missing: string
   return (
     <Card className="text-center py-10">
       <Info size={22} className="mx-auto text-[#3B82F6] mb-2" />
-      <div className="text-[17px] font-semibold mb-1">{what} — setup needed</div>
+      <div className="text-[17px] font-semibold mb-1">{what} - setup needed</div>
       <p className={cn(SUB, "max-w-md mx-auto")}>{message}</p>
       {missing.length > 0 && (
         <p className="text-[13px] text-[#A1A1AA] mt-3">Admin: add {missing.join(", ")} in Vercel environment variables.</p>
@@ -156,7 +156,7 @@ export default function CompetitorIntelPage() {
 
   useEffect(() => { loadList(); }, [loadList]);
 
-  // The user's own real numbers (last 30 days) — used for "vs you" and to calibrate estimates
+  // The user's own real numbers (last 30 days) - used for "vs you" and to calibrate estimates
   useEffect(() => {
     const { from, to } = last30();
     Promise.allSettled([
@@ -263,7 +263,7 @@ export default function CompetitorIntelPage() {
           <p className="text-[17px] text-[#686864] mt-0.5">
             See competitors&apos; live Meta &amp; Google ads, Google traffic and an{" "}
             <span className="font-medium text-[#181816] dark:text-[#F4F4F5]">estimated</span>{" "}
-            spend &amp; ROAS — country by country
+            spend &amp; ROAS - country by country
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function CompetitorIntelPage() {
 
       {providers && !providers.adsAnyCountry && !providers.traffic && (
         <WarnBanner type="blue">
-          Competitor Intel is built and ready — the data providers just need to be switched on. Until then, sections show &ldquo;setup needed&rdquo; instead of guessing.
+          Competitor Intel is built and ready - the data providers just need to be switched on. Until then, sections show &ldquo;setup needed&rdquo; instead of guessing.
         </WarnBanner>
       )}
 
@@ -418,7 +418,7 @@ function AddCompetitor({ onDone, onCancel }: { onDone: () => void; onCancel: () 
         </div>
       </div>
       <p className="text-[13px] text-[#A1A1AA] mt-2">
-        Tip: open their Facebook page → &ldquo;Page transparency&rdquo; → &ldquo;Go to Ad Library&rdquo; and paste that link — it&apos;s the most reliable.
+        Tip: open their Facebook page → &ldquo;Page transparency&rdquo; → &ldquo;Go to Ad Library&rdquo; and paste that link - it&apos;s the most reliable.
       </p>
       {error && <div className="text-[14px] text-[#DC2626] mt-2">{error}</div>}
       <div className="flex justify-end mt-3">
@@ -503,7 +503,7 @@ function AdSpyTab({ competitor, resp, loading, own, countryName, onRefresh }: {
         <KPICard label="Active ads" value={formatNumber(stats.active)} sub={`${stats.uniqueCreatives} unique creatives`} icon={<Megaphone size={12} />} />
         <KPICard label="Launched (7 days)" value={formatNumber(stats.launched7d)} sub={`${stats.launched30d} in last 30 days`} icon={<Zap size={12} />} />
         <KPICard label="Running 30+ days" value={formatNumber(stats.over30d)} sub={`${stats.over60d} running 60+ days`} icon={<TrendingUp size={12} />} />
-        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "—"} sub="days live" icon={<Clock size={12} />} />
+        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "-"} sub="days live" icon={<Clock size={12} />} />
         <KPICard label="Variations" value={formatNumber(stats.variations)} sub="incl. near-duplicate versions" icon={<Layers size={12} />} />
       </div>
 
@@ -515,8 +515,8 @@ function AdSpyTab({ competitor, resp, loading, own, countryName, onRefresh }: {
               {data.hooks.summary && <p className="text-[16px] leading-relaxed">{data.hooks.summary}</p>}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <HookList title="Offers" items={data.hooks.offers} empty="No explicit offers in their copy" />
-                <HookList title="Hooks / headlines" items={data.hooks.hooks} empty="—" />
-                <HookList title="Selling angles" items={data.hooks.angles} empty="—" />
+                <HookList title="Hooks / headlines" items={data.hooks.hooks} empty="-" />
+                <HookList title="Selling angles" items={data.hooks.angles} empty="-" />
               </div>
             </div>
           ) : (
@@ -535,15 +535,15 @@ function AdSpyTab({ competitor, resp, loading, own, countryName, onRefresh }: {
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-              <tr><td className="py-1.5">Active ads</td><td className="text-right font-semibold">{stats.active}</td><td className="text-right">{own?.activeAds ?? "—"}</td></tr>
-              <tr><td className="py-1.5">Video share</td><td className="text-right font-semibold">{pct(stats.formats.video)}%</td><td className="text-right">{ownPct("video") !== null ? `${ownPct("video")}%` : "—"}</td></tr>
-              <tr><td className="py-1.5">Image share</td><td className="text-right font-semibold">{pct(stats.formats.image)}%</td><td className="text-right">{ownPct("image") !== null ? `${ownPct("image")}%` : "—"}</td></tr>
-              <tr><td className="py-1.5">Carousel share</td><td className="text-right font-semibold">{pct(stats.formats.carousel)}%</td><td className="text-right">{ownPct("carousel") !== null ? `${ownPct("carousel")}%` : "—"}</td></tr>
-              <tr><td className="py-1.5">New ads / 30 days</td><td className="text-right font-semibold">{stats.launched30d}</td><td className="text-right text-[#A1A1AA]">—</td></tr>
+              <tr><td className="py-1.5">Active ads</td><td className="text-right font-semibold">{stats.active}</td><td className="text-right">{own?.activeAds ?? "-"}</td></tr>
+              <tr><td className="py-1.5">Video share</td><td className="text-right font-semibold">{pct(stats.formats.video)}%</td><td className="text-right">{ownPct("video") !== null ? `${ownPct("video")}%` : "-"}</td></tr>
+              <tr><td className="py-1.5">Image share</td><td className="text-right font-semibold">{pct(stats.formats.image)}%</td><td className="text-right">{ownPct("image") !== null ? `${ownPct("image")}%` : "-"}</td></tr>
+              <tr><td className="py-1.5">Carousel share</td><td className="text-right font-semibold">{pct(stats.formats.carousel)}%</td><td className="text-right">{ownPct("carousel") !== null ? `${ownPct("carousel")}%` : "-"}</td></tr>
+              <tr><td className="py-1.5">New ads / 30 days</td><td className="text-right font-semibold">{stats.launched30d}</td><td className="text-right text-[#A1A1AA]">-</td></tr>
             </tbody>
           </table>
           <p className="text-[13px] text-[#A1A1AA] mt-2">
-            Ads running 30+ days are usually profitable — brands switch off losers within 1–2 weeks.
+            Ads running 30+ days are usually profitable - brands switch off losers within 1–2 weeks.
           </p>
         </Card>
       </div>
@@ -605,7 +605,7 @@ function AdCard({ ad }: { ad: CompetitorAd }) {
           <Badge variant="gray" className="bg-white/90 dark:bg-black/70 flex items-center gap-1 capitalize">{FORMAT_ICON[ad.format]} {ad.format}</Badge>
         </div>
         <div className="absolute top-2 right-2">
-          <Tooltip content={days > 60 ? "Running 60+ days — very likely a profitable, scaled ad" : days > 30 ? "Running 30+ days — likely profitable" : days <= 7 ? "New — probably still being tested" : "Running 1–4 weeks"} side="left">
+          <Tooltip content={days > 60 ? "Running 60+ days - very likely a profitable, scaled ad" : days > 30 ? "Running 30+ days - likely profitable" : days <= 7 ? "New - probably still being tested" : "Running 1–4 weeks"} side="left">
             <Badge variant={days > 30 ? "green" : days <= 7 ? "blue" : "gray"}>{days}d live</Badge>
           </Tooltip>
         </div>
@@ -630,8 +630,8 @@ function AdCard({ ad }: { ad: CompetitorAd }) {
 // ── Tab 2: Google Ad Spy ──────────────────────────────────────────────────────
 
 const GPLATFORM: Record<GoogleAdPlatform, { label: string; icon: React.ReactNode; color: string; what: string }> = {
-  search: { label: "Google Search", icon: <Search size={13} />, color: "#3B82F6", what: "text ads on Google results — they bid on keywords" },
-  shopping: { label: "Shopping / PMax", icon: <ShoppingBag size={13} />, color: "#F97316", what: "product listings with price & image — Shopping or Performance Max campaigns" },
+  search: { label: "Google Search", icon: <Search size={13} />, color: "#3B82F6", what: "text ads on Google results - they bid on keywords" },
+  shopping: { label: "Shopping / PMax", icon: <ShoppingBag size={13} />, color: "#F97316", what: "product listings with price & image - Shopping or Performance Max campaigns" },
   youtube: { label: "YouTube", icon: <MonitorPlay size={13} />, color: "#EF4444", what: "video ads before / inside YouTube videos" },
 };
 const GFORMAT_ICON: Record<string, React.ReactNode> = { text: <Type size={12} />, image: <ImageIcon size={12} />, video: <Play size={12} /> };
@@ -681,7 +681,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
     <div>
       <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="weekly" />
       <WarnBanner type="blue">
-        Real ads from Google&apos;s Ads Transparency Center for {data.domain} — what ran, where and for how long.
+        Real ads from Google&apos;s Ads Transparency Center for {data.domain} - what ran, where and for how long.
         Google doesn&apos;t publish spend or clicks for brand ads, so spend stays an estimate.
       </WarnBanner>
 
@@ -689,7 +689,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
         <KPICard label="Live now" value={formatNumber(liveN)} sub={`${formatNumber(seen90d)} shown in last 90 days`} icon={<Target size={12} />} />
         <KPICard label="Launched (30 days)" value={formatNumber(stats.launched30d)} sub="new ads started" icon={<Zap size={12} />} />
         <KPICard label="Running 30+ days" value={formatNumber(stats.over30d)} sub={`${stats.over60d} running 60+ days`} icon={<TrendingUp size={12} />} />
-        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "—"} sub="first to last shown" icon={<Clock size={12} />} />
+        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "-"} sub="first to last shown" icon={<Clock size={12} />} />
         <KPICard label="Advertiser accounts" value={formatNumber(data.advertisers.length)} sub={data.advertisers.some(x => x.verified) ? "Google-verified" : "not verified"} icon={<BadgeCheck size={12} />} />
       </div>
 
@@ -721,8 +721,8 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
           {used.length > 0 && (
             <p className="text-[15px] mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
               <b>{competitor.name}</b> runs Google ads on {used.map(p => GPLATFORM[p].label).join(", ").replace(/, ([^,]*)$/, " and $1")}
-              {platformN("shopping") > 0 && platformN("search") === 0 ?" — Shopping/PMax only, so their Google spend never shows in keyword tools." : "."}
-              {stats.over30d > 0 && ` ${stats.over30d} ad${stats.over30d > 1 ? "s have" : " has"} run 30+ days — likely working for them.`}
+              {platformN("shopping") > 0 && platformN("search") === 0 ?" - Shopping/PMax only, so their Google spend never shows in keyword tools." : "."}
+              {stats.over30d > 0 && ` ${stats.over30d} ad${stats.over30d > 1 ? "s have" : " has"} run 30+ days - likely working for them.`}
             </p>
           )}
         </Card>
@@ -763,7 +763,7 @@ function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
         {shown.map(ad => <GoogleAdCard key={ad.id} ad={ad} />)}
       </div>
-      {data.capped && <p className="text-[13px] text-[#A1A1AA] mt-2">Showing {data.ads.length} of their {formatNumber(seen90d)} ads (every live one included) — Google returns at most 120 per lookup.</p>}
+      {data.capped && <p className="text-[13px] text-[#A1A1AA] mt-2">Showing {data.ads.length} of their {formatNumber(seen90d)} ads (every live one included) - Google returns at most 120 per lookup.</p>}
     </div>
   );
 }
@@ -794,7 +794,7 @@ function GoogleAdCard({ ad }: { ad: GoogleAd }) {
           <Badge variant="gray" className="bg-white/90 dark:bg-black/70 flex items-center gap-1 capitalize">{GFORMAT_ICON[ad.format]} {ad.format}</Badge>
         </div>
         <div className="absolute top-2 right-2">
-          <Tooltip content={days > 60 ? "Ran 60+ days — very likely a profitable ad" : days > 30 ? "Ran 30+ days — likely profitable" : days <= 7 ? "New — probably still being tested" : "Ran 1–4 weeks"} side="left">
+          <Tooltip content={days > 60 ? "Ran 60+ days - very likely a profitable ad" : days > 30 ? "Ran 30+ days - likely profitable" : days <= 7 ? "New - probably still being tested" : "Ran 1–4 weeks"} side="left">
             <Badge variant={days > 30 ? "green" : days <= 7 ? "blue" : "gray"}>{days}d</Badge>
           </Tooltip>
         </div>
@@ -821,7 +821,7 @@ function GoogleAdCard({ ad }: { ad: GoogleAd }) {
 
 function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefresh }: {
   competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string;
-  gads: Extract<GadsResp, { status: "ok" }> | null; // live Google ads from Ad Spy — keyword tools miss most of them
+  gads: Extract<GadsResp, { status: "ok" }> | null; // live Google ads from Ad Spy - keyword tools miss most of them
   onRefresh: () => void;
 }) {
   const googleLive = gads ? gads.data.totals?.live ?? gads.stats.active : 0;
@@ -846,7 +846,7 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefre
   const history = data.history.map(h => ({ ...h, label: new Date(`${h.month}-01`).toLocaleDateString("en-IN", { month: "short", year: "2-digit" }) }));
   const ownComparable = countryCode === "IN"; // own GSC/GA4 are mostly home-market traffic
 
-  // Keyword data often sees none of a brand's ads (it samples searches) — fall back to the
+  // Keyword data often sees none of a brand's ads (it samples searches) - fall back to the
   // live-ad estimate the Est. Spend tab uses, so these cards match it.
   const country = getCountry(countryCode);
   const gEst = ov.paidCostInr > 0 ? null : estimateGoogleSpend(gads?.data.ads ?? null, googleLive || null, 0, country);
@@ -860,7 +860,7 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefre
         These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume).
         {gEst
           ? <> Its keyword sample caught none of {competitor.name}&apos;s Google ads, so the ad cards are estimated from their {gEst.liveAds} live ads instead (same as the Est. Spend tab).</>
-          : <> &ldquo;Search-ad&rdquo; means keyword ads only — Shopping, YouTube and Meta clicks aren&apos;t in this data; the Est. Spend tab adds them.</>}
+          : <> &ldquo;Search-ad&rdquo; means keyword ads only - Shopping, YouTube and Meta clicks aren&apos;t in this data; the Est. Spend tab adds them.</>}
       </WarnBanner>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
@@ -917,17 +917,17 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefre
               <tr>
                 <td className="py-1.5">Google organic clicks</td>
                 <td className="text-right font-semibold">{numShort(ov.organicTraffic)}</td>
-                <td className="text-right">{ownComparable && own?.gscClicks != null ? numShort(own.gscClicks) : "—"}</td>
+                <td className="text-right">{ownComparable && own?.gscClicks != null ? numShort(own.gscClicks) : "-"}</td>
               </tr>
               <tr>
                 <td className="py-1.5">Ranking keywords</td>
                 <td className="text-right font-semibold">{numShort(ov.organicKeywords)}</td>
-                <td className="text-right text-[#A1A1AA]">—</td>
+                <td className="text-right text-[#A1A1AA]">-</td>
               </tr>
               <tr>
                 <td className="py-1.5">All website sessions</td>
                 <td className="text-right text-[#A1A1AA]">not visible</td>
-                <td className="text-right">{ownComparable && own?.ga4Sessions != null ? numShort(own.ga4Sessions) : "—"}</td>
+                <td className="text-right">{ownComparable && own?.ga4Sessions != null ? numShort(own.ga4Sessions) : "-"}</td>
               </tr>
             </tbody>
           </table>
@@ -962,11 +962,11 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefre
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         <Card>
-          <CardHeader title="Keyword gap — they rank, you don't" right={data.gapAgainst ? `vs ${data.gapAgainst}` : undefined} />
+          <CardHeader title="Keyword gap - they rank, you don't" right={data.gapAgainst ? `vs ${data.gapAgainst}` : undefined} />
           {data.gap === null ? (
-            <p className={SUB}>Connect Google Search Console in Connections so we know your website — then we&apos;ll list keywords where {competitor.name} ranks and you don&apos;t.</p>
+            <p className={SUB}>Connect Google Search Console in Connections so we know your website - then we&apos;ll list keywords where {competitor.name} ranks and you don&apos;t.</p>
           ) : data.gap.length === 0 ? (
-            <p className={SUB}>No gap found — you rank for the same keywords they do. 👏</p>
+            <p className={SUB}>No gap found - you rank for the same keywords they do. 👏</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-[14px]">
@@ -977,7 +977,7 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefre
                       <td className="py-1.5">{k.keyword}</td>
                       <td className="text-right font-semibold">{numShort(k.volume)}</td>
                       <td className="text-right">#{k.theirPosition}</td>
-                      <td className="text-right">{k.cpcInr != null ? formatINR(k.cpcInr) : "—"}</td>
+                      <td className="text-right">{k.cpcInr != null ? formatINR(k.cpcInr) : "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1032,7 +1032,7 @@ interface RowDef {
   fix?: { behind: string; ahead: string };
 }
 
-const DASH: Cell = { v: null, text: "—" };
+const DASH: Cell = { v: null, text: "-" };
 function okOf<T extends { status: string }>(s: Slot<T>): Extract<T, { status: "ok" }> | null {
   return s && s !== "loading" && s.status === "ok" ? (s as Extract<T, { status: "ok" }>) : null;
 }
@@ -1049,7 +1049,7 @@ function CompareTab({ competitors, own, country }: {
   const [data, setData] = useState<Record<string, CompData>>({});
   const depKey = competitors.map(c => `${c.id}|${c.website ?? ""}|${c.pageUrl ?? ""}|${c.pageId ?? ""}`).join(",") + `@${country.code}`;
 
-  // Everything comes from the same cached endpoints the other tabs use — no extra provider cost once cached
+  // Everything comes from the same cached endpoints the other tabs use - no extra provider cost once cached
   useEffect(() => {
     let alive = true;
     const init: Record<string, CompData> = {};
@@ -1075,7 +1075,7 @@ function CompareTab({ competitors, own, country }: {
     return () => { alive = false; };
   }, [depKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Per-competitor spend / revenue / ROAS estimate — same model as the Est. Spend tab (default assumptions)
+  // Per-competitor spend / revenue / ROAS estimate - same model as the Est. Spend tab (default assumptions)
   const estimates = useMemo(() => {
     const out: Record<string, FullEstimate | null> = {};
     for (const c of competitors) {
@@ -1123,7 +1123,7 @@ function CompareTab({ competitors, own, country }: {
       key: "metaLive", group: "Ads activity", label: "Live Meta ads", better: "higher",
       you: numCell(own?.activeAds),
       them: d => fromSlot(d.ads, ok => numCell(ok.stats.active)),
-      fix: { behind: "Test more creatives — leaders keep many ads live and add new ones every week.", ahead: "You're testing more creatives than them — keep the winners running 30+ days." },
+      fix: { behind: "Test more creatives - leaders keep many ads live and add new ones every week.", ahead: "You're testing more creatives than them - keep the winners running 30+ days." },
     },
     {
       key: "metaNew", group: "Ads activity", label: "New Meta ads (30 days)", hint: "How fast they test new creatives", better: "neutral",
@@ -1168,14 +1168,14 @@ function CompareTab({ competitors, own, country }: {
       key: "roas", group: "Ad spend & returns / month", label: "ROAS (ad sales ÷ ad spend)", hint: "Yours is platform-reported; theirs is a Low-confidence estimate", better: "higher",
       you: ownRoas != null ? { v: ownRoas, text: `${ownRoas}x` } : DASH,
       them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.paidRoas, rangeX)),
-      fix: { behind: "Pause ads below break-even ROAS and move that budget to your ads that have run 30+ days.", ahead: "Each ₹ of your ads returns more than theirs — you have room to scale budget." },
+      fix: { behind: "Pause ads below break-even ROAS and move that budget to your ads that have run 30+ days.", ahead: "Each ₹ of your ads returns more than theirs - you have room to scale budget." },
     },
     // Google search
     {
       key: "organic", group: "Google search", label: "Google organic visits / month", hint: "Yours: Search Console clicks · theirs: DataForSEO estimate", better: "higher",
       you: homeMarket ? numCell(own?.gscClicks) : DASH,
       them: d => fromSlot(d.traffic, ok => (ok.data.overview ? { ...numCell(ok.data.overview.organicTraffic), est: true } : DASH)),
-      fix: { behind: "SEO gap — create pages for the keywords they rank for (Traffic Intel → keyword gap). This is free traffic they don't pay ads for.", ahead: "You win more free Google traffic than them — protect those rankings." },
+      fix: { behind: "SEO gap - create pages for the keywords they rank for (Traffic Intel → keyword gap). This is free traffic they don't pay ads for.", ahead: "You win more free Google traffic than them - protect those rankings." },
     },
     {
       key: "keywords", group: "Google search", label: "Ranking keywords", better: "neutral",
@@ -1192,7 +1192,7 @@ function CompareTab({ competitors, own, country }: {
       key: "revenue", group: "Store & sales", label: "Revenue / month", hint: "Yours: Shopify last 30 days · theirs: estimate", better: "higher",
       you: inrCell(own?.revenue),
       them: (d, e) => (spendRowLoading(d) ? "loading" : estCell(e?.revenue, rangeInr)),
-      fix: { behind: "They sell more — study their long-running ads (proven angles) and their bestseller prices below.", ahead: "You're out-selling them on these estimates." },
+      fix: { behind: "They sell more - study their long-running ads (proven angles) and their bestseller prices below.", ahead: "You're out-selling them on these estimates." },
     },
     {
       key: "aov", group: "Store & sales", label: "Order value", hint: "Yours: real AOV · theirs: median bestseller price", better: "neutral",
@@ -1244,7 +1244,7 @@ function CompareTab({ competitors, own, country }: {
     <div>
       <WarnBanner type="blue">
         <b>You</b> = your real numbers (last 30 days from Shopify, Meta, Google Ads &amp; Search Console). <b>Competitors</b> = estimates from their live ads, Google traffic and public store (marked ~).
-        Green = you&apos;re ahead of the competitor average, red = behind. Ad spend is never colour-coded — spending more isn&apos;t better by itself.
+        Green = you&apos;re ahead of the competitor average, red = behind. Ad spend is never colour-coded - spending more isn&apos;t better by itself.
       </WarnBanner>
 
       {scored.length > 0 && (
@@ -1297,7 +1297,7 @@ function CompareTab({ competitors, own, country }: {
         </div>
         <p className="text-[13px] text-[#A1A1AA] px-3 py-2 border-t border-black/[0.04] dark:border-white/[0.04]">
           {anyLoading ? "Still loading some competitor data… " : ""}
-          &ldquo;—&rdquo; = not visible for that brand (no Facebook page / website added, not a Shopify store, or not measurable for you).
+          &ldquo;-&rdquo; = not visible for that brand (no Facebook page / website added, not a Shopify store, or not measurable for you).
           {!homeMarket && " Your Search Console clicks are compared in India only."}
         </p>
       </Card>
@@ -1309,7 +1309,7 @@ function CompareTab({ competitors, own, country }: {
             if (list.length === 0) return null;
             return (
               <Card key={kind}>
-                <CardHeader title={kind === "behind" ? "Where you're behind — and the fix" : "Where you're ahead"} />
+                <CardHeader title={kind === "behind" ? "Where you're behind - and the fix" : "Where you're ahead"} />
                 <div className="space-y-2.5">
                   {list.map(({ r, leader }) => (
                     <div key={r.key} className={cn("rounded-lg p-2.5 border", kind === "behind" ? "border-[#FECACA] bg-[#FEF2F2] dark:bg-[#450a0a]/40 dark:border-[#7f1d1d]" : "border-[#BBF7D0] bg-[#F0FDF4] dark:bg-[#052e16]/40 dark:border-[#14532d]")}>
@@ -1382,7 +1382,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
         <span className="text-[14px] text-[#A1A1AA]">
           {country.eu && est.meta?.method !== "ad_activity"
             ? "EU: Meta spend uses real ad reach from Meta's Ad Library."
-            : "Ad spend is inferred from how many ads run and for how long — real figures may be 2–3× off."}
+            : "Ad spend is inferred from how many ads run and for how long - real figures may be 2–3× off."}
         </span>
       </div>
 
@@ -1391,21 +1391,21 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
-        <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "—"}
+        <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "-"}
           sub={est.meta ? `${est.meta.creatives} live creatives · ${est.meta.confidence} confidence` : "no ad data"} />
-        <RangeCard label="Google ad spend / mo" value={est.google ? rangeInr(est.google.range) : gadsData ? "₹0" : ov ? "Not seen" : "—"}
+        <RangeCard label="Google ad spend / mo" value={est.google ? rangeInr(est.google.range) : gadsData ? "₹0" : ov ? "Not seen" : "-"}
           sub={est.google
             ? est.google.method === "ad_activity"
               ? `${est.google.liveAds} live Google ads · ${est.google.confidence} confidence`
               : "search-ad clicks · Shopping/YouTube not visible"
             : gadsData ? "no live Google ads right now" : "no Google ad data"} />
-        <RangeCard label="Est. revenue / mo (all)" value={est.revenue ? rangeInr(est.revenue) : "—"}
+        <RangeCard label="Est. revenue / mo (all)" value={est.revenue ? rangeInr(est.revenue) : "-"}
           sub={est.revenue
             ? est.paidRevenue
-              ? `only ${rangeInr(est.paidRevenue)} from ads — rest is free Google traffic`
+              ? `only ${rangeInr(est.paidRevenue)} from ads - rest is free Google traffic`
               : `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV`
             : "needs traffic + price"} />
-        <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "—"}
+        <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "-"}
           sub={[
             est.paidRoas && est.paidRevenue && est.totalSpend
               ? `≈ ${inrShort(est.paidRevenue.mid)} ad sales ÷ ${inrShort(est.totalSpend.mid)} ad spend (middle)`
@@ -1419,7 +1419,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
         <WarnBanner type="blue">
           About {Math.round(est.organicShare * 100)}% of their visible visits are free Google traffic. Those sales cost them no ad money, so ROAS counts only sales from ad visits
           {est.paidRevenue && est.revenue ? <> (≈ {inrShort(est.paidRevenue.mid)} of ≈ {inrShort(est.revenue.mid)} total revenue)</> : null}.
-          Ranges don&apos;t multiply end-to-end — high spend doesn&apos;t come with high ROAS; compare the middle values.
+          Ranges don&apos;t multiply end-to-end - high spend doesn&apos;t come with high ROAS; compare the middle values.
         </WarnBanner>
       )}
 
@@ -1428,15 +1428,15 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
           <CardHeader title={<span className="flex items-center gap-1.5"><Calculator size={16} className="text-[#F97316]" /> Assumptions</span>}
             right={Object.keys(edited).length > 0 ? <button className="text-[#F97316] text-[13px]" onClick={() => setEdited({})}>Reset</button> : "editable"} />
           <div className="space-y-2.5">
-            <NumField label={`CPM (₹ / 1,000 views) — low`} value={a.cpm[0]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [v, (e.cpm ?? a.cpm)[1]] }))} />
-            <NumField label={`CPM — high`} value={a.cpm[1]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [(e.cpm ?? a.cpm)[0], v] }))} />
+            <NumField label={`CPM (₹ / 1,000 views) - low`} value={a.cpm[0]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [v, (e.cpm ?? a.cpm)[1]] }))} />
+            <NumField label={`CPM - high`} value={a.cpm[1]} src={defaults.src.cpm} onChange={v => setEdited(e => ({ ...e, cpm: [(e.cpm ?? a.cpm)[0], v] }))} />
             <NumField label="Click-through rate (%)" value={a.ctr} step={0.1} src={defaults.src.ctr} onChange={v => setEdited(e => ({ ...e, ctr: v }))} />
             <NumField label="Google cost per click (₹)" value={a.gCpc} src={defaults.src.gCpc} onChange={v => setEdited(e => ({ ...e, gCpc: v }))} />
             <NumField label="Conversion rate (%)" value={a.cvr} step={0.1} src={defaults.src.cvr} onChange={v => setEdited(e => ({ ...e, cvr: v }))} />
             <NumField label="Average order value (₹)" value={a.aov} src={defaults.src.aov} onChange={v => setEdited(e => ({ ...e, aov: v }))} />
           </div>
           <p className="text-[13px] text-[#A1A1AA] mt-3">
-            &ldquo;Your real data&rdquo; = your own last-30-day Meta/Shopify numbers — assumes they perform like you.
+            &ldquo;Your real data&rdquo; = your own last-30-day Meta/Shopify numbers - assumes they perform like you.
           </p>
         </Card>
 
@@ -1454,7 +1454,7 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
               ]}
             />
           ) : <p className={SUB}>Not enough data.</p>}
-          <p className="text-[13px] text-[#A1A1AA] mt-3">Excludes direct, email, WhatsApp, influencer and marketplace traffic — none of it is visible publicly.</p>
+          <p className="text-[13px] text-[#A1A1AA] mt-3">Excludes direct, email, WhatsApp, influencer and marketplace traffic - none of it is visible publicly.</p>
         </Card>
 
         <Card>
@@ -1464,13 +1464,13 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
           ) : !store ? (
             <Loading label="Reading their store…" />
           ) : !storeData?.isShopify ? (
-            <p className={SUB}>Couldn&apos;t read prices — their site isn&apos;t a public Shopify store. Set the AOV manually in Assumptions.</p>
+            <p className={SUB}>Couldn&apos;t read prices - their site isn&apos;t a public Shopify store. Set the AOV manually in Assumptions.</p>
           ) : (
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2 text-center">
                 <MiniStat label="Products" value={formatNumber(storeData.productCount)} />
-                <MiniStat label="Median price" value={storeData.priceMedian ? `${storeData.currency ?? "₹"} ${formatNumber(storeData.priceMedian)}` : "—"} />
-                <MiniStat label="On sale" value={storeData.onSalePct != null ? `${storeData.onSalePct}%` : "—"} />
+                <MiniStat label="Median price" value={storeData.priceMedian ? `${storeData.currency ?? "₹"} ${formatNumber(storeData.priceMedian)}` : "-"} />
+                <MiniStat label="On sale" value={storeData.onSalePct != null ? `${storeData.onSalePct}%` : "-"} />
               </div>
               {storeData.bestsellers.length > 0 && (
                 <div>
@@ -1498,16 +1498,16 @@ function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[15px] text-[#52525B] dark:text-[#A1A1AA]">
           <ul className="space-y-1.5 list-disc pl-5">
             <li><b>Meta spend</b>: {country.eu ? "real EU reach × 1.3–2.5 views per person × CPM, last 30 days." : "each live creative gets a daily-budget range based on how long it has run (testing < 7 days, proving < 30, scaled 30+) × 30 days, adjusted for this country's ad costs."}</li>
-            <li><b>Google spend</b>: each live Google ad (Search, Shopping/PMax, YouTube) gets a smaller daily-budget range than Meta — several Google ads share one campaign budget — by how long it has run, × 30 days. Never below DataForSEO&apos;s search-click cost. Google visits = spend ÷ cost per click.</li>
+            <li><b>Google spend</b>: each live Google ad (Search, Shopping/PMax, YouTube) gets a smaller daily-budget range than Meta - several Google ads share one campaign budget - by how long it has run, × 30 days. Never below DataForSEO&apos;s search-click cost. Google visits = spend ÷ cost per click.</li>
             <li><b>Conversion rate</b>: your own rate only if they sell at a similar price; otherwise a benchmark for their price level (e.g. 0.35% for ₹30,000+ products). Ad visits convert at 70% of that.</li>
             <li><b>Revenue</b>: (Google organic + Google-ads + Meta-ad visits) × conversion rate × average order value.</li>
             <li><b>ROAS from ads</b>: revenue from ad visits ÷ ad spend. Blended (all revenue ÷ spend) is shown only when most traffic isn&apos;t free.</li>
           </ul>
           <ul className="space-y-1.5 list-disc pl-5">
-            <li>We can&apos;t see their <b>discounts</b>, <b>COD returns (RTO)</b> or <b>repeat customers</b> — real ROAS is usually lower than shown.</li>
+            <li>We can&apos;t see their <b>discounts</b>, <b>COD returns (RTO)</b> or <b>repeat customers</b> - real ROAS is usually lower than shown.</li>
             <li>Marketplace sales (Amazon, Myntra, Nykaa) and influencer spend are invisible.</li>
             <li>Small or new brands often have too little Google data for a reliable estimate.</li>
-            <li>Use this to compare direction and scale — not as their exact numbers.</li>
+            <li>Use this to compare direction and scale - not as their exact numbers.</li>
           </ul>
         </div>
       </Card>

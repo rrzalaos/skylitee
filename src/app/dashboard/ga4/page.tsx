@@ -95,7 +95,7 @@ export default function GA4Page() {
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  // Month-wise trend — lazy load when the tab is opened or the window changes.
+  // Month-wise trend - lazy load when the tab is opened or the window changes.
   useEffect(() => {
     if (tab !== "monthly") return;
     setMonthlyLoading(true);
@@ -142,7 +142,7 @@ export default function GA4Page() {
 
   // Returning users from GA4's own new-vs-returning report (subtraction can go negative).
   const returningUsers = retRow?.users ?? Math.max(0, data.kpis.users - data.kpis.newUsers);
-  // Totals from the dimensionless ecommerce report — channel rows are capped at 10 and
+  // Totals from the dimensionless ecommerce report - channel rows are capped at 10 and
   // summing them under-reports vs GA4. Fall back to the channel sum only if ecom is missing.
   const totalPurchases = data.ecommerce?.purchases ?? data.channels.reduce((s, c) => s + c.purchases, 0);
   const totalRevenue = data.ecommerce?.revenue ?? data.channels.reduce((s, c) => s + c.revenue, 0);
@@ -176,12 +176,12 @@ export default function GA4Page() {
         title: "Ecommerce Funnel",
         headers: ["Stage", "Count", "Rate"],
         rows: [
-          ["Items Viewed", ec.itemsViewed, "—"],
+          ["Items Viewed", ec.itemsViewed, "-"],
           ["Added to Cart", ec.itemsAddedToCart, `${ec.atcRate}%`],
           ["Checked Out", ec.itemsCheckedOut, `${ec.checkoutRate}%`],
           ["Purchased", ec.itemsPurchased, `${ec.purchaseRate}%`],
-          ["Purchases (transactions)", ec.purchases, "—"],
-          ["Revenue", formatINR(ec.revenue), "—"],
+          ["Purchases (transactions)", ec.purchases, "-"],
+          ["Revenue", formatINR(ec.revenue), "-"],
         ],
       }] : []),
       {
@@ -371,9 +371,9 @@ export default function GA4Page() {
                     <td className="py-2 px-2 font-semibold dark:text-[#F4F4F5]">{c.channel}</td>
                     <td className="py-2 px-2 dark:text-[#F4F4F5]">{c.sessions.toLocaleString("en-IN")}</td>
                     <td className="py-2 px-2 text-[#71717A]">{c.users.toLocaleString("en-IN")}</td>
-                    <td className="py-2 px-2 text-[#71717A]">{data.kpis.sessions ? `${((c.sessions / data.kpis.sessions) * 100).toFixed(1)}%` : "—"}</td>
-                    <td className="py-2 px-2 font-semibold text-[#F97316]">{c.purchases > 0 ? c.purchases : "—"}</td>
-                    <td className="py-2 px-2 text-[#F97316]">{c.revenue > 0 ? formatINR(Math.round(c.revenue)) : "—"}</td>
+                    <td className="py-2 px-2 text-[#71717A]">{data.kpis.sessions ? `${((c.sessions / data.kpis.sessions) * 100).toFixed(1)}%` : "-"}</td>
+                    <td className="py-2 px-2 font-semibold text-[#F97316]">{c.purchases > 0 ? c.purchases : "-"}</td>
+                    <td className="py-2 px-2 text-[#F97316]">{c.revenue > 0 ? formatINR(Math.round(c.revenue)) : "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -453,7 +453,7 @@ export default function GA4Page() {
                   {[
                     { label: "Orders", value: data.ecommerce.purchases.toLocaleString("en-IN"), sub: "Transactions" },
                     { label: "Revenue", value: formatINR(Math.round(data.ecommerce.revenue)), sub: "Total purchase value" },
-                    { label: "AOV", value: data.ecommerce.purchases > 0 ? formatINR(Math.round(data.ecommerce.revenue / data.ecommerce.purchases)) : "—", sub: "Avg order value" },
+                    { label: "AOV", value: data.ecommerce.purchases > 0 ? formatINR(Math.round(data.ecommerce.revenue / data.ecommerce.purchases)) : "-", sub: "Avg order value" },
                   ].map(item => (
                     <div key={item.label} className="bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 text-center">
                       <div className="text-[13px] text-[#A1A1AA] mb-1">{item.label}</div>
@@ -488,7 +488,7 @@ export default function GA4Page() {
                             </td>
                             <td className="py-2 px-2 text-[#71717A]">{item.checkedOut.toLocaleString("en-IN")}</td>
                             <td className="py-2 px-2 font-semibold text-[#F97316]">{item.purchased.toLocaleString("en-IN")}</td>
-                            <td className="py-2 px-2 font-semibold dark:text-[#F4F4F5]">{item.revenue > 0 ? formatINR(Math.round(item.revenue)) : "—"}</td>
+                            <td className="py-2 px-2 font-semibold dark:text-[#F4F4F5]">{item.revenue > 0 ? formatINR(Math.round(item.revenue)) : "-"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -721,7 +721,7 @@ export default function GA4Page() {
             <div className="text-[15px] text-[#71717A] py-10 text-center">No monthly data for this window.</div>
           ) : (
             <>
-              {/* Trend chart — sessions & users */}
+              {/* Trend chart - sessions & users */}
               {monthly.length > 1 && (
                 <div className="h-56 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
@@ -766,7 +766,7 @@ export default function GA4Page() {
                           {monthly.length > 1 && (
                             <td className={cn("py-2 px-3 text-right tabular-nums font-bold",
                               mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
-                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                              {mom === null ? "-" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
                             </td>
                           )}
                         </tr>

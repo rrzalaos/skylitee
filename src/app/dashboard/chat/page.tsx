@@ -39,8 +39,8 @@ export default function ChatPage() {
       const metaConnected = meta && !meta.error;
 
       const platformLine = metaConnected
-        ? "I also have access to your Meta Ads data — spend, campaigns, CTR, and CPC."
-        : "Meta Ads is not connected yet — connect in Settings → Connections to unlock campaign-level analysis.";
+        ? "I also have access to your Meta Ads data - spend, campaigns, CTR, and CPC."
+        : "Meta Ads is not connected yet - connect in Settings → Connections to unlock campaign-level analysis.";
 
       setMessages([{
         role: "assistant",
@@ -51,14 +51,14 @@ export default function ChatPage() {
         const kpis = d.kpis;
         const codPct = kpis.totalOrders > 0 ? Math.round((kpis.codOrders / kpis.totalOrders) * 100) : 0;
         const actions = [];
-        if (codPct > 50) actions.push({ color: "bg-[#d94040]", text: `High COD rate: ${codPct}% of orders — consider prepaid incentive` });
+        if (codPct > 50) actions.push({ color: "bg-[#d94040]", text: `High COD rate: ${codPct}% of orders - consider prepaid incentive` });
         if (kpis.totalOrders > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.totalOrders} orders processed · ₹${kpis.grossSales.toLocaleString("en-IN")} revenue` });
         if (kpis.newCustomers > 0) actions.push({ color: "bg-[#3478d4]", text: `${kpis.newCustomers} new customers acquired this period` });
-        if (kpis.returningCustomers > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.returningCustomers} returning customers — repeat purchase detected` });
+        if (kpis.returningCustomers > 0) actions.push({ color: "bg-[#17a773]", text: `${kpis.returningCustomers} returning customers - repeat purchase detected` });
         if (metaConnected) {
-          actions.push({ color: "bg-[#1877F2]", text: "Meta Ads connected — campaign spend & CTR data available" });
+          actions.push({ color: "bg-[#1877F2]", text: "Meta Ads connected - campaign spend & CTR data available" });
         } else {
-          actions.push({ color: "bg-[#e89820]", text: "Meta Ads not connected — campaign data unavailable" });
+          actions.push({ color: "bg-[#e89820]", text: "Meta Ads not connected - campaign data unavailable" });
         }
         setAiActions(actions);
       }

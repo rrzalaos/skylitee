@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Name, email and password are required" }, { status: 400 });
   }
-  // A real address only — "embedded:" accounts belong to stores opened inside Shopify.
+  // A real address only - "embedded:" accounts belong to stores opened inside Shopify.
   if (typeof email !== "string" || !/^[^\s@:]+@[^\s@]+\.[^\s@]+$/.test(email) || isEmbeddedEmail(email)) {
     return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
   }

@@ -85,7 +85,7 @@ export default function TrafficReportPage() {
         data.landingPages.map(p => [p.page, p.sessions, `${p.bounceRate}%`, p.newUsers])
       },
       ...(data.ecommerce ? [{ title: "Ecommerce Funnel", headers: ["Stage", "Count", "Rate"], rows: [
-        ["Items Viewed", data.ecommerce.itemsViewed, "—"],
+        ["Items Viewed", data.ecommerce.itemsViewed, "-"],
         ["Add to Cart", data.ecommerce.itemsAddedToCart, `${data.ecommerce.atcRate}%`],
         ["Checkout", data.ecommerce.itemsCheckedOut, `${data.ecommerce.checkoutRate}%`],
         ["Purchased", data.ecommerce.itemsPurchased, `${data.ecommerce.purchaseRate}%`],
@@ -112,15 +112,15 @@ export default function TrafficReportPage() {
   const working: { metric: string; value: string; detail: string }[] = [];
   const attention: { type: "warn" | "bad"; metric: string; value: string; detail: string }[] = [];
 
-  if (k.bounceRate < 50) working.push({ metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Below 50% — visitors are engaging with your site after landing. Content and UX are resonating well." });
-  if (k.sessions > 0) working.push({ metric: "Sessions", value: k.sessions.toLocaleString("en-IN"), detail: `${k.sessions.toLocaleString("en-IN")} sessions in the period — steady traffic base. Grow this with consistent content and ads.` });
-  if (data.channels.length >= 3) working.push({ metric: "Channel Diversity", value: `${data.channels.length} channels`, detail: "Traffic is coming from multiple channels — reduces dependency on a single source and lowers risk." });
-  if (returningPct >= 20) working.push({ metric: "Returning Users", value: `${returningPct}%`, detail: `${returningPct}% of users are returning — good retention signal. Build on this with email and WhatsApp re-engagement.` });
+  if (k.bounceRate < 50) working.push({ metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Below 50% - visitors are engaging with your site after landing. Content and UX are resonating well." });
+  if (k.sessions > 0) working.push({ metric: "Sessions", value: k.sessions.toLocaleString("en-IN"), detail: `${k.sessions.toLocaleString("en-IN")} sessions in the period - steady traffic base. Grow this with consistent content and ads.` });
+  if (data.channels.length >= 3) working.push({ metric: "Channel Diversity", value: `${data.channels.length} channels`, detail: "Traffic is coming from multiple channels - reduces dependency on a single source and lowers risk." });
+  if (returningPct >= 20) working.push({ metric: "Returning Users", value: `${returningPct}%`, detail: `${returningPct}% of users are returning - good retention signal. Build on this with email and WhatsApp re-engagement.` });
 
-  if (k.bounceRate >= 70) attention.push({ type: "bad", metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Very high bounce rate — most visitors leave without engaging. Review landing page speed, mobile UX, and ad-to-page relevance." });
-  else if (k.bounceRate >= 50) attention.push({ type: "warn", metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Above 50% — more than half of visitors are bouncing. Check page load speed and ensure ad copy matches landing page content." });
-  if (topChannelPct > 70) attention.push({ type: "warn", metric: "Channel Concentration", value: `${topChannel?.channel} ${topChannelPct}%`, detail: `Over 70% of traffic from one channel — high dependency risk. Invest in SEO and organic content to diversify.` });
-  if (data.ecommerce && data.ecommerce.atcRate < 10) attention.push({ type: "warn", metric: "ATC Rate (GA4)", value: `${data.ecommerce.atcRate}%`, detail: "Very few visitors add items to cart. Review product page UX — ensure price, images, and reviews are all visible above the fold." });
+  if (k.bounceRate >= 70) attention.push({ type: "bad", metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Very high bounce rate - most visitors leave without engaging. Review landing page speed, mobile UX, and ad-to-page relevance." });
+  else if (k.bounceRate >= 50) attention.push({ type: "warn", metric: "Bounce Rate", value: `${k.bounceRate}%`, detail: "Above 50% - more than half of visitors are bouncing. Check page load speed and ensure ad copy matches landing page content." });
+  if (topChannelPct > 70) attention.push({ type: "warn", metric: "Channel Concentration", value: `${topChannel?.channel} ${topChannelPct}%`, detail: `Over 70% of traffic from one channel - high dependency risk. Invest in SEO and organic content to diversify.` });
+  if (data.ecommerce && data.ecommerce.atcRate < 10) attention.push({ type: "warn", metric: "ATC Rate (GA4)", value: `${data.ecommerce.atcRate}%`, detail: "Very few visitors add items to cart. Review product page UX - ensure price, images, and reviews are all visible above the fold." });
 
   const channelColors: Record<string, string> = {
     "Organic Search": "#4285F4", "Paid Search": "#FBBC04", "Direct": "#34A853", "Social": "#1877F2",
@@ -213,7 +213,7 @@ export default function TrafficReportPage() {
                       </div>
                     </td>
                     <td className="py-2 px-2 text-[#A1A1AA]">{ch.users.toLocaleString("en-IN")}</td>
-                    <td className="py-2 px-2">{ch.purchases || "—"}</td>
+                    <td className="py-2 px-2">{ch.purchases || "-"}</td>
                   </tr>
                 );
               })}

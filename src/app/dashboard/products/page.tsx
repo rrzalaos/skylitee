@@ -77,12 +77,12 @@ export default function ProductsPage() {
       {
         title: "All Products",
         headers: ["#", "Product", "Units Sold", "Revenue", "Stock", "Sold/day", "Days left", "Price", "Signal"],
-        rows: products.map((p, i) => [i + 1, p.name, p.total, formatINR(p.revenue), p.stock, p.soldPerDay || "—", p.daysLeft ?? "—", formatINR(p.price), sigLabel(p.signal)]),
+        rows: products.map((p, i) => [i + 1, p.name, p.total, formatINR(p.revenue), p.stock, p.soldPerDay || "-", p.daysLeft ?? "-", formatINR(p.price), sigLabel(p.signal)]),
       },
       {
         title: "Stockout Risk (≤15 days)",
         headers: ["Product", "Stock", "Sold/day", "Days left"],
-        rows: stockoutRisk.map(p => [p.name, p.stock, p.soldPerDay, p.daysLeft ?? "—"]),
+        rows: stockoutRisk.map(p => [p.name, p.stock, p.soldPerDay, p.daysLeft ?? "-"]),
       },
       {
         title: "Dead Stock (in stock, no sales)",
@@ -117,7 +117,7 @@ export default function ProductsPage() {
             <KPICard label="Units Sold" value={(stats?.unitsSold ?? 0).toLocaleString("en-IN")} sub={`${formatINR(stats?.periodRevenue ?? 0)} revenue`} />
             <KPICard
               label="Best Seller"
-              value={topProduct ? topProduct.name.substring(0, 14) : "—"}
+              value={topProduct ? topProduct.name.substring(0, 14) : "-"}
               sub={topProduct ? `${topProduct.total} units · ${formatINR(topProduct.revenue)}` : "No sales yet"}
             />
             <KPICard
@@ -129,13 +129,13 @@ export default function ProductsPage() {
             <KPICard
               label="Stockout Risk"
               value={stockoutRisk.length.toString()}
-              sub={stockoutRisk.length > 0 ? "≤15 days left — reorder" : "All healthy"}
+              sub={stockoutRisk.length > 0 ? "≤15 days left - reorder" : "All healthy"}
               change={stockoutRisk.length > 0 ? -1 : 1}
             />
             <KPICard
               label="Out of Stock"
               value={(stats?.outOfStock ?? 0).toString()}
-              sub={(stats?.oosBestsellers?.length ?? 0) > 0 ? `${stats!.oosBestsellers.length} were selling — lost sales` : "Nothing critical"}
+              sub={(stats?.oosBestsellers?.length ?? 0) > 0 ? `${stats!.oosBestsellers.length} were selling - lost sales` : "Nothing critical"}
               change={(stats?.outOfStock ?? 0) > 0 ? -1 : 1}
             />
           </div>
@@ -158,7 +158,7 @@ export default function ProductsPage() {
                     />
                   ))}
                   {withSales.length >= 2 && (
-                    <InsightCard type="info" title={`Top 2 products drive ${Math.round(((withSales[0].revenue + (withSales[1]?.revenue || 0)) / Math.max(stats?.periodRevenue ?? 1, 1)) * 100)}% of revenue`} body="High concentration — protect stock on these and bundle them with slow movers to lift AOV and clear dead inventory." />
+                    <InsightCard type="info" title={`Top 2 products drive ${Math.round(((withSales[0].revenue + (withSales[1]?.revenue || 0)) / Math.max(stats?.periodRevenue ?? 1, 1)) * 100)}% of revenue`} body="High concentration - protect stock on these and bundle them with slow movers to lift AOV and clear dead inventory." />
                   )}
                   {stats?.bestEarner && stats?.bestSeller && stats.bestEarner.name !== stats.bestSeller.name && (
                     <InsightCard type="warning" title="Your best seller isn't your best earner" body={`"${stats.bestSeller.name.substring(0, 22)}" sells most units, but "${stats.bestEarner.name.substring(0, 22)}" earns the most revenue. Feature the earner in ads.`} />
@@ -184,9 +184,9 @@ export default function ProductsPage() {
                       <tr key={i} className="border-b border-black/[0.06] last:border-0 hover:bg-[#f7f7f5]">
                         <td className="py-1.5 px-1.5 max-w-[120px] truncate">{p.name}</td>
                         <td className={`py-1.5 px-1.5 font-medium ${p.stock <= 10 ? "text-[#d94040]" : ""}`}>{p.stock}</td>
-                        <td className="py-1.5 px-1.5">{p.soldPerDay > 0 ? `${p.soldPerDay}/day` : "—"}</td>
+                        <td className="py-1.5 px-1.5">{p.soldPerDay > 0 ? `${p.soldPerDay}/day` : "-"}</td>
                         <td className={`py-1.5 px-1.5 font-medium ${p.daysLeft !== null && p.daysLeft <= 15 ? "text-[#d94040]" : ""}`}>
-                          {p.daysLeft !== null ? `${p.daysLeft}d` : "—"}
+                          {p.daysLeft !== null ? `${p.daysLeft}d` : "-"}
                         </td>
                         <td className="py-1.5 px-1.5">
                           <Badge variant={signalConfig[p.signal]?.variant || "blue"}>
@@ -204,9 +204,9 @@ export default function ProductsPage() {
           {/* Dead stock + Lost sales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Card>
-              <CardHeader title="Dead stock — capital locked" right={`${formatINR(stats?.deadStockValue ?? 0)} in ${stats?.deadStockCount ?? 0} products`} />
+              <CardHeader title="Dead stock - capital locked" right={`${formatINR(stats?.deadStockValue ?? 0)} in ${stats?.deadStockCount ?? 0} products`} />
               {deadStock.length === 0 ? (
-                <div className="text-[17px] text-[#686864] py-6 text-center">No dead stock — everything moved in {range.label.toLowerCase()}.</div>
+                <div className="text-[17px] text-[#686864] py-6 text-center">No dead stock - everything moved in {range.label.toLowerCase()}.</div>
               ) : (
                 <>
                   <div className="overflow-x-auto">
@@ -235,7 +235,7 @@ export default function ProductsPage() {
             </Card>
 
             <Card>
-              <CardHeader title="Lost sales — out of stock" right="Were selling, now 0 stock" />
+              <CardHeader title="Lost sales - out of stock" right="Were selling, now 0 stock" />
               {(stats?.oosBestsellers?.length ?? 0) === 0 ? (
                 <div className="text-[17px] text-[#686864] py-6 text-center">No bestsellers are out of stock. 👍</div>
               ) : (
@@ -260,7 +260,7 @@ export default function ProductsPage() {
                       </tbody>
                     </table>
                   </div>
-                  <InsightCard type="warning" title="You're losing sales on proven products" body="These sold well but are now out of stock — every day OOS is lost revenue. Reorder first, and pause ads pointing to them until restocked." />
+                  <InsightCard type="warning" title="You're losing sales on proven products" body="These sold well but are now out of stock - every day OOS is lost revenue. Reorder first, and pause ads pointing to them until restocked." />
                 </>
               )}
             </Card>

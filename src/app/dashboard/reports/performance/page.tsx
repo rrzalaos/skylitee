@@ -46,7 +46,7 @@ interface ExportSection { title: string; headers: string[]; rows: (string | numb
 function buildCSV(M: PerfModel): ExportSection[] {
   return [
     { title: "Performance KPIs", headers: ["Metric", "Value"], rows: M.hero.map(h => [h.label, h.value]) },
-    { title: "Channel Attribution", headers: ["Channel", "Orders", "Revenue", "Ad Spend", "ROAS", "CTR"], rows: M.channels.map(c => [c.channel, c.orders, formatINR(c.revenue), c.spend == null ? "—" : formatINR(c.spend), c.roas == null ? "—" : `${c.roas}x`, c.ctr == null ? "—" : `${c.ctr}%`]) },
+    { title: "Channel Attribution", headers: ["Channel", "Orders", "Revenue", "Ad Spend", "ROAS", "CTR"], rows: M.channels.map(c => [c.channel, c.orders, formatINR(c.revenue), c.spend == null ? "-" : formatINR(c.spend), c.roas == null ? "-" : `${c.roas}x`, c.ctr == null ? "-" : `${c.ctr}%`]) },
     { title: "Payment Split", headers: ["Type", "Orders"], rows: [["Prepaid", M.payment.prepaid], ["COD", M.payment.cod]] },
     ...(M.campaigns.length ? [{ title: "Campaign Performance", headers: ["Campaign", "Objective", "Status", "Spend", "ROAS", "Orders"], rows: M.campaigns.map(c => [c.name, c.objective, c.status, formatINR(c.spend), `${c.roas}x`, c.purchases || c.leads || 0]) }] : []),
     ...(M.months.length ? [{ title: "Last 3 Months", headers: ["Month", "Gross Sales", "Orders", "AOV", "Ad Spend", "Blended ROAS", "COD %"], rows: M.months.map(m => [m.label, formatINR(m.grossSales), m.orders, formatINR(m.aov), formatINR(m.spend), `${m.roas}x`, `${m.codPct}%`]) }] : []),
@@ -164,7 +164,7 @@ export default function PerformanceReportPage() {
           <Card>
             <CardHeader title="Payment Split" />
             <Donut segments={[{ label: "Prepaid", value: M.payment.prepaid, color: "#F97316" }, { label: "COD", value: M.payment.cod, color: "#EAB308" }]} centerValue={`${100 - M.payment.codPct}%`} centerLabel="prepaid" />
-            {M.payment.codPct > 50 && <div className="mt-3 bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D]">High COD ({M.payment.codPct}%) — offer a prepaid discount to reduce RTO risk.</div>}
+            {M.payment.codPct > 50 && <div className="mt-3 bg-[#FFFBEB] dark:bg-[#2D1C00] border border-[#FCD34D] rounded-xl p-2.5 text-[13px] text-[#92400E] dark:text-[#FCD34D]">High COD ({M.payment.codPct}%) - offer a prepaid discount to reduce RTO risk.</div>}
           </Card>
         </div>
 
@@ -172,7 +172,7 @@ export default function PerformanceReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card>
             <CardHeader title="Blended ROAS" right="store ÷ total ad spend" />
-            <Gauge value={Math.min(100, (M.blendedRoas / 3) * 100)} color={M.blendedRoas >= 2 ? "#22C55E" : M.blendedRoas >= 1 ? "#EAB308" : "#EF4444"} centerValue={M.blendedRoas ? `${M.blendedRoas}x` : "—"} centerLabel={M.blendedRoas >= 2 ? "profitable" : "below target"} />
+            <Gauge value={Math.min(100, (M.blendedRoas / 3) * 100)} color={M.blendedRoas >= 2 ? "#22C55E" : M.blendedRoas >= 1 ? "#EAB308" : "#EF4444"} centerValue={M.blendedRoas ? `${M.blendedRoas}x` : "-"} centerLabel={M.blendedRoas >= 2 ? "profitable" : "below target"} />
             <p className="text-[13px] text-[#A1A1AA] text-center mt-1">Total ad spend {formatINR(M.totalSpend)}{M.googlePending ? " · Google pending" : ""}</p>
           </Card>
           {M.funnel && (
@@ -195,9 +195,9 @@ export default function PerformanceReportPage() {
                     <td className="py-2 px-2 font-semibold dark:text-[#F4F4F5]"><span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />{c.channel}</span></td>
                     <td className="py-2 px-2 text-right">{c.orders.toLocaleString("en-IN")}</td>
                     <td className="py-2 px-2 text-right font-semibold dark:text-[#F4F4F5]">{formatINR(c.revenue)}</td>
-                    <td className="py-2 px-2 text-right text-[#A1A1AA]">{c.spend == null ? "—" : formatINR(c.spend)}</td>
-                    <td className="py-2 px-2 text-right font-bold" style={{ color: c.roas == null ? "#A1A1AA" : c.roas >= 2 ? "#22C55E" : "#EF4444" }}>{c.roas == null ? "—" : `${c.roas}x`}</td>
-                    <td className="py-2 px-2 text-right text-[#A1A1AA]">{c.ctr == null ? "—" : `${c.ctr}%`}</td>
+                    <td className="py-2 px-2 text-right text-[#A1A1AA]">{c.spend == null ? "-" : formatINR(c.spend)}</td>
+                    <td className="py-2 px-2 text-right font-bold" style={{ color: c.roas == null ? "#A1A1AA" : c.roas >= 2 ? "#22C55E" : "#EF4444" }}>{c.roas == null ? "-" : `${c.roas}x`}</td>
+                    <td className="py-2 px-2 text-right text-[#A1A1AA]">{c.ctr == null ? "-" : `${c.ctr}%`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -248,7 +248,7 @@ export default function PerformanceReportPage() {
         {/* 3-month comparison */}
         {M.months.length >= 2 && (
           <Card>
-            <CardHeader title="Last 3 Months — Progress" right="vs previous month" />
+            <CardHeader title="Last 3 Months - Progress" right="vs previous month" />
             <MonthwiseTable headers={M.months.map(m => m.label)} rows={perfMonthRows(M.months)} />
           </Card>
         )}
@@ -275,7 +275,7 @@ export default function PerformanceReportPage() {
             </div>
             <div className="rounded-xl bg-[#FEF2F2] dark:bg-[#2D0A0A]/40 border border-[#FCA5A5] dark:border-[#991B1B] p-3.5">
               <div className="text-[15px] font-extrabold text-[#DC2626] mb-2">To improve</div>
-              <ul className="space-y-1.5">{M.conclusion.improvements.length ? M.conclusion.improvements.map((p, i) => <li key={i} className="text-[14px] text-[#3F3F46] dark:text-[#D4D4D8] leading-snug">• {p}</li>) : <li className="text-[14px] text-[#A1A1AA]">Nothing critical — keep scaling what works.</li>}</ul>
+              <ul className="space-y-1.5">{M.conclusion.improvements.length ? M.conclusion.improvements.map((p, i) => <li key={i} className="text-[14px] text-[#3F3F46] dark:text-[#D4D4D8] leading-snug">• {p}</li>) : <li className="text-[14px] text-[#A1A1AA]">Nothing critical - keep scaling what works.</li>}</ul>
             </div>
           </div>
         </Card>

@@ -112,7 +112,7 @@ export default function AttributionPage() {
       sections.push({
         title: "GA4 Channel Attribution",
         headers: ["Channel", "Sessions", "Purchases", "Revenue", "% of Sessions"],
-        rows: ga4.channels.map(c => [c.channel, c.sessions, c.purchases, formatINR(c.revenue), totalGa4Sess > 0 ? `${Math.round(c.sessions / totalGa4Sess * 100)}%` : "—"]),
+        rows: ga4.channels.map(c => [c.channel, c.sessions, c.purchases, formatINR(c.revenue), totalGa4Sess > 0 ? `${Math.round(c.sessions / totalGa4Sess * 100)}%` : "-"]),
       });
     }
     return sections;
@@ -138,14 +138,14 @@ export default function AttributionPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-        <KPICard label="Total Revenue" value={shopOk ? formatINR(totalRevenue) : "—"} />
-        <KPICard label="Meta Revenue" value={metaOk ? formatINR(metaRevenue) : "—"} sub={metaOk ? `${metaPct}% of total` : "Connect Meta"} />
-        <KPICard label="Organic Revenue" value={shopOk ? formatINR(organicRevenue) : "—"} sub={shopOk ? `${organicPct}% of total` : "—"} />
+        <KPICard label="Total Revenue" value={shopOk ? formatINR(totalRevenue) : "-"} />
+        <KPICard label="Meta Revenue" value={metaOk ? formatINR(metaRevenue) : "-"} sub={metaOk ? `${metaPct}% of total` : "Connect Meta"} />
+        <KPICard label="Organic Revenue" value={shopOk ? formatINR(organicRevenue) : "-"} sub={shopOk ? `${organicPct}% of total` : "-"} />
         <KPICard label="ROAS"
-          value={metaOk ? `${meta!.kpis.roas}x` : "—"}
+          value={metaOk ? `${meta!.kpis.roas}x` : "-"}
           change={meta ? (meta.kpis.roas >= 2 ? 1 : -1) : undefined}
           changeLabel={meta ? (meta.kpis.roas >= 3 ? "Strong" : meta.kpis.roas >= 2 ? "Average" : "Below target") : undefined} />
-        <KPICard label="Meta Spend" value={metaOk ? formatINR(meta!.kpis.spend) : "—"} sub={metaOk ? `CAC ${formatINR(meta!.kpis.cac)}` : "Connect Meta"} />
+        <KPICard label="Meta Spend" value={metaOk ? formatINR(meta!.kpis.spend) : "-"} sub={metaOk ? `CAC ${formatINR(meta!.kpis.cac)}` : "Connect Meta"} />
       </div>
 
       {/* GA4 Channel Breakdown + Paid vs Organic */}
@@ -211,7 +211,7 @@ export default function AttributionPage() {
                           </div>
                         </td>
                         <td className="py-2 px-1.5 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{ch.purchases}</td>
-                        <td className="py-2 px-1.5 font-semibold text-[#F97316]">{ch.revenue > 0 ? formatINR(ch.revenue) : "—"}</td>
+                        <td className="py-2 px-1.5 font-semibold text-[#F97316]">{ch.revenue > 0 ? formatINR(ch.revenue) : "-"}</td>
                       </tr>
                     );
                   })}
@@ -233,7 +233,7 @@ export default function AttributionPage() {
                 <span className="text-[13px] font-bold text-[#1877F2]">Meta Paid</span>
                 {metaOk && <span className="ml-auto text-[15px] font-black text-[#1877F2]">{metaPct}%</span>}
               </div>
-              <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{metaOk ? formatINR(metaRevenue) : "—"}</div>
+              <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{metaOk ? formatINR(metaRevenue) : "-"}</div>
               {metaOk && (
                 <div className="mt-1.5 space-y-0.5">
                   <div className="text-[13px] text-[#A1A1AA]">Spend: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{formatINR(meta!.kpis.spend)}</span></div>
@@ -249,7 +249,7 @@ export default function AttributionPage() {
                 <span className="text-[13px] font-bold text-[#22C55E]">Organic / Direct</span>
                 {shopOk && <span className="ml-auto text-[15px] font-black text-[#22C55E]">{organicPct}%</span>}
               </div>
-              <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{shopOk ? formatINR(organicRevenue) : "—"}</div>
+              <div className="text-[20px] font-black text-[#18181B] dark:text-[#F4F4F5]">{shopOk ? formatINR(organicRevenue) : "-"}</div>
               {shopOk && (
                 <div className="mt-1.5">
                   <div className="text-[13px] text-[#A1A1AA]">Est. orders: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{Math.max(0, shopOrders - metaOrders)}</span></div>

@@ -46,7 +46,7 @@ export function SimpleView({ report, glance, loading, onAsk, storeName, periodTi
         </div>
         {!loading && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pl-[28px]">
-            <a href={`https://wa.me/?text=${encodeURIComponent(reportText(report, `${storeName || "My store"} — ${periodTitle}`))}`}
+            <a href={`https://wa.me/?text=${encodeURIComponent(reportText(report, `${storeName || "My store"} - ${periodTitle}`))}`}
               target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold border border-[#BBF7D0] text-[#15803D] hover:bg-[#F0FDF4] dark:hover:bg-[#052E16]">
               <MessageCircle size={13} /> Share on WhatsApp
@@ -107,7 +107,7 @@ export function SimpleView({ report, glance, loading, onAsk, storeName, periodTi
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-[#F97316] shrink-0" />
           <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && onAsk(q)}
-            placeholder="Ask in your own words — &quot;why did sales drop this week?&quot;"
+            placeholder="Ask in your own words - &quot;why did sales drop this week?&quot;"
             className="flex-1 min-w-0 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
           <button onClick={() => onAsk(q)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white shrink-0"><Send size={13} /> Ask</button>
         </div>

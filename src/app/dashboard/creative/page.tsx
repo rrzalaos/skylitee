@@ -68,36 +68,36 @@ const OBJ_META: Record<Objective, { label: string; cls: string }> = {
   OTHER:      { label: "Other",      cls: "bg-[#f5f5f4] text-[#71717a]" },
 };
 
-// The three KPI tiles + the footer "result" line a card shows depend on the ad's objective —
+// The three KPI tiles + the footer "result" line a card shows depend on the ad's objective -
 // ROAS/orders only make sense for Sales, so Leads→CPL/leads, Awareness→CPM/reach, etc.
 // Benchmarks match the rest of the app (ROAS 3x · CPL ₹200 · CPM ₹150 · Cost/Visit ₹8).
 function objectiveView(ad: AdCreative, fmt: (n: number) => string) {
-  const freq = { label: "Freq", value: ad.frequency > 0 ? ad.frequency.toFixed(1) : "—" };
+  const freq = { label: "Freq", value: ad.frequency > 0 ? ad.frequency.toFixed(1) : "-" };
   const ctr = { label: "CTR", value: `${ad.ctr.toFixed(1)}%` };
   switch (ad.objective) {
     case "LEADS":
       return {
-        tiles: [{ label: "Cost/Lead", value: ad.costPerLead > 0 ? fmt(ad.costPerLead) : "—" }, ctr, freq],
+        tiles: [{ label: "Cost/Lead", value: ad.costPerLead > 0 ? fmt(ad.costPerLead) : "-" }, ctr, freq],
         footer: `${ad.leads.toLocaleString("en-IN")} ${ad.leads === 1 ? "lead" : "leads"}`,
       };
     case "AWARENESS":
       return {
-        tiles: [{ label: "CPM", value: ad.cpm > 0 ? fmt(ad.cpm) : "—" }, ctr, freq],
-        footer: ad.reach > 0 ? `${ad.reach >= 1000 ? `${(ad.reach / 1000).toFixed(1)}K` : ad.reach} reach` : "—",
+        tiles: [{ label: "CPM", value: ad.cpm > 0 ? fmt(ad.cpm) : "-" }, ctr, freq],
+        footer: ad.reach > 0 ? `${ad.reach >= 1000 ? `${(ad.reach / 1000).toFixed(1)}K` : ad.reach} reach` : "-",
       };
     case "TRAFFIC":
       return {
-        tiles: [{ label: ad.lpv > 0 ? "Cost/Visit" : "CPC", value: (ad.lpv > 0 ? ad.costPerVisit : ad.cpc) > 0 ? fmt(ad.lpv > 0 ? ad.costPerVisit : ad.cpc) : "—" }, ctr, freq],
+        tiles: [{ label: ad.lpv > 0 ? "Cost/Visit" : "CPC", value: (ad.lpv > 0 ? ad.costPerVisit : ad.cpc) > 0 ? fmt(ad.lpv > 0 ? ad.costPerVisit : ad.cpc) : "-" }, ctr, freq],
         footer: ad.lpv > 0 ? `${ad.lpv.toLocaleString("en-IN")} visits` : `${ad.clicks.toLocaleString("en-IN")} clicks`,
       };
     case "SALES":
       return {
-        tiles: [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}×` : "—" }, ctr, freq],
+        tiles: [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}×` : "-" }, ctr, freq],
         footer: `${ad.purchases} ${ad.purchases === 1 ? "order" : "orders"}`,
       };
     default: // engagement / app / other
       return {
-        tiles: [ctr, { label: "CPC", value: ad.cpc > 0 ? fmt(ad.cpc) : "—" }, freq],
+        tiles: [ctr, { label: "CPC", value: ad.cpc > 0 ? fmt(ad.cpc) : "-" }, freq],
         footer: `${ad.clicks.toLocaleString("en-IN")} clicks`,
       };
   }
@@ -136,8 +136,8 @@ function ctaLabel(cta: string | null): string | null {
   return special[cta] ?? cta.split("_").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 }
 
-// Render the actual creative — full-res image, all carousel frames, or video thumb with a
-// play overlay — instead of the low-res square thumbnail. Mirrors the Meta drill-down.
+// Render the actual creative - full-res image, all carousel frames, or video thumb with a
+// play overlay - instead of the low-res square thumbnail. Mirrors the Meta drill-down.
 function CreativeMedia({ c }: { c: ParsedCreative }) {
   const placeholder = (Icon: typeof ImageIcon, label: string) => (
     <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-[#1877F2] opacity-50">
@@ -184,7 +184,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
     <div onClick={onOpen} role="button" tabIndex={0}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
       className="bg-white border border-black/[0.09] rounded-xl overflow-hidden hover:shadow-md hover:border-black/[0.15] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1877F2]/40">
-      {/* Creative preview — real image / carousel / video */}
+      {/* Creative preview - real image / carousel / video */}
       <div className="relative h-44 bg-[#f0f5ff]">
         <CreativeMedia c={ad.creative} />
         {/* Signal badge */}
@@ -210,7 +210,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
           {ad.name}
         </div>
 
-        {/* Ad copy — what the ad actually says */}
+        {/* Ad copy - what the ad actually says */}
         {cta && (
           <span className="inline-flex items-center gap-1 mt-1.5 text-[13px] font-bold text-[#1877F2] bg-[#eff6ff] px-2 py-0.5 rounded-full">
             <MousePointerClick size={11} /> {cta}
@@ -238,7 +238,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
           </div>
         </div>
 
-        {/* Stats grid — objective-aware */}
+        {/* Stats grid - objective-aware */}
         <div className="grid grid-cols-3 gap-1.5 mb-2">
           {view.tiles.map(s => (
             <div key={s.label} className="text-center bg-[#f7f7f5] rounded-lg py-1.5">
@@ -265,7 +265,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
         {ad.frequency >= 2.5 && (
           <div className="mt-2 flex items-center gap-1.5 text-[14px] text-[#d94040] bg-[#fce8e8] rounded-lg px-2 py-1">
             <AlertTriangle size={11} />
-            Frequency {ad.frequency.toFixed(1)} — creative fatigue risk
+            Frequency {ad.frequency.toFixed(1)} - creative fatigue risk
           </div>
         )}
       </div>
@@ -273,7 +273,7 @@ function CreativeCard({ ad, currency, onOpen }: { ad: AdCreative; currency: stri
   );
 }
 
-// Full-size preview — the complete creative + all the ad copy, opened by clicking a card.
+// Full-size preview - the complete creative + all the ad copy, opened by clicking a card.
 function CreativeModal({ ad, currency, onClose }: { ad: AdCreative; currency: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -410,7 +410,7 @@ export default function CreativePage() {
   const fmtC = (n: number) => `${currency === "INR" ? "₹" : "$"}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   const fmtN = (n: number) => n.toLocaleString("en-IN");
 
-  // Headline KPI #2 adapts to the account's dominant objective (by spend) — Top ROAS is
+  // Headline KPI #2 adapts to the account's dominant objective (by spend) - Top ROAS is
   // meaningless on a leads/awareness account, so show the best result for what they run.
   const dominantObj: Objective = (() => {
     const spendByObj = new Map<Objective, number>();
@@ -422,19 +422,19 @@ export default function CreativePage() {
   const headlineKpi = (() => {
     if (dominantObj === "LEADS") {
       const v = ads.filter(a => a.costPerLead > 0).map(a => a.costPerLead);
-      return { label: "Best Cost/Lead", value: v.length ? fmtC(Math.min(...v)) : "—" };
+      return { label: "Best Cost/Lead", value: v.length ? fmtC(Math.min(...v)) : "-" };
     }
     if (dominantObj === "AWARENESS") {
       const v = ads.filter(a => a.cpm > 0).map(a => a.cpm);
-      return { label: "Best CPM", value: v.length ? fmtC(Math.min(...v)) : "—" };
+      return { label: "Best CPM", value: v.length ? fmtC(Math.min(...v)) : "-" };
     }
     if (dominantObj === "TRAFFIC") {
       const v = ads.filter(a => a.costPerVisit > 0).map(a => a.costPerVisit);
       if (v.length) return { label: "Best Cost/Visit", value: fmtC(Math.min(...v)) };
       const c = ads.filter(a => a.cpc > 0).map(a => a.cpc);
-      return { label: "Best CPC", value: c.length ? fmtC(Math.min(...c)) : "—" };
+      return { label: "Best CPC", value: c.length ? fmtC(Math.min(...c)) : "-" };
     }
-    return { label: "Top ROAS", value: topRoas > 0 ? `${topRoas}×` : "—" };
+    return { label: "Top ROAS", value: topRoas > 0 ? `${topRoas}×` : "-" };
   })();
 
   function buildSections() {
@@ -461,12 +461,12 @@ export default function CreativePage() {
           `${a.score}/100`, SIGNAL_STYLES[a.signal]?.label ?? a.signal,
           fmtC(a.spend), fmtN(a.impressions), fmtN(a.clicks),
           `${a.ctr}%`, fmtC(a.cpc), fmtC(a.cpm),
-          a.frequency.toFixed(2), a.leads, a.costPerLead > 0 ? fmtC(a.costPerLead) : "—",
+          a.frequency.toFixed(2), a.leads, a.costPerLead > 0 ? fmtC(a.costPerLead) : "-",
           a.purchases, fmtC(a.purchaseValue),
-          a.roas > 0 ? `${a.roas}x` : "—", a.cac > 0 ? fmtC(a.cac) : "—",
+          a.roas > 0 ? `${a.roas}x` : "-", a.cac > 0 ? fmtC(a.cac) : "-",
           a.atc, fmtN(a.lpv), fmtN(a.videoViews3s), fmtN(a.thruplay),
-          a.thumbStopRatio > 0 ? `${a.thumbStopRatio}%` : "—",
-          a.holdRatio > 0 ? `${a.holdRatio}%` : "—",
+          a.thumbStopRatio > 0 ? `${a.thumbStopRatio}%` : "-",
+          a.holdRatio > 0 ? `${a.holdRatio}%` : "-",
         ]),
       },
     ];
@@ -602,7 +602,7 @@ export default function CreativePage() {
             <span className="whitespace-nowrap"> Leads → Cost/Lead ₹200</span>,
             <span className="whitespace-nowrap"> Awareness → CPM ₹150</span>,
             <span className="whitespace-nowrap"> Traffic → Cost/Visit ₹8</span>.
-            So a Leads or Awareness creative is no longer penalised for having no sales — it's measured on its own goal.
+            So a Leads or Awareness creative is no longer penalised for having no sales - it's measured on its own goal.
           </div>
         </>
       )}

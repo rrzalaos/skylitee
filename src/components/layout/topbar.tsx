@@ -43,7 +43,7 @@ const presets: { id: DatePreset; label: string }[] = [
   { id: "custom", label: "Custom range" },
 ];
 
-// Only period-shiftable comparisons — every option maps to a real date range
+// Only period-shiftable comparisons - every option maps to a real date range
 // and updates the figures. (Dropped "vs Yesterday" / "vs Goal": they had no
 // date mapping, so selecting them silently did nothing.)
 const compareOptions = [
@@ -72,7 +72,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   const [invites, setInvites] = useState<Array<{ shop: string; role: string; addedAt: string; inviterEmail: string }>>([]);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; type: string; message: string; read: boolean; createdAt: string }>>([]);
-  // Auto data alerts — live signals from the store's own data (COD/RTO, stock,
+  // Auto data alerts - live signals from the store's own data (COD/RTO, stock,
   // repeat-rate, order anomalies), so the bell is never empty when invites are.
   const [alerts, setAlerts] = useState<Array<{ sev: "danger" | "warning"; title: string; body: string }>>([]);
   const [alertsSeen, setAlertsSeen] = useState(false);
@@ -132,7 +132,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
       .catch(() => {});
   }, []);
 
-  // Inside the Shopify admin the store owner is signed in by Shopify — no profile/logout menu.
+  // Inside the Shopify admin the store owner is signed in by Shopify - no profile/logout menu.
   const [embedded, setEmbedded] = useState(false);
   useEffect(() => { setEmbedded(isEmbedded()); }, []);
 
@@ -194,7 +194,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
   return (
     <>
       <header className="bg-white dark:bg-[#111111] border-b border-black/[0.06] dark:border-white/[0.06] px-3 md:px-4 h-12 flex items-center gap-2 sticky top-0 z-20">
-        {/* Hamburger — mobile only, hidden for admin */}
+        {/* Hamburger - mobile only, hidden for admin */}
         {!isAdmin && (
           <button
             onClick={onMenuClick}
@@ -204,7 +204,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </button>
         )}
 
-        {/* Admin badge — clickable, always goes back to admin panel */}
+        {/* Admin badge - clickable, always goes back to admin panel */}
         {isAdmin && (
           <button
             onClick={() => router.push("/dashboard/admin")}
@@ -219,7 +219,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
 
         <h1 className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5] flex-1 uppercase tracking-wider truncate">{title}</h1>
 
-        {/* Date picker — hidden for admin */}
+        {/* Date picker - hidden for admin */}
         {!isAdmin && (
           <div className="relative" ref={datePickerRef}>
             <button
@@ -276,7 +276,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </div>
         )}
 
-        {/* Compare — hidden on mobile and for admin */}
+        {/* Compare - hidden on mobile and for admin */}
         {!isAdmin && (
           <select
             value={compareWith}
@@ -289,14 +289,14 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </select>
         )}
 
-        {/* Platform pills — hidden on mobile and for admin */}
+        {/* Platform pills - hidden on mobile and for admin */}
         {!isAdmin && (
           <div className="hidden lg:flex items-center gap-1.5">
             {platforms.map((p) => (
               <div
                 key={p.label}
                 onClick={() => !p.connected && router.push("/dashboard/connections")}
-                title={p.connected ? `${p.label} connected` : `${p.label} not connected — click to connect`}
+                title={p.connected ? `${p.label} connected` : `${p.label} not connected - click to connect`}
                 className={`flex items-center gap-1 px-2 py-1 rounded-full text-[13px] font-semibold border transition-colors ${
                   p.connected
                     ? "bg-[#F5F5F4] dark:bg-[#1C1C1C] border-black/[0.06] dark:border-white/[0.06] text-[#52525B] dark:text-[#A1A1AA]"
@@ -319,7 +319,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
         </button>
 
-        {/* Refresh — hidden for admin */}
+        {/* Refresh - hidden for admin */}
         {!isAdmin && (
           <button
             onClick={() => { showToast("Refreshing data..."); window.location.reload(); }}
@@ -329,7 +329,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </button>
         )}
 
-        {/* Bell — hidden for admin */}
+        {/* Bell - hidden for admin */}
         {!isAdmin && (
           <div className="relative" ref={bellRef}>
             <button
@@ -466,7 +466,7 @@ export function Topbar({ onMenuClick, isAdmin = false }: { onMenuClick: () => vo
           </button>
           {showUserMenu && (
             <div className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1C1C1C] border border-black/[0.08] dark:border-white/[0.08] rounded-xl shadow-lg z-50 py-1.5 min-w-[160px]">
-              {/* Admin panel shortcut — only for admin */}
+              {/* Admin panel shortcut - only for admin */}
               {isAdmin && (
                 <>
                   <button

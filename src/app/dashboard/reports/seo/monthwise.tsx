@@ -26,7 +26,7 @@ function mom(vals: (number | null)[], lowerBetter: boolean) {
 export function buildRows<T>(months: T[], defs: { key: string; get: (m: T) => number; fmt: (v: number) => string; lower: boolean; accent?: string }[]): MwRow[] {
   return defs.map(d => {
     const vals = months.map(d.get) as (number | null)[];
-    return { key: d.key, display: vals.map(v => (v == null ? "—" : d.fmt(v))), mom: mom(vals, d.lower), accent: d.accent };
+    return { key: d.key, display: vals.map(v => (v == null ? "-" : d.fmt(v))), mom: mom(vals, d.lower), accent: d.accent };
   });
 }
 const build = buildRows;
@@ -58,7 +58,7 @@ export function buildGa4Rows(ga4Monthly: GA4MonthlyMonth[]): MwRow[] {
 }
 
 function MoMCell({ m }: { m: MwRow["mom"] }) {
-  if (!m) return <span className="text-[#A1A1AA]">—</span>;
+  if (!m) return <span className="text-[#A1A1AA]">-</span>;
   const color = m.pct === 0 ? "#A1A1AA" : m.better ? "#16A34A" : "#DC2626";
   return <span style={{ color }}>{m.up ? "▲" : "▼"} {Math.abs(m.pct)}%</span>;
 }

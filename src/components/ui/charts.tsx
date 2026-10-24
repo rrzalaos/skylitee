@@ -4,7 +4,7 @@ import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer } from "recha
 /* Skylitee palette */
 export const PALETTE = ["#F97316", "#3B82F6", "#22C55E", "#8B5CF6", "#EC4899", "#EAB308", "#14B8A6"];
 
-/** Tiny trend line for KPI cards. No axes, solid fill (Recharts v3 — avoid <defs>). */
+/** Tiny trend line for KPI cards. No axes, solid fill (Recharts v3 - avoid <defs>). */
 export function Sparkline({ data, color = "#F97316", height = 32 }: { data: number[]; color?: string; height?: number }) {
   if (!data || data.length < 2) return <div style={{ height }} />;
   const d = data.map((v, i) => ({ i, v }));
@@ -43,7 +43,7 @@ export function Donut({ segments, centerValue, centerLabel, size = 150 }: { segm
           <div key={s.label} className="flex items-center gap-2 text-[14px]">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
             <span className="text-[#52525B] dark:text-[#A1A1AA] truncate flex-1">{s.label}</span>
-            <span className="font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{total > 0 ? `${Math.round((s.value / total) * 100)}%` : "—"}</span>
+            <span className="font-bold text-[#18181B] dark:text-[#F4F4F5] tabular-nums">{total > 0 ? `${Math.round((s.value / total) * 100)}%` : "-"}</span>
           </div>
         ))}
       </div>

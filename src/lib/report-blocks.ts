@@ -119,7 +119,7 @@ export const REPORT_GROUPS: ReportGroup[] = [
           return [kpi("Meta Ads Summary", [
             ["Spend", inr(k.spend)], ["ROAS", `${k.roas ?? 0}x`], ["CAC", inr(k.cac)],
             ["Orders", num(k.purchases)], ["Revenue", inr(k.purchaseValue)],
-            ["Leads", num(k.leads)], ["Cost / Lead", k.leads ? inr(k.costPerLead) : "—"],
+            ["Leads", num(k.leads)], ["Cost / Lead", k.leads ? inr(k.costPerLead) : "-"],
             ["CTR", `${k.ctr ?? 0}%`], ["CPC", inr(k.cpc)], ["CPM", inr(k.cpm)],
             ["Impressions", num(k.impressions)], ["Reach", num(k.reach)], ["Clicks", num(k.clicks)],
             ["Frequency", `${k.frequency ?? 0}x`],
@@ -159,7 +159,7 @@ export const REPORT_GROUPS: ReportGroup[] = [
           return [kpi("GA4 Traffic Summary", [
             ["Sessions", num(k.sessions)], ["Users", num(k.users)], ["New users", num(k.newUsers)],
             ["Pageviews", num(k.pageviews)], ["Bounce rate", `${k.bounceRate ?? 0}%`],
-            ["Avg session", k.avgSessionMin ?? "—"],
+            ["Avg session", k.avgSessionMin ?? "-"],
           ])];
         },
       },
@@ -222,7 +222,7 @@ export const REPORT_GROUPS: ReportGroup[] = [
           if (!ai) return [];
           const out: ExportSection[] = [];
           const head = ai.executiveSummary
-            ? `${ai.executiveSummary}${ai.overallScore != null ? `  (Overall score: ${ai.overallScore}/100 — ${ai.scoreLabel ?? ""})` : ""}`
+            ? `${ai.executiveSummary}${ai.overallScore != null ? `  (Overall score: ${ai.overallScore}/100 - ${ai.scoreLabel ?? ""})` : ""}`
             : "";
           if (head) out.push({ title: "AI Executive Summary", headers: [], rows: [], text: head });
           const working = (ai.working ?? []).map((w: any) => [w.metric, w.value, w.insight]);

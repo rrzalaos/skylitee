@@ -27,7 +27,7 @@ interface NavSection { label: string; tooltip: string; items: NavItem[]; }
 const navSections: NavSection[] = [
   {
     label: "Overview",
-    tooltip: "Your daily command center — real-time alerts, AI-generated insights, and an AI assistant to answer brand questions.",
+    tooltip: "Your daily command center - real-time alerts, AI-generated insights, and an AI assistant to answer brand questions.",
     items: [
       { href: "/dashboard", label: "Command Center", icon: LayoutDashboard, badge: null, dot: null },
       { href: "/dashboard/anomaly", label: "Anomaly Feed", icon: Radar, badge: { text: "5", color: "red" }, dot: null },
@@ -37,7 +37,7 @@ const navSections: NavSection[] = [
   },
   {
     label: "Shopify",
-    tooltip: "Live data from your Shopify store — orders, revenue, monthly goals, and which products are performing.",
+    tooltip: "Live data from your Shopify store - orders, revenue, monthly goals, and which products are performing.",
     items: [
       { href: "/dashboard/sales", label: "Sales Report", icon: ShoppingCart, badge: null, dot: "on" },
       { href: "/dashboard/goals", label: "Monthly Goals", icon: Target, badge: null, dot: "on" },
@@ -55,7 +55,7 @@ const navSections: NavSection[] = [
   },
   {
     label: "Meta Ads",
-    tooltip: "Facebook & Instagram ad data — ROAS, CTR, ad spend, creative performance, and funnel diagnostics.",
+    tooltip: "Facebook & Instagram ad data - ROAS, CTR, ad spend, creative performance, and funnel diagnostics.",
     items: [
       { href: "/dashboard/meta", label: "Meta Campaigns", icon: Share2, badge: null, dot: "meta" },
       { href: "/dashboard/placement", label: "Ads Placement", icon: Layout, badge: null, dot: "meta" },
@@ -74,7 +74,7 @@ const navSections: NavSection[] = [
   },
   {
     label: "Analytics",
-    tooltip: "Cross-platform analysis — where revenue comes from (attribution), Profit & Loss, industry benchmarks, and weekly summaries.",
+    tooltip: "Cross-platform analysis - where revenue comes from (attribution), Profit & Loss, industry benchmarks, and weekly summaries.",
     items: [
       { href: "/dashboard/sales-analysis", label: "Sales Analysis", icon: BarChart3, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/attribution", label: "Attribution", icon: GitMerge, badge: null, dot: null },
@@ -86,7 +86,7 @@ const navSections: NavSection[] = [
   },
   {
     label: "Reports",
-    tooltip: "Full business reports — Custom Report, SEO, Performance Marketing, and Financial P&L.",
+    tooltip: "Full business reports - Custom Report, SEO, Performance Marketing, and Financial P&L.",
     items: [
       { href: "/dashboard/reports/builder", label: "Custom Report", icon: FilePlus, badge: { text: "New", color: "orange" }, dot: null },
       { href: "/dashboard/reports/seo", label: "SEO Report", icon: FileText, badge: null, dot: "google_gsc" },
@@ -136,7 +136,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const [gadsConnected, setGadsConnected] = useState<boolean | null>(null);
   const [metaConnected, setMetaConnected] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  // Inside the Shopify admin the app is for that one store — no adding/switching stores.
+  // Inside the Shopify admin the app is for that one store - no adding/switching stores.
   const [embedded, setEmbedded] = useState(false);
   useEffect(() => { setEmbedded(isEmbedded()); }, []);
 
@@ -212,7 +212,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </button>
       </div>
 
-      {/* Store switcher — hidden for admin */}
+      {/* Store switcher - hidden for admin */}
       <div className={cn("mx-2 mt-2.5", isAdmin && "hidden")}>
         <div className="flex items-center gap-1.5" ref={shopMenuRef}>
           {/* Store name / switcher */}
@@ -267,7 +267,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
         {isAdmin ? (
-          /* Admin-only navigation — no user analytics */
+          /* Admin-only navigation - no user analytics */
           <div className="px-2 pt-2 space-y-0.5">
             <div className="px-2 pb-1 pt-1">
               <span className="text-[12px] font-bold text-[#A1A1AA] dark:text-[#525252] uppercase tracking-[0.1em]">Admin</span>
@@ -364,7 +364,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {isAdmin ? (
           <div className="flex items-center gap-1.5 text-[#F97316] font-semibold">
             <ShieldCheck size={11} />
-            Admin — rrzala@yellowsky.in
+            Admin - rrzala@yellowsky.in
           </div>
         ) : (
           <>
@@ -381,12 +381,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop — sticky */}
+      {/* Desktop - sticky */}
       <div className="hidden md:block h-screen sticky top-0 shrink-0">
         {inner}
       </div>
 
-      {/* Mobile — slide-in drawer */}
+      {/* Mobile - slide-in drawer */}
       {open && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />

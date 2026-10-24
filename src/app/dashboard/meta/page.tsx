@@ -98,7 +98,7 @@ interface ObjBucket {
   atcRatio: number; checkoutRatio: number; purchaseRatio: number; conversionRatio: number;
 }
 
-// Minimal shape the funnel card needs — satisfied by both MetaKPIs (account) and ObjBucket
+// Minimal shape the funnel card needs - satisfied by both MetaKPIs (account) and ObjBucket
 // (a single objective), so the same funnel renders for either scope.
 interface FunnelData {
   clicks: number; lpv: number; atc: number; atcValue: number;
@@ -109,14 +109,14 @@ interface FunnelData {
 function money(cur: string, n: number) { return `${cur}${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`; }
 function compact(n: number) { return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`; }
 
-// Objective's headline outcome as display text — shared by the campaigns table and the
+// Objective's headline outcome as display text - shared by the campaigns table and the
 // ad-set / ad drill-down so a row always shows the result it was actually optimized for.
 function objectiveResult(obj: ObjFilter, r: { purchases: number; leads: number; reach: number; lpv: number; clicks: number }): string {
-  if (obj === "SALES") return r.purchases > 0 ? `${r.purchases} orders` : "—";
-  if (obj === "LEADS") return r.leads > 0 ? `${r.leads.toLocaleString("en-IN")} leads` : "—";
-  if (obj === "AWARENESS") return r.reach > 0 ? `${compact(r.reach)} reach` : "—";
+  if (obj === "SALES") return r.purchases > 0 ? `${r.purchases} orders` : "-";
+  if (obj === "LEADS") return r.leads > 0 ? `${r.leads.toLocaleString("en-IN")} leads` : "-";
+  if (obj === "AWARENESS") return r.reach > 0 ? `${compact(r.reach)} reach` : "-";
   if (obj === "TRAFFIC") return r.lpv > 0 ? `${r.lpv.toLocaleString("en-IN")} visits` : `${r.clicks.toLocaleString("en-IN")} clicks`;
-  return r.clicks > 0 ? `${r.clicks.toLocaleString("en-IN")} clicks` : "—";
+  return r.clicks > 0 ? `${r.clicks.toLocaleString("en-IN")} clicks` : "-";
 }
 
 // Objective's cost-per-result label, shared by table header + cards.
@@ -129,9 +129,9 @@ function costLabelFor(obj: ObjFilter): string {
 }
 // Objective's cost-per-result value (the headline efficiency metric for that objective).
 function objectiveCost(obj: ObjFilter, r: { spend: number; leads: number; purchases: number; cac: number; lpv: number; cpm: number; cpc: number }, cur: string): string {
-  if (obj === "LEADS") return r.leads > 0 ? money(cur, +(r.spend / r.leads).toFixed(2)) : "—";
-  if (obj === "SALES") return r.purchases > 0 ? money(cur, r.cac) : "—";
-  if (obj === "TRAFFIC") return r.lpv > 0 ? money(cur, +(r.spend / r.lpv).toFixed(2)) : "—";
+  if (obj === "LEADS") return r.leads > 0 ? money(cur, +(r.spend / r.leads).toFixed(2)) : "-";
+  if (obj === "SALES") return r.purchases > 0 ? money(cur, r.cac) : "-";
+  if (obj === "TRAFFIC") return r.lpv > 0 ? money(cur, +(r.spend / r.lpv).toFixed(2)) : "-";
   if (obj === "AWARENESS") return money(cur, r.cpm);
   return money(cur, r.cpc);
 }
@@ -148,7 +148,7 @@ function ctaLabel(cta: string | null): string | null {
   return special[cta] ?? cta.split("_").map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
 }
 
-// Display / scorecard order — the four primary objectives first, then the rest.
+// Display / scorecard order - the four primary objectives first, then the rest.
 const OBJ_ORDER: ObjFilter[] = ["AWARENESS", "TRAFFIC", "SALES", "LEADS", "ENGAGEMENT", "APP", "OTHER"];
 
 function aggregate(camps: Campaign[], obj: ObjFilter): ObjBucket {
@@ -185,72 +185,72 @@ function objHero(b: ObjBucket, cur: string): { label: string; value: string; goo
     case "AWARENESS": {
       const good = b.cpm > 0 ? b.cpm <= 150 : null;
       return { label: "CPM", value: money(cur, b.cpm), good,
-        why: good === null ? "No delivery yet." : good ? "Efficient cost per 1,000 people reached." : "Above the ₹150 benchmark — tighten audience or refresh creative.",
+        why: good === null ? "No delivery yet." : good ? "Efficient cost per 1,000 people reached." : "Above the ₹150 benchmark - tighten audience or refresh creative.",
         supports: [{ label: "Reach", value: compact(b.reach) }, { label: "Freq", value: `${b.frequency}x` }] };
     }
     case "TRAFFIC": {
       const usingLpv = b.lpv > 0;
       const metric = usingLpv ? b.cplpv : b.cpc;
       const good = metric > 0 ? metric <= (usingLpv ? 8 : 10) : null;
-      return { label: usingLpv ? "Cost / Visit" : "CPC", value: metric > 0 ? money(cur, metric) : "—", good,
-        why: good === null ? "No clicks yet." : good ? (usingLpv ? "Cheap, real landing-page visits." : "Low cost per click.") : "Costly traffic — lift CTR or tighten targeting.",
+      return { label: usingLpv ? "Cost / Visit" : "CPC", value: metric > 0 ? money(cur, metric) : "-", good,
+        why: good === null ? "No clicks yet." : good ? (usingLpv ? "Cheap, real landing-page visits." : "Low cost per click.") : "Costly traffic - lift CTR or tighten targeting.",
         supports: [{ label: usingLpv ? "Visits" : "Clicks", value: compact(usingLpv ? b.lpv : b.clicks) }, { label: "CTR", value: `${b.ctr}%` }] };
     }
     case "SALES": {
       const good = b.spend > 0 ? b.roas >= 2 : null;
       return { label: "ROAS", value: `${b.roas}x`, good,
-        why: good === null ? "No spend yet." : good ? "Above the 2x break-even." : "Below 2x — spending more than it returns.",
+        why: good === null ? "No spend yet." : good ? "Above the 2x break-even." : "Below 2x - spending more than it returns.",
         supports: [{ label: "Orders", value: `${b.purchases}` }, { label: "CAC", value: money(cur, b.cac) }] };
     }
     case "LEADS": {
       const good = b.leads > 0 ? b.cpl <= 200 : null;
-      return { label: "Cost / Lead", value: b.leads > 0 ? money(cur, b.cpl) : "—", good,
-        why: good === null ? "No leads tracked yet — check the lead event is firing." : good ? "Within the ₹200/lead target." : "Above the ₹200/lead target — refine form, offer or audience.",
+      return { label: "Cost / Lead", value: b.leads > 0 ? money(cur, b.cpl) : "-", good,
+        why: good === null ? "No leads tracked yet - check the lead event is firing." : good ? "Within the ₹200/lead target." : "Above the ₹200/lead target - refine form, offer or audience.",
         supports: [{ label: "Leads", value: `${b.leads}` }, { label: "CTR", value: `${b.ctr}%` }] };
     }
     default: {
       const good = b.ctr > 0 ? b.ctr >= 0.9 : null;
       return { label: "CTR", value: `${b.ctr}%`, good,
-        why: good === null ? "No delivery yet." : good ? "Healthy engagement." : "Low engagement — test new creative.",
+        why: good === null ? "No delivery yet." : good ? "Healthy engagement." : "Low engagement - test new creative.",
         supports: [{ label: "Clicks", value: compact(b.clicks) }, { label: "CPM", value: money(cur, b.cpm) }] };
     }
   }
 }
 
-// Per-objective "what's working / what's not" — each insight is GREEN (why it works) or
+// Per-objective "what's working / what's not" - each insight is GREEN (why it works) or
 // RED/amber (why + how to fix), per the benchmark-flagging rule. Sales reuses buildDiagnosis.
 function buildObjDiagnosis(b: ObjBucket, cur: string): DiagInsight[] {
   const out: DiagInsight[] = [];
   const ctrInsight = () => {
-    if (b.ctr >= 1.5) out.push({ source: "meta", severity: "strength", title: `CTR ${b.ctr}% — strong engagement`, body: "Above the 1.5% good mark. The hook and creative resonate — reuse this angle for new variations." });
-    else if (b.ctr >= 0.9) out.push({ source: "meta", severity: "warning", title: `CTR ${b.ctr}% — around the 0.9% average`, body: "At industry average. Test 2–3 fresh hooks/formats to push past 1.5% and lower cost." });
-    else out.push({ source: "meta", severity: "issue", title: `CTR ${b.ctr}% — ad not compelling`, body: "Below the 0.9% avg. Weak hook, unclear offer or wrong audience. Test new angles and a fresh creative format." });
+    if (b.ctr >= 1.5) out.push({ source: "meta", severity: "strength", title: `CTR ${b.ctr}% - strong engagement`, body: "Above the 1.5% good mark. The hook and creative resonate - reuse this angle for new variations." });
+    else if (b.ctr >= 0.9) out.push({ source: "meta", severity: "warning", title: `CTR ${b.ctr}% - around the 0.9% average`, body: "At industry average. Test 2–3 fresh hooks/formats to push past 1.5% and lower cost." });
+    else out.push({ source: "meta", severity: "issue", title: `CTR ${b.ctr}% - ad not compelling`, body: "Below the 0.9% avg. Weak hook, unclear offer or wrong audience. Test new angles and a fresh creative format." });
   };
   if (b.obj === "AWARENESS" || b.obj === "ENGAGEMENT" || b.obj === "APP" || b.obj === "OTHER") {
     if (b.cpm > 0) {
-      if (b.cpm <= 150) out.push({ source: "meta", severity: "strength", title: `CPM ${money(cur, b.cpm)} — efficient reach`, body: "Below the ₹150 benchmark — you're reaching 1,000 people cheaply. Keep the audience broad and rotate creatives to hold this." });
-      else out.push({ source: "meta", severity: "issue", title: `CPM ${money(cur, b.cpm)} — expensive reach`, body: "Above the ₹150 benchmark. The auction is costly — broaden or replace the audience and refresh creative to raise relevance and pull CPM down." });
+      if (b.cpm <= 150) out.push({ source: "meta", severity: "strength", title: `CPM ${money(cur, b.cpm)} - efficient reach`, body: "Below the ₹150 benchmark - you're reaching 1,000 people cheaply. Keep the audience broad and rotate creatives to hold this." });
+      else out.push({ source: "meta", severity: "issue", title: `CPM ${money(cur, b.cpm)} - expensive reach`, body: "Above the ₹150 benchmark. The auction is costly - broaden or replace the audience and refresh creative to raise relevance and pull CPM down." });
     }
     if (b.frequency > 0) {
-      if (b.frequency <= 3) out.push({ source: "meta", severity: "strength", title: `Frequency ${b.frequency}x — healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the ad. Watch it as you scale." });
-      else if (b.frequency <= 5) out.push({ source: "meta", severity: "warning", title: `Frequency ${b.frequency}x — fatigue building`, body: "Approaching the >5x fatigue zone — refresh creatives or widen the audience soon." });
-      else out.push({ source: "meta", severity: "risk", title: `Frequency ${b.frequency}x — severe fatigue`, body: "The audience has seen the ad too often, inflating CPM. Launch fresh creatives and expand targeting now." });
+      if (b.frequency <= 3) out.push({ source: "meta", severity: "strength", title: `Frequency ${b.frequency}x - healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the ad. Watch it as you scale." });
+      else if (b.frequency <= 5) out.push({ source: "meta", severity: "warning", title: `Frequency ${b.frequency}x - fatigue building`, body: "Approaching the >5x fatigue zone - refresh creatives or widen the audience soon." });
+      else out.push({ source: "meta", severity: "risk", title: `Frequency ${b.frequency}x - severe fatigue`, body: "The audience has seen the ad too often, inflating CPM. Launch fresh creatives and expand targeting now." });
     }
     ctrInsight();
   } else if (b.obj === "TRAFFIC") {
     if (b.cplpv > 0) {
-      if (b.cplpv <= 8) out.push({ source: "meta", severity: "strength", title: `Cost per visit ${money(cur, b.cplpv)} — cheap traffic`, body: "Below the ₹8 benchmark per real landing-page visit. Targeting and creative are efficient — scale gradually." });
-      else out.push({ source: "meta", severity: "issue", title: `Cost per visit ${money(cur, b.cplpv)} — expensive traffic`, body: "Above the ₹8 benchmark. Lift CTR with a stronger hook or tighten the audience so clicks are cheaper and more relevant." });
+      if (b.cplpv <= 8) out.push({ source: "meta", severity: "strength", title: `Cost per visit ${money(cur, b.cplpv)} - cheap traffic`, body: "Below the ₹8 benchmark per real landing-page visit. Targeting and creative are efficient - scale gradually." });
+      else out.push({ source: "meta", severity: "issue", title: `Cost per visit ${money(cur, b.cplpv)} - expensive traffic`, body: "Above the ₹8 benchmark. Lift CTR with a stronger hook or tighten the audience so clicks are cheaper and more relevant." });
     }
     ctrInsight();
     if (b.lpv > 0) {
-      if (b.lpRatio >= 65) out.push({ source: "website", severity: "strength", title: `Landing rate ${b.lpRatio}% — clicks reach the page`, body: "Above the 65% avg — the page loads fast and most clicks become visits. Keep mobile load under 3s." });
-      else out.push({ source: "website", severity: "issue", title: `Landing rate ${b.lpRatio}% — clicks lost before page loads`, body: "Below the 65% avg. Often slow mobile load or a broken/redirecting link. Fix page speed (<3s) and verify the link works." });
+      if (b.lpRatio >= 65) out.push({ source: "website", severity: "strength", title: `Landing rate ${b.lpRatio}% - clicks reach the page`, body: "Above the 65% avg - the page loads fast and most clicks become visits. Keep mobile load under 3s." });
+      else out.push({ source: "website", severity: "issue", title: `Landing rate ${b.lpRatio}% - clicks lost before page loads`, body: "Below the 65% avg. Often slow mobile load or a broken/redirecting link. Fix page speed (<3s) and verify the link works." });
     }
   } else if (b.obj === "LEADS") {
     if (b.leads > 0) {
-      if (b.cpl <= 200) out.push({ source: "overall", severity: "strength", title: `Cost per lead ${money(cur, b.cpl)} — within target`, body: "At or below the ₹200 benchmark. The form, offer and audience are working — scale carefully and watch lead quality." });
-      else out.push({ source: "overall", severity: "issue", title: `Cost per lead ${money(cur, b.cpl)} — above target`, body: "Above the ₹200 benchmark. Shorten the form, sharpen the offer, or tighten the audience to lower cost per lead." });
+      if (b.cpl <= 200) out.push({ source: "overall", severity: "strength", title: `Cost per lead ${money(cur, b.cpl)} - within target`, body: "At or below the ₹200 benchmark. The form, offer and audience are working - scale carefully and watch lead quality." });
+      else out.push({ source: "overall", severity: "issue", title: `Cost per lead ${money(cur, b.cpl)} - above target`, body: "Above the ₹200 benchmark. Shorten the form, sharpen the offer, or tighten the audience to lower cost per lead." });
     } else {
       out.push({ source: "overall", severity: "warning", title: "No leads recorded yet", body: "Spend is running but no lead events came back. Check the instant form / pixel lead event is firing, then re-check this view." });
     }
@@ -373,80 +373,80 @@ function DiagCard({ insight }: { insight: DiagInsight }) {
 function buildDiagnosis(k: MetaKPIs, roas: number, hasConversion: boolean): DiagInsight[] {
   const out: DiagInsight[] = [];
 
-  // ── OVERALL: ROAS — judged on conversion-campaign spend only (avg 2x, 3x good).
+  // ── OVERALL: ROAS - judged on conversion-campaign spend only (avg 2x, 3x good).
   // Skipped entirely when no conversion campaigns ran, so awareness/traffic/lead
   // spend is never wrongly flagged on a sales metric it was never optimized for.
   if (hasConversion) {
     if (roas >= 3.0) {
-      out.push({ source: "overall", severity: "strength", title: `ROAS ${roas}x — profitable, above the 3x target`, body: `Every ₹1 of conversion spend returns ₹${roas}. This works because targeting, creative and offer are aligned. Scale carefully: raise budget 20–30% at a time and duplicate winning ad sets into lookalikes so you don't reset learning.` });
+      out.push({ source: "overall", severity: "strength", title: `ROAS ${roas}x - profitable, above the 3x target`, body: `Every ₹1 of conversion spend returns ₹${roas}. This works because targeting, creative and offer are aligned. Scale carefully: raise budget 20–30% at a time and duplicate winning ad sets into lookalikes so you don't reset learning.` });
     } else if (roas >= 2.0) {
-      out.push({ source: "overall", severity: "warning", title: `ROAS ${roas}x — okay but below the 3x target`, body: "Past the 2x break-even guide on conversion spend but not in strong-profit territory. Why: one funnel stage is leaking value. Fix the weakest stage flagged below and shift budget to your best campaigns to push ROAS toward 3x." });
+      out.push({ source: "overall", severity: "warning", title: `ROAS ${roas}x - okay but below the 3x target`, body: "Past the 2x break-even guide on conversion spend but not in strong-profit territory. Why: one funnel stage is leaking value. Fix the weakest stage flagged below and shift budget to your best campaigns to push ROAS toward 3x." });
     } else {
-      out.push({ source: "overall", severity: "risk", title: `ROAS ${roas}x — below the 2x minimum`, body: "Conversion spend is returning less than it costs. Why: usually a weak funnel stage (see below) or low-intent traffic. Pause the lowest-ROAS campaigns first, fix the biggest drop-off stage, and don't raise budgets until ROAS clears 2x." });
+      out.push({ source: "overall", severity: "risk", title: `ROAS ${roas}x - below the 2x minimum`, body: "Conversion spend is returning less than it costs. Why: usually a weak funnel stage (see below) or low-intent traffic. Pause the lowest-ROAS campaigns first, fix the biggest drop-off stage, and don't raise budgets until ROAS clears 2x." });
     }
   }
 
   // ── META: CTR (avg 0.9%, 1.5% good) ──────────────────────────────────────
   if (k.ctr >= 1.5) {
-    out.push({ source: "meta", severity: "strength", title: `CTR ${k.ctr}% — strong ad engagement`, body: "Above the 1.5% good mark (avg 0.9%). Your hook and creative are resonating. Keep this creative running and use it as the template for new variations." });
+    out.push({ source: "meta", severity: "strength", title: `CTR ${k.ctr}% - strong ad engagement`, body: "Above the 1.5% good mark (avg 0.9%). Your hook and creative are resonating. Keep this creative running and use it as the template for new variations." });
   } else if (k.ctr >= 0.9) {
-    out.push({ source: "meta", severity: "warning", title: `CTR ${k.ctr}% — around the 0.9% average`, body: "At industry average but not standout. Test 2–3 new hooks/headlines and a different format (video vs image) to push CTR past 1.5% — that also lowers your CPC." });
+    out.push({ source: "meta", severity: "warning", title: `CTR ${k.ctr}% - around the 0.9% average`, body: "At industry average but not standout. Test 2–3 new hooks/headlines and a different format (video vs image) to push CTR past 1.5% - that also lowers your CPC." });
   } else {
-    out.push({ source: "meta", severity: "issue", title: `CTR ${k.ctr}% — ad not compelling enough`, body: "Below the 0.9% avg. People see the ad but don't click. Why: weak hook, unclear offer, or wrong audience. Fix: test new angles (problem-led hook, stronger headline, clearer offer like discount/bundle/free shipping) and a fresh creative format." });
+    out.push({ source: "meta", severity: "issue", title: `CTR ${k.ctr}% - ad not compelling enough`, body: "Below the 0.9% avg. People see the ad but don't click. Why: weak hook, unclear offer, or wrong audience. Fix: test new angles (problem-led hook, stronger headline, clearer offer like discount/bundle/free shipping) and a fresh creative format." });
   }
 
   // ── META: Frequency (1–3x healthy, >5x fatigue) ─────────────────────────
   if (k.frequency <= 3) {
-    out.push({ source: "meta", severity: "strength", title: `Frequency ${k.frequency}x — healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the same ad. No action needed — just watch it as you scale budget." });
+    out.push({ source: "meta", severity: "strength", title: `Frequency ${k.frequency}x - healthy`, body: "Inside the safe 1–3x range, so the audience isn't being over-shown the same ad. No action needed - just watch it as you scale budget." });
   } else if (k.frequency <= 5) {
-    out.push({ source: "meta", severity: "warning", title: `Frequency ${k.frequency}x — fatigue building`, body: "Approaching the >5x fatigue zone — the same people keep seeing the ad, which slowly raises CPM and drops CTR. Refresh creatives soon (new angle/format) or widen the audience." });
+    out.push({ source: "meta", severity: "warning", title: `Frequency ${k.frequency}x - fatigue building`, body: "Approaching the >5x fatigue zone - the same people keep seeing the ad, which slowly raises CPM and drops CTR. Refresh creatives soon (new angle/format) or widen the audience." });
   } else {
-    out.push({ source: "meta", severity: "risk", title: `Frequency ${k.frequency}x — severe ad fatigue`, body: "The audience has seen this ad too many times, inflating CPMs and killing CTR. Launch 2–3 fresh creatives now and expand targeting / lookalikes." });
+    out.push({ source: "meta", severity: "risk", title: `Frequency ${k.frequency}x - severe ad fatigue`, body: "The audience has seen this ad too many times, inflating CPMs and killing CTR. Launch 2–3 fresh creatives now and expand targeting / lookalikes." });
   }
 
   // ── WEBSITE: Landing page rate (avg 65%) ─────────────────────────────────
   if (k.lpRatio >= 65) {
-    out.push({ source: "website", severity: "strength", title: `Landing page rate ${k.lpRatio}% — clicks reach your page`, body: "Above the 65% avg, so the page loads fast and most clicks become real visits. Protect it: keep mobile load under 3s and keep the ad↔page message consistent." });
+    out.push({ source: "website", severity: "strength", title: `Landing page rate ${k.lpRatio}% - clicks reach your page`, body: "Above the 65% avg, so the page loads fast and most clicks become real visits. Protect it: keep mobile load under 3s and keep the ad↔page message consistent." });
   } else if (k.lpRatio >= 45) {
-    out.push({ source: "website", severity: "warning", title: `Landing page rate ${k.lpRatio}% — some clicks lost`, body: "Below the 65% avg. A chunk of clickers never see the page. Why: slow mobile load or a redirect. Fix: test page speed (target <3s) and remove pop-ups that block content on arrival." });
+    out.push({ source: "website", severity: "warning", title: `Landing page rate ${k.lpRatio}% - some clicks lost`, body: "Below the 65% avg. A chunk of clickers never see the page. Why: slow mobile load or a redirect. Fix: test page speed (target <3s) and remove pop-ups that block content on arrival." });
   } else {
-    out.push({ source: "website", severity: "issue", title: `Landing page rate ${k.lpRatio}% — most clicks never load the page`, body: "Well below the 65% avg — often the biggest leak. Why: slow load, broken/redirecting link, or ad↔page mismatch. Fix: page speed first (<3s on mobile), verify the link works, and match the page headline to the ad promise." });
+    out.push({ source: "website", severity: "issue", title: `Landing page rate ${k.lpRatio}% - most clicks never load the page`, body: "Well below the 65% avg - often the biggest leak. Why: slow load, broken/redirecting link, or ad↔page mismatch. Fix: page speed first (<3s on mobile), verify the link works, and match the page headline to the ad promise." });
   }
 
   // ── WEBSITE: Add-to-cart rate (avg 7%, 12% strong) ──────────────────────
   if (k.atcRatio >= 12) {
-    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% — product page converting well`, body: "Above the 12% strong mark (avg 7%). Your product page — offer clarity, photos, reviews — is doing its job. Reuse this page structure for new products." });
+    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% - product page converting well`, body: "Above the 12% strong mark (avg 7%). Your product page - offer clarity, photos, reviews - is doing its job. Reuse this page structure for new products." });
   } else if (k.atcRatio >= 7) {
-    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% — above average`, body: "Above the 7% avg. The product page is turning visitors into carts. To push higher, add photo reviews and make the price/offer even clearer above the fold." });
+    out.push({ source: "website", severity: "strength", title: `Add-to-cart rate ${k.atcRatio}% - above average`, body: "Above the 7% avg. The product page is turning visitors into carts. To push higher, add photo reviews and make the price/offer even clearer above the fold." });
   } else {
-    out.push({ source: "website", severity: "issue", title: `Add-to-cart rate ${k.atcRatio}% — product page not converting`, body: "Below the 7% avg. Visitors land but don't add to cart — a product-page issue, not an ad issue. Fix: photo reviews, a crystal-clear offer (price, what's included), urgency (low stock), and an Add-to-Cart button visible without scrolling." });
+    out.push({ source: "website", severity: "issue", title: `Add-to-cart rate ${k.atcRatio}% - product page not converting`, body: "Below the 7% avg. Visitors land but don't add to cart - a product-page issue, not an ad issue. Fix: photo reviews, a crystal-clear offer (price, what's included), urgency (low stock), and an Add-to-Cart button visible without scrolling." });
   }
 
   // ── WEBSITE: Cart → checkout (avg 50%) ──────────────────────────────────
   if (k.checkoutRatio >= 50) {
-    out.push({ source: "website", severity: "strength", title: `Cart → checkout ${k.checkoutRatio}% — low cart abandonment`, body: "Above the 50% avg. Shoppers who add to cart are moving to checkout — your shipping and trust signals are clear. Keep showing shipping cost + ETA early." });
+    out.push({ source: "website", severity: "strength", title: `Cart → checkout ${k.checkoutRatio}% - low cart abandonment`, body: "Above the 50% avg. Shoppers who add to cart are moving to checkout - your shipping and trust signals are clear. Keep showing shipping cost + ETA early." });
   } else {
-    out.push({ source: "website", severity: "issue", title: `Cart → checkout ${k.checkoutRatio}% — high cart abandonment`, body: "Below the 50% avg. Carts are abandoned before checkout. Why: surprise shipping fees, weak trust, or no COD. Fix: show shipping cost + ETA upfront, add trust badges, surface COD, and add a 1-hour cart-recovery WhatsApp/email." });
+    out.push({ source: "website", severity: "issue", title: `Cart → checkout ${k.checkoutRatio}% - high cart abandonment`, body: "Below the 50% avg. Carts are abandoned before checkout. Why: surprise shipping fees, weak trust, or no COD. Fix: show shipping cost + ETA upfront, add trust badges, surface COD, and add a 1-hour cart-recovery WhatsApp/email." });
   }
 
   // ── WEBSITE: Checkout → purchase (avg 40%) ──────────────────────────────
   if (k.purchaseRatio >= 40) {
-    out.push({ source: "website", severity: "strength", title: `Checkout → purchase ${k.purchaseRatio}% — payment step converting`, body: "Above the 40% avg. People who reach checkout are paying — your payment options and checkout trust are working. Keep UPI/COD/card all visible." });
+    out.push({ source: "website", severity: "strength", title: `Checkout → purchase ${k.purchaseRatio}% - payment step converting`, body: "Above the 40% avg. People who reach checkout are paying - your payment options and checkout trust are working. Keep UPI/COD/card all visible." });
   } else {
-    out.push({ source: "website", severity: "issue", title: `Checkout → purchase ${k.purchaseRatio}% — drop-off at payment`, body: "Below the 40% avg. Customers reach checkout but don't pay. Why: limited payment options, surprise fees, or low trust. Fix: show UPI/COD/card/EMI clearly, display the delivery date, add payment-security badges, and remove fee surprises." });
+    out.push({ source: "website", severity: "issue", title: `Checkout → purchase ${k.purchaseRatio}% - drop-off at payment`, body: "Below the 40% avg. Customers reach checkout but don't pay. Why: limited payment options, surprise fees, or low trust. Fix: show UPI/COD/card/EMI clearly, display the delivery date, add payment-security badges, and remove fee surprises." });
   }
 
   // ── META: Video (only when there are video views) ───────────────────────
   if (k.videoViews3s > 0) {
     if (k.thumbStopRatio >= 25) {
-      out.push({ source: "meta", severity: "strength", title: `Thumb-stop ${k.thumbStopRatio}% — strong opening hook`, body: "Above the 25% avg — your first 1–2s stop the scroll. Keep opening with the product/bold hook and replicate it in new videos." });
+      out.push({ source: "meta", severity: "strength", title: `Thumb-stop ${k.thumbStopRatio}% - strong opening hook`, body: "Above the 25% avg - your first 1–2s stop the scroll. Keep opening with the product/bold hook and replicate it in new videos." });
     } else {
-      out.push({ source: "meta", severity: "issue", title: `Thumb-stop ${k.thumbStopRatio}% — weak opening hook`, body: "Below the 25% avg — people scroll past. Why: slow or unclear opening. Fix: make the first 1–2s grab attention — bold text overlay, show the product instantly, or open with a surprising visual/problem." });
+      out.push({ source: "meta", severity: "issue", title: `Thumb-stop ${k.thumbStopRatio}% - weak opening hook`, body: "Below the 25% avg - people scroll past. Why: slow or unclear opening. Fix: make the first 1–2s grab attention - bold text overlay, show the product instantly, or open with a surprising visual/problem." });
     }
     if (k.holdRatio >= 15) {
-      out.push({ source: "meta", severity: "strength", title: `Hold ratio ${k.holdRatio}% — viewers staying`, body: "Above the 15% avg — the video keeps attention. Maintain the tight pacing and get to the benefit early." });
+      out.push({ source: "meta", severity: "strength", title: `Hold ratio ${k.holdRatio}% - viewers staying`, body: "Above the 15% avg - the video keeps attention. Maintain the tight pacing and get to the benefit early." });
     } else {
-      out.push({ source: "meta", severity: "issue", title: `Hold ratio ${k.holdRatio}% — losing viewers fast`, body: "Below the 15% avg. You stop the scroll but lose them. Fix: get to the key benefit in under 5s, cut long intros, add subtitles, and show product proof earlier." });
+      out.push({ source: "meta", severity: "issue", title: `Hold ratio ${k.holdRatio}% - losing viewers fast`, body: "Below the 15% avg. You stop the scroll but lose them. Fix: get to the key benefit in under 5s, cut long intros, add subtitles, and show product proof earlier." });
     }
   }
 
@@ -464,7 +464,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // Site conversion funnel + stage-ratio bar. Reused by the account Overview and the
 // Conversion objective view. Funnel data is always account-level (Meta only reports
-// the deep stages — ATC/checkout — at account scope).
+// the deep stages - ATC/checkout - at account scope).
 function FunnelCard({ k, cur, note }: { k: FunnelData; cur: string; note?: string }) {
   return (
     <Card>
@@ -498,7 +498,7 @@ function FunnelCard({ k, cur, note }: { k: FunnelData; cur: string; note?: strin
   );
 }
 
-// "What's Working & What's Not" — splits insights into needs-attention vs working.
+// "What's Working & What's Not" - splits insights into needs-attention vs working.
 function DiagnosisPanel({ diag }: { diag: DiagInsight[] }) {
   if (diag.length === 0) return null;
   const attention = diag.filter(d => d.severity !== "strength");
@@ -530,7 +530,7 @@ function DiagnosisPanel({ diag }: { diag: DiagInsight[] }) {
   );
 }
 
-// One scorecard per objective — spend share + the hero KPI it's optimized for, flagged
+// One scorecard per objective - spend share + the hero KPI it's optimized for, flagged
 // green (working) / red (below standard) / neutral (no delivery). Clicking focuses that view.
 function ScoreCard({ b, cur, totalSpend, active, onClick }: { b: ObjBucket; cur: string; totalSpend: number; active: boolean; onClick: () => void }) {
   const hero = objHero(b, cur);
@@ -609,7 +609,7 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
         <KPICard label="Spend" value={fmtC(b.spend)} />
         <KPICard label="Landing Page Views" value={fmt(b.lpv)} sub="Visited the site" />
-        <KPICard label="Cost / Visit" value={b.cplpv > 0 ? fmtC(b.cplpv) : "—"} {...(b.cplpv > 0 ? bench(b.cplpv, 12, 8, false) : {})} sub="Per landing-page view" />
+        <KPICard label="Cost / Visit" value={b.cplpv > 0 ? fmtC(b.cplpv) : "-"} {...(b.cplpv > 0 ? bench(b.cplpv, 12, 8, false) : {})} sub="Per landing-page view" />
         <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
         <KPICard label="CPC" value={fmtC(b.cpc)} />
         <KPICard label="LP Ratio" value={`${b.lpRatio}%`} {...bench(b.lpRatio, 45, 65)} sub="Clicks that loaded" />
@@ -632,7 +632,7 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
         <KPICard label="Spend" value={fmtC(b.spend)} />
         <KPICard label="Leads" value={fmt(b.leads)} />
-        <KPICard label="Cost / Lead" value={b.leads > 0 ? fmtC(b.cpl) : "—"} {...(b.leads > 0 ? bench(b.cpl, 300, 200, false) : {})} />
+        <KPICard label="Cost / Lead" value={b.leads > 0 ? fmtC(b.cpl) : "-"} {...(b.leads > 0 ? bench(b.cpl, 300, 200, false) : {})} />
         <KPICard label="CTR" value={`${b.ctr}%`} {...bench(b.ctr, 0.9, 1.5)} />
         <KPICard label="CPC" value={fmtC(b.cpc)} />
         <KPICard label="Clicks" value={fmt(b.clicks)} />
@@ -665,7 +665,7 @@ function ObjectiveDetail({ b, k, cur, totalSpend }: { b: ObjBucket; k: MetaKPIs;
         </span>
       </div>
       {cards}
-      {b.obj === "SALES" && <FunnelCard k={b} cur={cur} note={`Sales-objective funnel only — clicks → purchase from the ${b.count} Sales campaign${b.count === 1 ? "" : "s"} (not blended with awareness/traffic).`} />}
+      {b.obj === "SALES" && <FunnelCard k={b} cur={cur} note={`Sales-objective funnel only - clicks → purchase from the ${b.count} Sales campaign${b.count === 1 ? "" : "s"} (not blended with awareness/traffic).`} />}
       <DiagnosisPanel diag={diag} />
     </div>
   );
@@ -718,7 +718,7 @@ function CreativeMedia({ c }: { c: ParsedCreative }) {
   return placeholder(ImageIcon, "No preview");
 }
 
-// Ad-level fixes — only the creative/delivery levers that live on the ad or its ad set.
+// Ad-level fixes - only the creative/delivery levers that live on the ad or its ad set.
 // Funnel KPIs (LPV/ATC/Checkout/Conversion) are store-wide and stay in the Overview.
 interface AdFix { kpi: string; severity: "issue" | "warning"; advice: string }
 function buildAdFixes(ad: AdRow, cur: string): AdFix[] {
@@ -728,18 +728,18 @@ function buildAdFixes(ad: AdRow, cur: string): AdFix[] {
   if (ad.cpm > 150)
     out.push({ kpi: `CPM ${money(cur, ad.cpm)}`, severity: ad.cpm > 250 ? "issue" : "warning", advice: "Above the ₹150 benchmark. Refine this ad set's targeting & placement and adjust bidding; refresh the creative to raise relevance and lower cost." });
   if (ad.frequency > 3)
-    out.push({ kpi: `Frequency ${ad.frequency}x`, severity: ad.frequency > 5 ? "issue" : "warning", advice: "Above 3x — the same people keep seeing this ad. Refresh the creative or widen this ad set's audience." });
+    out.push({ kpi: `Frequency ${ad.frequency}x`, severity: ad.frequency > 5 ? "issue" : "warning", advice: "Above 3x - the same people keep seeing this ad. Refresh the creative or widen this ad set's audience." });
   if (ad.creative.type === "video" && ad.videoViews3s > 0) {
     if (ad.thumbStopRatio > 0 && ad.thumbStopRatio < 25)
-      out.push({ kpi: `Thumb-stop ${ad.thumbStopRatio}%`, severity: "issue", advice: "Below 25% — the first 1–2s don't grab attention. Open with the product or a bold hook / text overlay." });
+      out.push({ kpi: `Thumb-stop ${ad.thumbStopRatio}%`, severity: "issue", advice: "Below 25% - the first 1–2s don't grab attention. Open with the product or a bold hook / text overlay." });
     const hold = ad.videoViews3s > 0 ? +(ad.thruplay / ad.videoViews3s * 100).toFixed(1) : 0;
     if (hold > 0 && hold < 15)
-      out.push({ kpi: `Hold ${hold}%`, severity: "issue", advice: "Below 15% — viewers drop off fast. Get to the benefit in under 5s, cut the intro, add subtitles." });
+      out.push({ kpi: `Hold ${hold}%`, severity: "issue", advice: "Below 15% - viewers drop off fast. Get to the benefit in under 5s, cut the intro, add subtitles." });
   }
   return out;
 }
 
-// Full-size preview — the complete creative + all the ad copy, opened by clicking an ad card.
+// Full-size preview - the complete creative + all the ad copy, opened by clicking an ad card.
 function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; cur: string; onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -753,7 +753,7 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
   const stats: { label: string; value: string }[] = [
     { label: "Spend", value: money(cur, ad.spend) },
     { label: "Result", value: objectiveResult(obj, ad) },
-    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "—" }] : []),
+    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "-" }] : []),
     { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
     { label: "Impressions", value: compact(ad.impressions) },
     { label: "Reach", value: compact(ad.reach) },
@@ -762,14 +762,14 @@ function AdPreviewModal({ ad, obj, cur, onClose }: { ad: AdRow; obj: ObjFilter; 
     { label: "CPC", value: money(cur, ad.cpc) },
     { label: "Link Clicks", value: compact(ad.outboundClicks || ad.clicks) },
     { label: "Landing Page Views", value: compact(ad.lpv) },
-    { label: "LP%", value: ad.clicks > 0 ? `${(ad.lpv / ad.clicks * 100).toFixed(0)}%` : "—" },
-    { label: "Add to Cart", value: ad.atc > 0 ? `${ad.atc}${ad.atcValue > 0 ? ` · ${money(cur, ad.atcValue)}` : ""}` : "—" },
-    { label: "ATC%", value: ad.lpv > 0 ? `${(ad.atc / ad.lpv * 100).toFixed(0)}%` : "—" },
-    { label: "Checkout (CI)", value: ad.checkout > 0 ? `${ad.checkout}${ad.checkoutValue > 0 ? ` · ${money(cur, ad.checkoutValue)}` : ""}` : "—" },
-    { label: "CI%", value: ad.atc > 0 ? `${(ad.checkout / ad.atc * 100).toFixed(0)}%` : "—" },
+    { label: "LP%", value: ad.clicks > 0 ? `${(ad.lpv / ad.clicks * 100).toFixed(0)}%` : "-" },
+    { label: "Add to Cart", value: ad.atc > 0 ? `${ad.atc}${ad.atcValue > 0 ? ` · ${money(cur, ad.atcValue)}` : ""}` : "-" },
+    { label: "ATC%", value: ad.lpv > 0 ? `${(ad.atc / ad.lpv * 100).toFixed(0)}%` : "-" },
+    { label: "Checkout (CI)", value: ad.checkout > 0 ? `${ad.checkout}${ad.checkoutValue > 0 ? ` · ${money(cur, ad.checkoutValue)}` : ""}` : "-" },
+    { label: "CI%", value: ad.atc > 0 ? `${(ad.checkout / ad.atc * 100).toFixed(0)}%` : "-" },
     ...(obj === "SALES" ? [
-      { label: "Purchase", value: ad.purchases > 0 ? `${ad.purchases}${ad.purchaseValue > 0 ? ` · ${money(cur, ad.purchaseValue)}` : ""}` : "—" },
-      { label: "P%", value: ad.checkout > 0 ? `${(ad.purchases / ad.checkout * 100).toFixed(0)}%` : "—" },
+      { label: "Purchase", value: ad.purchases > 0 ? `${ad.purchases}${ad.purchaseValue > 0 ? ` · ${money(cur, ad.purchaseValue)}` : ""}` : "-" },
+      { label: "P%", value: ad.checkout > 0 ? `${(ad.purchases / ad.checkout * 100).toFixed(0)}%` : "-" },
     ] : []),
     ...(ad.creative.type === "video" && ad.thumbStopRatio > 0 ? [{ label: "Thumb-stop", value: `${ad.thumbStopRatio}%` }] : []),
     ...(ad.creative.type === "video" && ad.videoViews3s > 0 ? [{ label: "Hold ratio", value: `${(ad.thruplay / ad.videoViews3s * 100).toFixed(0)}%` }] : []),
@@ -871,7 +871,7 @@ function AdCard({ ad, obj, cur }: { ad: AdRow; obj: ObjFilter; cur: string }) {
   const stats: { label: string; value: string }[] = [
     { label: "Spend", value: money(cur, ad.spend) },
     { label: "Result", value: result },
-    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "—" }] : []),
+    ...(obj === "SALES" ? [{ label: "ROAS", value: ad.roas > 0 ? `${ad.roas}x` : "-" }] : []),
     { label: costLabelFor(obj), value: objectiveCost(obj, ad, cur) },
     { label: "CTR", value: `${ad.ctr}%` },
     { label: "CPC", value: money(cur, ad.cpc) },
@@ -966,7 +966,7 @@ export default function MetaPage() {
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
 
-  // Month-wise — lazy load on tab open / window change.
+  // Month-wise - lazy load on tab open / window change.
   useEffect(() => {
     if (tab !== "monthly") return;
     setMonthlyLoading(true);
@@ -1036,9 +1036,9 @@ export default function MetaPage() {
     { key: "purchaseValue", label: "Revenue", fmt: v => money(cur, v), higher: true },
     { key: "roas", label: "ROAS", fmt: v => `${v}×`, higher: true },
     { key: "purchases", label: "Orders", fmt: v => v.toLocaleString("en-IN"), higher: true },
-    { key: "cac", label: "CAC", fmt: v => v > 0 ? money(cur, v) : "—", higher: false },
+    { key: "cac", label: "CAC", fmt: v => v > 0 ? money(cur, v) : "-", higher: false },
     { key: "leads", label: "Leads", fmt: v => v.toLocaleString("en-IN"), higher: true },
-    { key: "cpl", label: "Cost / Lead", fmt: v => v > 0 ? money(cur, v) : "—", higher: false },
+    { key: "cpl", label: "Cost / Lead", fmt: v => v > 0 ? money(cur, v) : "-", higher: false },
     { key: "ctr", label: "CTR", fmt: v => `${v}%`, higher: true },
     { key: "cpm", label: "CPM", fmt: v => money(cur, v), higher: false },
     { key: "clicks", label: "Clicks", fmt: v => v.toLocaleString("en-IN"), higher: true },
@@ -1047,7 +1047,7 @@ export default function MetaPage() {
 
   const hasVideo = k.videoViews3s > 0 || k.thruplay > 0;
 
-  // Hero row is judged on conversion-campaign spend only — so awareness/traffic/lead
+  // Hero row is judged on conversion-campaign spend only - so awareness/traffic/lead
   // spend never drags ROAS into the red on a metric it was never optimized for.
   const salesBucket = aggregate(data.campaigns, "SALES");
   const hasConv = salesBucket.count > 0;
@@ -1059,7 +1059,7 @@ export default function MetaPage() {
   const hasAnyConv = convOrders > 0 || convRevenue > 0;
 
   const presentObjs = OBJ_ORDER.filter(o => data.campaigns.some(c => normalizeObj(c.objective) === o));
-  // Show the objective breakdown whenever any objective is detected — including
+  // Show the objective breakdown whenever any objective is detected - including
   // single-objective accounts (e.g. a leads-only store), so their Leads / Cost-per-Lead
   // surface the same way a multi-objective account's do.
   const showObjective = presentObjs.length >= 1;
@@ -1082,7 +1082,7 @@ export default function MetaPage() {
           ["Purchases", k.purchases],
           ["Purchase Value", fmtC(k.purchaseValue)],
           ["Leads", fmt(k.leads)],
-          ["Cost per Lead", k.leads > 0 ? fmtC(k.costPerLead) : "—"],
+          ["Cost per Lead", k.leads > 0 ? fmtC(k.costPerLead) : "-"],
           ["Impressions", fmt(k.impressions)],
           ["Reach", fmt(k.reach)],
           ["Frequency", k.frequency.toFixed(2)],
@@ -1171,7 +1171,7 @@ export default function MetaPage() {
 
       {tab === "overview" && (
         <div className="space-y-4">
-          {/* Performance by Objective — each objective judged on the KPI it's optimized for */}
+          {/* Performance by Objective - each objective judged on the KPI it's optimized for */}
           {showObjective && (
             <ObjectiveScorecards campaigns={data.campaigns} cur={cur} totalSpend={k.spend} active={effectiveView} onSelect={setObjView} />
           )}
@@ -1200,13 +1200,13 @@ export default function MetaPage() {
             <ObjectiveDetail b={viewBucket} k={k} cur={cur} totalSpend={k.spend} />
           ) : (
           <>
-          {/* Core KPIs — ROAS / orders / revenue / CAC scoped to conversion spend */}
+          {/* Core KPIs - ROAS / orders / revenue / CAC scoped to conversion spend */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <KPICard label="Total Spend" value={fmtC(k.spend)} sub={hasConv ? `${cur}${convSpend.toLocaleString("en-IN", { maximumFractionDigits: 0 })} on conversion` : undefined} />
-            <KPICard label="ROAS" value={hasAnyConv ? `${convRoas}x` : "—"}
+            <KPICard label="ROAS" value={hasAnyConv ? `${convRoas}x` : "-"}
               {...(hasAnyConv ? bench(convRoas, 2.0, 3.0) : {})}
               sub={hasConv ? "Conversion campaigns" : "No conversion campaigns"} />
-            <KPICard label="CAC" value={hasAnyConv ? fmtC(convCac) : "—"} sub="Cost per order" />
+            <KPICard label="CAC" value={hasAnyConv ? fmtC(convCac) : "-"} sub="Cost per order" />
             <KPICard label="Total Orders" value={fmt(convOrders)} />
             <KPICard label="Total Order Value" value={fmtC(convRevenue)} />
           </div>
@@ -1236,7 +1236,7 @@ export default function MetaPage() {
             </div>
           </div>
 
-          {/* Conversion Funnel — all objectives combined; use the Sales toggle for sales-only */}
+          {/* Conversion Funnel - all objectives combined; use the Sales toggle for sales-only */}
           <FunnelCard k={k} cur={cur} note={hasConv ? "All objectives combined (awareness + traffic + sales). Click the Sales toggle above for the sales-only funnel." : undefined} />
 
           {/* Video metrics */}
@@ -1288,7 +1288,7 @@ export default function MetaPage() {
             </Card>
           )}
 
-          {/* What's working & what's not — vs industry benchmarks (ROAS scoped to conversion) */}
+          {/* What's working & what's not - vs industry benchmarks (ROAS scoped to conversion) */}
           <DiagnosisPanel diag={buildDiagnosis(k, convRoas, hasAnyConv)} />
           </>
           )}
@@ -1310,19 +1310,19 @@ export default function MetaPage() {
         type Col = { label: string; render: (c: CampaignRow) => React.ReactNode };
         const salesCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
-          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
-          { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "—"}</span> },
-          { label: "Revenue",  render: c => <span className="whitespace-nowrap">{c.purchaseValue > 0 ? `${cur}${c.purchaseValue.toLocaleString("en-IN")}` : "—"}</span> },
-          { label: "CAC",      render: c => <span className="whitespace-nowrap font-semibold">{c.purchases > 0 ? `${cur}${(c.spend / c.purchases).toFixed(2)}` : "—"}</span> },
-          { label: "ATC",      render: c => <span>{c.atc > 0 ? c.atc : "—"}</span> },
+          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.roas > 0 ? `${c.roas}x` : "-"}</span> },
+          { label: "Orders",   render: c => <span>{c.purchases > 0 ? c.purchases : "-"}</span> },
+          { label: "Revenue",  render: c => <span className="whitespace-nowrap">{c.purchaseValue > 0 ? `${cur}${c.purchaseValue.toLocaleString("en-IN")}` : "-"}</span> },
+          { label: "CAC",      render: c => <span className="whitespace-nowrap font-semibold">{c.purchases > 0 ? `${cur}${(c.spend / c.purchases).toFixed(2)}` : "-"}</span> },
+          { label: "ATC",      render: c => <span>{c.atc > 0 ? c.atc : "-"}</span> },
           { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
           { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
         ];
         const trafficCols: Col[] = [
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Clicks",   render: c => <span>{c.clicks.toLocaleString("en-IN")}</span> },
-          { label: "Visits",   render: c => <span className="font-bold">{c.lpv > 0 ? c.lpv.toLocaleString("en-IN") : "—"}</span> },
-          { label: "Cost/Visit", render: c => <span className="whitespace-nowrap font-semibold">{c.lpv > 0 ? `${cur}${(c.spend / c.lpv).toFixed(2)}` : "—"}</span> },
+          { label: "Visits",   render: c => <span className="font-bold">{c.lpv > 0 ? c.lpv.toLocaleString("en-IN") : "-"}</span> },
+          { label: "Cost/Visit", render: c => <span className="whitespace-nowrap font-semibold">{c.lpv > 0 ? `${cur}${(c.spend / c.lpv).toFixed(2)}` : "-"}</span> },
           { label: "CTR",      render: c => <span className={cn("font-bold", c.ctr >= 1.5 ? "text-[#F97316]" : c.ctr >= 0.9 ? "text-[#18181B] dark:text-[#F4F4F5]" : "text-[#EF4444]")}>{c.ctr}%</span> },
           { label: "CPC",      render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
         ];
@@ -1331,13 +1331,13 @@ export default function MetaPage() {
           { label: "Impressions", render: c => <span className="font-bold">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
           { label: "Reach",       render: c => <span>{c.reach >= 1000 ? `${(c.reach/1000).toFixed(1)}K` : c.reach}</span> },
           { label: "CPM",         render: c => <span className="whitespace-nowrap font-semibold">{cur}{c.cpm}</span> },
-          { label: "Freq",        render: c => <span className={cn(c.frequency > 5 ? "text-[#EF4444]" : c.frequency > 3 ? "text-[#EA580C]" : "text-[#71717A] dark:text-[#A1A1AA]")}>{c.frequency > 0 ? `${c.frequency}x` : "—"}</span> },
+          { label: "Freq",        render: c => <span className={cn(c.frequency > 5 ? "text-[#EF4444]" : c.frequency > 3 ? "text-[#EA580C]" : "text-[#71717A] dark:text-[#A1A1AA]")}>{c.frequency > 0 ? `${c.frequency}x` : "-"}</span> },
           { label: "CTR",         render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
         ];
         const leadsCols: Col[] = [
           { label: "Spend",     render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
-          { label: "Leads",     render: c => <span className="font-bold">{c.leads > 0 ? c.leads.toLocaleString("en-IN") : "—"}</span> },
-          { label: "Cost/Lead", render: c => <span className="whitespace-nowrap font-semibold">{c.leads > 0 ? `${cur}${(c.spend / c.leads).toFixed(2)}` : "—"}</span> },
+          { label: "Leads",     render: c => <span className="font-bold">{c.leads > 0 ? c.leads.toLocaleString("en-IN") : "-"}</span> },
+          { label: "Cost/Lead", render: c => <span className="whitespace-nowrap font-semibold">{c.leads > 0 ? `${cur}${(c.spend / c.leads).toFixed(2)}` : "-"}</span> },
           { label: "CTR",       render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
           { label: "CPC",       render: c => <span className="whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{c.cpc}</span> },
           { label: "Clicks",    render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
@@ -1358,7 +1358,7 @@ export default function MetaPage() {
           { label: "Spend",    render: c => <span className="font-semibold whitespace-nowrap">{cur}{c.spend.toLocaleString("en-IN")}</span> },
           { label: "Result",   render: c => <span className="font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{renderResult(c)}</span> },
           { label: "Cost/Result", render: c => <span className="whitespace-nowrap font-semibold text-[#18181B] dark:text-[#F4F4F5]">{costPerResult(c)}</span> },
-          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : c.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{c.roas > 0 ? `${c.roas}x` : "—"}</span> },
+          { label: "ROAS",     render: c => <span className={cn("font-bold", c.roas >= 3 ? "text-[#F97316]" : c.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : c.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{c.roas > 0 ? `${c.roas}x` : "-"}</span> },
           { label: "Impressions", render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.impressions >= 1000 ? `${(c.impressions/1000).toFixed(1)}K` : c.impressions}</span> },
           { label: "Clicks",   render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.clicks.toLocaleString("en-IN")}</span> },
           { label: "CTR",      render: c => <span className="text-[#71717A] dark:text-[#A1A1AA]">{c.ctr}%</span> },
@@ -1400,7 +1400,7 @@ export default function MetaPage() {
                 </div>
                 <div className="flex items-center gap-2 mb-4">
                   <span className={cn("text-[13px] px-2 py-0.5 rounded-full font-bold", OBJ_META[drill.obj].badge)}>{OBJ_META[drill.obj].label}</span>
-                  <span className="text-[14px] text-[#A1A1AA]">{drill.adsetId ? "Ads & creatives in this ad set" : "Ad sets in this campaign — click one to see its ads"}</span>
+                  <span className="text-[14px] text-[#A1A1AA]">{drill.adsetId ? "Ads & creatives in this ad set" : "Ad sets in this campaign - click one to see its ads"}</span>
                 </div>
 
                 {drillLoading ? (
@@ -1440,7 +1440,7 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap">{cur}{a.spend.toLocaleString("en-IN")}</td>
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{drillResult(a)}</td>
                             {drill.obj === "SALES" && (
-                              <td className="py-2.5 px-2"><span className={cn("font-bold", a.roas >= 3 ? "text-[#F97316]" : a.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : a.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{a.roas > 0 ? `${a.roas}x` : "—"}</span></td>
+                              <td className="py-2.5 px-2"><span className={cn("font-bold", a.roas >= 3 ? "text-[#F97316]" : a.roas >= 1 ? "text-[#18181B] dark:text-[#F4F4F5]" : a.roas > 0 ? "text-[#EF4444]" : "text-[#A1A1AA]")}>{a.roas > 0 ? `${a.roas}x` : "-"}</span></td>
                             )}
                             <td className="py-2.5 px-2 font-semibold whitespace-nowrap text-[#18181B] dark:text-[#F4F4F5]">{objectiveCost(drill.obj, a, cur)}</td>
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.impressions >= 1000 ? `${(a.impressions / 1000).toFixed(1)}K` : a.impressions}</td>
@@ -1448,10 +1448,10 @@ export default function MetaPage() {
                             <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.ctr}%</td>
                             <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpc}</td>
                             <td className="py-2.5 px-2 whitespace-nowrap text-[#71717A] dark:text-[#A1A1AA]">{cur}{a.cpm}</td>
-                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks > 0 ? `${(a.lpv / a.clicks * 100).toFixed(0)}%` : "—"}</td>
-                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.lpv > 0 ? `${(a.atc / a.lpv * 100).toFixed(0)}%` : "—"}</td>
-                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.atc > 0 ? `${(a.checkout / a.atc * 100).toFixed(0)}%` : "—"}</td>
-                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.checkout > 0 ? `${(a.purchases / a.checkout * 100).toFixed(0)}%` : "—"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.clicks > 0 ? `${(a.lpv / a.clicks * 100).toFixed(0)}%` : "-"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.lpv > 0 ? `${(a.atc / a.lpv * 100).toFixed(0)}%` : "-"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.atc > 0 ? `${(a.checkout / a.atc * 100).toFixed(0)}%` : "-"}</td>
+                            <td className="py-2.5 px-2 text-[#71717A] dark:text-[#A1A1AA]">{a.checkout > 0 ? `${(a.purchases / a.checkout * 100).toFixed(0)}%` : "-"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1608,7 +1608,7 @@ export default function MetaPage() {
                           {monthly.map(m => <td key={m.ym} className="py-2 px-3 text-right tabular-nums dark:text-[#F4F4F5]">{row.fmt(m[row.key] as number)}</td>)}
                           {monthly.length > 1 && (
                             <td className={cn("py-2 px-3 text-right tabular-nums font-bold", mom === null ? "text-[#A1A1AA]" : good ? "text-[#16A34A]" : "text-[#EF4444]")}>
-                              {mom === null ? "—" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
+                              {mom === null ? "-" : `${mom >= 0 ? "▲" : "▼"} ${Math.abs(mom).toFixed(0)}%`}
                             </td>
                           )}
                         </tr>

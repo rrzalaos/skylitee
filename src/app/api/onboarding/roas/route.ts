@@ -18,7 +18,7 @@ type MetaRow = {
 };
 const purchases = (r?: MetaRow) => Math.round(Math.max(actVal(r?.actions, "offsite_conversion.fb_pixel_purchase"), actVal(r?.actions, "purchase")));
 const purchaseValue = (r?: MetaRow) => Math.max(actVal(r?.action_values, "offsite_conversion.fb_pixel_purchase"), actVal(r?.action_values, "purchase"));
-// Objectives whose job is an order / lead — zero results there is wasted spend
+// Objectives whose job is an order / lead - zero results there is wasted spend
 // (awareness / traffic / engagement campaigns aren't judged on results).
 const SALES_OBJ = /SALES|CONVERSIONS|CATALOG/i;
 const RESULT_OBJ = /SALES|CONVERSIONS|CATALOG|LEAD|MESSAGES/i;
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     const shopCurrency = shopInfo.shop?.currency ?? null;
     const r2 = (n: number) => Math.round(n * 100) / 100;
 
-    // ── Campaign-level findings (best effort — the reveal still works without them) ──
+    // ── Campaign-level findings (best effort - the reveal still works without them) ──
     const campData = await campRes.json().catch(() => ({})) as { data?: MetaRow[] };
     const campaigns = (campData.data ?? []).map(c => {
       const p = purchases(c);
@@ -99,33 +99,33 @@ export async function GET(req: NextRequest) {
     if (wasted.length > 0) findings.push({
       flag: "bad", title: "Spend with zero results",
       value: r2(wastedSpend), valueKind: "money",
-      why: `${wasted.length} campaign${wasted.length > 1 ? "s" : ""} spent money and got no ${mainType === "order" ? "orders" : "leads"} — e.g. "${wasted.sort((a, b) => b.spend - a.spend)[0].name}". Pausing these is the fastest saving.`,
+      why: `${wasted.length} campaign${wasted.length > 1 ? "s" : ""} spent money and got no ${mainType === "order" ? "orders" : "leads"} - e.g. "${wasted.sort((a, b) => b.spend - a.spend)[0].name}". Pausing these is the fastest saving.`,
     });
     else if (campaigns.length > 0) findings.push({
       flag: "good", title: "Spend with zero results", value: 0, valueKind: "money",
-      why: "Every campaign that spent money brought at least one result — no dead campaigns.",
+      why: "Every campaign that spent money brought at least one result - no dead campaigns.",
     });
     if (best) findings.push({
-      flag: "good", title: `Best campaign — cost per ${best.resultType}`,
+      flag: "good", title: `Best campaign - cost per ${best.resultType}`,
       value: r2(best.cpr), valueKind: "money",
-      why: `"${best.name}" — ${best.results} ${best.resultType}s from ${Math.round(best.spend).toLocaleString("en-IN")} spent. Give this one more budget first.`,
+      why: `"${best.name}" - ${best.results} ${best.resultType}s from ${Math.round(best.spend).toLocaleString("en-IN")} spent. Give this one more budget first.`,
     });
     if (worst && best) findings.push({
-      flag: "bad", title: `Costliest campaign — cost per ${worst.resultType}`,
+      flag: "bad", title: `Costliest campaign - cost per ${worst.resultType}`,
       value: r2(worst.cpr), valueKind: "money",
       why: `"${worst.name}" pays ${(worst.cpr / best.cpr).toFixed(1)}× more per ${worst.resultType} than your best campaign. Move budget from here.`,
     });
     if (ctr !== null && impressions >= 1000) findings.push({
       flag: ctr >= 1 ? "good" : "bad", title: "Link click-through rate",
       value: Math.round(ctr * 100) / 100, valueKind: "pct",
-      why: ctr >= 1 ? "At or above the 1% benchmark — your ads make people click."
-        : "Below the 1% benchmark — people scroll past. Fresh creatives and a stronger first line usually fix this.",
+      why: ctr >= 1 ? "At or above the 1% benchmark - your ads make people click."
+        : "Below the 1% benchmark - people scroll past. Fresh creatives and a stronger first line usually fix this.",
     });
     if (frequency > 0) findings.push({
       flag: frequency > 3 ? "bad" : "good", title: "Ad frequency (times each person saw your ads)",
       value: Math.round(frequency * 10) / 10, valueKind: "x",
-      why: frequency > 3 ? "Above 3 — the same people keep seeing the same ads. Expect costs to rise; rotate creatives or widen the audience."
-        : "Under 3 — your audience isn't tired of your ads yet.",
+      why: frequency > 3 ? "Above 3 - the same people keep seeing the same ads. Expect costs to rise; rotate creatives or widen the audience."
+        : "Under 3 - your audience isn't tired of your ads yet.",
     });
     if (linkClicks >= 50 && mainType === "order") {
       const conv = (orders.length / linkClicks) * 100;
@@ -133,9 +133,9 @@ export async function GET(req: NextRequest) {
         flag: conv >= 1 ? "good" : "bad", title: "Ad clicks that became orders",
         value: Math.round(conv * 100) / 100, valueKind: "pct",
         why: orders.length === 0
-          ? `${Math.round(linkClicks).toLocaleString("en-IN")} people clicked your ads but the store got 0 orders — check your product page, price and checkout.`
+          ? `${Math.round(linkClicks).toLocaleString("en-IN")} people clicked your ads but the store got 0 orders - check your product page, price and checkout.`
           : conv >= 1 ? `${Math.round(linkClicks).toLocaleString("en-IN")} ad clicks → ${orders.length} store orders. At or above the 1% benchmark.`
-          : `${Math.round(linkClicks).toLocaleString("en-IN")} ad clicks → only ${orders.length} orders. Below the 1% benchmark — the store page is losing buyers after the click.`,
+          : `${Math.round(linkClicks).toLocaleString("en-IN")} ad clicks → only ${orders.length} orders. Below the 1% benchmark - the store page is losing buyers after the click.`,
       });
     }
 

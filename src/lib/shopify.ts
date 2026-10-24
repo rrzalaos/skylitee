@@ -117,7 +117,7 @@ export async function shopifyDelete(
     },
   });
   rotateTokenIfNeeded(shop, res);
-  // 200/404 both mean "no longer active" — treat as success.
+  // 200/404 both mean "no longer active" - treat as success.
   return res.ok || res.status === 404;
 }
 
@@ -167,7 +167,7 @@ export function buildAuthUrl(shop: string, state: string): string {
 // Shopify is retiring permanent offline tokens. Public apps must use EXPIRING offline tokens by
 // 2027-01-01: a ~1h access token plus a 90-day refresh token. We request them with `expiring=1`,
 // refresh via grant_type=refresh_token, and migrate any legacy permanent token in-code (token
-// exchange) — no merchant reinstall needed. See getValidToken below for the resolution flow.
+// exchange) - no merchant reinstall needed. See getValidToken below for the resolution flow.
 
 interface ShopifyTokenResponse {
   access_token: string;
@@ -247,7 +247,7 @@ async function refreshExpiringToken(shop: string, refreshToken: string): Promise
 }
 
 // Diagnostic wrapper for the admin migration sweep: migrate one shop's legacy token and report
-// exactly what happened (with the Shopify error text on failure — e.g. a 400 "invalid subject
+// exactly what happened (with the Shopify error text on failure - e.g. a 400 "invalid subject
 // token" means the store uninstalled/revoked the app, so there's nothing left to migrate).
 export type MigrateStatus = "migrated" | "already_expiring" | "no_token" | "failed";
 export async function migrateShopToken(shop: string): Promise<{ status: MigrateStatus; detail?: string }> {
@@ -308,7 +308,7 @@ export interface ShopifyOrder {
   id: number;
   name?: string;
   total_price: string;
-  current_total_price?: string;   // live order total — reflects refunds & edits (matches Shopify "Total sales")
+  current_total_price?: string;   // live order total - reflects refunds & edits (matches Shopify "Total sales")
   subtotal_price: string;
   total_discounts: string;
   created_at: string;
@@ -328,7 +328,7 @@ export const ORDER_FIELDS =
   "id,name,total_price,current_total_price,subtotal_price,total_discounts,created_at,cancelled_at,test,financial_status,fulfillment_status,payment_gateway,customer,line_items,shipping_address";
 
 // A real, counted sale: Shopify excludes test orders, cancelled orders, and voided ones
-// from its sales reports — so we must too, or our totals run higher than the admin.
+// from its sales reports - so we must too, or our totals run higher than the admin.
 export function isRealOrder(o: ShopifyOrder): boolean {
   return !o.cancelled_at && !o.test && o.financial_status !== "voided";
 }
@@ -341,7 +341,7 @@ export function orderRevenue(o: ShopifyOrder): number {
 
 // Recognise a Cash-on-Delivery order from its payment-gateway label. Covers the common
 // Shopify and 3rd-party checkout labels (COD, Cash on Delivery, Pay on Delivery). Centralised
-// so every route classifies COD identically — if a store's checkout app (GoKwik / Shiprocket /
+// so every route classifies COD identically - if a store's checkout app (GoKwik / Shiprocket /
 // Razorpay) uses a custom COD label, add the token here once.
 export function isCodGateway(gateway?: string | null): boolean {
   const g = (gateway ?? "").toLowerCase();
@@ -359,7 +359,7 @@ export async function fetchOrdersInRange(
 ): Promise<ShopifyOrder[]> {
   // Speed: cursor pagination is strictly sequential (~1s per 250-order page), so a busy month
   // took many round-trips in a row. Split the range into date windows and page through them
-  // IN PARALLEL — same orders, a fraction of the wall-clock time.
+  // IN PARALLEL - same orders, a fraction of the wall-clock time.
   const startMs = new Date(fromISO).getTime();
   const endMs = toISO ? new Date(toISO).getTime() : Date.now();
   const spanDays = Math.max(1, (endMs - startMs) / 86_400_000);
@@ -387,7 +387,7 @@ export async function fetchOrdersInRange(
 }
 
 // Concurrent order windows per request. Shopify's REST bucket is 40 requests (refilling 2/s),
-// and a page can fire 2–3 Shopify routes at once — 6 keeps us well inside it.
+// and a page can fire 2–3 Shopify routes at once - 6 keeps us well inside it.
 const MAX_ORDER_WINDOWS = 6;
 
 // The store's IANA timezone (e.g. "Asia/Kolkata"), cached. Shopify reports sales by the

@@ -69,23 +69,23 @@ export default function MetaReportPage() {
     const k = data.kpis;
     return [
       { title: "Meta Ads KPIs", headers: ["Metric", "Value", "Benchmark"], rows: [
-        ["Ad Spend", formatINR(k.spend), "—"],
+        ["Ad Spend", formatINR(k.spend), "-"],
         ["ROAS", `${k.roas}x`, "Target: > 3x"],
-        ["Purchases", k.purchases, "—"],
-        ["Purchase Revenue", formatINR(k.purchaseValue), "—"],
-        ["CAC", formatINR(k.cac), "—"],
-        ["Impressions", k.impressions.toLocaleString("en-IN"), "—"],
-        ["Reach", k.reach.toLocaleString("en-IN"), "—"],
+        ["Purchases", k.purchases, "-"],
+        ["Purchase Revenue", formatINR(k.purchaseValue), "-"],
+        ["CAC", formatINR(k.cac), "-"],
+        ["Impressions", k.impressions.toLocaleString("en-IN"), "-"],
+        ["Reach", k.reach.toLocaleString("en-IN"), "-"],
         ["Frequency", k.frequency.toFixed(2), "Target: < 3"],
-        ["Clicks", k.clicks.toLocaleString("en-IN"), "—"],
+        ["Clicks", k.clicks.toLocaleString("en-IN"), "-"],
         ["CTR", `${k.ctr}%`, "Target: > 1%"],
-        ["CPC", formatINR(k.cpc), "—"],
-        ["CPM", formatINR(k.cpm), "—"],
-        ["Add to Cart", k.atc, "—"],
+        ["CPC", formatINR(k.cpc), "-"],
+        ["CPM", formatINR(k.cpm), "-"],
+        ["Add to Cart", k.atc, "-"],
         ["ATC Rate", `${k.atcRatio}%`, "Target: > 30%"],
-        ["Checkout", k.checkout, "—"],
+        ["Checkout", k.checkout, "-"],
         ["Checkout Rate", `${k.checkoutRatio}%`, "Target: > 40%"],
-        ["Purchase Rate", `${k.purchaseRatio}%`, "—"],
+        ["Purchase Rate", `${k.purchaseRatio}%`, "-"],
       ]},
       { title: "Campaigns", headers: ["Campaign", "Status", "Objective", "Spend", "ROAS", "Orders", "CTR"], rows:
         data.campaigns.map(c => [c.name, c.status, c.objective, formatINR(c.spend), `${c.roas}x`, c.purchases, `${c.ctr}%`])
@@ -111,17 +111,17 @@ export default function MetaReportPage() {
   const working: { metric: string; value: string; detail: string }[] = [];
   const attention: { type: "warn" | "bad"; metric: string; value: string; detail: string }[] = [];
 
-  if (k.roas >= 3) working.push({ metric: "ROAS", value: `${k.roas}x`, detail: "Above the 3x profitability benchmark — campaigns are generating strong returns and are eligible for budget scaling." });
-  else if (k.roas >= 2) working.push({ metric: "ROAS", value: `${k.roas}x`, detail: "Between 2–3x — ads are profitable. Optimise creative and audience to push past 3x before scaling spend." });
-  if (k.ctr >= 1) working.push({ metric: "CTR", value: `${k.ctr}%`, detail: "Strong click-through rate — your ad creatives and copy are resonating with your target audience." });
-  if (k.atcRatio >= 30) working.push({ metric: "ATC Rate", value: `${k.atcRatio}%`, detail: "Good add-to-cart signal from landing pages — product pages are converting interest into intent." });
-  if (k.frequency < 3) working.push({ metric: "Frequency", value: k.frequency.toFixed(2), detail: "Healthy ad frequency — your audience is not being over-exposed. Creative fatigue risk is low." });
+  if (k.roas >= 3) working.push({ metric: "ROAS", value: `${k.roas}x`, detail: "Above the 3x profitability benchmark - campaigns are generating strong returns and are eligible for budget scaling." });
+  else if (k.roas >= 2) working.push({ metric: "ROAS", value: `${k.roas}x`, detail: "Between 2–3x - ads are profitable. Optimise creative and audience to push past 3x before scaling spend." });
+  if (k.ctr >= 1) working.push({ metric: "CTR", value: `${k.ctr}%`, detail: "Strong click-through rate - your ad creatives and copy are resonating with your target audience." });
+  if (k.atcRatio >= 30) working.push({ metric: "ATC Rate", value: `${k.atcRatio}%`, detail: "Good add-to-cart signal from landing pages - product pages are converting interest into intent." });
+  if (k.frequency < 3) working.push({ metric: "Frequency", value: k.frequency.toFixed(2), detail: "Healthy ad frequency - your audience is not being over-exposed. Creative fatigue risk is low." });
   if (k.purchases > 0) working.push({ metric: "Purchases", value: k.purchases.toString(), detail: `${k.purchases} Meta-attributed purchases generating ${formatINR(k.purchaseValue)} in revenue from ${formatINR(k.spend)} spend.` });
 
-  if (k.roas < 2) attention.push({ type: "bad", metric: "ROAS", value: `${k.roas}x`, detail: "Below 2x — ads are not profitable. Pause low-performing campaigns, refresh creatives, and narrow audience targeting." });
-  if (k.ctr < 1) attention.push({ type: "warn", metric: "CTR", value: `${k.ctr}%`, detail: "Low click-through rate — ad creative or copy may not be resonating. Test new hooks, angles, and formats." });
-  if (k.frequency >= 3) attention.push({ type: "warn", metric: "Frequency", value: k.frequency.toFixed(2), detail: "High frequency — your audience is seeing ads too often. Expand audience size or refresh creatives to prevent fatigue." });
-  if (k.atcRatio < 20) attention.push({ type: "warn", metric: "ATC Rate", value: `${k.atcRatio}%`, detail: "Low add-to-cart rate from ad traffic — landing pages may have friction. Improve hero image, CTA, and social proof." });
+  if (k.roas < 2) attention.push({ type: "bad", metric: "ROAS", value: `${k.roas}x`, detail: "Below 2x - ads are not profitable. Pause low-performing campaigns, refresh creatives, and narrow audience targeting." });
+  if (k.ctr < 1) attention.push({ type: "warn", metric: "CTR", value: `${k.ctr}%`, detail: "Low click-through rate - ad creative or copy may not be resonating. Test new hooks, angles, and formats." });
+  if (k.frequency >= 3) attention.push({ type: "warn", metric: "Frequency", value: k.frequency.toFixed(2), detail: "High frequency - your audience is seeing ads too often. Expand audience size or refresh creatives to prevent fatigue." });
+  if (k.atcRatio < 20) attention.push({ type: "warn", metric: "ATC Rate", value: `${k.atcRatio}%`, detail: "Low add-to-cart rate from ad traffic - landing pages may have friction. Improve hero image, CTA, and social proof." });
   if (k.checkoutRatio < 40) attention.push({ type: "warn", metric: "Checkout Drop-off", value: `${k.checkoutRatio}%`, detail: "Many shoppers add to cart but don't proceed to checkout. Show total cost upfront and offer COD/EMI options." });
 
   const activeCampaigns = data.campaigns.filter(c => c.status === "ACTIVE");
@@ -167,7 +167,7 @@ export default function MetaReportPage() {
           <CardHeader title="✅ What's Working" />
           <div className="space-y-2">
             {working.length === 0
-              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals yet — run campaigns to generate data.</p>
+              ? <p className="text-[15px] text-[#A1A1AA]">No strong signals yet - run campaigns to generate data.</p>
               : working.map((s, i) => <Signal key={i} type="good" {...s} />)}
           </div>
         </Card>

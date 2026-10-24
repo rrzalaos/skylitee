@@ -20,5 +20,5 @@ export async function GET(req: NextRequest) {
   }
   await kv.set(`shop:${shop}:weekly_off`, 1);
   const back = `${req.nextUrl.pathname}?shop=${encodeURIComponent(shop)}&sig=${sig}&resume=1`;
-  return page(`Done — you won't get weekly summaries any more.<br><br><a href="${back}" style="color:#EA580C;font-weight:700">Changed your mind? Turn them back on</a>`);
+  return page(`Done - you won't get weekly summaries any more.<br><br><a href="${back}" style="color:#EA580C;font-weight:700">Changed your mind? Turn them back on</a>`);
 }

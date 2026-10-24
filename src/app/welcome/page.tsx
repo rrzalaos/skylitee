@@ -87,7 +87,7 @@ export default function WelcomePage() {
 
     fetch("/api/billing/status").then(r => r.json()).then(d => setHasAccess(!!d.hasAccess)).catch(() => {});
 
-    // Back from Meta connect (?connected=meta / ?meta_error=…) — skip the scan animation.
+    // Back from Meta connect (?connected=meta / ?meta_error=…) - skip the scan animation.
     const params = new URLSearchParams(window.location.search);
     const returned = params.get("connected") === "meta" || params.has("meta_error");
     if (params.has("meta_error")) setMetaError(params.get("meta_error") ?? "failed");
@@ -169,7 +169,7 @@ export default function WelcomePage() {
             {metaError && (
               <div className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3 text-[14px] text-[#EF4444]">
                 {metaError === "view_only"
-                  ? "Your role on this store can't connect ad accounts — ask the store owner."
+                  ? "Your role on this store can't connect ad accounts - ask the store owner."
                   : "Meta connection didn't finish. Try again from the Meta card below."}
               </div>
             )}
@@ -187,19 +187,19 @@ export default function WelcomePage() {
                 if (!confirm(`Disconnect ${label}? You can connect a different account right after.`)) return;
                 const r = await fetch(key === "meta" ? "/api/auth/meta/disconnect" : "/api/auth/google/disconnect?service=all", { method: "POST" });
                 if (r.ok) setConnected(c => ({ ...c, [key]: false }));
-                else alert("Couldn't disconnect — your role on this store may not allow it.");
+                else alert("Couldn't disconnect - your role on this store may not allow it.");
               }} />
             <div className="rounded-2xl border border-[#F97316]/30 bg-[#F97316]/[0.06] p-6 text-center">
               <div className="text-[18px] font-bold mb-1">
-                {hasAccess ? "Your full dashboard is ready" : "See everything — free for 14 days"}
+                {hasAccess ? "Your full dashboard is ready" : "See everything - free for 14 days"}
               </div>
               {adSummary && connected.meta ? (
                 <p className="text-[15px] text-white/70 mb-4">
                   You spent <b className="text-white">{fmtMoney(adSummary.spend, adSummary.currency)}</b> on Meta in 30 days
                   {adSummary.wasted > 0
-                    ? <> — <b className="text-[#EF4444]">{fmtMoney(adSummary.wasted, adSummary.currency)}</b> of it on campaigns with zero results.</>
+                    ? <> - <b className="text-[#EF4444]">{fmtMoney(adSummary.wasted, adSummary.currency)}</b> of it on campaigns with zero results.</>
                     : "."}
-                  {adSummary.fixes > 0 && ` We found ${adSummary.fixes} thing${adSummary.fixes > 1 ? "s" : ""} to fix — the dashboard shows exactly where.`}
+                  {adSummary.fixes > 0 && ` We found ${adSummary.fixes} thing${adSummary.fixes > 1 ? "s" : ""} to fix - the dashboard shows exactly where.`}
                 </p>
               ) : (
                 <p className="text-[14px] text-white/55 mb-4">
@@ -227,7 +227,7 @@ function fmtMoney(n: number, cur: string) {
 function goalLine(goal?: Goal) {
   if (goal === "ad_cost") return "Connect your ads to see which campaigns make money and which waste it.";
   if (goal === "profit") return "Add your ad spend and costs to see true profit per order, not just revenue.";
-  return "Track sales, ads and customers in one place — and get told what to fix each week.";
+  return "Track sales, ads and customers in one place - and get told what to fix each week.";
 }
 
 // ── Step 1: questions ────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ function XRayView({ x }: { x: XRay }) {
         <Header x={x} />
         <div className="rounded-2xl border border-white/[0.08] bg-[#111111] p-6 text-[15px] text-white/60">
           No orders in the last {x.days} days yet. As soon as orders come in, Skylitee will show your best weeks,
-          repeat customers and money leaks here — connect your ads below so tracking starts from day one.
+          repeat customers and money leaks here - connect your ads below so tracking starts from day one.
         </div>
       </div>
     );
@@ -316,36 +316,36 @@ function XRayView({ x }: { x: XRay }) {
       title: "Last 30 days vs the 30 before",
       value: x.growthPct === null ? money(x.last30.revenue) : `${x.growthPct >= 0 ? "+" : ""}${x.growthPct}%`,
       why: x.growthPct === null ? "Not enough history to compare yet."
-        : x.growthPct >= 0 ? `${money(x.last30.revenue)} vs ${money(x.prev30.revenue)} — sales are growing.`
+        : x.growthPct >= 0 ? `${money(x.last30.revenue)} vs ${money(x.prev30.revenue)} - sales are growing.`
         : `${money(x.last30.revenue)} vs ${money(x.prev30.revenue)}. Connect your ads to see which campaign slowed down.`,
     },
     {
       key: "repeat", flag: x.flags.repeat, icon: Repeat, title: "Repeat customers",
-      value: x.repeatPct === null ? "—" : `${x.repeatPct}%`,
+      value: x.repeatPct === null ? "-" : `${x.repeatPct}%`,
       why: x.repeatPct === null ? "No customer data on these orders."
-        : x.repeatPct >= 25 ? `Healthy — D2C benchmark is 25%+. Returning buyers cost nothing to acquire.`
+        : x.repeatPct >= 25 ? `Healthy - D2C benchmark is 25%+. Returning buyers cost nothing to acquire.`
         : `Below the 25% D2C benchmark. A post-purchase WhatsApp/email offer usually lifts this fastest.`,
     },
     {
       key: "cod", flag: x.flags.cod, icon: Truck, title: "Cash-on-delivery orders",
-      value: x.codPct === null ? "—" : `${x.codPct}%`,
+      value: x.codPct === null ? "-" : `${x.codPct}%`,
       why: x.codPct === null ? "" : x.codPct > 50
-        ? "Over half your orders are COD — higher return-to-origin risk and slower cash. Try a small prepaid discount."
-        : "Most buyers pay upfront — good for cash flow and fewer returns.",
+        ? "Over half your orders are COD - higher return-to-origin risk and slower cash. Try a small prepaid discount."
+        : "Most buyers pay upfront - good for cash flow and fewer returns.",
     },
     {
       key: "leak", flag: x.flags.leak, icon: TriangleAlert, title: "Refunds & cancellations",
       value: money(x.leak.total),
       why: x.leak.pct > 5
         ? `${x.leak.pct}% of booked sales lost (${x.leak.cancelledOrders} cancelled orders + refunds). Above 5% is worth fixing.`
-        : `Only ${x.leak.pct}% of booked sales lost — within a healthy range (under 5%).`,
+        : `Only ${x.leak.pct}% of booked sales lost - within a healthy range (under 5%).`,
     },
     {
       key: "discounts", flag: x.flags.discounts, icon: Percent, title: "Discounts given",
       value: money(x.discounts.total),
       why: x.discounts.pctOfRevenue > 15
-        ? `${x.discounts.pctOfRevenue}% of sales given away as discounts — check which codes actually bring new buyers.`
-        : `${x.discounts.pctOfRevenue}% of sales — discounts are under control.`,
+        ? `${x.discounts.pctOfRevenue}% of sales given away as discounts - check which codes actually bring new buyers.`
+        : `${x.discounts.pctOfRevenue}% of sales - discounts are under control.`,
     },
   ];
 
@@ -436,7 +436,7 @@ function Header({ x }: { x: XRay }) {
       <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[#F97316] mb-2">
         <Sparkles size={13} /> Store X-Ray
       </div>
-      <h1 className="text-[24px] sm:text-[28px] font-bold">{x.shopName} — last {x.days} days</h1>
+      <h1 className="text-[24px] sm:text-[28px] font-bold">{x.shopName} - last {x.days} days</h1>
       <p className="text-[14px] text-white/45">From your Shopify orders only. Refunds, test and cancelled orders are handled like Shopify does.</p>
     </div>
   );
@@ -526,7 +526,7 @@ function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (
     body = <div className="flex items-center gap-2 text-[15px] text-white/50 py-6"><LoaderCircle size={16} className="animate-spin" /> Comparing Meta with your real Shopify sales…</div>;
   } else if (error === "no_ad_account") {
     body = <div className="text-[15px] text-white/60 py-4">
-      {accounts.length > 1 ? "This Meta login has several ad accounts — pick yours above to see the results." : "No ad account found on this Meta login."}
+      {accounts.length > 1 ? "This Meta login has several ad accounts - pick yours above to see the results." : "No ad account found on this Meta login."}
     </div>;
   } else if (error || !data) {
     body = <div className="text-[15px] text-white/60 py-4">{error || "Couldn't load."}</div>;
@@ -583,7 +583,7 @@ function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (
           <div className="text-[22px] font-black text-[#EF4444]">{money(data.spend, data.metaCurrency)} spent · 0 Shopify orders</div>
           <div className="text-[14px] text-white/55 mt-1">
             {data.metaPurchases > 0
-              ? `Meta reports ${data.metaPurchases} purchases, but none reached this Shopify store — your pixel may be tracking a different site.`
+              ? `Meta reports ${data.metaPurchases} purchases, but none reached this Shopify store - your pixel may be tracking a different site.`
               : "Your Meta ads haven't brought a single order to this store yet. The findings below show where the money went."}
           </div>
         </div>
@@ -597,7 +597,7 @@ function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
             <div className="text-[13px] text-white/45">What Meta says</div>
-            <div className="text-[32px] font-black">{leadAds ? "—" : `${data.metaRoas?.toFixed(2)}×`}</div>
+            <div className="text-[32px] font-black">{leadAds ? "-" : `${data.metaRoas?.toFixed(2)}×`}</div>
             <div className="text-[13px] text-white/50">
               {leadAds ? `${data.leads} leads · ${money(data.spend / data.leads, data.metaCurrency)} per lead`
                 : `${money(data.metaPurchaseValue, data.metaCurrency)} sales from ${data.metaPurchases} purchases`}
@@ -612,16 +612,16 @@ function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (
         <div className="space-y-2 text-[14px]">
           <div className={realGood ? "text-[#22C55E]" : "text-[#EF4444]"}>
             {realGood
-              ? `Healthy — every 1 spent on Meta comes back as ${data.realRoas?.toFixed(1)} in store sales (D2C benchmark: 3× or more).`
-              : `Below the 3× D2C benchmark — every 1 spent on Meta brings back ${data.realRoas?.toFixed(1)} in store sales. The dashboard shows which campaigns to cut.`}
+              ? `Healthy - every 1 spent on Meta comes back as ${data.realRoas?.toFixed(1)} in store sales (D2C benchmark: 3× or more).`
+              : `Below the 3× D2C benchmark - every 1 spent on Meta brings back ${data.realRoas?.toFixed(1)} in store sales. The dashboard shows which campaigns to cut.`}
           </div>
           {!leadAds && claim !== null && (
             <div className={overClaim || claim > 80 ? "text-[#EF4444]" : "text-[#22C55E]"}>
               {overClaim
-                ? `Meta claims ${money(data.metaPurchaseValue, data.metaCurrency)} in sales — more than your whole store made. Meta is over-counting, so don't scale on its ROAS alone.`
+                ? `Meta claims ${money(data.metaPurchaseValue, data.metaCurrency)} in sales - more than your whole store made. Meta is over-counting, so don't scale on its ROAS alone.`
                 : claim > 80
-                  ? `Meta takes credit for ${claim}% of all your sales — likely counting repeat and organic buyers too. Real ROAS is the safer number.`
-                  : `Meta takes credit for ${claim}% of your sales — its numbers look believable.`}
+                  ? `Meta takes credit for ${claim}% of all your sales - likely counting repeat and organic buyers too. Real ROAS is the safer number.`
+                  : `Meta takes credit for ${claim}% of your sales - its numbers look believable.`}
             </div>
           )}
         </div>
@@ -637,7 +637,7 @@ function RoasReveal({ hasAccess, onSummary }: { hasAccess: boolean; onSummary: (
           <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[#F97316] mb-1">
             <CircleCheck size={13} /> Meta connected
           </div>
-          <div className="text-[18px] font-bold">Your real ROAS — last 30 days</div>
+          <div className="text-[18px] font-bold">Your real ROAS - last 30 days</div>
         </div>
         {picker}
       </div>
@@ -659,7 +659,7 @@ function LockedCards({ answers, connected, onConnect, onDisconnect, disabled }: 
     },
     {
       key: "google" as const, icon: Search, title: "Keywords that bring buyers",
-      text: "See which Google searches find your store — and which ones turn into sales. Free traffic you can grow.",
+      text: "See which Google searches find your store - and which ones turn into sales. Free traffic you can grow.",
       cta: "Connect Google", url: "/api/auth/google?service=gsc",
     },
   ];
@@ -670,7 +670,7 @@ function LockedCards({ answers, connected, onConnect, onDisconnect, disabled }: 
   return (
     <div>
       <div className="text-[17px] font-bold mb-1">Unlock the rest of your picture</div>
-      <p className="text-[14px] text-white/45 mb-3">Connect in one click — read-only, we never change your ads or store.</p>
+      <p className="text-[14px] text-white/45 mb-3">Connect in one click - read-only, we never change your ads or store.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ordered.map(c => {
           const Icon = c.icon;
@@ -681,7 +681,7 @@ function LockedCards({ answers, connected, onConnect, onDisconnect, disabled }: 
                 <span className="absolute top-3 right-3 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#F97316] text-white">Recommended</span>
               )}
               <div className="flex items-center gap-2 text-[15px] font-bold mb-3"><Icon size={16} className="text-[#F97316]" /> {c.title}</div>
-              {/* Blurred placeholder — shape only, no numbers. */}
+              {/* Blurred placeholder - shape only, no numbers. */}
               <div className="relative mb-3">
                 <div className="space-y-2 blur-[3px] select-none" aria-hidden>
                   {[80, 55, 68].map((w, i) => (

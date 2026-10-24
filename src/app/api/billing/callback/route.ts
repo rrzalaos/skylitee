@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       await shopKv.setChargeId(shop, chargeId);
       await markOnce(shop, "planAt");
 
-      // A pending coupon means this charge used a partial discount — mark it used and
+      // A pending coupon means this charge used a partial discount - mark it used and
       // record the discount grant (its benefit window). No pending coupon means a plain
       // full-price (re)subscription, so clear any stale grant (e.g. an expired discount).
       const pendingCoupon = await shopKv.getPendingCoupon(shop);
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
         }
         await shopKv.delPendingCoupon(shop);
       } else {
-        // Full-price (re)subscription — clear any stale grant and cancel the old charge
+        // Full-price (re)subscription - clear any stale grant and cancel the old charge
         // (e.g. a previous discounted charge) so the merchant isn't billed twice.
         await shopKv.delGrant(shop);
         if (prevChargeId && prevChargeId !== chargeId) {

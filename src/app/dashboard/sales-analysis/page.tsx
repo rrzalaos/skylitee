@@ -119,8 +119,8 @@ export default function SalesAnalysisPage() {
 
   const total = useMemo(() => buckets.reduce((a, b) => ({ sales: a.sales + b.sales, spend: a.spend + b.spend, orders: a.orders + b.orders, impr: a.impr + b.impr, clicks: a.clicks + b.clicks, conv: a.conv + b.conv }), { sales: 0, spend: 0, orders: 0, impr: 0, clicks: 0, conv: 0 }), [buckets]);
 
-  const roas = (sales: number, spend: number) => spend > 0 ? `${(sales / spend).toFixed(2)}×` : "—";
-  const aov = (sales: number, orders: number) => orders > 0 ? formatINR(Math.round(sales / orders)) : "—";
+  const roas = (sales: number, spend: number) => spend > 0 ? `${(sales / spend).toFixed(2)}×` : "-";
+  const aov = (sales: number, orders: number) => orders > 0 ? formatINR(Math.round(sales / orders)) : "-";
 
   /* Dominant Meta objective. */
   const dominantObj: Obj = useMemo(() => {
@@ -133,11 +133,11 @@ export default function SalesAnalysisPage() {
   function buildSections(): ExportSection[] {
     const head = ["Period", "Spend", "Sales", "ROAS", "Orders", "AOV"];
     return [{
-      title: `Sales Analysis — ${SOURCES.find(s => s.id === source)!.label} · ${freq} · ${range.label}`,
+      title: `Sales Analysis - ${SOURCES.find(s => s.id === source)!.label} · ${freq} · ${range.label}`,
       headers: head,
       rows: [
-        ...buckets.map(b => [b.label, source === "organic" ? "—" : formatINR(Math.round(b.spend)), formatINR(Math.round(b.sales)), source === "organic" ? "—" : roas(b.sales, b.spend), String(b.orders), aov(b.sales, b.orders)]),
-        ["TOTAL", source === "organic" ? "—" : formatINR(Math.round(total.spend)), formatINR(Math.round(total.sales)), source === "organic" ? "—" : roas(total.sales, total.spend), String(total.orders), aov(total.sales, total.orders)],
+        ...buckets.map(b => [b.label, source === "organic" ? "-" : formatINR(Math.round(b.spend)), formatINR(Math.round(b.sales)), source === "organic" ? "-" : roas(b.sales, b.spend), String(b.orders), aov(b.sales, b.orders)]),
+        ["TOTAL", source === "organic" ? "-" : formatINR(Math.round(total.spend)), formatINR(Math.round(total.sales)), source === "organic" ? "-" : roas(total.sales, total.spend), String(total.orders), aov(total.sales, total.orders)],
       ],
     }];
   }
@@ -206,7 +206,7 @@ export default function SalesAnalysisPage() {
               </div>
             </Card>
 
-            {/* Meta — objective-aware */}
+            {/* Meta - objective-aware */}
             <Card>
               <CardHeader title="Meta Ads" right={<span className="text-[13px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8]">{objLabel[dominantObj]}</span>} />
               {!metaKpis ? <div className="py-6 text-center text-[15px] text-[#A1A1AA]">Not connected</div> : (
@@ -215,7 +215,7 @@ export default function SalesAnalysisPage() {
                   {dominantObj === "LEADS" ? (
                     <>
                       <Kpi label="Leads" value={String(metaKpis.leads)} tone="accent" />
-                      <Kpi label="Cost / Lead" value={metaKpis.leads > 0 ? formatINR(metaKpis.costPerLead) : "—"} />
+                      <Kpi label="Cost / Lead" value={metaKpis.leads > 0 ? formatINR(metaKpis.costPerLead) : "-"} />
                       <Kpi label="WhatsApp" value={String(metaKpis.leadsByType?.messaging ?? 0)} />
                       <Kpi label="Form" value={String(metaKpis.leadsByType?.form ?? 0)} />
                       <Kpi label="Pipeline (est.)" value={formatINR(Math.round(metaKpis.leads * ASSUMED_LEAD_CONV * (storeAov || 0)))} />
@@ -223,7 +223,7 @@ export default function SalesAnalysisPage() {
                   ) : dominantObj === "TRAFFIC" ? (
                     <>
                       <Kpi label="LP views" value={String(metaKpis.lpv)} tone="accent" />
-                      <Kpi label="Cost / visit" value={metaKpis.lpv > 0 ? formatINR(Math.round(metaKpis.spend / metaKpis.lpv)) : "—"} />
+                      <Kpi label="Cost / visit" value={metaKpis.lpv > 0 ? formatINR(Math.round(metaKpis.spend / metaKpis.lpv)) : "-"} />
                       <Kpi label="CTR" value={`${metaKpis.ctr}%`} />
                       <Kpi label="Clicks" value={metaKpis.clicks.toLocaleString("en-IN")} />
                       <Kpi label="CPC" value={formatINR(metaKpis.cpc)} />
@@ -241,7 +241,7 @@ export default function SalesAnalysisPage() {
                       <Kpi label="Sales" value={formatINR(metaKpis.purchaseValue)} />
                       <Kpi label="ROAS" value={`${metaKpis.roas}×`} tone="accent" />
                       <Kpi label="Orders" value={String(metaKpis.purchases)} />
-                      <Kpi label="CAC" value={metaKpis.purchases > 0 ? formatINR(metaKpis.cac) : "—"} />
+                      <Kpi label="CAC" value={metaKpis.purchases > 0 ? formatINR(metaKpis.cac) : "-"} />
                       <Kpi label="CTR" value={`${metaKpis.ctr}%`} />
                     </>
                   )}
@@ -267,7 +267,7 @@ export default function SalesAnalysisPage() {
 
           {/* Period breakdown */}
           <Card>
-            <CardHeader title={`${SOURCES.find(s => s.id === source)!.label} — ${freq} breakdown`} right={<span className="text-[13px] text-[#A1A1AA]">{buckets.length} periods</span>} />
+            <CardHeader title={`${SOURCES.find(s => s.id === source)!.label} - ${freq} breakdown`} right={<span className="text-[13px] text-[#A1A1AA]">{buckets.length} periods</span>} />
             <div className="overflow-x-auto">
               <table className="w-full text-[15px] min-w-[640px]">
                 <thead>
@@ -290,7 +290,7 @@ export default function SalesAnalysisPage() {
                       {source !== "organic" && <td className={cn("py-2 px-3 text-right tabular-nums font-bold", b.spend > 0 && b.sales / b.spend >= 2 ? "text-[#16A34A]" : b.spend > 0 && b.sales / b.spend < 1 ? "text-[#EF4444]" : "")}>{roas(b.sales, b.spend)}</td>}
                       <td className="py-2 px-3 text-right tabular-nums">{b.orders}</td>
                       <td className="py-2 px-3 text-right tabular-nums">{aov(b.sales, b.orders)}</td>
-                      {(source === "meta" || source === "google") && <td className="py-2 px-3 text-right tabular-nums">{b.impr > 0 ? `${(b.clicks / b.impr * 100).toFixed(1)}%` : "—"}</td>}
+                      {(source === "meta" || source === "google") && <td className="py-2 px-3 text-right tabular-nums">{b.impr > 0 ? `${(b.clicks / b.impr * 100).toFixed(1)}%` : "-"}</td>}
                     </tr>
                   ))}
                   <tr className="border-t-2 border-black/[0.12] dark:border-white/[0.12] font-bold">
@@ -300,7 +300,7 @@ export default function SalesAnalysisPage() {
                     {source !== "organic" && <td className="py-2 px-3 text-right tabular-nums">{roas(total.sales, total.spend)}</td>}
                     <td className="py-2 px-3 text-right tabular-nums">{total.orders}</td>
                     <td className="py-2 px-3 text-right tabular-nums">{aov(total.sales, total.orders)}</td>
-                    {(source === "meta" || source === "google") && <td className="py-2 px-3 text-right tabular-nums">{total.impr > 0 ? `${(total.clicks / total.impr * 100).toFixed(1)}%` : "—"}</td>}
+                    {(source === "meta" || source === "google") && <td className="py-2 px-3 text-right tabular-nums">{total.impr > 0 ? `${(total.clicks / total.impr * 100).toFixed(1)}%` : "-"}</td>}
                   </tr>
                 </tbody>
               </table>
@@ -342,7 +342,7 @@ export default function SalesAnalysisPage() {
           </div>
 
           {source === "organic" && <p className="text-[14px] text-[#A1A1AA]">Organic = store sales − Meta-attributed − Google-attributed. No ad spend, so ROAS doesn&apos;t apply. This is the demand you get without paying per click.</p>}
-          {source === "store" && <p className="text-[14px] text-[#A1A1AA]">Store ROAS is <b>blended</b> (all store revenue ÷ total ad spend) — the truest measure of whether your marketing pays back overall.</p>}
+          {source === "store" && <p className="text-[14px] text-[#A1A1AA]">Store ROAS is <b>blended</b> (all store revenue ÷ total ad spend) - the truest measure of whether your marketing pays back overall.</p>}
         </>
       )}
     </div>

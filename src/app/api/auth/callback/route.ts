@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Onboarding merchants see their Store X-Ray before any paywall. Not logged in (App Store
-    // install): sign up / log in first — a signed cookie links the store to that account.
+    // install): sign up / log in first - a signed cookie links the store to that account.
     let destination: string;
     if (!linked) {
       destination = isNewStore ? "/signup?from=install" : "/login";

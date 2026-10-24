@@ -27,14 +27,14 @@ export interface OwnMetrics {
   aov: number | null;      // ₹
 }
 
-// Storefront currency → ₹ (fixed, approximate — only used to size AOV)
+// Storefront currency → ₹ (fixed, approximate - only used to size AOV)
 export const FX_INR: Record<string, number> = {
   INR: 1, USD: 88, EUR: 95, GBP: 112, AED: 24, SAR: 23.5, CAD: 64, AUD: 58, SGD: 67,
 };
 
-export const BENCHMARK = { ctr: 1.0, gCpcIn: 20 }; // Indian D2C ballparks — labelled "benchmark"
+export const BENCHMARK = { ctr: 1.0, gCpcIn: 20 }; // Indian D2C ballparks - labelled "benchmark"
 
-// Site conversion rate falls steeply with price — a ₹500 impulse buy and a ₹50,000
+// Site conversion rate falls steeply with price - a ₹500 impulse buy and a ₹50,000
 // appliance don't convert alike. Indian D2C ballparks, labelled "benchmark".
 export function benchmarkCvr(aovInr: number): number {
   if (aovInr <= 1000) return 2.0;
@@ -53,7 +53,7 @@ export function defaultAssumptions(
   competitorAovInr: number | null,
   ownCountry = "IN",
 ): { a: Assumptions; src: Record<"cpm" | "ctr" | "cvr" | "aov" | "gCpc", AssumptionSource> } {
-  // The user's own CPM/CTR only describe the market they advertise in — and only when
+  // The user's own CPM/CTR only describe the market they advertise in - and only when
   // they're in a normal range for it (a very cheap niche audience says nothing about a competitor's).
   const sameMarket = country.code === ownCountry;
   const [bLo, bHi] = country.cpmInr;
@@ -105,7 +105,7 @@ export interface MetaSpendEstimate {
 const mid = (r: [number, number]) => (r[0] + r[1]) / 2;
 
 export function estimateMetaSpend(ads: CompetitorAd[], country: CountryInfo, a: Assumptions): MetaSpendEstimate | null {
-  // One representative per creative group — near-duplicate variants usually share a budget.
+  // One representative per creative group - near-duplicate variants usually share a budget.
   const seen = new Set<string>();
   const creatives = ads.filter(ad => {
     const k = ad.collationId ?? ad.id;
@@ -116,7 +116,7 @@ export function estimateMetaSpend(ads: CompetitorAd[], country: CountryInfo, a: 
   if (creatives.length === 0) return null;
 
   // Budgets scale with the country's media cost, but less than 1:1 (brands buy fewer impressions
-  // in costly markets). Uses the country benchmark, not the editable CPM — budget size is about the
+  // in costly markets). Uses the country benchmark, not the editable CPM - budget size is about the
   // market, while CPM only decides how many clicks that budget buys.
   const scale = Math.pow(mid(country.cpmInr) / IN_CPM_MID, 0.7);
   let lo = 0, hi = 0, withReach = 0;
@@ -130,7 +130,7 @@ export function estimateMetaSpend(ads: CompetitorAd[], country: CountryInfo, a: 
       hi += (ad.euReach * a.frequency[1] * a.cpm[1] / 1000) * share;
       withReach++;
     } else {
-      // Live ads keep spending — monthly run-rate = daily budget × 30, not × days run so far
+      // Live ads keep spending - monthly run-rate = daily budget × 30, not × days run so far
       const tier = TIERS_IN.find(t => days <= t.maxDays)!;
       lo += tier.budget[0] * scale * 30;
       hi += tier.budget[1] * scale * 30;
@@ -177,12 +177,12 @@ export function estimateGoogleSpend(
       lo += tier.budget[0] * scale * 30;
       hi += tier.budget[1] * scale * 30;
     }
-    // Live ads past the fetch cap spend too — extrapolate from the ones we have
+    // Live ads past the fetch cap spend too - extrapolate from the ones we have
     const k = liveTotal && liveTotal > live.length ? liveTotal / live.length : 1;
     act = { lo: Math.round(lo * k), mid: Math.round(Math.sqrt(lo * hi) * k), hi: Math.round(hi * k) };
   }
   const search = searchCostInr > 0 ? scaleRange(searchCostInr, 0.7, 1.4) : null;
-  // DataForSEO's search-click cost is a floor — it misses Shopping, PMax and YouTube
+  // DataForSEO's search-click cost is a floor - it misses Shopping, PMax and YouTube
   if (act && (!search || act.mid >= search.mid)) {
     return { range: act, confidence: "Low", method: "ad_activity", liveAds: liveTotal ?? live.length };
   }
@@ -200,7 +200,7 @@ export interface FullEstimate {
   revenue: Range | null;              // ₹/month, all channels
   paidRevenue: Range | null;          // ₹/month, from paid traffic only
   blendedRoas: Range | null;          // all revenue ÷ ad spend (MER)
-  blendedMeaningful: boolean;         // false when free traffic dominates — MER then just reflects brand size
+  blendedMeaningful: boolean;         // false when free traffic dominates - MER then just reflects brand size
   organicShare: number;               // share of visible visits that are Google organic, 0-1
   paidRoas: Range | null;             // paid-traffic revenue ÷ ad spend
   confidence: Confidence;
@@ -221,11 +221,11 @@ export function estimateAll(input: {
   const missing: string[] = [];
   const meta = ads ? estimateMetaSpend(ads, country, a) : null;
   if (!ads) missing.push("No Meta ad data yet for this country.");
-  else if (!meta) missing.push("No active Meta ads found in this country — Meta spend is likely ₹0 right now.");
+  else if (!meta) missing.push("No active Meta ads found in this country - Meta spend is likely ₹0 right now.");
 
   const google = estimateGoogleSpend(googleAds, googleLive, traffic?.paidCostInr ?? 0, country);
   if (!traffic) missing.push("No Google traffic data yet.");
-  if (googleAds && !google) missing.push("No live Google ads right now — Google spend is likely ₹0.");
+  if (googleAds && !google) missing.push("No live Google ads right now - Google spend is likely ₹0.");
 
   const g = google?.range;
   const spendMid = (meta?.range.mid ?? 0) + (g?.mid ?? 0);
@@ -250,7 +250,7 @@ export function estimateAll(input: {
     if (all > 0) revenue = scaleRange(all);
     if (paid > 0) paidRevenue = scaleRange(paid);
   } else if (visits && !(a.aov > 0)) {
-    missing.push("No price data — add their website (Shopify stores only) or set an AOV to estimate revenue.");
+    missing.push("No price data - add their website (Shopify stores only) or set an AOV to estimate revenue.");
   }
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -268,7 +268,7 @@ export function estimateAll(input: {
   const organicShare = totalVisits > 0 ? visits!.organic / totalVisits : 0;
   const blendedMeaningful = !!blendedRoas && organicShare < 0.6 && blendedRoas.mid <= 20;
   if (paidRoas && paidRoas.mid > 12) {
-    missing.push(`Paid ROAS above 12x is rare — their real cost per click is probably higher or conversion lower than assumed. Adjust the assumptions if you know better.`);
+    missing.push(`Paid ROAS above 12x is rare - their real cost per click is probably higher or conversion lower than assumed. Adjust the assumptions if you know better.`);
   }
 
   // Overall confidence = weakest link; Google-only estimates are Medium at best

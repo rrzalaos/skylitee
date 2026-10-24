@@ -45,7 +45,7 @@ export default function AnomalyPage() {
               { label: "Positive", value: data?.positive.length ?? 0, bg: "bg-[#FFF7ED] dark:bg-[#2A1A0E]", text: "text-[#EA580C] dark:text-[#FB923C]", border: "border-[#FED7AA] dark:border-[#7C2D12]" },
             ].map(s => (
               <div key={s.label} className={`text-center px-4 py-2 rounded-xl border ${s.bg} ${s.border}`}>
-                <div className={`text-xl font-black ${s.text}`}>{loading ? "—" : s.value}</div>
+                <div className={`text-xl font-black ${s.text}`}>{loading ? "-" : s.value}</div>
                 <div className="text-[13px] text-[#A1A1AA] mt-0.5 font-medium">{s.label}</div>
               </div>
             ))}
@@ -61,7 +61,7 @@ export default function AnomalyPage() {
         <div className="text-[16px] text-[#A1A1AA] py-16 text-center">Analysing your store data...</div>
       ) : !data ? (
         <div className="text-center py-16">
-          <p className="text-[16px] text-[#71717A] mb-3">Could not load — check Shopify connection</p>
+          <p className="text-[16px] text-[#71717A] mb-3">Could not load - check Shopify connection</p>
           <Link href="/dashboard/connections" className="text-[15px] text-[#F97316] font-semibold underline">Go to Connections →</Link>
         </div>
       ) : (
@@ -71,7 +71,7 @@ export default function AnomalyPage() {
             {data.critical.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="text-[13px] font-bold text-[#DC2626] dark:text-[#FCA5A5] uppercase tracking-[0.1em]">Critical — action needed now</div>
+                  <div className="text-[13px] font-bold text-[#DC2626] dark:text-[#FCA5A5] uppercase tracking-[0.1em]">Critical - action needed now</div>
                   <div className="flex-1 h-px bg-[#FCA5A5] dark:bg-[#991B1B] opacity-40" />
                 </div>
                 {data.critical.map((a, i) => (
@@ -91,7 +91,7 @@ export default function AnomalyPage() {
             {data.warnings.length > 0 && (
               <>
                 <div className="flex items-center gap-2 mb-3 mt-4">
-                  <div className="text-[13px] font-bold text-[#92400E] dark:text-[#FCD34D] uppercase tracking-[0.1em]">Warnings — monitor closely</div>
+                  <div className="text-[13px] font-bold text-[#92400E] dark:text-[#FCD34D] uppercase tracking-[0.1em]">Warnings - monitor closely</div>
                   <div className="flex-1 h-px bg-[#FCD34D] dark:bg-[#92400E] opacity-40" />
                 </div>
                 {data.warnings.map((a, i) => (
@@ -163,7 +163,7 @@ export default function AnomalyPage() {
             </Card>
 
             <div className="mt-3 text-[14px] text-[#A1A1AA] leading-relaxed bg-[#F5F5F4] dark:bg-[#1C1C1C] rounded-xl p-3 border border-black/[0.04] dark:border-white/[0.04]">
-              <strong className="text-[#71717A] dark:text-[#A1A1AA]">About anomaly detection:</strong> Signals are computed from live Shopify data — stock levels, order patterns, COD ratio, and repeat behaviour. Connect Meta Ads and GA4 to unlock ROAS and traffic anomaly alerts.
+              <strong className="text-[#71717A] dark:text-[#A1A1AA]">About anomaly detection:</strong> Signals are computed from live Shopify data - stock levels, order patterns, COD ratio, and repeat behaviour. Connect Meta Ads and GA4 to unlock ROAS and traffic anomaly alerts.
             </div>
           </div>
         </div>

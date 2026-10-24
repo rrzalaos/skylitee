@@ -109,7 +109,7 @@ export default function CommandCenterPage() {
   const { range, compareWith, setPreset } = useDateRange();
   const router = useRouter();
 
-  // Command Center opens on TODAY (once per browser session — if the user then picks another
+  // Command Center opens on TODAY (once per browser session - if the user then picks another
   // range it sticks). Fetching waits for this so we don't load "This month" first and throw it away.
   const [rangeReady, setRangeReady] = useState(false);
   useEffect(() => {
@@ -317,7 +317,7 @@ export default function CommandCenterPage() {
     const inr = (n: number) => formatINR(n);
     const cnt = (n: number) => n.toLocaleString("en-IN");
 
-    // Meta — the ad funnel, all Meta-tracked
+    // Meta - the ad funnel, all Meta-tracked
     const metaSteps = meta ? [
       { label: "Impressions", value: meta.impressions, display: cnt(meta.impressions) },
       { label: "Link Clicks", value: meta.clicks, display: cnt(meta.clicks) },
@@ -327,7 +327,7 @@ export default function CommandCenterPage() {
       { label: "Purchases", value: meta.purchases, display: cnt(meta.purchases) },
     ].filter(s => s.value > 0) : [];
 
-    // GA4 — the on-site ecommerce funnel (needs ecommerce events configured)
+    // GA4 - the on-site ecommerce funnel (needs ecommerce events configured)
     const ga4Steps = ga4 && ga4Ecom ? [
       { label: "Sessions", value: ga4.sessions, display: cnt(ga4.sessions) },
       { label: "Product Views", value: ga4Ecom.itemsViewed, display: cnt(ga4Ecom.itemsViewed) },
@@ -336,7 +336,7 @@ export default function CommandCenterPage() {
       { label: "Purchased", value: ga4Ecom.itemsPurchased, display: cnt(ga4Ecom.itemsPurchased) },
     ].filter(s => s.value > 0) : [];
 
-    // Shopify — the revenue / cash funnel (gross → net → real cash now)
+    // Shopify - the revenue / cash funnel (gross → net → real cash now)
     const discounts = k?.totalDiscounts ?? 0;
     const returns = k?.refundedRevenue ?? 0;
     const afterDisc = Math.max(0, (k?.grossSales ?? 0) - discounts);
@@ -350,16 +350,16 @@ export default function CommandCenterPage() {
 
     const diag: Record<string, string> = {
       // Meta
-      "Link Clicks→Landing Page Views": "Clicks aren't loading the page — a site-speed / broken-link problem, not targeting.",
-      "Landing Page Views→Add to Cart": "People land but don't add to cart — the landing page / offer isn't convincing. Fix the page, not the ads.",
-      "Add to Cart→Checkout": "Cart abandons before checkout — likely shipping-cost shock or a clunky cart. Show shipping early.",
-      "Checkout→Purchases": "Checkout started but not completed — payment / COD friction. Offer prepaid incentives.",
+      "Link Clicks→Landing Page Views": "Clicks aren't loading the page - a site-speed / broken-link problem, not targeting.",
+      "Landing Page Views→Add to Cart": "People land but don't add to cart - the landing page / offer isn't convincing. Fix the page, not the ads.",
+      "Add to Cart→Checkout": "Cart abandons before checkout - likely shipping-cost shock or a clunky cart. Show shipping early.",
+      "Checkout→Purchases": "Checkout started but not completed - payment / COD friction. Offer prepaid incentives.",
       // GA4
-      "Product Views→Add to Cart": "Visitors view products but don't add to cart — price, photos or trust signals on the product page need work.",
-      "Add to Cart→Reached Checkout": "Carts abandon before checkout — surface shipping cost and a clear CTA earlier.",
-      "Reached Checkout→Purchased": "Checkout drop-off — simplify the form and reduce payment friction.",
+      "Product Views→Add to Cart": "Visitors view products but don't add to cart - price, photos or trust signals on the product page need work.",
+      "Add to Cart→Reached Checkout": "Carts abandon before checkout - surface shipping cost and a clear CTA earlier.",
+      "Reached Checkout→Purchased": "Checkout drop-off - simplify the form and reduce payment friction.",
       // Shopify
-      "Gross Sales→Prepaid Cash Now": "A large share of sales is COD — cash is pending and carries RTO risk. A prepaid discount shifts the mix.",
+      "Gross Sales→Prepaid Cash Now": "A large share of sales is COD - cash is pending and carries RTO risk. A prepaid discount shifts the mix.",
       "Net of Returns→Prepaid Cash Now": "Most collected revenue is still COD (pending). Nudge prepaid to protect cash flow.",
     };
 
@@ -394,24 +394,24 @@ export default function CommandCenterPage() {
   const funnel = funnels[funnelSrc];
   const anyFunnel = funnels.meta.available || funnels.ga4.available || funnels.shopify.available;
   const FUNNEL_SRC_META: Record<"meta" | "ga4" | "shopify", { label: string; sub: string }> = {
-    meta: { label: "Meta", sub: "Meta-tracked ad funnel — impressions to purchase" },
-    ga4: { label: "GA4", sub: "On-site behaviour — sessions to purchase" },
-    shopify: { label: "Shopify", sub: "Revenue funnel — gross sales to real cash collected" },
+    meta: { label: "Meta", sub: "Meta-tracked ad funnel - impressions to purchase" },
+    ga4: { label: "GA4", sub: "On-site behaviour - sessions to purchase" },
+    shopify: { label: "Shopify", sub: "Revenue funnel - gross sales to real cash collected" },
   };
 
   /* ── Cross-platform alerts ── */
   const alerts = useMemo(() => {
     const out: { sev: "danger" | "warning" | "positive"; title: string; body: string }[] = [];
     if (meta && spendChange !== undefined && spendChange >= 25 && (ordersChange ?? 0) <= 5) {
-      out.push({ sev: "danger", title: `Meta spend up ${spendChange}% but orders flat`, body: "Spend rose sharply without more orders — likely an attribution break (pixel) or a landing-page issue. Check the Meta pixel and your top campaign's landing page." });
+      out.push({ sev: "danger", title: `Meta spend up ${spendChange}% but orders flat`, body: "Spend rose sharply without more orders - likely an attribution break (pixel) or a landing-page issue. Check the Meta pixel and your top campaign's landing page." });
     }
     if (meta && sales.count > 0 && meta.spend > 0 && meta.purchaseValue === 0) {
-      out.push({ sev: "danger", title: `₹${meta.spend.toLocaleString("en-IN")} spent, ₹0 tracked revenue`, body: "A sales campaign is spending but recording no revenue — almost always a broken/ missing purchase pixel. Verify the Meta pixel fires on order confirmation." });
+      out.push({ sev: "danger", title: `₹${meta.spend.toLocaleString("en-IN")} spent, ₹0 tracked revenue`, body: "A sales campaign is spending but recording no revenue - almost always a broken/ missing purchase pixel. Verify the Meta pixel fires on order confirmation." });
     }
-    if (codPct > 60 && k) out.push({ sev: "warning", title: `COD at ${codPct}% — cash & RTO risk`, body: `Only ${formatINR(prepaidRev)} is collected up front; ${formatINR(codRev)} is COD (pending + return risk). Offer a ₹75–100 prepaid discount to shift the mix.` });
-    if (meta && meta.frequency >= 3) out.push({ sev: "warning", title: `Ad frequency at ${meta.frequency}x — fatigue incoming`, body: "Audience is seeing the same ads too often; CPM/CPL will rise in 2–3 days. Refresh creative or widen the audience now." });
+    if (codPct > 60 && k) out.push({ sev: "warning", title: `COD at ${codPct}% - cash & RTO risk`, body: `Only ${formatINR(prepaidRev)} is collected up front; ${formatINR(codRev)} is COD (pending + return risk). Offer a ₹75–100 prepaid discount to shift the mix.` });
+    if (meta && meta.frequency >= 3) out.push({ sev: "warning", title: `Ad frequency at ${meta.frequency}x - fatigue incoming`, body: "Audience is seeing the same ads too often; CPM/CPL will rise in 2–3 days. Refresh creative or widen the audience now." });
     if (anomalies && anomalies.summary.repeatRate < 20 && anomalies.summary.repeatRate > 0) {
-      out.push({ sev: "warning", title: `Repeat rate ${anomalies.summary.repeatRate}% vs 20% benchmark`, body: "Most customers don't come back. Set up a win-back email/WhatsApp flow for past buyers — cheapest revenue you have." });
+      out.push({ sev: "warning", title: `Repeat rate ${anomalies.summary.repeatRate}% vs 20% benchmark`, body: "Most customers don't come back. Set up a win-back email/WhatsApp flow for past buyers - cheapest revenue you have." });
     }
     (anomalies?.critical ?? []).forEach(a => out.push({ sev: "danger", title: a.title, body: a.desc }));
     return out.sort((a, b) => ({ danger: 0, warning: 1, positive: 2 }[a.sev] - { danger: 0, warning: 1, positive: 2 }[b.sev]));
@@ -422,15 +422,15 @@ export default function CommandCenterPage() {
     const list: { type: "positive" | "warning" | "danger"; title: string; body: string }[] = [];
     if (sales.count > 0 && sales.spend > 0) {
       const be = econ?.breakEvenRoas;
-      if (be && sales.roas >= be) list.push({ type: "positive", title: `Sales ROAS ${sales.roas}x — above your ${be}x break-even`, body: `Every ₹1 on sales ads returns ₹${sales.roas}. You have room to scale — push budget 20–30% on the best campaigns.` });
-      else if (be) list.push({ type: "danger", title: `Sales ROAS ${sales.roas}x — below your ${be}x break-even`, body: `At your margins you need ${be}x just to break even. Pause the lowest-ROAS sales campaigns and fix the biggest funnel drop before scaling.` });
+      if (be && sales.roas >= be) list.push({ type: "positive", title: `Sales ROAS ${sales.roas}x - above your ${be}x break-even`, body: `Every ₹1 on sales ads returns ₹${sales.roas}. You have room to scale - push budget 20–30% on the best campaigns.` });
+      else if (be) list.push({ type: "danger", title: `Sales ROAS ${sales.roas}x - below your ${be}x break-even`, body: `At your margins you need ${be}x just to break even. Pause the lowest-ROAS sales campaigns and fix the biggest funnel drop before scaling.` });
       else list.push({ type: sales.roas >= 3 ? "positive" : "warning", title: `Sales ROAS ${sales.roas}x`, body: configured ? "" : "Set your costs in Financial P&L to see your real break-even ROAS." });
     }
     if (leadsB.count > 0 && totalLeads > 0 && waPct > 0 && waPct < 50) {
       list.push({ type: "warning", title: `${100 - waPct}% of leads are forms, ${waPct}% WhatsApp`, body: "WhatsApp/chat leads usually convert higher and drop off less. Shift creative CTAs to click-to-WhatsApp to lift lead quality." });
     }
-    if (gscOpp.count >= 2) list.push({ type: "positive", title: `${gscOpp.count} keywords on the cusp of page 1`, body: `Sitting at position 11–15 with demand. One content/link push ≈ +${gscOpp.extraClicks} clicks/period at 3% CTR — the cheapest acquisition you have right now.` });
-    if (k && codPct > 55) list.push({ type: "warning", title: `COD ${codPct}% — real cash is ${formatINR(prepaidRev)}, not ${formatINR(k.grossSales)}`, body: "COD ties up cash and carries RTO risk. A small prepaid incentive shifts behaviour and protects margin." });
+    if (gscOpp.count >= 2) list.push({ type: "positive", title: `${gscOpp.count} keywords on the cusp of page 1`, body: `Sitting at position 11–15 with demand. One content/link push ≈ +${gscOpp.extraClicks} clicks/period at 3% CTR - the cheapest acquisition you have right now.` });
+    if (k && codPct > 55) list.push({ type: "warning", title: `COD ${codPct}% - real cash is ${formatINR(prepaidRev)}, not ${formatINR(k.grossSales)}`, body: "COD ties up cash and carries RTO risk. A small prepaid incentive shifts behaviour and protects margin." });
     const order = { danger: 0, warning: 1, positive: 2 } as const;
     return list.filter(x => x.body).sort((a, b) => order[a.type] - order[b.type]).slice(0, 5);
   }, [sales, leadsB.count, totalLeads, waPct, gscOpp, k, codPct, prepaidRev, econ, configured]);
@@ -449,7 +449,7 @@ export default function CommandCenterPage() {
     // Prepaid shift
     if (k && codPct > 50 && cost) {
       const rtoSave = Math.round(k.codOrders * (cost.rtoRate / 100) * cost.rtoCostPerOrder);
-      if (rtoSave > 0) out.push({ impact: rtoSave, text: `Add a ₹75 prepaid discount — at ${codPct}% COD this could save ~${formatINR(rtoSave)} in RTO losses`, source: "Shopify + costs" });
+      if (rtoSave > 0) out.push({ impact: rtoSave, text: `Add a ₹75 prepaid discount - at ${codPct}% COD this could save ~${formatINR(rtoSave)} in RTO losses`, source: "Shopify + costs" });
     }
     // GSC content
     if (gscOpp.count >= 2 && k) {
@@ -457,7 +457,7 @@ export default function CommandCenterPage() {
       out.push({ impact: val, text: `Improve content/links on ${gscOpp.count} keywords at position 11–15 → est. ${formatINR(val)} from +${gscOpp.extraClicks} organic clicks`, source: "GSC" });
     }
     // Lead pipeline / WhatsApp
-    if (leadsB.count > 0 && pipelineEst > 0) out.push({ impact: Math.round(pipelineEst * 0.25), text: `Follow up ${totalLeads} leads fast — est. ${formatINR(pipelineEst)} pipeline (${totalLeads}×${Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV); shift CTAs to WhatsApp to lift conversion`, source: "Meta + Shopify (est.)" });
+    if (leadsB.count > 0 && pipelineEst > 0) out.push({ impact: Math.round(pipelineEst * 0.25), text: `Follow up ${totalLeads} leads fast - est. ${formatINR(pipelineEst)} pipeline (${totalLeads}×${Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV); shift CTAs to WhatsApp to lift conversion`, source: "Meta + Shopify (est.)" });
     return out.sort((a, b) => b.impact - a.impact).slice(0, 5);
   }, [campaigns, k, codPct, cost, gscOpp, leadsB.count, pipelineEst, totalLeads]);
 
@@ -500,7 +500,7 @@ export default function CommandCenterPage() {
 
   /* ── "At a glance" chart data for the Simple view ── */
   const glance = useMemo<GlanceData>(() => {
-    // Today vs a FULL yesterday isn't like-for-like — say so in the label.
+    // Today vs a FULL yesterday isn't like-for-like - say so in the label.
     const cmp = range.preset === "today" && compareWith === "prev_period" ? "Yesterday (full day)" : `vs ${compLabel}`;
     // GSC: use the period's own numbers when they exist, else the latest 7 final days.
     const gscUse = gsc && !gscPending ? { ...gsc, note: undefined as string | undefined }
@@ -570,40 +570,40 @@ export default function CommandCenterPage() {
               </span>
             );
           })}
-          <span className="text-[13px] text-[#A1A1AA] ml-auto hidden md:block">Each objective judged by its own KPI — not one blended number</span>
+          <span className="text-[13px] text-[#A1A1AA] ml-auto hidden md:block">Each objective judged by its own KPI - not one blended number</span>
         </div>
       )}
 
       {/* ── SECTION 2: Objective-aware KPI cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <StatCard label="Gross Sales" value={k ? formatINR(k.grossSales) : "—"} spark={revSpark} sparkColor="#F97316"
+        <StatCard label="Gross Sales" value={k ? formatINR(k.grossSales) : "-"} spark={revSpark} sparkColor="#F97316"
           sub={k ? <>Avg <b>{formatINR(dailyRunRate)}</b>/day{salesTarget > 0 && <> · need <b className="text-[#EA580C]">{formatINR(neededPerDay)}</b>/day to hit {formatINR(salesTarget)}</>}{salesChange !== undefined && <> · <span className={salesChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{salesChange >= 0 ? "+" : ""}{salesChange}% vs {compLabel}</span></>}</> : undefined} />
 
         {sales.count > 0 || !leadsB.count ? (
-          <StatCard label="Sales ROAS" value={sales.spend > 0 ? `${sales.roas}x` : "—"}
+          <StatCard label="Sales ROAS" value={sales.spend > 0 ? `${sales.roas}x` : "-"}
             tone={econ?.breakEvenRoas ? (sales.roas >= econ.breakEvenRoas ? "good" : "bad") : (sales.roas >= 3 ? "good" : sales.roas >= 2 ? "warn" : "bad")}
             sub={sales.spend > 0 ? <>{econ?.breakEvenRoas ? <>break-even <b>{econ.breakEvenRoas}x</b> · </> : ""}{formatINR(sales.spend)} spend → {formatINR(sales.purchaseValue)}</> : "No sales campaigns"} />
         ) : (
-          <StatCard label="Cost / Lead" value={leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"} tone={leadsB.cpl > 0 && leadsB.cpl <= 200 ? "good" : "warn"}
+          <StatCard label="Cost / Lead" value={leadsB.leads > 0 ? formatINR(leadsB.cpl) : "-"} tone={leadsB.cpl > 0 && leadsB.cpl <= 200 ? "good" : "warn"}
             sub={<>{leadsB.leads} leads · {formatINR(leadsB.spend)} spend</>} />
         )}
 
-        <StatCard label="Orders" value={k ? k.totalOrders.toString() : "—"} tone={codPct > 60 ? "warn" : "neutral"} spark={ordersSpark} sparkColor="#22C55E"
+        <StatCard label="Orders" value={k ? k.totalOrders.toString() : "-"} tone={codPct > 60 ? "warn" : "neutral"} spark={ordersSpark} sparkColor="#22C55E"
           sub={k ? <>{codPct}% COD · real cash <b>{formatINR(prepaidRev)}</b> not {formatINR(k.grossSales)}{ordersChange !== undefined && <> · <span className={ordersChange >= 0 ? "text-[#16A34A]" : "text-[#EF4444]"}>{ordersChange >= 0 ? "+" : ""}{ordersChange}%</span></>}</> : undefined} />
 
-        <StatCard label="Total Ad Spend" value={totalSpend > 0 ? formatINR(totalSpend) : "—"} spark={spendSpark} sparkColor="#3B82F6"
+        <StatCard label="Total Ad Spend" value={totalSpend > 0 ? formatINR(totalSpend) : "-"} spark={spendSpark} sparkColor="#3B82F6"
           tone={meta && meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? "bad" : "neutral"}
-          sub={meta ? (meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? <span className="text-[#EF4444] font-semibold">₹0 tracked revenue — likely pixel issue</span> : <>{connections.gads ? "Meta + Google" : "Meta"}{spendChange !== undefined && <> · <span className={spendChange > 25 ? "text-[#EF4444]" : "text-[#A1A1AA]"}>{spendChange >= 0 ? "+" : ""}{spendChange}% vs {compLabel}</span></>}</>) : "Connect Meta"} />
+          sub={meta ? (meta.spend > 0 && meta.purchaseValue === 0 && sales.count > 0 ? <span className="text-[#EF4444] font-semibold">₹0 tracked revenue - likely pixel issue</span> : <>{connections.gads ? "Meta + Google" : "Meta"}{spendChange !== undefined && <> · <span className={spendChange > 25 ? "text-[#EF4444]" : "text-[#A1A1AA]"}>{spendChange >= 0 ? "+" : ""}{spendChange}% vs {compLabel}</span></>}</>) : "Connect Meta"} />
 
         {leadsB.count > 0 ? (
           <StatCard label="Total Leads" value={totalLeads.toString()}
             sub={<>{waPct}% WhatsApp · {100 - waPct}% form · est. lead→order {Math.round(ASSUMED_LEAD_CONV * 100)}%</>} />
         ) : (
-          <StatCard label="AOV" value={k ? formatINR(k.aov) : "—"} sub={k ? <>{k.newCustomers} new · {k.returningCustomers} returning</> : undefined} />
+          <StatCard label="AOV" value={k ? formatINR(k.aov) : "-"} sub={k ? <>{k.newCustomers} new · {k.returningCustomers} returning</> : undefined} />
         )}
 
-        <StatCard label={gsc ? "Search Clicks" : "New Customers"} value={gsc ? gsc.clicks.toLocaleString("en-IN") : (k?.newCustomers.toString() ?? "—")}
-          sub={gsc ? (gscPending ? <span className="text-[#B45309] font-semibold">Search Console finalises ~2–3 days late — this window is too recent to report yet</span> : gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
+        <StatCard label={gsc ? "Search Clicks" : "New Customers"} value={gsc ? gsc.clicks.toLocaleString("en-IN") : (k?.newCustomers.toString() ?? "-")}
+          sub={gsc ? (gscPending ? <span className="text-[#B45309] font-semibold">Search Console finalises ~2–3 days late - this window is too recent to report yet</span> : gscOpp.count > 0 ? <span className="text-[#16A34A] font-semibold">{gscOpp.count} keywords at pos 11–15 → ~+{gscOpp.extraClicks} clicks one push from page 1</span> : <>{gsc.ctr.toFixed(1)}% CTR · pos {gsc.avgPosition.toFixed(1)}</>) : (k ? "Connect GSC for search data" : undefined)} />
       </div>
 
       {/* ── Visual snapshot: channel mix · cash split · pace ── */}
@@ -648,12 +648,12 @@ export default function CommandCenterPage() {
                     centerValue={`${sales.roas}x`} centerLabel={econ?.breakEvenRoas ? `break-even ${econ.breakEvenRoas}x` : "ROAS"} size={120} />
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <div><div className="text-[13px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "—"}</div><div className="text-[12px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
+                  <div><div className="text-[13px] text-[#A1A1AA]">CAC vs LTV</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{blendedCAC ? formatINR(blendedCAC) : "-"}</div><div className="text-[12px] text-[#A1A1AA]">LTV ~{formatINR(ltvEst)} (est.)</div></div>
                   <div><div className="text-[13px] text-[#A1A1AA]">Orders (Shopify)</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{sales.purchases}</div><div className="text-[12px] text-[#A1A1AA]">{formatINR(sales.purchaseValue)}</div></div>
                 </div>
               </div>
               <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[13px] text-[#71717A] dark:text-[#A1A1AA]">
-                {econ?.breakEvenRoas && sales.roas >= econ.breakEvenRoas ? `Profitable — acquiring at ${formatINR(blendedCAC)} vs ~${formatINR(ltvEst)} LTV. Room to scale.` : econ?.breakEvenRoas ? `Below break-even (${econ.breakEvenRoas}x) — fix funnel/creative before scaling.` : "Add your costs (Financial P&L) to see real break-even ROAS & profit."}
+                {econ?.breakEvenRoas && sales.roas >= econ.breakEvenRoas ? `Profitable - acquiring at ${formatINR(blendedCAC)} vs ~${formatINR(ltvEst)} LTV. Room to scale.` : econ?.breakEvenRoas ? `Below break-even (${econ.breakEvenRoas}x) - fix funnel/creative before scaling.` : "Add your costs (Financial P&L) to see real break-even ROAS & profit."}
               </div>
             </Card>
           )}
@@ -664,11 +664,11 @@ export default function CommandCenterPage() {
                 segments={[{ label: "WhatsApp / chat", value: waLeads, color: "#22C55E" }, { label: "Form leads", value: formLeads, color: "#3B82F6" }]}
                 centerValue={String(totalLeads)} centerLabel="leads" size={120} />
               <div className="grid grid-cols-2 gap-2 mt-3">
-                <div><div className="text-[13px] text-[#A1A1AA]">Cost / Lead</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads > 0 ? formatINR(leadsB.cpl) : "—"}</div><div className="text-[12px] text-[#A1A1AA]">{leadsB.leads} leads</div></div>
+                <div><div className="text-[13px] text-[#A1A1AA]">Cost / Lead</div><div className="text-[18px] font-black text-[#18181B] dark:text-[#F4F4F5]">{leadsB.leads > 0 ? formatINR(leadsB.cpl) : "-"}</div><div className="text-[12px] text-[#A1A1AA]">{leadsB.leads} leads</div></div>
                 <div><div className="text-[13px] text-[#A1A1AA]">Pipeline (est.)</div><div className="text-[18px] font-black text-[#15803D]">{formatINR(pipelineEst)}</div><div className="text-[12px] text-[#A1A1AA]">{totalLeads}×{Math.round(ASSUMED_LEAD_CONV * 100)}%×AOV</div></div>
               </div>
               <div className="mt-2 pt-2 border-t border-black/[0.05] dark:border-white/[0.05] text-[13px] text-[#71717A] dark:text-[#A1A1AA]">
-                {waPct < 50 ? "WhatsApp leads convert higher than forms — shift creative CTAs to click-to-WhatsApp." : "Strong WhatsApp lead share — keep nurturing chat leads fast (intent fades in hours)."}
+                {waPct < 50 ? "WhatsApp leads convert higher than forms - shift creative CTAs to click-to-WhatsApp." : "Strong WhatsApp lead share - keep nurturing chat leads fast (intent fades in hours)."}
               </div>
             </Card>
           )}
@@ -707,28 +707,28 @@ export default function CommandCenterPage() {
           </Card>
         </div>
 
-        {/* Platform snapshot — unique data per platform */}
+        {/* Platform snapshot - unique data per platform */}
         <Card>
           <CardHeader title="Platform Snapshot" />
           <div className="space-y-0">
             <PlatformRow name="Shopify" connected={connections.shopify}
-              main={k ? formatINR(k.grossSales) : "—"} mainSub={k ? `${k.totalOrders} orders · AOV ${formatINR(k.aov)}` : ""}
+              main={k ? formatINR(k.grossSales) : "-"} mainSub={k ? `${k.totalOrders} orders · AOV ${formatINR(k.aov)}` : ""}
               right={k ? `${codPct}% COD` : ""} rightSub={anomalies ? `repeat ${anomalies.summary.repeatRate}%${anomalies.summary.repeatRate < 20 ? " ⚠" : ""}` : ""} rightTone={codPct > 55 ? "warn" : "neutral"} />
             <PlatformRow name="Meta Ads" connected={connections.meta} connectHref="/dashboard/connections"
-              main={meta ? formatINR(meta.spend) : "—"} mainSub={activeObjs.length ? activeObjs.map(b => `${OBJ_META[b.obj].label}`).join(" + ") : "spend"}
+              main={meta ? formatINR(meta.spend) : "-"} mainSub={activeObjs.length ? activeObjs.map(b => `${OBJ_META[b.obj].label}`).join(" + ") : "spend"}
               right={sales.count > 0 ? `${sales.roas}x ROAS` : leadsB.count > 0 ? `${formatINR(leadsB.cpl)}/lead` : ""} rightSub={meta ? `freq ${meta.frequency}x${meta.frequency >= 3 ? " ⚠" : ""}` : ""} rightTone={meta && meta.frequency >= 3 ? "warn" : "neutral"} />
             <PlatformRow name="Search Console" connected={connections.gsc} connectHref="/dashboard/connections"
-              main={gsc ? gsc.clicks.toLocaleString("en-IN") : "—"} mainSub={gscPending ? "lags 2–3 days — too recent" : gsc ? `${gsc.impressions.toLocaleString("en-IN")} impressions` : ""}
-              right={gsc ? `pos ${gsc.avgPosition.toFixed(1)}` : ""} rightSub={gscOpp.count > 0 ? `${gscOpp.count} near page 1` : `${gsc?.ctr.toFixed(1) ?? "—"}% CTR`} rightTone={gscOpp.count > 0 ? "good" : "neutral"} />
+              main={gsc ? gsc.clicks.toLocaleString("en-IN") : "-"} mainSub={gscPending ? "lags 2–3 days - too recent" : gsc ? `${gsc.impressions.toLocaleString("en-IN")} impressions` : ""}
+              right={gsc ? `pos ${gsc.avgPosition.toFixed(1)}` : ""} rightSub={gscOpp.count > 0 ? `${gscOpp.count} near page 1` : `${gsc?.ctr.toFixed(1) ?? "-"}% CTR`} rightTone={gscOpp.count > 0 ? "good" : "neutral"} />
             <PlatformRow name="Analytics GA4" connected={connections.ga4} connectHref="/dashboard/connections"
-              main={ga4 ? ga4.sessions.toLocaleString("en-IN") : "—"} mainSub={ga4 ? `${ga4.users.toLocaleString("en-IN")} users` : ""}
+              main={ga4 ? ga4.sessions.toLocaleString("en-IN") : "-"} mainSub={ga4 ? `${ga4.users.toLocaleString("en-IN")} users` : ""}
               right={ga4 ? `${ga4.bounceRate.toFixed(0)}% bounce` : ""} rightSub={ga4?.avgSessionMin ?? ""} />
             {!connections.gads && (
               <div className="py-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D4D4D4]" /><span className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Google Ads</span></div>
                 </div>
-                <Link href="/dashboard/connections" className="text-[14px] text-[#F97316] font-semibold">Connect — you may be flying blind on spend here →</Link>
+                <Link href="/dashboard/connections" className="text-[14px] text-[#F97316] font-semibold">Connect - you may be flying blind on spend here →</Link>
               </div>
             )}
           </div>
@@ -829,7 +829,7 @@ export default function CommandCenterPage() {
         <Card>
           <CardHeader title="Priority Actions" right={<span className="text-[13px] text-[#A1A1AA]">by ₹ impact</span>} />
           {loading ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">Computing…</div>
-            : actions.length === 0 ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">No high-impact actions right now — you&apos;re in good shape.</div>
+            : actions.length === 0 ? <div className="text-[14px] text-[#A1A1AA] py-4 text-center">No high-impact actions right now - you&apos;re in good shape.</div>
             : <div className="space-y-2">{actions.map((a, i) => (
                 <div key={i} className="flex items-start gap-2.5 py-1">
                   <span className="w-5 h-5 rounded-full bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[13px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
@@ -847,7 +847,7 @@ export default function CommandCenterPage() {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={14} className="text-[#F97316]" />
           <input value={chatQ} onChange={e => setChatQ(e.target.value)} onKeyDown={e => e.key === "Enter" && askAI()}
-            placeholder="Ask anything — &quot;which city has the worst RTO?&quot;, &quot;which creative should I kill?&quot;"
+            placeholder="Ask anything - &quot;which city has the worst RTO?&quot;, &quot;which creative should I kill?&quot;"
             className="flex-1 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-3 py-2 text-[15px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
           <button onClick={() => askAI()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[15px] font-bold bg-[#F97316] hover:bg-[#EA580C] text-white transition-colors"><Send size={13} /> Ask AI</button>
         </div>

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   members.push(newMember);
   await shopKv.setTeam(ctx.shop, members);
 
-  // Create an invite notification — member must explicitly accept before getting access
+  // Create an invite notification - member must explicitly accept before getting access
   const invites = await inviteKv.getInvites(normalizedEmail) ?? [];
   if (!invites.some(i => i.shop === ctx.shop)) {
     invites.push({ shop: ctx.shop, role, addedAt: new Date().toISOString(), inviterEmail: ctx.session.email });

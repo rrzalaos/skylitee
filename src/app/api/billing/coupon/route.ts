@@ -12,8 +12,8 @@ function isCouponValid(coupon: { active: boolean; expiresAt: string | null; maxU
 }
 
 // POST { code, action: "validate" | "apply" }
-// validate — returns discount info (no side effects)
-// apply    — grants free access for 100% discount coupons
+// validate - returns discount info (no side effects)
+// apply    - grants free access for 100% discount coupons
 export async function POST(req: NextRequest) {
   const shop = await getAuthorizedShop(req);
   if (!shop) return NextResponse.json({ error: "not_connected" }, { status: 401 });
@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // apply — only free codes are granted here (they bypass Shopify billing).
+  // apply - only free codes are granted here (they bypass Shopify billing).
   // Discount codes must run through the subscription flow (Shopify charge).
   if (norm.kind !== "free") {
-    return NextResponse.json({ error: "This code applies a discount — please proceed through the subscription flow" }, { status: 400 });
+    return NextResponse.json({ error: "This code applies a discount - please proceed through the subscription flow" }, { status: 400 });
   }
 
   const grant: Grant = {

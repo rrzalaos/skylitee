@@ -5,7 +5,7 @@ import { shopKv } from "./kv";
 
 // Who connected a store's Meta/Google login. An agency usually connects its own Meta/Google
 // login, which can reach EVERY client's ad accounts / sites / properties. Only that connector
-// (or the Skylitee admin) may list those accounts and change the store's selection — anyone
+// (or the Skylitee admin) may list those accounts and change the store's selection - anyone
 // else (the store owner inside Shopify, invited clients) sees only the store's saved account,
 // so one brand can never browse or switch to another brand's data.
 

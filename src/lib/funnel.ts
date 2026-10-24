@@ -4,7 +4,7 @@ import { UNINSTALL_REASONS, type UninstallReason } from "@/lib/uninstall-reasons
 
 export { UNINSTALL_REASONS, type UninstallReason };
 
-// Onboarding funnel — one Redis hash per shop (`funnel:{shop}`) recording WHEN each step
+// Onboarding funnel - one Redis hash per shop (`funnel:{shop}`) recording WHEN each step
 // first happened, plus an index set of every shop ever seen. Keyed by shop (not user) because
 // an App Store install can happen before the merchant has a Skylitee account.
 //
@@ -35,7 +35,7 @@ const key = (shop: string) => `funnel:${shop}`;
 const INDEX = "funnel:index";
 const DAY_MS = 86_400_000;
 
-// Record a step the first time it happens (HSETNX — later calls are no-ops).
+// Record a step the first time it happens (HSETNX - later calls are no-ops).
 export async function markOnce(shop: string, field: FunnelMark): Promise<void> {
   try {
     await Promise.all([
@@ -46,7 +46,7 @@ export async function markOnce(shop: string, field: FunnelMark): Promise<void> {
 }
 
 // Called after every successful Shopify OAuth. First install sets installedAt; an install
-// after an uninstall is a reinstall — clear the uninstall state so the store counts as live.
+// after an uninstall is a reinstall - clear the uninstall state so the store counts as live.
 export async function recordInstall(shop: string): Promise<void> {
   try {
     const rec = await getFunnel(shop);
@@ -81,13 +81,13 @@ export async function recordUninstallReason(shop: string, reason: UninstallReaso
   try { await kv.hset(key(shop), fields); } catch { /* best-effort */ }
 }
 
-// Dashboard visit — at most one write per shop per day. Also flags "came back after day 7".
+// Dashboard visit - at most one write per shop per day. Also flags "came back after day 7".
 export async function touchSeen(shop: string): Promise<void> {
   try {
     const today = new Date().toISOString().slice(0, 10);
     const cur = await kv.hmget<{ lastSeenDay: string | null; installedAt: string | null }>(key(shop), "lastSeenDay", "installedAt");
     if (cur?.lastSeenDay === today) return;
-    // Stores connected before funnel tracking have no installedAt — use their connect date.
+    // Stores connected before funnel tracking have no installedAt - use their connect date.
     const since = cur?.installedAt ?? await kv.get<string>(`shop:${shop}:connected_at`);
     const ops: Promise<unknown>[] = [
       kv.hset(key(shop), { lastSeenDay: today }),

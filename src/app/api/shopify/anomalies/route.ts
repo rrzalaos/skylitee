@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   if (lowStock.length > 0) {
     critical.push({
       title: `${lowStock.length} selling product${lowStock.length > 1 ? "s" : ""} critically low on stock`,
-      desc: `${lowStock.map(p => p.name).slice(0, 3).join(", ")} — reorder immediately to avoid stockout and lost sales.`,
+      desc: `${lowStock.map(p => p.name).slice(0, 3).join(", ")} - reorder immediately to avoid stockout and lost sales.`,
     });
   }
 
@@ -61,20 +61,20 @@ export async function GET(req: NextRequest) {
   if (zeroStock.length > 0) {
     critical.push({
       title: `${zeroStock.length} product${zeroStock.length > 1 ? "s" : ""} out of stock but had sales`,
-      desc: `${zeroStock.map(p => p.name).slice(0, 2).join(", ")} — these had orders this month but are now at zero stock.`,
+      desc: `${zeroStock.map(p => p.name).slice(0, 2).join(", ")} - these had orders this month but are now at zero stock.`,
     });
   }
 
   if (codPct > 50 && totalOrders > 0) {
     warnings.push({
-      title: `COD is ${codPct}% — above 50% benchmark`,
+      title: `COD is ${codPct}% - above 50% benchmark`,
       desc: `${codOrders} of ${totalOrders} orders are COD. Add a ₹75 prepaid discount to shift buyers and reduce return risk.`,
     });
   }
 
   if (repeatRate < 20 && totalCustomers > 5) {
     warnings.push({
-      title: `Repeat rate ${repeatRate}% — below 20% benchmark`,
+      title: `Repeat rate ${repeatRate}% - below 20% benchmark`,
       desc: `${totalCustomers - repeatCustomers} one-time buyers haven't returned. Set up a 7-day post-purchase email trigger.`,
     });
   }
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
   if (repeatRate >= 25) {
     positive.push({
       title: `Strong repeat rate: ${repeatRate}%`,
-      desc: "Above 25% benchmark — your customers are loyal. Double down on acquisition to grow this base.",
+      desc: "Above 25% benchmark - your customers are loyal. Double down on acquisition to grow this base.",
     });
   }
 

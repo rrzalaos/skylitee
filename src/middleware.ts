@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
   if (!isAppPage(pathname)) return NextResponse.next();
 
   // A page load inside the admin iframe without a token (e.g. a full reload). Pages are client
-  // shells that fetch everything through the API — App Bridge authenticates those calls.
+  // shells that fetch everything through the API - App Bridge authenticates those calls.
   if (req.headers.get("sec-fetch-dest") === "iframe") return NextResponse.next();
 
   if (!req.cookies.get(SESSION_COOKIE)?.value) {

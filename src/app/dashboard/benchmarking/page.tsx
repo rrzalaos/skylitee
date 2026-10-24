@@ -9,7 +9,7 @@ import { exportToPDF, exportToCSV, ExportSection } from "@/lib/export";
 import { ExportButton } from "@/components/ui/export-button";
 
 /* Category reference benchmarks for Indian ethnic-wear D2C. These are industry reference
-   values (competitors don't share live numbers) — only the "Your store" column is live. */
+   values (competitors don't share live numbers) - only the "Your store" column is live. */
 type Dir = "higher" | "lower";
 interface MetricDef { key: string; label: string; dir: Dir; avg: number; top10: number; fmt: (v: number) => string }
 const fmtX = (v: number) => `${v}x`;
@@ -105,7 +105,7 @@ export default function BenchmarkingPage() {
         out.push({ action: "Fix the weakest funnel stage & pause sub-1x campaigns", effort: "Med", impact: `ROAS ${meta.roas}x → lift toward 1.4x category avg`, priority: "P1" });
       }
       if (meta && meta.purchases > 0 && meta.cac > 650) {
-        out.push({ action: "Tighten targeting / refresh creative to lower CAC", effort: "Med", impact: `CAC ${formatINR(meta.cac)} vs ₹650 avg — aim −15%`, priority: "P2" });
+        out.push({ action: "Tighten targeting / refresh creative to lower CAC", effort: "Med", impact: `CAC ${formatINR(meta.cac)} vs ₹650 avg - aim −15%`, priority: "P2" });
       }
       if (shop && shop.aov < 980) {
         out.push({ action: "Bundles & cart upsell to raise AOV", effort: "Low", impact: `AOV ${formatINR(shop.aov)} → ₹980 avg lifts ROAS too`, priority: "P2" });
@@ -123,8 +123,8 @@ export default function BenchmarkingPage() {
 
   function buildSections(): ExportSection[] {
     return [
-      { title: `Benchmarks vs D2C category — ${range.label}`, headers: ["Metric", "Your store", "Category avg", "Top 10%", "Rank"],
-        rows: rows.map(r => [r.def.label, r.value !== null ? r.def.fmt(r.value) : "—", r.def.fmt(r.def.avg), r.def.fmt(r.def.top10), r.value !== null ? rankMeta[rankFor(r.value, r.def)].label : "—"]) },
+      { title: `Benchmarks vs D2C category - ${range.label}`, headers: ["Metric", "Your store", "Category avg", "Top 10%", "Rank"],
+        rows: rows.map(r => [r.def.label, r.value !== null ? r.def.fmt(r.value) : "-", r.def.fmt(r.def.avg), r.def.fmt(r.def.top10), r.value !== null ? rankMeta[rankFor(r.value, r.def)].label : "-"]) },
       { title: "90-day improvement roadmap", headers: ["Action", "Effort", "Expected impact", "Priority"],
         rows: roadmap.map(r => [r.action, r.effort, r.impact, r.priority]) },
     ];
@@ -169,7 +169,7 @@ export default function BenchmarkingPage() {
                         <td className="py-1.5 px-1.5 font-bold text-[#181816]">{r.value !== null ? r.def.fmt(r.value) : <span className="text-[#a3a39e] font-normal">connect platform</span>}</td>
                         <td className="py-1.5 px-1.5 text-[#686864]">{r.def.fmt(r.def.avg)}</td>
                         <td className="py-1.5 px-1.5 text-[#686864]">{r.def.fmt(r.def.top10)}{r.def.dir === "lower" ? "↓" : "+"}</td>
-                        <td className="py-2 px-2">{rank ? <Badge variant={rankMeta[rank].variant}>{rankMeta[rank].label}</Badge> : <span className="text-[#a3a39e] text-[15px]">—</span>}</td>
+                        <td className="py-2 px-2">{rank ? <Badge variant={rankMeta[rank].variant}>{rankMeta[rank].label}</Badge> : <span className="text-[#a3a39e] text-[15px]">-</span>}</td>
                       </tr>
                     );
                   })}
@@ -183,7 +183,7 @@ export default function BenchmarkingPage() {
           <Card>
             <CardHeader title="90-day improvement roadmap" right="From your gaps" />
             {roadmap.length === 0 ? (
-              <div className="text-[17px] text-[#686864] py-8 text-center">You&apos;re at or above category benchmarks across the board — keep scaling. 🎯</div>
+              <div className="text-[17px] text-[#686864] py-8 text-center">You&apos;re at or above category benchmarks across the board - keep scaling. 🎯</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-[17px] border-collapse">

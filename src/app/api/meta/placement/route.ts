@@ -45,7 +45,7 @@ function actVal(arr: ActionEntry[] | undefined, type: string): number {
   return parseFloat(arr?.find(a => a.action_type === type)?.value ?? "0");
 }
 
-// leadCount shared from @/lib/meta — matches Ads Manager "Results" (priority, not max).
+// leadCount shared from @/lib/meta - matches Ads Manager "Results" (priority, not max).
 
 function friendlyLabel(platform: string, position: string): string {
   const p = platform.toLowerCase();
@@ -135,7 +135,7 @@ function bucketFromRow(row: BreakdownRow, key: string, label: string, sort: numb
 }
 type Bucket = ReturnType<typeof bucketFromRow>;
 
-// Tolerant breakdown fetch — if one breakdown errors (e.g. an unsupported field combo),
+// Tolerant breakdown fetch - if one breakdown errors (e.g. an unsupported field combo),
 // return [] so the rest of the page still loads.
 async function getBreakdown(accountId: string, token: string, breakdown: string, timeRange: string, attrWindows: string, includeReach = true): Promise<BreakdownRow[]> {
   const fields = includeReach ? METRIC_FIELDS : METRIC_FIELDS.replace(",reach", "");
@@ -210,7 +210,7 @@ export async function GET(req: NextRequest) {
   if (placementData.error) return NextResponse.json({ error: placementData.error.message }, { status: 400 });
 
   // Accumulate raw metrics per objective × placement (and an "ALL" blend), then derive rates
-  // once — summing rates would be wrong, so we keep raw counts and compute ROAS/CTR/etc. after.
+  // once - summing rates would be wrong, so we keep raw counts and compute ROAS/CTR/etc. after.
   interface Raw { spend: number; impressions: number; clicks: number; reach: number; purchases: number; purchaseValue: number; atc: number; lpv: number; leads: number; }
   const groups = new Map<string, { objective: string; platform: string; position: string; r: Raw }>();
   const addRow = (objective: string, row: PlacementRow) => {

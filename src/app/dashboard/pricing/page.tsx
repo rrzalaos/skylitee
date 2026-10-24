@@ -33,7 +33,7 @@ function PricingContent() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
 
-  // Access state — drives the "your access ended" / "discount ended" banners
+  // Access state - drives the "your access ended" / "discount ended" banners
   const [revertPending, setRevertPending] = useState(false);
   const [accessEnded, setAccessEnded] = useState(false);
 
@@ -88,7 +88,7 @@ function PricingContent() {
     setLoading(true);
     setError(null);
 
-    // Free code — bypass Shopify billing entirely
+    // Free code - bypass Shopify billing entirely
     if (couponResult?.kind === "free") {
       try {
         const res = await fetch("/api/billing/coupon", {
@@ -133,7 +133,7 @@ function PricingContent() {
     }
   }
 
-  // Stored plan can still read "growth" after a grant expires — treat lapsed access as inactive.
+  // Stored plan can still read "growth" after a grant expires - treat lapsed access as inactive.
   const isActive = currentPlan === plan.id && !revertPending && !accessEnded;
 
   const displayPrice = couponResult
@@ -155,7 +155,7 @@ function PricingContent() {
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C] text-[14px] font-bold px-3 py-1 rounded-full mb-3">
           <Zap size={11} />
-          14-day free trial — no credit card needed
+          14-day free trial - no credit card needed
         </div>
         <h1 className="text-[32px] font-black text-[#18181B] dark:text-[#F4F4F5]">
           Everything you need to grow
@@ -180,7 +180,7 @@ function PricingContent() {
         </div>
       )}
 
-      {/* Discount window ended — must re-subscribe at full price */}
+      {/* Discount window ended - must re-subscribe at full price */}
       {revertPending && (
         <div className="w-full max-w-md mb-6 bg-[#FFF7ED] dark:bg-[#2A1A0E] border border-[#F97316]/40 rounded-2xl px-4 py-3 text-[15px] text-[#9A3412] dark:text-[#FDBA74] font-semibold">
           Your discounted pricing period has ended. Re-subscribe at the full ${plan.price}/mo to keep your access.
@@ -229,7 +229,7 @@ function PricingContent() {
         {couponResult && (
           <div className="flex items-center gap-2 bg-[#F0FDF4] dark:bg-[#052E16] border border-[#22C55E]/30 rounded-xl px-3 py-2 mb-5 text-[14px] font-bold text-[#15803D] dark:text-[#4ADE80]">
             <Tag size={11} />
-            Code applied — {couponResult.benefit || (couponResult.kind === "free" ? "Free access" : `${couponResult.discountPct}% off`)}
+            Code applied - {couponResult.benefit || (couponResult.kind === "free" ? "Free access" : `${couponResult.discountPct}% off`)}
             <button
               className="ml-auto text-[#A1A1AA] hover:text-[#EF4444] text-[13px] font-semibold"
               onClick={() => { setCouponResult(null); setCouponCode(""); setCouponOpen(false); }}

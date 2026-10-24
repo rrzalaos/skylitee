@@ -7,7 +7,7 @@ import { embeddedModeOn, isValidShopDomain, shopAdminAppUrl, verifyShopifySessio
 
 const APP_URL = process.env.SHOPIFY_APP_URL ?? "https://skylitee.io";
 
-// Embedded landing — the App URL Shopify opens inside the admin (also reached from "/" and
+// Embedded landing - the App URL Shopify opens inside the admin (also reached from "/" and
 // /api/auth when they carry admin params). Not installed yet → OAuth (top-level). Installed →
 // the right page, keeping the admin's params so the first load is authenticated.
 export async function GET(req: NextRequest) {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const installed = !!(await shopKv.getTokenRecord(shop));
   const oauthUrl = `${APP_URL}/api/auth?shop=${encodeURIComponent(shop)}&from=admin`;
 
-  // Opened top-level (no session token) — e.g. right after install, or embedding not switched on.
+  // Opened top-level (no session token) - e.g. right after install, or embedding not switched on.
   if (!claims) {
     if (!installed) return NextResponse.redirect(oauthUrl);
     return NextResponse.redirect(embeddedModeOn() ? shopAdminAppUrl(shop) : new URL("/dashboard", req.url));

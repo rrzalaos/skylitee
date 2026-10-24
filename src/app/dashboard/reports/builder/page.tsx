@@ -272,7 +272,7 @@ export default function ReportBuilderPage() {
 
       {/* Builder: left categories, right selection */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEFT — add blocks */}
+        {/* LEFT - add blocks */}
         <Card>
           <div className="text-[16px] font-bold dark:text-[#F4F4F5] mb-3">Add blocks</div>
           <div className="space-y-4">
@@ -300,7 +300,7 @@ export default function ReportBuilderPage() {
           </div>
         </Card>
 
-        {/* RIGHT — your report */}
+        {/* RIGHT - your report */}
         <Card>
           <div className="flex items-center justify-between mb-3">
             <div className="text-[16px] font-bold dark:text-[#F4F4F5]">Your report ({selected.length})</div>
@@ -316,7 +316,7 @@ export default function ReportBuilderPage() {
           {selected.length === 0 ? (
             <div className="py-12 text-center text-[15px] text-[#A1A1AA]">
               <Plus size={20} className="mx-auto mb-2 opacity-40" />
-              Select blocks on the left — they&apos;ll appear here in order.
+              Select blocks on the left - they&apos;ll appear here in order.
             </div>
           ) : (
             <div className="space-y-1.5">

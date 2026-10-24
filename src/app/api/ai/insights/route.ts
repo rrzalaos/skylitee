@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod, isCodGateway, ShopifyProduct } from "@/lib/shopify";
 import { getShopifySession } from "@/lib/session";
+import { plainDashes } from "@/lib/utils";
 
 interface Customer { orders_count: number; total_spent: string; }
 
@@ -63,7 +64,7 @@ Be direct, India-specific, and use ₹ for currency. Never give generic advice. 
     messages: [{ role: "user", content: `Give me 3 key insights from this store data:\n\n${dataContext}` }],
   });
 
-  const aiText = response.content[0].type === "text" ? response.content[0].text : "";
+  const aiText = response.content[0].type === "text" ? plainDashes(response.content[0].text) : "";
 
   return NextResponse.json({
     insights: aiText,

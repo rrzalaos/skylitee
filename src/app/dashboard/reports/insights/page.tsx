@@ -86,7 +86,7 @@ export default function InsightsReportPage() {
     if (!report) return [];
     return [
       { title: "AI Insights Summary", headers: ["Field", "Value"], rows: [
-        ["Overall Score", `${report.overallScore}/100 — ${report.scoreLabel}`],
+        ["Overall Score", `${report.overallScore}/100 - ${report.scoreLabel}`],
         ["Executive Summary", report.executiveSummary],
         ["Best Channel", `${report.channelSummary.bestChannel}: ${report.channelSummary.bestChannelReason}`],
         ["Weakest Channel", `${report.channelSummary.weakestChannel}: ${report.channelSummary.weakestChannelReason}`],

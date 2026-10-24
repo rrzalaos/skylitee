@@ -41,7 +41,7 @@ const WINDOWS = [
 
 const DAY_MS = 86_400_000;
 const fmtDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" }) : "—";
+  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" }) : "-";
 const reasonLabel = (k: string | null) => UNINSTALL_REASONS.find(r => r.key === k)?.label ?? null;
 
 // Furthest step a store reached (index into STEPS).
@@ -262,7 +262,7 @@ export function FunnelTab({ onToast }: { onToast: (msg: string) => void }) {
                     </div>
                   </td>
                   <td className="py-2.5 pr-4 text-[#71717A] dark:text-[#A1A1AA] whitespace-nowrap">
-                    {r.activeDays ? `${r.activeDays} day${r.activeDays === 1 ? "" : "s"}` : "—"}
+                    {r.activeDays ? `${r.activeDays} day${r.activeDays === 1 ? "" : "s"}` : "-"}
                   </td>
                   <td className="py-2.5">
                     {r.status === "uninstalled" ? (
@@ -274,7 +274,7 @@ export function FunnelTab({ onToast }: { onToast: (msg: string) => void }) {
                     ) : r.status === "active" ? (
                       <span className="text-[#22C55E] font-bold">Active</span>
                     ) : (
-                      <span className="text-[#A1A1AA] font-semibold" title="No Shopify token — disconnected, or uninstalled before tracking existed">Disconnected</span>
+                      <span className="text-[#A1A1AA] font-semibold" title="No Shopify token - disconnected, or uninstalled before tracking existed">Disconnected</span>
                     )}
                   </td>
                 </tr>

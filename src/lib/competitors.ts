@@ -1,9 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { competitorKv } from "./kv";
+import { plainDashes } from "./utils";
 import type { Competitor, CountryInfo, CompetitorAd, AdFormat, AdHooks, AdsPayload } from "./competitor-shared";
 export * from "./competitor-shared";
 
-// ── Competitor Intel — shared types + Meta ad fetching ────────────────────────
+// ── Competitor Intel - shared types + Meta ad fetching ────────────────────────
 // Data sources (see COMPETITOR-INTEL-SCOPE.md):
 //   • Ads, any country: Apify "Facebook Ad Library" scraper (APIFY_TOKEN). Meta's official
 //     ads_archive API returns nothing for commercial ads outside the EU.
@@ -11,7 +12,7 @@ export * from "./competitor-shared";
 //     high-confidence spend estimates. Needs a token from an ID-verified Meta account
 //     (META_AD_LIBRARY_TOKEN), falls back to the store's own Meta token.
 // Everything fetched is cached in a SHARED cache (ci:*), so one competitor is paid for once
-// across all stores. Nothing here ever invents data — a missing source returns setup_needed.
+// across all stores. Nothing here ever invents data - a missing source returns setup_needed.
 
 export const CI_LIMITS = {
   maxCompetitors: Number(process.env.CI_MAX_COMPETITORS) || 5,
@@ -41,7 +42,7 @@ export function pageIdFromUrl(url: string | undefined | null): string | null {
   return m ? m[1] : null;
 }
 
-/** Cache key for a competitor's Meta page — page id when known, else the page URL slug. */
+/** Cache key for a competitor's Meta page - page id when known, else the page URL slug. */
 export function pageKey(c: Competitor): string | null {
   if (c.pageId) return `p${c.pageId}`;
   if (!c.pageUrl) return null;
@@ -77,7 +78,7 @@ function daysBetween(startIso: string | null, endIso: string | null, active: boo
   return Math.max(1, Math.round((end - new Date(startIso).getTime()) / DAY));
 }
 
-// Dynamic product ads carry template text like "{{product.name}}" — not real copy.
+// Dynamic product ads carry template text like "{{product.name}}" - not real copy.
 const isTemplate = (s: string) => /\{\{\s*product\./i.test(s);
 
 export function libraryUrl(adId: string, country: string): string {
@@ -220,7 +221,7 @@ function archiveToAd(a: ArchiveAd, country: string): CompetitorAd {
     body: (a.ad_creative_bodies?.[0] ?? "").slice(0, 2000),
     title: (a.ad_creative_link_titles?.[0] ?? "").slice(0, 300),
     linkUrl: null, cta: null,
-    format: "text", imageUrl: null, videoUrl: null,   // creative media isn't in the API — open the library link
+    format: "text", imageUrl: null, videoUrl: null,   // creative media isn't in the API - open the library link
     collationCount: 1, collationId: null,
     libraryUrl: libraryUrl(a.id, country),
     euReach: Number.isFinite(reach) && reach > 0 ? reach : null,
@@ -231,7 +232,7 @@ function archiveToAd(a: ArchiveAd, country: string): CompetitorAd {
 
 export async function extractHooks(ads: CompetitorAd[], brand: string): Promise<AdHooks | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
-  const copies = [...new Set(ads.map(a => [a.title, a.body].filter(Boolean).join(" — ").trim()).filter(Boolean))]
+  const copies = [...new Set(ads.map(a => [a.title, a.body].filter(Boolean).join(" - ").trim()).filter(Boolean))]
     .slice(0, 40)
     .map((t, i) => `${i + 1}. ${t.slice(0, 500)}`);
   if (copies.length === 0) return null;
@@ -242,7 +243,7 @@ export async function extractHooks(ads: CompetitorAd[], brand: string): Promise<
       max_tokens: 2000,
       system:
         "You analyse a D2C brand's live Meta ad copy for a competitor-research dashboard. " +
-        "Only report what the copy actually says — never guess prices, discounts or claims that aren't in the text. " +
+        "Only report what the copy actually says - never guess prices, discounts or claims that aren't in the text. " +
         'Reply with JSON only, no prose: {"summary": string (2 short sentences, plain English, what they push and how), ' +
         '"offers": string[] (concrete offers/discounts/free gifts/COD/shipping promises, max 6), ' +
         '"hooks": string[] (opening hooks or headline angles, max 6, quote briefly), ' +
@@ -250,7 +251,7 @@ export async function extractHooks(ads: CompetitorAd[], brand: string): Promise<
       messages: [{ role: "user", content: `Brand: ${brand}\nActive ad copy:\n${copies.join("\n")}` }],
     } as Anthropic.MessageCreateParamsNonStreaming);
     if (response.stop_reason === "refusal") return null;
-    const text = response.content.find((b): b is Anthropic.TextBlock => b.type === "text")?.text ?? "";
+    const text = plainDashes(response.content.find((b): b is Anthropic.TextBlock => b.type === "text")?.text ?? "");
     const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
     const parsed = JSON.parse(json) as Partial<AdHooks>;
     const list = (v: unknown, n: number) => (Array.isArray(v) ? v.map(str).filter(Boolean).slice(0, n) : []);
@@ -302,7 +303,7 @@ export async function getCompetitorAds(
   if (!setup.ready) {
     return {
       status: "setup_needed", missing: setup.missing,
-      message: "Competitor ad tracking isn't switched on yet — the ad data provider still needs to be connected.",
+      message: "Competitor ad tracking isn't switched on yet - the ad data provider still needs to be connected.",
     };
   }
   if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock);
@@ -333,7 +334,7 @@ export async function getCompetitorAds(
           const r = reachById.get(ad.id);
           if (r && Number.isFinite(r) && r > 0) { ad.euReach = r; reachMerged = true; }
         }
-      } catch { /* reach is a bonus — keep scraped ads, confidence stays Low */ }
+      } catch { /* reach is a bonus - keep scraped ads, confidence stays Low */ }
     }
 
     ads.sort((a, b) => (b.daysRunning ?? 0) - (a.daysRunning ?? 0));

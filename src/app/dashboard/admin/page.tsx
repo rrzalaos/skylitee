@@ -55,7 +55,7 @@ interface Coupon {
 
 const PRO_PRICE = 29;
 
-// What a code gives, in plain English — e.g. "Free for 14 days", "50% off for 3 months".
+// What a code gives, in plain English - e.g. "Free for 14 days", "50% off for 3 months".
 function describeBenefit(c: Coupon): string {
   const kind: CouponKind = c.kind ?? (c.discountPct >= 100 ? "free" : "discount");
   const durationType: DurationType = c.durationType ?? "forever";
@@ -147,9 +147,9 @@ interface AdminStore {
   connectedAt: string | null;
 }
 
-// "2y 3mo", "5mo 12d", "23 days" — compact age from a connect date to now.
+// "2y 3mo", "5mo 12d", "23 days" - compact age from a connect date to now.
 function ageSince(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const then = new Date(iso), now = new Date();
   let months = (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth());
   if (now.getDate() < then.getDate()) months--;
@@ -377,7 +377,7 @@ export default function AdminPage() {
     }
   };
 
-  // Inside the Shopify admin you're signed in as the store, not as the owner — every admin API
+  // Inside the Shopify admin you're signed in as the store, not as the owner - every admin API
   // would refuse ("forbidden"). Point to the website instead of showing a dead panel.
   if (embedded) return (
     <div className="flex items-center justify-center min-h-[60vh] px-4">
@@ -682,7 +682,7 @@ export default function AdminPage() {
                       </span>
                     </div>
                     <div className="text-[14px] text-[#A1A1AA] mt-0.5">
-                      Owner: <span className="font-semibold text-[#52525B] dark:text-[#A1A1AA]">{s.owner?.name ?? "—"}</span>
+                      Owner: <span className="font-semibold text-[#52525B] dark:text-[#A1A1AA]">{s.owner?.name ?? "-"}</span>
                       {s.owner?.email && <span className="text-[#A1A1AA]"> · {s.owner.email}</span>}
                     </div>
                   </div>
@@ -691,7 +691,7 @@ export default function AdminPage() {
                       <Calendar size={11} />
                       {s.connectedAt
                         ? new Date(s.connectedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                        : "—"}
+                        : "-"}
                     </div>
                     <div className="text-[14px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{ageSince(s.connectedAt)} ago</div>
                   </div>
@@ -758,7 +758,7 @@ export default function AdminPage() {
       {/* ── USERS ── */}
       {tab === "users" && (
         <div className="space-y-3">
-          {/* Filters — only search + status */}
+          {/* Filters - only search + status */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
@@ -798,10 +798,10 @@ export default function AdminPage() {
                           <div className="text-[17px] text-[#A1A1AA] truncate max-w-[170px]">{u.email}</div>
                         </td>
                         <td className="py-3 pr-3 text-[20px] dark:text-[#F4F4F5]">
-                          {u.profile?.brandName || <span className="text-[#A1A1AA] italic">—</span>}
+                          {u.profile?.brandName || <span className="text-[#A1A1AA] italic">-</span>}
                         </td>
                         <td className="py-3 pr-3 text-[20px] text-[#71717A] dark:text-[#A1A1AA]">
-                          {u.profile?.phone || "—"}
+                          {u.profile?.phone || "-"}
                         </td>
                         <td className="py-3 pr-3 text-[20px] text-[#71717A] dark:text-[#A1A1AA]">
                           {u.shops[0] ? u.shops[0].replace(".myshopify.com", "") : <span className="italic">none</span>}
@@ -825,7 +825,7 @@ export default function AdminPage() {
                               {stats.codPct > 0 && <div className="text-[17px] text-[#EAB308]">COD {stats.codPct}%</div>}
                             </div>
                           ) : (
-                            <span className="text-[17px] text-[#A1A1AA]">—</span>
+                            <span className="text-[17px] text-[#A1A1AA]">-</span>
                           )}
                         </td>
                         <td className="py-3 pr-3">
@@ -922,7 +922,7 @@ export default function AdminPage() {
 
           {/* Full user list */}
           <Card>
-            <CardHeader title="All Stores — Full Details" right="Newest first" />
+            <CardHeader title="All Stores - Full Details" right="Newest first" />
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-[20px] min-w-[700px]">
                 <thead>
@@ -941,10 +941,10 @@ export default function AdminPage() {
                       <td className="py-2.5 pr-3 text-[#A1A1AA] font-bold">{i + 1}</td>
                       <td className="py-2.5 pr-3 font-semibold dark:text-[#F4F4F5]">{u.name}</td>
                       <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA] max-w-[160px] truncate">{u.email}</td>
-                      <td className="py-2.5 pr-3 dark:text-[#F4F4F5]">{u.profile?.brandName || "—"}</td>
-                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.phone || "—"}</td>
-                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.city || "—"}</td>
-                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.shops[0]?.replace(".myshopify.com", "") || "—"}</td>
+                      <td className="py-2.5 pr-3 dark:text-[#F4F4F5]">{u.profile?.brandName || "-"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.phone || "-"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.profile?.city || "-"}</td>
+                      <td className="py-2.5 pr-3 text-[#71717A] dark:text-[#A1A1AA]">{u.shops[0]?.replace(".myshopify.com", "") || "-"}</td>
                       <td className="py-2.5 pr-3"><PlatformDots c={u.connections} /></td>
                       <td className="py-2.5 pr-3 text-[#A1A1AA] whitespace-nowrap">
                         {new Date(u.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
