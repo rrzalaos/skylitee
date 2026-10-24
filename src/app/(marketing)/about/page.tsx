@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Target, Users, Zap, TrendingUp } from "lucide-react";
 
-export const metadata = { title: "About — Skylitee" };
+export const metadata = { title: "About - Skylitee" };
 
 const values = [
-  { icon: Users, title: "Honest communication", desc: "Simple communication, timelines, and what's included — upfront. No surprises, no hidden scope." },
+  { icon: Users, title: "Honest communication", desc: "Simple communication, timelines, and what's included - upfront. No surprises, no hidden scope." },
   { icon: Target, title: "Practical solutions", desc: "We avoid shortcuts that break later. Every feature in Skylitee is built for long-term stability, not demos." },
-  { icon: Zap, title: "Dependable support", desc: "We reply fast and take accountability. If something breaks, we fix it — we don't pass the blame." },
+  { icon: Zap, title: "Dependable support", desc: "We reply fast and take accountability. If something breaks, we fix it - we don't pass the blame." },
   { icon: TrendingUp, title: "Long-term thinking", desc: "Speed, structure, and stability are not optional for ecommerce. We build for growth, not just launch day." },
 ];
 
@@ -28,7 +28,7 @@ export default function AboutPage() {
             </span>
           </h1>
           <p className="text-[17px] sm:text-[19px] text-[#A1A1AA] leading-relaxed max-w-xl">
-            Skylitee is a product by <strong className="text-white">Orange Sky</strong> — a Surat-based web development and marketing company that helps ecommerce brands launch faster, improve conversions, and scale with systems that stay stable.
+            Skylitee is a product by <strong className="text-white">Orange Sky</strong> - a Surat-based web development and marketing company that helps ecommerce brands launch faster, improve conversions, and scale with systems that stay stable.
           </p>
         </div>
       </section>
@@ -42,7 +42,7 @@ export default function AboutPage() {
               Orange Sky designs and develops ecommerce websites, specialises in custom Shopify development, and supports brand growth with SEO and performance marketing. We work with D2C brands who are serious about building something that lasts.
             </p>
             <p>
-              Most teams can either design well or build well. We care about both — because a Shopify store that looks great but runs slow, or converts poorly, isn&apos;t doing its job.
+              Most teams can either design well or build well. We care about both - because a Shopify store that looks great but runs slow, or converts poorly, isn&apos;t doing its job.
             </p>
 
             {/* Mission/Vision/Values block */}
@@ -60,7 +60,7 @@ export default function AboutPage() {
             </div>
 
             <p>
-              Skylitee was born from a real problem we saw across every Shopify brand we worked with — too many tabs, too many disconnected tools, and no single place to see what&apos;s actually happening. So we built one.
+              Skylitee was born from a real problem we saw across every Shopify brand we worked with - too many tabs, too many disconnected tools, and no single place to see what&apos;s actually happening. So we built one.
             </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function AboutPage() {
           </div>
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-7 sm:p-9">
             <p className="text-[17px] text-[#A1A1AA] leading-relaxed mb-8">
-              We are a Surat-based ecommerce agency that designs, develops and markets Shopify stores. Skylitee is our proprietary analytics product — built internally, refined on real stores, and now available to all Shopify merchants.
+              We are a Surat-based ecommerce agency that designs, develops and markets Shopify stores. Skylitee is our proprietary analytics product - built internally, refined on real stores, and now available to all Shopify merchants.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-5">
@@ -129,7 +129,7 @@ export default function AboutPage() {
               </div>
               <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-5 sm:col-span-2">
                 <div className="text-[13px] text-[#48484A] mb-1.5 font-medium">Location</div>
-                <div className="text-[16px] text-white font-semibold">Surat, Gujarat — India 🇮🇳</div>
+                <div className="text-[16px] text-white font-semibold">Surat, Gujarat - India 🇮🇳</div>
               </div>
             </div>
           </div>

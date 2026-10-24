@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Check, Zap, ShoppingBag, Target, Search, TrendingUp, ArrowRight, Binoculars, Megaphone, Globe, Tag, Scale } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
-export const metadata = { title: "Skylitee — One Dashboard. All Your Brand Data." };
+export const metadata = { title: "Skylitee - One Dashboard. All Your Brand Data." };
 
 function DashboardMockup() {
   const bars = [38, 55, 42, 70, 58, 83, 67, 88, 62, 79, 85, 96];
@@ -47,7 +47,7 @@ function DashboardMockup() {
             ))}
           </div>
           <div className="rounded-xl bg-[#1C1C1E] p-3 border border-white/[0.05]">
-            <div className="text-[9px] text-[#48484A] mb-2 font-medium">Revenue — Last 12 days</div>
+            <div className="text-[9px] text-[#48484A] mb-2 font-medium">Revenue - Last 12 days</div>
             <div className="flex items-end gap-0.5 h-16">
               {bars.map((h, i) => (
                 <div key={i} className="flex-1 rounded-sm"
@@ -76,7 +76,7 @@ function DashboardMockup() {
   );
 }
 
-// Illustrative example — mirrors the in-app "You vs Competitors" tab (green = ahead of competitor average, red = behind)
+// Illustrative example - mirrors the in-app "You vs Competitors" tab (green = ahead of competitor average, red = behind)
 const compareRows: { label: string; you: string; tone: "good" | "bad" | null; a: string; b: string }[] = [
   { label: "Live Meta ads", you: "6", tone: "bad", a: "24", b: "11" },
   { label: "Ad spend / mo", you: "₹1.2L", tone: null, a: "~₹2.5L–6L", b: "~₹80K–2L" },
@@ -191,9 +191,9 @@ const features = [
   {
     tag: "Shopify",
     tagColor: "#96BF48",
-    title: "See everything happening in your store — in real time",
-    desc: "Revenue, orders, AOV, dead-stock & stockout alerts, customer LTV, cohorts and geo — plus the number Shopify never shows you: real cash collected after COD.",
-    items: ["Sales by day/week/month vs last period", "Top products + dead stock & stockout risk", "Customer LTV, repeat rate & retention cohorts", "COD vs prepaid — real cash, not just gross"],
+    title: "See everything happening in your store - in real time",
+    desc: "Revenue, orders, AOV, dead-stock & stockout alerts, customer LTV, cohorts and geo - plus the number Shopify never shows you: real cash collected after COD.",
+    items: ["Sales by day/week/month vs last period", "Top products + dead stock & stockout risk", "Customer LTV, repeat rate & retention cohorts", "COD vs prepaid - real cash, not just gross"],
     icon: ShoppingBag,
     mockupLines: [
       { label: "Today's Revenue", value: "₹1,24,850", change: "+22%", color: "#F97316" },
@@ -206,8 +206,8 @@ const features = [
     tag: "Meta Ads",
     tagColor: "#1877F2",
     title: "Judge every campaign on the goal it was built for",
-    desc: "Sales on ROAS, Leads on cost-per-lead, Awareness on CPM, Traffic on cost-per-visit — never one blended number. Plus a Creative Studio that scores every ad and a per-ad fix list.",
-    items: ["Objective-aware scoring — Sales / Leads / Traffic / Awareness", "Creative Studio: 0–100 score + fatigue detection", "Winners by placement, age, gender, time & device", "Per-ad “what to fix” — not just the numbers"],
+    desc: "Sales on ROAS, Leads on cost-per-lead, Awareness on CPM, Traffic on cost-per-visit - never one blended number. Plus a Creative Studio that scores every ad and a per-ad fix list.",
+    items: ["Objective-aware scoring - Sales / Leads / Traffic / Awareness", "Creative Studio: 0–100 score + fatigue detection", "Winners by placement, age, gender, time & device", "Per-ad “what to fix” - not just the numbers"],
     icon: Target,
     mockupLines: [
       { label: "Sales ROAS", value: "4.1×", change: "above 2.4× break-even", color: "#22C55E" },
@@ -219,8 +219,8 @@ const features = [
   {
     tag: "Google",
     tagColor: "#EA4335",
-    title: "GSC + GA4 in one view — not two tabs",
-    desc: "Search rankings, branded vs non-branded demand, GA4 traffic channels, the on-site funnel and which landing pages actually convert — unified with your store revenue.",
+    title: "GSC + GA4 in one view - not two tabs",
+    desc: "Search rankings, branded vs non-branded demand, GA4 traffic channels, the on-site funnel and which landing pages actually convert - unified with your store revenue.",
     items: ["Top keywords, rankings & near-page-1 wins", "Branded vs non-branded demand split", "View → ATC → checkout → purchase funnel", "Channel attribution: paid vs organic vs direct"],
     icon: Search,
     mockupLines: [
@@ -233,7 +233,7 @@ const features = [
   {
     tag: "Intelligence",
     tagColor: "#F97316",
-    title: "It doesn't just report — it tells you what to do",
+    title: "It doesn't just report - it tells you what to do",
     desc: "True net profit after COGS, RTO, COD and gateway fees. Blended ROAS across every channel. Live benchmarks vs your category. AI priority actions ranked by rupee impact. White-label PDF reports for clients.",
     items: ["True net profit & break-even ROAS (not just revenue)", "Blended ROAS across Meta + Google + organic", "Live benchmarking vs D2C category averages", "AI actions ranked by ₹ impact + white-label reports"],
     icon: TrendingUp,
@@ -248,12 +248,12 @@ const features = [
 
 const reviews = [
   { name: "Priya M.", brand: "Loomcraft Fabrics", text: "Finally stopped jumping between tabs. Everything I need is right there. The Meta funnel diagnosis alone saved us ₹40K/month in bad spend.", rating: 5 },
-  { name: "Karan S.", brand: "Bold Threads", text: "The cohort retention chart showed us our best month ever was November — so we doubled down there. Revenue went up 3x in 60 days.", rating: 5 },
+  { name: "Karan S.", brand: "Bold Threads", text: "The cohort retention chart showed us our best month ever was November - so we doubled down there. Revenue went up 3x in 60 days.", rating: 5 },
   { name: "Ananya R.", brand: "Neon Bottle", text: "I'm not a data person. Skylitee makes me feel like one. The AI chat answers my dumb questions without judgment.", rating: 5 },
 ];
 
 const steps = [
-  { n: "1", title: "Install on Shopify", desc: "Find Skylitee in the App Store. One click to install — no code, no setup." },
+  { n: "1", title: "Install on Shopify", desc: "Find Skylitee in the App Store. One click to install - no code, no setup." },
   { n: "2", title: "Connect your platforms", desc: "Link Meta Ads, Google Search Console and Google Analytics in under 5 minutes." },
   { n: "3", title: "Stop tab-switching forever", desc: "Your command center is live. All data, one screen, updated every day." },
 ];
@@ -272,7 +272,7 @@ export default function HomePage() {
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-28 sm:pt-32 pb-12 sm:pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            {/* Left — Text */}
+            {/* Left - Text */}
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-6">
                 <div className="inline-flex items-center gap-2 bg-[#F97316]/10 border border-[#F97316]/20 text-[#F97316] text-[13px] font-bold px-3.5 py-1.5 rounded-full">
@@ -290,12 +290,12 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-[18px] sm:text-[19px] text-[#A1A1AA] leading-relaxed mb-8 max-w-md">
-                Skylitee unifies Shopify, Meta Ads and Google into one live dashboard — then tells you what&apos;s working, what&apos;s broken, and exactly what to do next. Built for D2C founders who want answers, not more tabs.
+                Skylitee unifies Shopify, Meta Ads and Google into one live dashboard - then tells you what&apos;s working, what&apos;s broken, and exactly what to do next. Built for D2C founders who want answers, not more tabs.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-10">
                 <Link href="/install"
                   className="px-7 py-4 bg-[#F97316] hover:bg-[#EA580C] text-white font-bold rounded-xl text-[16px] transition-all shadow-[0_0_24px_rgba(249,115,22,0.4)] hover:shadow-[0_0_36px_rgba(249,115,22,0.6)] hover:-translate-y-0.5 text-center">
-                  Start free — 14 days →
+                  Start free - 14 days →
                 </Link>
                 <Link href="/features"
                   className="px-7 py-4 bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 text-white font-bold rounded-xl text-[16px] transition-all text-center">
@@ -312,7 +312,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Dashboard mockup */}
+            {/* Right - Dashboard mockup */}
             <div className="relative mt-6 lg:mt-0">
               <div className="absolute -inset-4 rounded-3xl opacity-30"
                 style={{ background: "radial-gradient(ellipse, rgba(249,115,22,0.3) 0%, transparent 70%)", filter: "blur(40px)" }} />
@@ -355,7 +355,7 @@ export default function HomePage() {
         <section key={f.tag} className={`py-16 sm:py-20 lg:py-24 px-4 ${idx % 2 === 0 ? "bg-white" : "bg-[#F5F5F4]"}`}>
           <div className="max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-              {/* Text — swaps order on desktop for odd sections */}
+              {/* Text - swaps order on desktop for odd sections */}
               <div className={idx % 2 !== 0 ? "lg:order-2" : ""}>
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-bold mb-5 border"
                   style={{ background: `${f.tagColor}10`, color: f.tagColor, borderColor: `${f.tagColor}30` }}>
@@ -375,7 +375,7 @@ export default function HomePage() {
                 </ul>
               </div>
 
-              {/* Mockup — swaps order on desktop for odd sections */}
+              {/* Mockup - swaps order on desktop for odd sections */}
               <div className={idx % 2 !== 0 ? "lg:order-1" : ""}>
                 <div className="rounded-2xl bg-[#111113] border border-white/[0.08] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
                   <div className="bg-[#1C1C1E] px-4 py-2.5 flex items-center gap-2 border-b border-white/[0.05]">
@@ -475,7 +475,7 @@ export default function HomePage() {
               <span className="text-[52px] font-black text-[#18181B] leading-none">$29</span>
               <span className="text-[16px] text-[#A1A1AA] mb-2">/mo</span>
             </div>
-            <div className="text-[15px] text-[#22C55E] font-semibold mb-6">14-day free trial — no credit card</div>
+            <div className="text-[15px] text-[#22C55E] font-semibold mb-6">14-day free trial - no credit card</div>
             <ul className="text-left space-y-2.5 mb-6">
               {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "Competitor Intel - their ads, traffic & you-vs-them", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
                 <li key={feat} className="flex items-center gap-2.5 text-[16px] text-[#52525B]">
@@ -511,7 +511,7 @@ export default function HomePage() {
           </p>
           <Link href="/install"
             className="inline-block px-10 py-4 bg-[#F97316] hover:bg-[#EA580C] text-white font-black rounded-xl text-[16px] transition-all shadow-[0_0_32px_rgba(249,115,22,0.4)] hover:shadow-[0_0_48px_rgba(249,115,22,0.6)] hover:-translate-y-0.5">
-            Install on Shopify — Free to Start →
+            Install on Shopify - Free to Start →
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8 text-[14px] text-[#52525B]">
             <span>✓ No setup fees</span>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Check, Zap } from "lucide-react";
 
-export const metadata = { title: "Pricing — Skylitee" };
+export const metadata = { title: "Pricing - Skylitee" };
 
 const features = [
   "Shopify sales, COD-cash & Sales Analysis",
-  "Objective-aware Meta — Sales / Leads / Traffic / Awareness",
-  "Creative Studio — 0–100 scoring & fatigue detection",
+  "Objective-aware Meta - Sales / Leads / Traffic / Awareness",
+  "Creative Studio - 0–100 scoring & fatigue detection",
   "Placement, age, gender, time & device winners",
   "Google Search Console & Analytics 4 + attribution",
   "True net profit & break-even ROAS (P&L)",
@@ -20,12 +20,12 @@ const features = [
 ];
 
 const faqs = [
-  { q: "Is there a free trial?", a: "Yes — 14 days free, no credit card required. You get full access to every feature during the trial. No limits." },
+  { q: "Is there a free trial?", a: "Yes - 14 days free, no credit card required. You get full access to every feature during the trial. No limits." },
   { q: "What happens after the 14 days?", a: "Shopify will prompt you to approve the $29/month subscription. If you don't approve, your access pauses. No surprise charges." },
-  { q: "How does billing work?", a: "All billing is handled by Shopify — the same way you pay for other Shopify apps. No separate account or card needed." },
+  { q: "How does billing work?", a: "All billing is handled by Shopify - the same way you pay for other Shopify apps. No separate account or card needed." },
   { q: "Can I cancel anytime?", a: "Yes. Go to Shopify Admin → Apps → Skylitee → Cancel subscription. Your access continues until the end of the billing period." },
   { q: "Do I need Meta and Google connected?", a: "No. Skylitee works great with just your Shopify store. Meta and Google connections are optional and can be added or removed anytime." },
-  { q: "Is there a discount for annual billing?", a: "Not yet — billing is monthly through Shopify. Annual billing is on our roadmap. If you need it, reach out and we'll see what we can do." },
+  { q: "Is there a discount for annual billing?", a: "Not yet - billing is monthly through Shopify. Annual billing is on our roadmap. If you need it, reach out and we'll see what we can do." },
 ];
 
 export default function PricingPage() {
@@ -64,7 +64,7 @@ export default function PricingPage() {
                 <div className="text-[20px] font-black text-[#18181B]">Skylitee Pro</div>
               </div>
               <div className="text-[15px] text-[#22C55E] font-semibold flex items-center gap-1.5">
-                <Zap size={13} fill="#22C55E" /> 14-day free trial — no credit card needed
+                <Zap size={13} fill="#22C55E" /> 14-day free trial - no credit card needed
               </div>
             </div>
             <div className="text-right shrink-0">

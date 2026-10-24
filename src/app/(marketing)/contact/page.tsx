@@ -1,6 +1,6 @@
 import { Mail, MessageSquare, Clock, MapPin } from "lucide-react";
 
-export const metadata = { title: "Contact — Skylitee" };
+export const metadata = { title: "Contact - Skylitee" };
 
 export default function ContactPage() {
   return (
@@ -20,7 +20,7 @@ export default function ContactPage() {
             </span>
           </h1>
           <p className="text-[17px] sm:text-[18px] text-[#71717A]">
-            Whether it&apos;s a bug, a billing question or a feature idea — we read every message.
+            Whether it&apos;s a bug, a billing question or a feature idea - we read every message.
           </p>
         </div>
       </section>
@@ -65,7 +65,7 @@ export default function ContactPage() {
             <MapPin size={18} className="text-[#F97316] shrink-0" />
             <div>
               <div className="text-[14px] font-bold text-[#18181B]">Based in</div>
-              <div className="text-[14px] text-[#71717A]">India — Orange Sky team</div>
+              <div className="text-[14px] text-[#71717A]">India - Orange Sky team</div>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function ContactPage() {
               <textarea
                 name="body"
                 rows={5}
-                placeholder="Tell us more — the more detail, the faster we can help."
+                placeholder="Tell us more - the more detail, the faster we can help."
                 className="w-full border border-black/[0.10] rounded-xl px-4 py-3.5 text-[15px] text-[#18181B] outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/10 transition-all resize-none placeholder:text-[#A1A1AA]"
               />
             </div>
@@ -126,7 +126,7 @@ export default function ContactPage() {
           <div>
             <div className="text-[15px] font-bold text-[#EA580C] mb-1">Already using Skylitee?</div>
             <p className="text-[14px] text-[#92400E] leading-relaxed">
-              If you&apos;re enjoying the app, a review on the Shopify App Store helps other D2C brands discover us — and it means a lot to a small team.
+              If you&apos;re enjoying the app, a review on the Shopify App Store helps other D2C brands discover us - and it means a lot to a small team.
             </p>
           </div>
         </div>

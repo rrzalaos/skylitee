@@ -18,7 +18,7 @@ document.write('<scr'+'ipt src="https://cdn.shopify.com/shopifycloud/app-bridge.
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://skylitee.io"),
-  title: "Skylitee — Unified Ecommerce Analytics",
+  title: "Skylitee - Unified Ecommerce Analytics",
   description: "Shopify + Meta + Google unified analytics for D2C brands",
   verification: { google: "tmGd0ZESQ6HhqKrrm4y2x9xsyabdLaS6FeSMtW17QsA" },
 };

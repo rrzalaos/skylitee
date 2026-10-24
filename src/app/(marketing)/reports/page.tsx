@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BarChart2, Target, Search, TrendingUp, DollarSign, Users, Map, Zap, Calendar, ShoppingBag, Trophy, FileText } from "lucide-react";
 
-export const metadata = { title: "Reports — Skylitee" };
+export const metadata = { title: "Reports - Skylitee" };
 
 const reports = [
   {
@@ -18,7 +18,7 @@ const reports = [
   {
     icon: BarChart2,
     title: "Sales Analysis",
-    desc: "Store vs Meta vs Google vs Organic — by day, week or month. Blended ROAS, weekday-vs-weekend, and best day to sell.",
+    desc: "Store vs Meta vs Google vs Organic - by day, week or month. Blended ROAS, weekday-vs-weekend, and best day to sell.",
     tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
     mockup: [
       { label: "Blended ROAS", value: "3.1×", color: "#22C55E" },
@@ -51,7 +51,7 @@ const reports = [
   {
     icon: Map,
     title: "Geo Report",
-    desc: "Top states and cities by revenue, orders and average order value — across all of India.",
+    desc: "Top states and cities by revenue, orders and average order value - across all of India.",
     tag: "Shopify", tagColor: "#4a7a1e", tagBg: "#96BF4810",
     mockup: [
       { label: "#1 City", value: "Mumbai", color: "#F97316" },
@@ -62,7 +62,7 @@ const reports = [
   {
     icon: Target,
     title: "Meta Ads Report",
-    desc: "Campaign-level ROAS, CAC, CTR, frequency, funnel diagnosis and creative performance — no Ads Manager needed.",
+    desc: "Campaign-level ROAS, CAC, CTR, frequency, funnel diagnosis and creative performance - no Ads Manager needed.",
     tag: "Meta Ads", tagColor: "#1877F2", tagBg: "#1877F210",
     mockup: [
       { label: "ROAS", value: "4.1×", color: "#1877F2" },
@@ -73,7 +73,7 @@ const reports = [
   {
     icon: ShoppingBag,
     title: "Placement Report",
-    desc: "Feed vs Reels vs Stories vs Audience Network — which placements actually earn your spend back.",
+    desc: "Feed vs Reels vs Stories vs Audience Network - which placements actually earn your spend back.",
     tag: "Meta Ads", tagColor: "#1877F2", tagBg: "#1877F210",
     mockup: [
       { label: "Best placement", value: "Reels", color: "#1877F2" },
@@ -84,7 +84,7 @@ const reports = [
   {
     icon: Calendar,
     title: "Timing Report",
-    desc: "Hourly and day-of-week breakdown of ad ROAS, CTR and spend — so you know when to push budget.",
+    desc: "Hourly and day-of-week breakdown of ad ROAS, CTR and spend - so you know when to push budget.",
     tag: "Meta Ads", tagColor: "#1877F2", tagBg: "#1877F210",
     mockup: [
       { label: "Best hour", value: "8–10 PM", color: "#F97316" },
@@ -117,7 +117,7 @@ const reports = [
   {
     icon: DollarSign,
     title: "Financial P&L",
-    desc: "Real profit and loss — enter COGS, shipping, RTO rate, payment gateway fees. Get your actual break-even ROAS.",
+    desc: "Real profit and loss - enter COGS, shipping, RTO rate, payment gateway fees. Get your actual break-even ROAS.",
     tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
     mockup: [
       { label: "Net Profit", value: "₹68K", color: "#22C55E" },
@@ -139,7 +139,7 @@ const reports = [
   {
     icon: Trophy,
     title: "Benchmarking",
-    desc: "Your live metrics vs Indian D2C category averages — ROAS, CAC, CPM, AOV, COD and repeat rate — with a 90-day roadmap from your gaps.",
+    desc: "Your live metrics vs Indian D2C category averages - ROAS, CAC, CPM, AOV, COD and repeat rate - with a 90-day roadmap from your gaps.",
     tag: "Analytics", tagColor: "#F97316", tagBg: "#F9731610",
     mockup: [
       { label: "Your ROAS", value: "Top 30%", color: "#22C55E" },
@@ -184,16 +184,16 @@ export default function ReportsPage() {
       </section>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
-        {/* Featured — Command Center */}
+        {/* Featured - Command Center */}
         <div className="mb-10">
           <div className="rounded-2xl bg-[#0A0A0A] border border-white/[0.08] p-7 sm:p-8 flex flex-col lg:flex-row gap-8 items-center shadow-[0_0_0_1px_rgba(249,115,22,0.15),0_20px_60px_rgba(0,0,0,0.4)]">
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-bold mb-4 border"
                 style={{ background: "#F9731615", color: "#F97316", borderColor: "#F9731630" }}>
-                ★ Most popular — All Platforms
+                ★ Most popular - All Platforms
               </div>
               <h2 className="text-[26px] sm:text-[30px] font-black text-white mb-3">Command Center</h2>
-              <p className="text-[16px] sm:text-[17px] text-[#71717A] leading-relaxed">Your daily overview — revenue, ad spend, ROAS, GSC clicks and GA4 sessions on one screen.</p>
+              <p className="text-[16px] sm:text-[17px] text-[#71717A] leading-relaxed">Your daily overview - revenue, ad spend, ROAS, GSC clicks and GA4 sessions on one screen.</p>
             </div>
             <div className="w-full lg:w-80 rounded-xl bg-[#161618] border border-white/[0.06] overflow-hidden">
               <div className="bg-[#1C1C1E] px-3 py-2.5 flex items-center gap-1.5 border-b border-white/[0.05]">

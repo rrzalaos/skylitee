@@ -1,4 +1,4 @@
-export const metadata = { title: "Cookie Policy — Skylitee" };
+export const metadata = { title: "Cookie Policy - Skylitee" };
 
 export default function CookiesPage() {
   return (

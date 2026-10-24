@@ -1,4 +1,4 @@
-export const metadata = { title: "Refund Policy — Skylitee" };
+export const metadata = { title: "Refund Policy - Skylitee" };
 
 export default function RefundPage() {
   return (

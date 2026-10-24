@@ -68,17 +68,17 @@ function InstallForm() {
             onClick={() => window.location.href = "/dashboard"}
             className="w-full py-2.5 text-[14px] text-[#9e9e9a] hover:text-[#686864] transition-colors text-center mt-1"
           >
-            Skip for now — explore dashboard →
+            Skip for now - explore dashboard →
           </button>
 
           {/* What we access */}
           <div className="mt-5 pt-4 border-t border-black/[0.07]">
             <div className="text-[14px] font-semibold text-[#9e9e9a] uppercase tracking-wider mb-2.5">What Skylitee will access</div>
             {[
-              "Orders — revenue, AOV, payment methods",
-              "Products — sales, inventory, stock levels",
-              "Customers — segments, LTV, location",
-              "Analytics — traffic and conversion data",
+              "Orders - revenue, AOV, payment methods",
+              "Products - sales, inventory, stock levels",
+              "Customers - segments, LTV, location",
+              "Analytics - traffic and conversion data",
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 mb-1.5">
                 <CheckCircle2 size={13} className="text-[#17a773] shrink-0" />

@@ -51,11 +51,11 @@ export default function PrivacyPage() {
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>6. Third-party services</h2>
         <ul style={{ paddingLeft: 24 }}>
-          <li>Shopify Admin API — to read store data</li>
-          <li>Google APIs — Search Console and Analytics 4</li>
-          <li>Meta Marketing API — ad account data</li>
-          <li>Upstash Redis — encrypted token storage</li>
-          <li>Vercel — application hosting</li>
+          <li>Shopify Admin API - to read store data</li>
+          <li>Google APIs - Search Console and Analytics 4</li>
+          <li>Meta Marketing API - ad account data</li>
+          <li>Upstash Redis - encrypted token storage</li>
+          <li>Vercel - application hosting</li>
         </ul>
       </section>
 

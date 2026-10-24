@@ -1,4 +1,4 @@
-export const metadata = { title: "Terms of Service — Skylitee" };
+export const metadata = { title: "Terms of Service - Skylitee" };
 
 export default function TermsPage() {
   return (
