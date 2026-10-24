@@ -18,7 +18,7 @@ import {
   type GoogleAd, type GoogleAdsPayload, type GoogleAdStats, type GoogleAdPlatform,
 } from "@/lib/competitor-shared";
 import {
-  defaultAssumptions, estimateAll, FX_INR,
+  defaultAssumptions, estimateAll, estimateGoogleSpend, FX_INR,
   type Assumptions, type AssumptionSource, type OwnMetrics, type Range, type Confidence,
 } from "@/lib/competitor-estimate";
 import type { TrafficPayload } from "@/lib/dataforseo";
@@ -345,7 +345,7 @@ export default function CompetitorIntelPage() {
           )}
           {tab === "traffic" && (
             <TrafficTab competitor={selected} resp={traffic} loading={trafficLoading} own={own} countryCode={country}
-              googleLive={gads?.status === "ok" ? gads.data.totals?.live ?? gads.stats.active : 0} onRefresh={() => loadTraffic(true)} />
+              gads={gads?.status === "ok" ? gads : null} onRefresh={() => loadTraffic(true)} />
           )}
           {tab === "spend" && (
             <SpendTab
@@ -804,11 +804,12 @@ function GoogleAdCard({ ad }: { ad: GoogleAd }) {
 
 // ── Tab 3: Traffic Intel ──────────────────────────────────────────────────────
 
-function TrafficTab({ competitor, resp, loading, own, countryCode, googleLive, onRefresh }: {
+function TrafficTab({ competitor, resp, loading, own, countryCode, gads, onRefresh }: {
   competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string;
-  googleLive: number; // live Google ads from Ad Spy — keyword tools miss Shopping/PMax/YouTube
+  gads: Extract<GadsResp, { status: "ok" }> | null; // live Google ads from Ad Spy — keyword tools miss most of them
   onRefresh: () => void;
 }) {
+  const googleLive = gads ? gads.data.totals?.live ?? gads.stats.active : 0;
   if (!competitor.website) {
     return <Empty icon={<Globe size={26} />} title="No website added" body={`Remove and re-add ${competitor.name} with their website to see their Google traffic.`} />;
   }
@@ -830,22 +831,42 @@ function TrafficTab({ competitor, resp, loading, own, countryCode, googleLive, o
   const history = data.history.map(h => ({ ...h, label: new Date(`${h.month}-01`).toLocaleDateString("en-IN", { month: "short", year: "2-digit" }) }));
   const ownComparable = countryCode === "IN"; // own GSC/GA4 are mostly home-market traffic
 
+  // Keyword data often sees none of a brand's ads (it samples searches) — fall back to the
+  // live-ad estimate the Est. Spend tab uses, so these cards match it.
+  const country = getCountry(countryCode);
+  const gEst = ov.paidCostInr > 0 ? null : estimateGoogleSpend(gads?.data.ads ?? null, googleLive || null, 0, country);
+  const gCpc = defaultAssumptions(country, null, null).a.gCpc;
+  const gVisits = gEst ? { lo: Math.round(gEst.range.lo / gCpc), hi: Math.round(gEst.range.hi / gCpc) } : null;
+
   return (
     <div>
       <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="monthly" />
       <WarnBanner type="blue">
-        These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume). &ldquo;Search-ad&rdquo; means keyword ads only — Shopping, YouTube and Meta clicks aren&apos;t in this data; the Est. Spend tab adds them.
+        These are DataForSEO{" "}<b>estimates</b>{" "}of Google traffic (from rankings × search volume).
+        {gEst
+          ? <> Its keyword sample caught none of {competitor.name}&apos;s Google ads, so the ad cards are estimated from their {gEst.liveAds} live ads instead (same as the Est. Spend tab).</>
+          : <> &ldquo;Search-ad&rdquo; means keyword ads only — Shopping, YouTube and Meta clicks aren&apos;t in this data; the Est. Spend tab adds them.</>}
       </WarnBanner>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 mb-3">
         <KPICard label="Organic visits / mo" value={numShort(ov.organicTraffic)} sub={`${formatNumber(ov.organicKeywords)} keywords · estimate`} icon={<Search size={12} />} />
-        <KPICard label="Search-ad visits / mo" value={ov.paidTraffic > 0 ? numShort(ov.paidTraffic) : googleLive > 0 ? "Not seen" : "0"}
-          sub={ov.paidTraffic > 0 ? `${formatNumber(ov.paidKeywords)} paid keywords · estimate`
-            : googleLive > 0 ? `${googleLive} live Google ads, but no tracked keyword clicks · see Est. Spend` : "no Google search ads found"}
-          icon={<Megaphone size={12} />} />
-        <KPICard label="Search-ad spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "Not seen"}
-          sub={ov.paidCostInr > 0 ? "keyword ads only · estimate" : googleLive > 0 ? "not in keyword data · full Google estimate → Est. Spend" : "no search ads found"}
-          icon={<Target size={12} />} />
+        {gEst && gVisits ? (
+          <>
+            <KPICard label="Google-ad visits / mo" value={`${numShort(gVisits.lo)} – ${numShort(gVisits.hi)}`}
+              sub={`spend ÷ ₹${gCpc}/click · ${gEst.confidence} confidence`} icon={<Megaphone size={12} />} />
+            <KPICard label="Google-ad spend / mo" value={rangeInr(gEst.range)}
+              sub={`from ${gEst.liveAds} live Google ads · ${gEst.confidence} confidence`} icon={<Target size={12} />} />
+          </>
+        ) : (
+          <>
+            <KPICard label="Search-ad visits / mo" value={ov.paidTraffic > 0 ? numShort(ov.paidTraffic) : "0"}
+              sub={ov.paidTraffic > 0 ? `${formatNumber(ov.paidKeywords)} paid keywords · estimate` : "no Google ads found"}
+              icon={<Megaphone size={12} />} />
+            <KPICard label="Search-ad spend / mo" value={ov.paidCostInr > 0 ? inrShort(ov.paidCostInr) : "₹0"}
+              sub={ov.paidCostInr > 0 ? "keyword ads only · estimate" : "no Google ads found"}
+              icon={<Target size={12} />} />
+          </>
+        )}
         <KPICard label="Organic traffic value" value={inrShort(ov.organicValueInr)} sub="what it'd cost as ads" icon={<TrendingUp size={12} />} />
       </div>
 
