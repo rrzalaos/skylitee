@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingBag, Target, Search, BarChart2, Users, Map, TrendingUp, Zap, MessageSquare, DollarSign, Bell, Check, FileText, Trophy, Clock } from "lucide-react";
+import { ShoppingBag, Target, Search, BarChart2, Users, Map, TrendingUp, Zap, MessageSquare, DollarSign, Bell, Check, FileText, Trophy, Clock, Scale, Megaphone, Eye, Globe, Tag } from "lucide-react";
 
 export const metadata = { title: "Features — Skylitee" };
 
@@ -53,10 +53,26 @@ const sections = [
     ],
   },
   {
+    platform: "New · Competitor Intel",
+    tagColor: "#22C55E",
+    tagBg: "#22C55E12",
+    darkBg: true,
+    headline: "Know what your competitors run, spend and earn.",
+    sub: "Add up to 5 competitors and see their live ads, Google traffic and store — then compare it all with your own real numbers, measure by measure.",
+    features: [
+      { icon: Scale, title: "You vs Competitors", desc: "Your real 30-day revenue, ad spend, ROAS and Google traffic next to theirs — green where you're ahead, red where you're behind, with the fix." },
+      { icon: Megaphone, title: "Meta Ad Spy", desc: "Every live Facebook & Instagram ad, its format and how long it has run — long-running ads reveal their proven winners." },
+      { icon: Eye, title: "Google Ad Spy", desc: "Their live Search, Shopping and YouTube ads from Google's Ads Transparency Center." },
+      { icon: DollarSign, title: "Estimated Spend & ROAS", desc: "Monthly ad-spend, revenue and ROAS ranges with a confidence badge — honest estimates, never a fake exact number." },
+      { icon: Globe, title: "Traffic Intel", desc: "Free vs paid Google traffic, ranking keywords and what their organic traffic would cost you as ads." },
+      { icon: Tag, title: "Store & Pricing", desc: "Product count, typical and bestseller prices, and how much of their catalogue is on discount." },
+    ],
+  },
+  {
     platform: "Intelligence & Reports",
     tagColor: "#F97316",
     tagBg: "#F9731612",
-    darkBg: true,
+    darkBg: false,
     headline: "It doesn't just report — it tells you what to do.",
     sub: "True profit, live benchmarks, AI actions ranked by rupee impact, and white-label client reports — all in one plan.",
     features: [
@@ -147,6 +163,7 @@ export default function FeaturesPage() {
                 "Google Search Console + GA4 + attribution",
                 "True net profit & break-even ROAS (P&L)",
                 "Live benchmarking vs D2C category",
+                "Competitor Intel — ad spy, traffic & you-vs-them",
                 "AI insights, chat & priority actions",
                 "White-label custom PDF reports",
                 "Cohort retention, geo & customer intelligence",

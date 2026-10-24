@@ -167,6 +167,17 @@ The numbers that decide whether you're actually profitable:
 #### 🟢 Built-In Benchmark Coaching
 Skylitee doesn't just show a number — it tells you whether it's **good or bad and why.** Every key metric is flagged **green** (what's working, and why to keep doing it) or **red** (what's below benchmark, and exactly how to fix it). It turns analytics into coaching for owners who aren't data analysts.
 
+#### 🔭 Competitor Intel (NEW)
+See what competitors run, spend and earn — next to your own numbers. Track up to 5 competitors:
+- **You vs Competitors:** your real last-30-day revenue, ad spend, ROAS, Google traffic, order value and catalogue side by side with each competitor — green where you're ahead of the competitor average, red where you're behind, with a plain-English fix for every gap
+- **Meta Ad Spy:** every live Facebook/Instagram ad, its format and how long it has run (long-running ads = their proven winners)
+- **Google Ad Spy:** live Search, Shopping and YouTube ads from Google's Ads Transparency Center
+- **Estimated Spend & ROAS:** monthly ad-spend, revenue and ROAS ranges with a confidence badge — honest ranges, never a fake exact number
+- **Traffic Intel:** free vs paid Google traffic, ranking keywords and the value of their organic traffic
+- **Store & Pricing:** product count, typical and bestseller prices, % of catalogue on discount (Shopify stores)
+
+Key message: *"Stop guessing what your competitors are doing. See their ads, their traffic and their estimated spend — and exactly where you're beating them."*
+
 #### 🔍📊 Google Ads, Search Console & GA4 + Report Suite
 - **Google Ads** performance alongside Meta, for a true paid-channel comparison
 - **Search Console** and **GA4** for the full organic + traffic picture

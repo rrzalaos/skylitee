@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, Zap, ShoppingBag, Target, Search, TrendingUp, ArrowRight } from "lucide-react";
+import { Check, Zap, ShoppingBag, Target, Search, TrendingUp, ArrowRight, Binoculars, Megaphone, Globe, Tag, Scale } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
 export const metadata = { title: "Skylitee — One Dashboard. All Your Brand Data." };
@@ -73,6 +73,109 @@ function DashboardMockup() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Illustrative example — mirrors the in-app "You vs Competitors" tab (green = ahead of competitor average, red = behind)
+const compareRows: { label: string; you: string; tone: "good" | "bad" | null; a: string; b: string }[] = [
+  { label: "Live Meta ads", you: "6", tone: "bad", a: "24", b: "11" },
+  { label: "Ad spend / mo", you: "₹1.2L", tone: null, a: "~₹2.5L–6L", b: "~₹80K–2L" },
+  { label: "ROAS", you: "3.4×", tone: "good", a: "~1.8–2.9×", b: "~2.0–3.1×" },
+  { label: "Free Google visits / mo", you: "1.8K", tone: "bad", a: "~14K", b: "~3.2K" },
+  { label: "Revenue / mo", you: "₹4.2L", tone: "good", a: "~₹3L–7L", b: "~₹1.5L–3.5L" },
+];
+
+function CompetitorMockup() {
+  return (
+    <div className="rounded-2xl bg-[#111113] border border-white/[0.08] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+      <div className="bg-[#1C1C1E] px-4 py-2.5 flex items-center gap-2 border-b border-white/[0.05]">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+        </div>
+        <span className="text-[11px] text-[#48484A] ml-2 font-medium">You vs Competitors · Skylitee</span>
+      </div>
+      <div className="p-3 sm:p-4 overflow-x-auto">
+        <table className="w-full text-[12px] sm:text-[13px] min-w-[340px]">
+          <thead>
+            <tr className="text-[#71717A] text-left">
+              <th className="font-semibold pb-2 pr-2">Measure</th>
+              <th className="font-semibold pb-2 px-2 text-right text-[#F97316]">You</th>
+              <th className="font-semibold pb-2 px-2 text-right">Brand A</th>
+              <th className="font-semibold pb-2 pl-2 text-right">Brand B</th>
+            </tr>
+          </thead>
+          <tbody>
+            {compareRows.map(r => (
+              <tr key={r.label} className="border-t border-white/[0.05]">
+                <td className="py-2 pr-2 text-[#A1A1AA]">{r.label}</td>
+                <td className={`py-2 px-2 text-right font-black rounded ${r.tone === "good" ? "text-[#22C55E] bg-[#22C55E]/10" : r.tone === "bad" ? "text-[#EF4444] bg-[#EF4444]/10" : "text-white"}`}>{r.you}</td>
+                <td className="py-2 px-2 text-right text-[#D4D4D8] whitespace-nowrap">{r.a}</td>
+                <td className="py-2 pl-2 text-right text-[#D4D4D8] whitespace-nowrap">{r.b}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-3 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/20 px-3 py-2.5">
+          <div className="text-[12px] font-bold text-[#EF4444] mb-0.5">Behind on free Google traffic</div>
+          <div className="text-[12px] text-[#A1A1AA]">Brand A gets ~14K visits/mo without paying for ads. Fix: build pages for the keywords they rank for.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const competitorPoints = [
+  { icon: Megaphone, title: "Every live ad they run", desc: "Meta and Google ads (Search, Shopping, YouTube) — with how long each has run, so you spot their proven winners." },
+  { icon: Scale, title: "Estimated spend & ROAS", desc: "Monthly ad-spend and revenue ranges with a confidence badge — never a fake exact number." },
+  { icon: Globe, title: "Google traffic & keywords", desc: "Their free vs paid Google traffic, ranking keywords and what that traffic is worth." },
+  { icon: Tag, title: "Store & pricing", desc: "Product count, typical price, bestseller prices and how much of their catalogue is on discount." },
+];
+
+function CompetitorIntel() {
+  return (
+    <section id="competitor-intel" className="relative py-16 sm:py-20 lg:py-24 px-4 bg-[#0A0A0A] text-white overflow-hidden scroll-mt-20 border-t border-white/[0.05]">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/3 left-0 w-[500px] h-[400px] rounded-full opacity-10"
+          style={{ background: "radial-gradient(ellipse, #22C55E 0%, transparent 70%)", filter: "blur(70px)" }} />
+      </div>
+      <div className="relative max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[13px] font-bold mb-5 border bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/30">
+              <Binoculars size={12} /> New · Competitor Intel
+            </div>
+            <h2 className="text-[28px] sm:text-[32px] lg:text-[38px] font-black leading-tight mb-4">
+              See what your competitors run, spend and earn —{" "}
+              <span style={{ background: "linear-gradient(135deg, #F97316 0%, #FBBF24 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                next to your own numbers.
+              </span>
+            </h2>
+            <p className="text-[17px] sm:text-[18px] text-[#A1A1AA] leading-relaxed mb-7">
+              Add up to 5 competitors. Skylitee puts your real store, ads and Google data side by side with theirs, colours each measure green or red, and tells you exactly where you&apos;re behind — and how to catch up.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {competitorPoints.map(p => (
+                <div key={p.title} className="flex gap-3">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#22C55E]/10 border border-[#22C55E]/20">
+                    <p.icon size={16} className="text-[#22C55E]" />
+                  </div>
+                  <div>
+                    <div className="text-[15px] font-bold mb-0.5">{p.title}</div>
+                    <div className="text-[14px] text-[#71717A] leading-relaxed">{p.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <CompetitorMockup />
+            <p className="text-[12px] text-[#52525B] mt-3 text-center">Example view. Competitor figures are estimates shown as ranges (~).</p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -171,8 +274,14 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             {/* Left — Text */}
             <div>
-              <div className="inline-flex items-center gap-2 bg-[#F97316]/10 border border-[#F97316]/20 text-[#F97316] text-[13px] font-bold px-3.5 py-1.5 rounded-full mb-6">
-                <Zap size={12} fill="#F97316" /> Live on Shopify App Store
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                <div className="inline-flex items-center gap-2 bg-[#F97316]/10 border border-[#F97316]/20 text-[#F97316] text-[13px] font-bold px-3.5 py-1.5 rounded-full">
+                  <Zap size={12} fill="#F97316" /> Live on Shopify App Store
+                </div>
+                <a href="#competitor-intel" className="inline-flex items-center gap-1.5 bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 text-white text-[13px] font-bold px-3 py-1.5 rounded-full transition-colors">
+                  <span className="bg-[#22C55E] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">NEW</span>
+                  Competitor Intel <ArrowRight size={12} />
+                </a>
               </div>
               <h1 className="text-[38px] sm:text-[48px] lg:text-[56px] font-black leading-[1.08] mb-6">
                 Stop switching tabs.<br />
@@ -238,6 +347,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <CompetitorIntel />
 
       {/* ── Feature sections ── */}
       {features.map((f, idx) => (
@@ -366,7 +477,7 @@ export default function HomePage() {
             </div>
             <div className="text-[15px] text-[#22C55E] font-semibold mb-6">14-day free trial — no credit card</div>
             <ul className="text-left space-y-2.5 mb-6">
-              {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
+              {["Shopify analytics + Sales Analysis", "Objective-aware Meta + Creative Studio", "Google GSC + GA4 + attribution", "Competitor Intel — their ads, traffic & you-vs-them", "AI insights, chat & priority actions", "Financial P&L, benchmarking & white-label reports"].map(feat => (
                 <li key={feat} className="flex items-center gap-2.5 text-[16px] text-[#52525B]">
                   <Check size={13} className="text-[#22C55E] shrink-0" /> {feat}
                 </li>

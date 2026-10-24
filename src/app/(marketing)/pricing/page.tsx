@@ -11,6 +11,7 @@ const features = [
   "Google Search Console & Analytics 4 + attribution",
   "True net profit & break-even ROAS (P&L)",
   "Live benchmarking vs D2C category",
+  "Competitor Intel — ad spy, traffic & you-vs-them",
   "AI insights, chat & priority actions",
   "White-label custom PDF reports",
   "Cohort retention, geo & customer intelligence",
