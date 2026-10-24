@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Binoculars, Plus, Trash2, RefreshCw, ExternalLink, Sparkles, Info, Calculator, Megaphone,
   Search, Play, Images, Image as ImageIcon, Layers, Clock, Zap, Globe, TrendingUp, LoaderCircle, X, Target,
+  ShoppingBag, MonitorPlay, Type, BadgeCheck,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -12,7 +13,10 @@ import { WarnBanner } from "@/components/ui/warn-banner";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Donut } from "@/components/ui/charts";
 import { cn, formatINR, formatNumber } from "@/lib/utils";
-import { COUNTRIES, getCountry, type Competitor, type AdsPayload, type AdStats, type CompetitorAd } from "@/lib/competitor-shared";
+import {
+  COUNTRIES, getCountry, type Competitor, type AdsPayload, type AdStats, type CompetitorAd,
+  type GoogleAd, type GoogleAdsPayload, type GoogleAdStats, type GoogleAdPlatform,
+} from "@/lib/competitor-shared";
 import {
   defaultAssumptions, estimateAll, FX_INR,
   type Assumptions, type AssumptionSource, type OwnMetrics, type Range, type Confidence,
@@ -26,6 +30,7 @@ interface Providers { adsAnyCountry: boolean; adsEu: boolean; euReach: boolean; 
 type Failed = { status: "setup_needed"; missing: string[]; message: string } | { status: "error"; message: string };
 type AdsResp = ({ status: "ok"; data: AdsPayload; cached: boolean; refreshBlocked?: boolean; stats: AdStats }) | Failed;
 type TrafficResp = ({ status: "ok"; data: TrafficPayload; cached: boolean; refreshBlocked?: boolean }) | Failed;
+type GadsResp = ({ status: "ok"; data: GoogleAdsPayload; cached: boolean; refreshBlocked?: boolean; stats: GoogleAdStats }) | Failed;
 type StoreResp = { status: "ok"; data: StorePayload } | { status: "error"; message: string };
 
 interface OwnData {
@@ -39,7 +44,7 @@ interface OwnData {
   inrAccount: boolean;
 }
 
-type Tab = "ads" | "traffic" | "spend";
+type Tab = "ads" | "gads" | "traffic" | "spend";
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 
@@ -128,6 +133,8 @@ export default function CompetitorIntelPage() {
   const [store, setStore] = useState<StoreResp | null>(null);
   const [adsLoading, setAdsLoading] = useState(false);
   const [trafficLoading, setTrafficLoading] = useState(false);
+  const [gads, setGads] = useState<GadsResp | null>(null);
+  const [gadsLoading, setGadsLoading] = useState(false);
   const [own, setOwn] = useState<OwnData | null>(null);
 
   const selected = competitors.find(c => c.id === selectedId) ?? null;
@@ -206,12 +213,23 @@ export default function CompetitorIntelPage() {
       .finally(() => setTrafficLoading(false));
   }, [selected?.id, selected?.website, country]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const loadGads = useCallback((refresh = false) => {
+    if (!selected?.website) { setGads(null); return; }
+    setGadsLoading(true);
+    fetch(`/api/competitors/google-ads?id=${selected.id}&country=${country}${refresh ? "&refresh=1" : ""}`)
+      .then(r => r.json())
+      .then(d => setGads(d.status ? d : { status: "error", message: d.error ?? "Couldn't load Google ads" }))
+      .catch(() => setGads({ status: "error", message: "Couldn't load Google ads" }))
+      .finally(() => setGadsLoading(false));
+  }, [selected?.id, selected?.website, country]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    setAds(null); setTraffic(null);
+    setAds(null); setTraffic(null); setGads(null);
     if (!selected) return;
     loadAds();
     loadTraffic();
-  }, [loadAds, loadTraffic, selected]);
+    loadGads();
+  }, [loadAds, loadTraffic, loadGads, selected]);
 
   useEffect(() => {
     setStore(null);
@@ -230,7 +248,7 @@ export default function CompetitorIntelPage() {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2"><Binoculars size={18} className="text-[#F97316]" /> Competitor Intel</h2>
           <p className="text-[17px] text-[#686864] mt-0.5">
-            See competitors&apos; live Meta ads, Google traffic and an{" "}
+            See competitors&apos; live Meta &amp; Google ads, Google traffic and an{" "}
             <span className="font-medium text-[#181816] dark:text-[#F4F4F5]">estimated</span>{" "}
             spend &amp; ROAS — country by country
           </p>
@@ -302,6 +320,7 @@ export default function CompetitorIntelPage() {
           <div className="flex gap-1 mb-3 border-b border-black/[0.06] dark:border-white/[0.06] overflow-x-auto">
             {([
               ["ads", "Meta Ad Spy", <Megaphone key="a" size={15} />],
+              ["gads", "Google Ad Spy", <Target key="g" size={15} />],
               ["traffic", "Traffic Intel", <Search key="t" size={15} />],
               ["spend", "Est. Spend & ROAS", <Calculator key="s" size={15} />],
             ] as [Tab, string, React.ReactNode][]).map(([key, label, icon]) => (
@@ -321,6 +340,9 @@ export default function CompetitorIntelPage() {
           {tab === "ads" && (
             <AdSpyTab competitor={selected} resp={ads} loading={adsLoading} own={own} countryName={countryInfo.name} onRefresh={() => loadAds(true)} />
           )}
+          {tab === "gads" && (
+            <GoogleAdSpyTab competitor={selected} resp={gads} loading={gadsLoading} countryName={countryInfo.name} onRefresh={() => loadGads(true)} />
+          )}
           {tab === "traffic" && (
             <TrafficTab competitor={selected} resp={traffic} loading={trafficLoading} own={own} countryCode={country} onRefresh={() => loadTraffic(true)} />
           )}
@@ -328,7 +350,7 @@ export default function CompetitorIntelPage() {
             <SpendTab
               key={`${selected.id}-${country}`}
               competitor={selected}
-              ads={ads} traffic={traffic} store={store} own={own}
+              ads={ads} traffic={traffic} gads={gads} store={store} own={own}
               country={countryInfo}
               loading={adsLoading || trafficLoading}
             />
@@ -589,7 +611,193 @@ function AdCard({ ad }: { ad: CompetitorAd }) {
   );
 }
 
-// ── Tab 2: Traffic Intel ──────────────────────────────────────────────────────
+// ── Tab 2: Google Ad Spy ──────────────────────────────────────────────────────
+
+const GPLATFORM: Record<GoogleAdPlatform, { label: string; icon: React.ReactNode; color: string; what: string }> = {
+  search: { label: "Google Search", icon: <Search size={13} />, color: "#3B82F6", what: "text ads on Google results — they bid on keywords" },
+  shopping: { label: "Shopping / PMax", icon: <ShoppingBag size={13} />, color: "#F97316", what: "product listings with price & image — Shopping or Performance Max campaigns" },
+  youtube: { label: "YouTube", icon: <MonitorPlay size={13} />, color: "#EF4444", what: "video ads before / inside YouTube videos" },
+};
+const GFORMAT_ICON: Record<string, React.ReactNode> = { text: <Type size={12} />, image: <ImageIcon size={12} />, video: <Play size={12} /> };
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" });
+
+function GoogleAdSpyTab({ competitor, resp, loading, countryName, onRefresh }: {
+  competitor: Competitor; resp: GadsResp | null; loading: boolean; countryName: string; onRefresh: () => void;
+}) {
+  const [filter, setFilter] = useState<string>("all");
+  const [sort, setSort] = useState<"days" | "new">("days");
+
+  if (!competitor.website) {
+    return <Empty icon={<Target size={26} />} title="No website added" body={`Remove and re-add ${competitor.name} with their website to see their Google ads.`} />;
+  }
+  if (loading && !resp) return <Loading label={`Fetching ${competitor.name}'s Google ads in ${countryName}…`} />;
+  if (!resp) return null;
+  if (resp.status === "setup_needed") return <SetupNeeded what="Google Ad Spy" missing={resp.missing} message={resp.message} />;
+  if (resp.status === "error") return <Empty icon={<Info size={26} />} title="Couldn't load Google ads" body={resp.message} />;
+
+  const { data, stats } = resp;
+  if (data.ads.length === 0) {
+    return (
+      <>
+        <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="weekly" />
+        <Empty icon={<Target size={26} />} title={`No Google ads in ${countryName}`}
+          body={`Google hasn't shown any ads for ${data.domain} in ${countryName} in the last 90 days. If they sell through a distributor, the ads may run under that company's website.`} />
+      </>
+    );
+  }
+
+  const tagged = stats.platforms.search + stats.platforms.shopping + stats.platforms.youtube;
+  const used = (Object.keys(GPLATFORM) as GoogleAdPlatform[]).filter(p => stats.platforms[p] > 0);
+  const shown = data.ads
+    .filter(a => filter === "all" ? true
+      : filter === "live" ? a.isActive
+      : filter in GPLATFORM ? a.platforms.includes(filter as GoogleAdPlatform)
+      : a.format === filter)
+    .sort((a, b) => sort === "days"
+      ? (b.daysRunning ?? 0) - (a.daysRunning ?? 0)
+      : new Date(b.firstShown ?? 0).getTime() - new Date(a.firstShown ?? 0).getTime());
+
+  return (
+    <div>
+      <RefreshBar fetchedAt={data.fetchedAt} refreshBlocked={resp.refreshBlocked} onRefresh={onRefresh} loading={loading} cadence="weekly" />
+      <WarnBanner type="blue">
+        Real ads from Google&apos;s Ads Transparency Center for {data.domain} — what ran, where and for how long.
+        Google doesn&apos;t publish spend or clicks for brand ads, so spend stays an estimate.
+      </WarnBanner>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2 mb-3">
+        <KPICard label="Live now" value={formatNumber(stats.active)} sub={`${stats.seen90d}${data.capped ? "+" : ""} shown in last 90 days`} icon={<Target size={12} />} />
+        <KPICard label="Launched (30 days)" value={formatNumber(stats.launched30d)} sub="new ads started" icon={<Zap size={12} />} />
+        <KPICard label="Running 30+ days" value={formatNumber(stats.over30d)} sub={`${stats.over60d} running 60+ days`} icon={<TrendingUp size={12} />} />
+        <KPICard label="Median ad age" value={stats.medianDays !== null ? `${stats.medianDays}d` : "—"} sub="first to last shown" icon={<Clock size={12} />} />
+        <KPICard label="Advertiser accounts" value={formatNumber(data.advertisers.length)} sub={data.advertisers.some(x => x.verified) ? "Google-verified" : "not verified"} icon={<BadgeCheck size={12} />} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Where they advertise on Google" right={`${stats.formats.text} text · ${stats.formats.image} image · ${stats.formats.video} video`} />
+          {tagged === 0 ? (
+            <p className={SUB}>Google didn&apos;t say which network these ads ran on (often Display / partner sites).</p>
+          ) : (
+            <div className="space-y-2.5">
+              {(Object.keys(GPLATFORM) as GoogleAdPlatform[]).map(p => {
+                const n = stats.platforms[p];
+                const pctOf = Math.round((n / Math.max(1, stats.seen90d)) * 100);
+                return (
+                  <div key={p}>
+                    <div className="flex items-center justify-between text-[15px] mb-1">
+                      <span className="flex items-center gap-1.5 font-medium" style={{ color: GPLATFORM[p].color }}>{GPLATFORM[p].icon} {GPLATFORM[p].label}</span>
+                      <span className={n ? "font-semibold" : "text-[#A1A1AA]"}>{n ? `${n} ads` : "none seen"}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-black/[0.05] dark:bg-white/[0.06] overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, pctOf)}%`, background: GPLATFORM[p].color }} />
+                    </div>
+                    <div className="text-[13px] text-[#A1A1AA] mt-0.5">{GPLATFORM[p].what}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {used.length > 0 && (
+            <p className="text-[15px] mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
+              <b>{competitor.name}</b> runs Google ads on {used.map(p => GPLATFORM[p].label).join(", ").replace(/, ([^,]*)$/, " and $1")}
+              {stats.platforms.shopping > 0 && stats.platforms.search === 0 ? " — Shopping/PMax only, so their Google spend never shows in keyword tools." : "."}
+              {stats.over30d > 0 && ` ${stats.over30d} ad${stats.over30d > 1 ? "s have" : " has"} run 30+ days — likely working for them.`}
+            </p>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader title="Advertiser accounts" right="who pays for the ads" />
+          <ul className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+            {data.advertisers.slice(0, 6).map(x => (
+              <li key={x.id} className="py-1.5 flex items-center gap-2 text-[15px]">
+                <span className="truncate">{x.name || x.id}</span>
+                {x.verified && <BadgeCheck size={14} className="text-[#3B82F6] shrink-0" />}
+                <span className="ml-auto text-[#71717A] shrink-0">{x.ads} ads</span>
+                <a href={`https://adstransparency.google.com/advertiser/${x.id}?region=${data.country}`} target="_blank" rel="noreferrer" className="text-[#F97316] shrink-0"><ExternalLink size={12} /></a>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[13px] text-[#A1A1AA] mt-2">More than one account usually means a distributor or agency also runs ads for the brand.</p>
+        </Card>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <span className="text-[15px] font-semibold">{shown.length} ads</span>
+        <div className="flex flex-wrap gap-1 ml-auto">
+          {[["all", "All"], ["live", "Live now"], ...used.map(p => [p, GPLATFORM[p].label]), ["text", "Text"], ["image", "Image"], ["video", "Video"]].map(([k, label]) => (
+            <button key={k} onClick={() => setFilter(k)}
+              className={cn("px-2.5 py-1 rounded-lg text-[13px] border", filter === k ? "border-[#F97316] text-[#F97316]" : "border-black/10 dark:border-white/10 text-[#71717A]")}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <select value={sort} onChange={e => setSort(e.target.value as "days" | "new")}
+          className="text-[13px] border border-black/10 dark:border-white/10 rounded-lg px-2 py-1 bg-white dark:bg-[#171717]">
+          <option value="days">Longest running</option>
+          <option value="new">Newest first</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+        {shown.map(ad => <GoogleAdCard key={ad.id} ad={ad} />)}
+      </div>
+      {data.capped && <p className="text-[13px] text-[#A1A1AA] mt-2">Showing the latest {data.ads.length} ads — they ran more in this period.</p>}
+    </div>
+  );
+}
+
+function GoogleAdCard({ ad }: { ad: GoogleAd }) {
+  const [imgOk, setImgOk] = useState(true);
+  const days = ad.daysRunning ?? 0;
+  return (
+    <Card className="p-0 overflow-hidden flex flex-col">
+      <div className="relative aspect-[4/3] bg-white dark:bg-[#0F0F0F] border-b border-black/[0.05] dark:border-white/[0.05] flex items-center justify-center p-2">
+        {ad.imageUrl && imgOk ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ad.imageUrl} alt="" referrerPolicy="no-referrer" loading="lazy" onError={() => setImgOk(false)} className="max-w-full max-h-full object-contain" />
+        ) : (
+          <a href={ad.transparencyUrl} target="_blank" rel="noreferrer" className="text-[14px] text-[#71717A] flex items-center gap-1">
+            <ExternalLink size={14} /> View ad on Google
+          </a>
+        )}
+        {ad.youtubeId && imgOk && (
+          <a href={`https://www.youtube.com/watch?v=${ad.youtubeId}`} target="_blank" rel="noreferrer" aria-label="Watch on YouTube"
+            className="absolute inset-0 flex items-center justify-center group">
+            <span className="w-12 h-12 rounded-full bg-black/60 group-hover:bg-[#EF4444] flex items-center justify-center transition-colors">
+              <Play size={20} className="text-white ml-0.5" fill="white" />
+            </span>
+          </a>
+        )}
+        <div className="absolute top-2 left-2 flex gap-1">
+          <Badge variant="gray" className="bg-white/90 dark:bg-black/70 flex items-center gap-1 capitalize">{GFORMAT_ICON[ad.format]} {ad.format}</Badge>
+        </div>
+        <div className="absolute top-2 right-2">
+          <Tooltip content={days > 60 ? "Ran 60+ days — very likely a profitable ad" : days > 30 ? "Ran 30+ days — likely profitable" : days <= 7 ? "New — probably still being tested" : "Ran 1–4 weeks"} side="left">
+            <Badge variant={days > 30 ? "green" : days <= 7 ? "blue" : "gray"}>{days}d</Badge>
+          </Tooltip>
+        </div>
+      </div>
+      <div className="p-3 flex-1 flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge variant={ad.isActive ? "green" : "gray"}>{ad.isActive ? "Live" : "Ended"}</Badge>
+          {ad.platforms.map(p => (
+            <Badge key={p} variant="gray" className="flex items-center gap-1">{GPLATFORM[p].icon} {GPLATFORM[p].label}</Badge>
+          ))}
+        </div>
+        <div className="mt-auto pt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] text-[#A1A1AA]">
+          {ad.firstShown && <span>{shortDate(ad.firstShown)} → {ad.isActive ? "now" : ad.lastShown ? shortDate(ad.lastShown) : "?"}</span>}
+          <a href={ad.transparencyUrl} target="_blank" rel="noreferrer" className="ml-auto text-[#F97316] flex items-center gap-0.5 hover:underline">
+            Google <ExternalLink size={11} />
+          </a>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ── Tab 3: Traffic Intel ──────────────────────────────────────────────────────
 
 function TrafficTab({ competitor, resp, loading, own, countryCode, onRefresh }: {
   competitor: Competitor; resp: TrafficResp | null; loading: boolean; own: OwnData | null; countryCode: string; onRefresh: () => void;
@@ -762,10 +970,10 @@ function KeywordTable({ title, rows }: { title: string; rows: TrafficPayload["to
   );
 }
 
-// ── Tab 3: Estimated Spend & ROAS ─────────────────────────────────────────────
+// ── Tab 4: Estimated Spend & ROAS ─────────────────────────────────────────────
 
-function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
-  competitor: Competitor; ads: AdsResp | null; traffic: TrafficResp | null; store: StoreResp | null;
+function SpendTab({ competitor, ads, traffic, gads, store, own, country, loading }: {
+  competitor: Competitor; ads: AdsResp | null; traffic: TrafficResp | null; gads: GadsResp | null; store: StoreResp | null;
   own: OwnData | null; country: ReturnType<typeof getCountry>; loading: boolean;
 }) {
   const storeData = store?.status === "ok" ? store.data : null;
@@ -802,6 +1010,7 @@ function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
   }
 
   const visitsTotal = est.visits ? est.visits.organic + est.visits.googlePaid + est.visits.meta : 0;
+  const gadsActive = gads?.status === "ok" ? gads.stats.active : 0;
 
   return (
     <div>
@@ -823,7 +1032,9 @@ function SpendTab({ competitor, ads, traffic, store, own, country, loading }: {
         <RangeCard label="Meta ad spend / mo" value={est.meta ? rangeInr(est.meta.range) : "—"}
           sub={est.meta ? `${est.meta.creatives} live creatives · ${est.meta.confidence} confidence` : "no ad data"} />
         <RangeCard label="Google search-ad spend / mo" value={est.google ? rangeInr(est.google) : ov ? "Not seen" : "—"}
-          sub={est.google ? "Shopping / PMax spend not visible" : ov ? "no search ads found · Shopping/PMax not visible" : "no traffic data"} />
+          sub={gadsActive
+            ? `${gadsActive} live Google ads seen · ${est.google ? "Shopping/YouTube spend not visible" : "spend not visible"}`
+            : est.google ? "Shopping / PMax spend not visible" : ov ? "no search ads found · Shopping/PMax not visible" : "no traffic data"} />
         <RangeCard label="Est. revenue / mo" value={est.revenue ? rangeInr(est.revenue) : "—"}
           sub={est.revenue ? `${numShort(visitsTotal)} visits · ${a.cvr}% conv. · ${formatINR(a.aov)} AOV` : "needs traffic + price"} />
         <RangeCard label="ROAS from ads" value={est.paidRoas ? rangeX(est.paidRoas) : "—"}

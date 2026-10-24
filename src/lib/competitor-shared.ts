@@ -84,6 +84,72 @@ export interface AdsPayload {
   reachMerged: boolean;     // true when EU reach from the official API was attached
 }
 
+// ── Google Ads Transparency Center ads (via DataForSEO) ──────────────────────
+
+export type GoogleAdPlatform = "search" | "shopping" | "youtube";
+export type GoogleAdFormat = "text" | "image" | "video";
+
+export interface GoogleAd {
+  id: string;               // Transparency Center creative id
+  advertiserId: string;
+  advertiserName: string;
+  verified: boolean;
+  format: GoogleAdFormat;
+  imageUrl: string | null;  // Google renders text/image ads to a preview image; videos use the YouTube thumbnail
+  youtubeId: string | null; // video ads only
+  firstShown: string | null; // ISO
+  lastShown: string | null;  // ISO
+  daysRunning: number | null;
+  isActive: boolean;         // shown in the last 7 days
+  platforms: GoogleAdPlatform[]; // only from the per-platform lookups — may be incomplete
+  transparencyUrl: string;
+}
+
+export interface GoogleAdsPayload {
+  fetchedAt: string;
+  country: string;
+  domain: string;
+  advertisers: { id: string; name: string; verified: boolean; ads: number }[];
+  ads: GoogleAd[];           // shown in the last 90 days
+  capped: boolean;           // hit the lookup cap — they may run more
+}
+
+export interface GoogleAdStats {
+  seen90d: number;
+  active: number;
+  launched30d: number;
+  over30d: number;
+  over60d: number;
+  medianDays: number | null;
+  formats: Record<GoogleAdFormat, number>;
+  platforms: Record<GoogleAdPlatform, number>;
+}
+
+export function googleAdStats(ads: GoogleAd[]): GoogleAdStats {
+  const now = Date.now();
+  const formats: Record<GoogleAdFormat, number> = { text: 0, image: 0, video: 0 };
+  const platforms: Record<GoogleAdPlatform, number> = { search: 0, shopping: 0, youtube: 0 };
+  let active = 0, launched30d = 0, over30d = 0, over60d = 0;
+  const days: number[] = [];
+  for (const a of ads) {
+    formats[a.format]++;
+    for (const p of a.platforms) platforms[p]++;
+    if (a.isActive) active++;
+    if (a.firstShown && (now - new Date(a.firstShown).getTime()) / DAY <= 30) launched30d++;
+    if (a.daysRunning !== null) {
+      days.push(a.daysRunning);
+      if (a.daysRunning > 30) over30d++;
+      if (a.daysRunning > 60) over60d++;
+    }
+  }
+  days.sort((x, y) => x - y);
+  return {
+    seen90d: ads.length, active, launched30d, over30d, over60d,
+    medianDays: days.length ? days[Math.floor(days.length / 2)] : null,
+    formats, platforms,
+  };
+}
+
 // ── Ad-level analytics (pure — used by route + UI) ────────────────────────────
 
 export interface AdStats {

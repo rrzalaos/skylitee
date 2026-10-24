@@ -1,5 +1,6 @@
 import { competitorKv } from "./kv";
 import { CI_LIMITS, type CountryInfo } from "./competitors";
+import type { GoogleAd, GoogleAdFormat, GoogleAdPlatform, GoogleAdsPayload } from "./competitor-shared";
 
 // ── DataForSEO Labs — competitor organic + Google-paid traffic estimates ─────
 // Pay-as-you-go (DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD). Every number here is
@@ -50,12 +51,14 @@ export function dfsConfigured(): boolean {
 
 type Json = Record<string, unknown>;
 
-async function dfs(endpoint: string, task: Json): Promise<Json[]> {
+const dfs = (endpoint: string, task: Json) => dfsPost(`${BASE}/${endpoint}/live`, task, endpoint);
+
+async function dfsPost(url: string, task: Json, endpoint: string): Promise<Json[]> {
   // Trim: values pasted into Vercel often carry a stray space/newline, which DataForSEO rejects as 401
   const login = process.env.DATAFORSEO_LOGIN?.trim();
   const password = process.env.DATAFORSEO_PASSWORD?.trim();
   const auth = Buffer.from(`${login}:${password}`).toString("base64");
-  const res = await fetch(`${BASE}/${endpoint}/live`, {
+  const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
     body: JSON.stringify([task]),
@@ -235,4 +238,132 @@ export async function getCompetitorTraffic(
   const gapValue = gap.status === "fulfilled" ? gap.value : null;
   if (gapKey && gapValue) await competitorKv.setCache(gapKey, gapValue, CI_LIMITS.trafficTtl);
   return { status: "ok", data: { ...data, gap: gapValue, gapAgainst: own }, cached: false };
+}
+
+// ── Google Ads Transparency Center — a competitor's live Google ads ──────────
+// SERP API "ads_search": every ad Google has shown for the domain, with first/last shown
+// dates and a rendered preview (text ads included). No spend or impressions — Google
+// publishes those only for political ads. Items carry no platform, so Search/Shopping/
+// YouTube are tagged from three extra platform-filtered lookups.
+
+const ADS_URL = "https://api.dataforseo.com/v3/serp/google/ads_search/live/advanced";
+const ADS_DEPTH = 120;           // DataForSEO max; billed per 40 results
+const PLATFORM_DEPTH = 40;
+const MAX_VIDEO_LOOKUPS = 30;
+const DAY_MS = 86_400_000;
+
+export type GoogleAdsResult =
+  | { status: "ok"; data: GoogleAdsPayload; cached: boolean; refreshBlocked?: boolean }
+  | { status: "setup_needed"; missing: string[]; message: string }
+  | { status: "error"; message: string };
+
+const isoOrNull = (v: unknown): string | null => {
+  if (typeof v !== "string" || !v) return null;
+  // "2024-12-13 08:37:19 +00:00" → ISO
+  const d = new Date(v.replace(" ", "T").replace(" +00:00", "Z"));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+
+async function adsSearch(domain: string, country: CountryInfo, platform: "all" | "google_search" | "google_shopping" | "youtube", depth: number) {
+  const day = (offset: number) => new Date(Date.now() - offset * DAY_MS).toISOString().slice(0, 10);
+  const result = await dfsPost(ADS_URL, {
+    target: domain, location_code: country.dfsLocation, platform, depth,
+    date_from: day(90), date_to: day(0),
+  }, "ads_search");
+  return (get(result[0], "items") as Json[] | undefined ?? []).filter(i => i.type === "ads_search" && i.creative_id);
+}
+
+export async function getCompetitorGoogleAds(
+  domain: string,
+  country: CountryInfo,
+  opts: { refresh: boolean },
+): Promise<GoogleAdsResult> {
+  const cacheKey = `gads:${country.code}:${domain}`;
+  const cached = await competitorKv.getCache<GoogleAdsPayload>(cacheKey);
+  let refreshBlocked = false;
+  if (cached && opts.refresh) refreshBlocked = !(await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock));
+  if (cached && (!opts.refresh || refreshBlocked)) return { status: "ok", data: cached, cached: true, refreshBlocked };
+
+  if (!dfsConfigured()) {
+    return {
+      status: "setup_needed", missing: ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"],
+      message: "Google ad tracking isn't switched on yet — the data provider still needs to be connected.",
+    };
+  }
+  if (!cached) await competitorKv.tryLock(cacheKey, CI_LIMITS.adsLock);
+
+  const [all, search, shopping, youtube] = await Promise.allSettled([
+    adsSearch(domain, country, "all", ADS_DEPTH),
+    adsSearch(domain, country, "google_search", PLATFORM_DEPTH),
+    adsSearch(domain, country, "google_shopping", PLATFORM_DEPTH),
+    adsSearch(domain, country, "youtube", PLATFORM_DEPTH),
+  ]);
+  if (all.status === "rejected") {
+    if (cached) return { status: "ok", data: cached, cached: true };
+    return { status: "error", message: all.reason instanceof Error ? all.reason.message : "Couldn't fetch Google ads" };
+  }
+
+  const tags = new Map<string, Set<GoogleAdPlatform>>();
+  const tag = (r: PromiseSettledResult<Json[]>, p: GoogleAdPlatform) => {
+    if (r.status !== "fulfilled") return;
+    for (const i of r.value) {
+      const id = String(i.creative_id);
+      if (!tags.has(id)) tags.set(id, new Set());
+      tags.get(id)!.add(p);
+    }
+  };
+  tag(search, "search"); tag(shopping, "shopping"); tag(youtube, "youtube");
+
+  const now = Date.now();
+  const byId = new Map<string, GoogleAd>();
+  for (const i of all.value) {
+    const id = String(i.creative_id);
+    if (byId.has(id)) continue;
+    const firstShown = isoOrNull(i.first_shown);
+    const lastShown = isoOrNull(i.last_shown);
+    const fmt = String(i.format ?? "").toLowerCase();
+    byId.set(id, {
+      id,
+      advertiserId: String(i.advertiser_id ?? ""),
+      advertiserName: String(i.title ?? ""),
+      verified: i.verified === true,
+      format: (["text", "image", "video"].includes(fmt) ? fmt : "image") as GoogleAdFormat,
+      imageUrl: (get(i, "preview_image", "url") as string | undefined) ?? null,
+      youtubeId: null,
+      firstShown, lastShown,
+      daysRunning: firstShown ? Math.max(1, Math.round(((lastShown ? new Date(lastShown).getTime() : now) - new Date(firstShown).getTime()) / DAY_MS)) : null,
+      isActive: !!lastShown && now - new Date(lastShown).getTime() <= 7 * DAY_MS,
+      platforms: [...(tags.get(id) ?? [])],
+      transparencyUrl: typeof i.url === "string" ? i.url
+        : `https://adstransparency.google.com/advertiser/${i.advertiser_id}/creative/${id}?region=${country.code}`,
+    });
+  }
+  const ads = [...byId.values()].sort((a, b) => (b.daysRunning ?? 0) - (a.daysRunning ?? 0));
+
+  // Video ads come with no preview image — only Google's preview script, which embeds the
+  // YouTube video id. Pull it for a real thumbnail + watch link.
+  const previewById = new Map(all.value.map(i => [String(i.creative_id), typeof i.preview_url === "string" ? i.preview_url : null]));
+  const videos = ads.filter(a => a.format === "video" && !a.imageUrl && previewById.get(a.id)).slice(0, MAX_VIDEO_LOOKUPS);
+  await Promise.allSettled(videos.map(async a => {
+    const res = await fetch(previewById.get(a.id)!, { signal: AbortSignal.timeout(6000) });
+    const m = (await res.text()).match(/ytimg\.com\\?\/vi\\?\/([A-Za-z0-9_-]{11})/);
+    if (m) { a.youtubeId = m[1]; a.imageUrl = `https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg`; }
+  }));
+
+  const adv = new Map<string, { id: string; name: string; verified: boolean; ads: number }>();
+  for (const a of ads) {
+    const x = adv.get(a.advertiserId) ?? { id: a.advertiserId, name: a.advertiserName, verified: a.verified, ads: 0 };
+    x.ads++;
+    adv.set(a.advertiserId, x);
+  }
+
+  const data: GoogleAdsPayload = {
+    fetchedAt: new Date().toISOString(),
+    country: country.code, domain,
+    advertisers: [...adv.values()].sort((a, b) => b.ads - a.ads),
+    ads,
+    capped: all.value.length >= ADS_DEPTH,
+  };
+  await competitorKv.setCache(cacheKey, data, CI_LIMITS.adsTtl);
+  return { status: "ok", data, cached: false };
 }
