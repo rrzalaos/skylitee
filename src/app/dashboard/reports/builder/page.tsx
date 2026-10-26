@@ -3,11 +3,14 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
-  FileText, Plus, X, ChevronUp, ChevronDown, Download, Save, Trash2,
-  Palette, ImageIcon, RefreshCw, Check,
+  FileText, Plus, X, ChevronUp, ChevronDown, ChevronRight, Download, Save, Trash2,
+  Palette, ImageIcon, RefreshCw, Check, Search, Table2, Eraser,
 } from "lucide-react";
-import { REPORT_GROUPS, BLOCK_BY_ID, sourcesFor, ReportCtx, ReportSource } from "@/lib/report-blocks";
-import { exportToPDF, ExportSection } from "@/lib/export";
+import {
+  REPORT_GROUPS, ITEM_BY_ID, sourcesFor, normalizeItemIds, buildReportSections,
+  ReportCtx, ReportSource, ReportItem,
+} from "@/lib/report-blocks";
+import { exportToPDF } from "@/lib/export";
 import { getPresetRange, DatePreset } from "@/lib/date-range-context";
 
 interface Branding { brandName: string; color: string; clientName: string; logoDataUrl: string; reportTitle: string }
@@ -18,7 +21,9 @@ const SOURCE_ENDPOINT: Record<Exclude<ReportSource, "ai">, string> = {
   dashboard:  "/api/shopify/dashboard",
   customers:  "/api/shopify/customers/period",
   meta:       "/api/meta",
-  ga4:        "/api/ga4",
+  placement:  "/api/meta/placement",
+  gads:       "/api/google/ads",
+  ga4:        "/api/ga4?organic=1",
   gsc:        "/api/gsc",
 };
 
@@ -41,6 +46,8 @@ export default function ReportBuilderPage() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [query, setQuery] = useState("");
+  const [collapsed, setCollapsed] = useState<string[]>([]);
 
   useEffect(() => { loadTemplates(); }, []);
   const flash = (kind: "ok" | "err", text: string) => { setMsg({ kind, text }); setTimeout(() => setMsg(null), 3500); };
@@ -54,6 +61,15 @@ export default function ReportBuilderPage() {
 
   const toggle = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  // Select / clear a whole section (or group) in one click; adds in catalog order.
+  const setMany = (ids: string[], on: boolean) =>
+    setSelected(prev => on ? [...prev, ...ids.filter(id => !prev.includes(id))] : prev.filter(x => !ids.includes(x)));
+  const toggleGroup = (id: string) =>
+    setCollapsed(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const q = query.trim().toLowerCase();
+  const matches = (item: ReportItem, groupLabel: string, sectionLabel: string) =>
+    !q || `${item.label} ${groupLabel} ${sectionLabel}`.toLowerCase().includes(q);
   const move = (id: string, dir: -1 | 1) =>
     setSelected(prev => {
       const i = prev.indexOf(id); const j = i + dir;
@@ -77,7 +93,7 @@ export default function ReportBuilderPage() {
   }
 
   async function generate() {
-    if (selected.length === 0) { flash("err", "Select at least one block."); return; }
+    if (selected.length === 0) { flash("err", "Select at least one KPI or table."); return; }
     const range = resolveRange();
     if (!range) { flash("err", "Pick custom start and end dates."); return; }
 
@@ -85,11 +101,12 @@ export default function ReportBuilderPage() {
     try {
       const needed = sourcesFor(selected);
       const dataSources = needed.filter(s => s !== "ai") as Exclude<ReportSource, "ai">[];
-      const qs = `?from=${range.from}&to=${range.to}`;
+      const qs = `from=${range.from}&to=${range.to}`;
 
       const entries = await Promise.all(dataSources.map(async (s) => {
         try {
-          const res = await fetch(`${SOURCE_ENDPOINT[s]}${qs}`);
+          const endpoint = SOURCE_ENDPOINT[s];
+          const res = await fetch(`${endpoint}${endpoint.includes("?") ? "&" : "?"}${qs}`);
           return [s, res.ok ? await res.json() : null] as const;
         } catch { return [s, null] as const; }
       }));
@@ -109,14 +126,10 @@ export default function ReportBuilderPage() {
         } catch { /* AI optional */ }
       }
 
-      const sections: ExportSection[] = [];
-      for (const id of selected) {
-        const block = BLOCK_BY_ID[id];
-        if (block) sections.push(...block.build(ctx));
-      }
+      const sections = buildReportSections(selected, ctx);
 
       if (sections.length === 0) {
-        flash("err", "No data for the selected blocks in this period (is the platform connected?).");
+        flash("err", "No data for the selected items in this period (is the platform connected?).");
         setGenerating(false); return;
       }
 
@@ -135,7 +148,7 @@ export default function ReportBuilderPage() {
 
   async function saveTemplate() {
     if (!templateName.trim()) { flash("err", "Name your template first."); return; }
-    if (selected.length === 0) { flash("err", "Select at least one block."); return; }
+    if (selected.length === 0) { flash("err", "Select at least one KPI or table."); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/reports/templates", {
@@ -149,7 +162,7 @@ export default function ReportBuilderPage() {
   }
 
   function loadTemplate(t: Template) {
-    setSelected(t.blocks.filter(b => BLOCK_BY_ID[b]));
+    setSelected(normalizeItemIds(t.blocks));
     setBranding(b => ({ ...b, ...t.branding }));
     flash("ok", `Loaded "${t.name}".`);
   }
@@ -166,7 +179,7 @@ export default function ReportBuilderPage() {
           <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
             <FileText size={18} className="text-[#F97316]" /> Custom Report Builder
           </h2>
-          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Pick blocks, set a date range, brand it, and generate a PDF.</p>
+          <p className="text-[15px] text-[#A1A1AA] mt-0.5">Pick any KPI or table, set a date range, brand it, and generate a PDF.</p>
         </div>
         <button
           onClick={generate}
@@ -271,59 +284,128 @@ export default function ReportBuilderPage() {
       </Card>
 
       {/* Builder: left categories, right selection */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* LEFT - add blocks */}
-        <Card>
-          <div className="text-[16px] font-bold dark:text-[#F4F4F5] mb-3">Add blocks</div>
-          <div className="space-y-4">
-            {REPORT_GROUPS.map(g => (
-              <div key={g.id}>
-                <div className="text-[13px] font-bold text-[#A1A1AA] uppercase tracking-wide mb-1.5">{g.label}</div>
-                <div className="space-y-1">
-                  {g.blocks.map(b => {
-                    const on = selected.includes(b.id);
-                    return (
-                      <button key={b.id} onClick={() => toggle(b.id)}
-                        className={cn("w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-[15px] transition-colors",
-                          on ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C]" : "hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] text-[#52525B] dark:text-[#A1A1AA]")}>
-                        <span className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0",
-                          on ? "bg-[#F97316] border-[#F97316]" : "border-black/20 dark:border-white/20")}>
-                          {on && <Check size={11} className="text-white" />}
-                        </span>
-                        {b.label}
-                      </button>
-                    );
-                  })}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+        {/* LEFT - every KPI and table, grouped by platform → section */}
+        <Card className="lg:col-span-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+            <div>
+              <div className="text-[16px] font-bold dark:text-[#F4F4F5]">Add KPIs &amp; tables</div>
+              <div className="text-[13px] text-[#A1A1AA]">Tick any KPI on its own. KPIs from the same section print together as one table.</div>
+            </div>
+            <div className="relative w-full sm:w-56">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search KPIs (e.g. ROAS)"
+                className="w-full bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg pl-7 pr-2.5 py-1.5 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            {REPORT_GROUPS.map(g => {
+              const sections = g.sections
+                .map(s => ({ ...s, items: s.items.filter(item => matches(item, g.label, s.label)) }))
+                .filter(s => s.items.length > 0);
+              if (sections.length === 0) return null;
+              const groupIds = sections.flatMap(s => s.items.map(item => item.id));
+              const groupOn = groupIds.filter(id => selected.includes(id)).length;
+              const open = !!q || !collapsed.includes(g.id);
+              return (
+                <div key={g.id} className="rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <button onClick={() => toggleGroup(g.id)} className="flex-1 flex items-center gap-1.5 text-left">
+                      {open ? <ChevronDown size={15} className="text-[#A1A1AA]" /> : <ChevronRight size={15} className="text-[#A1A1AA]" />}
+                      <span className="text-[15px] font-bold text-[#18181B] dark:text-[#F4F4F5]">{g.label}</span>
+                      <span className={cn("text-[12px] font-bold rounded-full px-1.5 py-0.5",
+                        groupOn ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C]" : "text-[#A1A1AA]")}>
+                        {groupOn}/{groupIds.length}
+                      </span>
+                    </button>
+                    <button onClick={() => setMany(groupIds, groupOn < groupIds.length)}
+                      className="text-[13px] font-semibold text-[#A1A1AA] hover:text-[#F97316]">
+                      {groupOn < groupIds.length ? "Select all" : "Clear"}
+                    </button>
+                  </div>
+                  {open && (
+                    <div className="px-3 pb-3 space-y-3 border-t border-black/[0.06] dark:border-white/[0.06] pt-2.5">
+                      {sections.map(s => {
+                        const ids = s.items.map(item => item.id);
+                        const allOn = ids.every(id => selected.includes(id));
+                        return (
+                          <div key={s.id}>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="text-[12px] font-bold text-[#A1A1AA] uppercase tracking-wide">{s.label}</div>
+                              <button onClick={() => setMany(ids, !allOn)}
+                                className="text-[12px] font-semibold text-[#A1A1AA] hover:text-[#F97316]">
+                                {allOn ? "None" : "All"}
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5">
+                              {s.items.map(item => {
+                                const on = selected.includes(item.id);
+                                return (
+                                  <button key={item.id} onClick={() => toggle(item.id)}
+                                    className={cn("w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg text-[14px] transition-colors",
+                                      on ? "bg-[#FFF7ED] dark:bg-[#2A1A0E] text-[#EA580C]" : "hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] text-[#52525B] dark:text-[#A1A1AA]")}>
+                                    <span className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                                      on ? "bg-[#F97316] border-[#F97316]" : "border-black/20 dark:border-white/20")}>
+                                      {on && <Check size={11} className="text-white" />}
+                                    </span>
+                                    <span className="flex-1">{item.label}</span>
+                                    {item.kind === "table" && <Table2 size={12} className="shrink-0 opacity-50" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            {q && REPORT_GROUPS.every(g => g.sections.every(s => s.items.every(item => !matches(item, g.label, s.label)))) && (
+              <div className="py-8 text-center text-[14px] text-[#A1A1AA]">No KPI matches &quot;{query}&quot;.</div>
+            )}
           </div>
         </Card>
 
-        {/* RIGHT - your report */}
-        <Card>
-          <div className="flex items-center justify-between mb-3">
+        {/* RIGHT - your report (sticky so it stays visible while ticking KPIs) */}
+        <Card className="lg:col-span-2 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
             <div className="text-[16px] font-bold dark:text-[#F4F4F5]">Your report ({selected.length})</div>
-            <div className="flex items-center gap-1.5">
-              <input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Template name"
-                className="bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316] w-32" />
-              <button onClick={saveTemplate} disabled={saving}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[14px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-50">
-                <Save size={12} /> Save
+            {selected.length > 0 && (
+              <button onClick={() => setSelected([])}
+                className="flex items-center gap-1 text-[13px] font-semibold text-[#A1A1AA] hover:text-[#EF4444]">
+                <Eraser size={12} /> Clear all
               </button>
-            </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mb-3">
+            <input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Save as template..."
+              className="flex-1 min-w-0 bg-[#F5F5F4] dark:bg-[#1C1C1C] border border-black/[0.06] dark:border-white/[0.06] rounded-lg px-2.5 py-1.5 text-[14px] dark:text-[#F4F4F5] outline-none focus:border-[#F97316]" />
+            <button onClick={saveTemplate} disabled={saving}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[14px] font-bold bg-[#F5F5F4] dark:bg-[#262626] text-[#52525B] dark:text-[#A1A1AA] hover:text-[#F97316] transition-colors disabled:opacity-50">
+              <Save size={12} /> Save
+            </button>
           </div>
           {selected.length === 0 ? (
             <div className="py-12 text-center text-[15px] text-[#A1A1AA]">
               <Plus size={20} className="mx-auto mb-2 opacity-40" />
-              Select blocks on the left - they&apos;ll appear here in order.
+              Tick KPIs or tables on the left - they&apos;ll appear here in order.
             </div>
           ) : (
             <div className="space-y-1.5">
               {selected.map((id, i) => (
                 <div key={id} className="flex items-center gap-2 bg-[#FAFAF9] dark:bg-[#1C1C1C] rounded-lg px-2.5 py-2">
                   <span className="text-[13px] font-bold text-[#A1A1AA] w-5">{i + 1}</span>
-                  <span className="flex-1 text-[15px] font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{BLOCK_BY_ID[id]?.label ?? id}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-1 text-[14px] font-semibold text-[#18181B] dark:text-[#F4F4F5]">
+                      {ITEM_BY_ID[id]?.item.kind === "table" && <Table2 size={12} className="shrink-0 text-[#A1A1AA]" />}
+                      <span className="truncate">{ITEM_BY_ID[id]?.item.label ?? id}</span>
+                    </span>
+                    <span className="block text-[12px] text-[#A1A1AA] truncate">
+                      {ITEM_BY_ID[id] ? `${ITEM_BY_ID[id].group.label} · ${ITEM_BY_ID[id].section.label}` : ""}
+                    </span>
+                  </span>
                   <button onClick={() => move(id, -1)} disabled={i === 0} className="text-[#A1A1AA] hover:text-[#F97316] disabled:opacity-30"><ChevronUp size={15} /></button>
                   <button onClick={() => move(id, 1)} disabled={i === selected.length - 1} className="text-[#A1A1AA] hover:text-[#F97316] disabled:opacity-30"><ChevronDown size={15} /></button>
                   <button onClick={() => toggle(id)} className="text-[#A1A1AA] hover:text-[#EF4444]"><X size={14} /></button>
