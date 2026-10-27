@@ -265,6 +265,14 @@ export const competitorKv = {
       return ok === "OK";
     } catch { return true; }
   },
+  // Daily counter for the public Competitor X-Ray's rate limits. KV down → 0 (fails open, like tryLock).
+  async bump(key: string, ttlSeconds: number): Promise<number> {
+    try {
+      const n = await kv.incr(`ci:count:${key}`);
+      if (n === 1) await kv.expire(`ci:count:${key}`, ttlSeconds);
+      return n;
+    } catch { return 0; }
+  },
 };
 
 // Coupon codes

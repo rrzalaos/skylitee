@@ -168,6 +168,10 @@ function CompetitorIntel() {
                 </div>
               ))}
             </div>
+            <Link href="/competitor-xray"
+              className="mt-7 inline-flex items-center gap-2 px-5 py-3 bg-[#22C55E]/10 hover:bg-[#22C55E]/20 border border-[#22C55E]/30 text-[#22C55E] font-bold rounded-xl text-[15px] transition-colors">
+              Try a free Competitor X-Ray <ArrowRight size={15} />
+            </Link>
           </div>
           <div>
             <CompetitorMockup />
