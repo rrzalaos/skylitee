@@ -3,7 +3,7 @@ import { shopifyFetchAll, fetchOrdersInRange, orderRevenue, resolveShopifyPeriod
 import { NextRequest } from "next/server";
 import { getShopifySession } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
-import { getGoogleAccessToken } from "@/lib/google";
+import { getGoogleAccessToken, GADS_API } from "@/lib/google";
 import { plainDashes } from "@/lib/utils";
 
 const GADS_DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
@@ -239,7 +239,7 @@ async function buildGadsContext(shop: string): Promise<string> {
     const startDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     const res = await fetch(
-      `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:search`,
+      `${GADS_API}/customers/${customerId}/googleAds:search`,
       {
         method: "POST",
         headers: {

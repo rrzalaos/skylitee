@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { getGoogleAccessToken } from "@/lib/google";
+import { getGoogleAccessToken, GADS_API } from "@/lib/google";
 import { getGadsRefreshToken, getGadsCustomerId, getAuthorizedShop } from "@/lib/session";
 
 const DEV_TOKEN = process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "";
@@ -28,7 +28,7 @@ interface GadsResponse {
 
 async function gadsSearch(accessToken: string, customerId: string, query: string): Promise<GadsResponse> {
   const res = await fetch(
-    `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:search`,
+    `${GADS_API}/customers/${customerId}/googleAds:search`,
     {
       method: "POST",
       headers: {

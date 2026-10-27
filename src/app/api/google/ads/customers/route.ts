@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGoogleAccessToken } from "@/lib/google";
+import { getGoogleAccessToken, GADS_API } from "@/lib/google";
 import { getGadsRefreshToken, getGadsCustomerId, getAuthorizedShop, requireShopPermission } from "@/lib/session";
 import { shopKv } from "@/lib/kv";
 import { canManageAccounts, connectorLabel } from "@/lib/connector";
@@ -13,7 +13,7 @@ interface GadsSearchResult {
 
 async function gadsSearch(accessToken: string, customerId: string, query: string): Promise<GadsSearchResult> {
   const res = await fetch(
-    `https://googleads.googleapis.com/v18/customers/${customerId}/googleAds:search`,
+    `${GADS_API}/customers/${customerId}/googleAds:search`,
     {
       method: "POST",
       headers: {
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     // List all accessible customer resource names
     const listRes = await fetch(
-      "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
+      `${GADS_API}/customers:listAccessibleCustomers`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ShoppingBag, Share2, Search, Megaphone, CheckCircle2, XCircle, BarChart2 } from "lucide-react";
 
@@ -9,8 +9,19 @@ interface GA4Property { id: string; name: string; account: string; }
 interface MetaAccount { id: string; name: string; currency: string; }
 interface GadsCustomer { id: string; name: string; currency: string; }
 
+// ?error= codes set by the OAuth callbacks → plain-English reason + fix.
+const CONNECT_ERRORS: Record<string, string> = {
+  google_denied: "Google did not give access. If Google showed \"This app isn't verified\", click Advanced → Go to skylitee.io, then tick every permission box and press Continue. If it said \"Access blocked\", your Google Workspace admin must allow Skylitee.",
+  google_state: "The Google sign-in expired or was opened on a different web address. Open Skylitee at skylitee.io and click Connect again.",
+  no_refresh_token: "Google did not return a long-term access key. Remove Skylitee at myaccount.google.com/permissions, then click Connect again.",
+  google_failed: "Google sign-in failed on our side. Please click Connect again - if it repeats, contact support.",
+  google: "Google sign-in did not finish. Please click Connect again.",
+  view_only: "Your role on this store can't change connections. Ask the store owner to connect it.",
+};
+
 function ConnectionsContent() {
   const router = useRouter();
+  const connectError = CONNECT_ERRORS[useSearchParams().get("error") ?? ""] ?? null;
   const [toastMsg, setToastMsg] = useState("");
 
   const [shopName, setShopName] = useState<string | null>(null);
@@ -280,6 +291,13 @@ function ConnectionsContent() {
         <h2 className="text-lg font-semibold">Platform Connections</h2>
         <p className="text-[17px] text-[#686864] mt-0.5">Manage integrations · GSC and GA4 can be on different Google accounts</p>
       </div>
+
+      {connectError && (
+        <div className="mb-3 px-3 py-2.5 rounded-lg bg-[#fce8e8] border border-[#f5a0a0] text-[15px] text-[#a32d2d] flex gap-2">
+          <XCircle size={17} className="shrink-0 mt-0.5" />
+          <span><strong>Couldn&apos;t connect.</strong> {connectError}</span>
+        </div>
+      )}
 
       {!canEdit && (
         <div className="mb-3 px-3 py-2.5 rounded-lg bg-[#f7f7f5] border border-black/[0.08] text-[15px] text-[#686864]">

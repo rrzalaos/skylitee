@@ -6,6 +6,10 @@ const GSC_SCOPE  = "https://www.googleapis.com/auth/webmasters.readonly";
 const GA4_SCOPE  = "https://www.googleapis.com/auth/analytics.readonly";
 const GADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 
+// Google sunsets each Ads API version ~12 months after release; an old version fails every call.
+// v25 sunsets ~Aug 2027 - bump here (one place) before then. Schedule: developers.google.com/google-ads/api/docs/sunset-dates
+export const GADS_API = "https://googleads.googleapis.com/v25";
+
 export type GoogleService = "gsc" | "ga4" | "gads" | "both";
 
 export function buildGoogleAuthUrl(state: string, service: GoogleService = "both"): string {

@@ -17,8 +17,16 @@ export async function GET(req: NextRequest) {
   const back = async (path: string) =>
     embeddedShop ? backToAdmin(embeddedShop, path) : NextResponse.redirect(new URL(path, req.url));
 
+  // Google sends ?error= when the user cancels or the app is blocked (e.g. unverified Ads scope,
+  // Workspace admin policy) - pass the reason on so the page can explain it instead of failing silently.
+  const googleError = searchParams.get("error");
+  if (googleError) {
+    console.error("Google OAuth error:", googleError, searchParams.get("error_description") ?? "");
+    return back(`/dashboard/connections?error=${googleError === "access_denied" ? "google_denied" : "google"}`);
+  }
   if (!code || !state || state !== storedState) {
-    return back("/dashboard/connections?error=google");
+    console.error("Google OAuth state mismatch:", { hasCode: !!code, hasState: !!state, hasCookie: !!storedState });
+    return back("/dashboard/connections?error=google_state");
   }
 
   // State format: "{nonce}|{service}" - service is "gsc", "ga4", or "both"
@@ -38,6 +46,7 @@ export async function GET(req: NextRequest) {
   try {
     const tokens = await exchangeGoogleCode(code);
     if (!tokens.refresh_token) {
+      console.error("Google OAuth: no refresh_token returned for", service, (tokens as { error?: string }).error ?? "");
       return back("/dashboard/connections?error=no_refresh_token");
     }
 
@@ -66,7 +75,8 @@ export async function GET(req: NextRequest) {
     await markOnce(shop, "googleAt");
     res.cookies.delete("google_state");
     return res;
-  } catch {
+  } catch (e) {
+    console.error("Google OAuth callback failed:", service, e);
     return back("/dashboard/connections?error=google_failed");
   }
 }
