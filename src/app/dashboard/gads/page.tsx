@@ -148,18 +148,18 @@ function GadsContent() {
             </div>
             <div>
               <div className="text-[18px] font-semibold text-[#181816] mb-1">
-                Token in test mode - data pending
+                Google Ads data pending - awaiting Google approval
               </div>
               <div className="text-[16px] text-[#686864] space-y-2">
-                <p>Your Google Ads developer token is under review. Google does not allow querying real account data until the token is approved.</p>
-                <p className="font-medium text-[#181816]">What's happening:</p>
+                <p>Your account is connected. Skylitee&apos;s Google Ads API access is still being reviewed by Google, and Google does not allow reading live ad data until that review is approved.</p>
+                <p className="font-medium text-[#181816]">What&apos;s happening:</p>
                 <ul className="space-y-1 list-disc list-inside text-[15px]">
-                  <li>OAuth ✓ Connected</li>
+                  <li>Google account ✓ Connected</li>
                   <li>Customer ID ✓ Saved</li>
-                  <li>Data queries ✗ Blocked (test token)</li>
+                  <li>Ad data ✗ Waiting on Google approval</li>
                 </ul>
                 <p className="text-[15px] bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg px-3 py-2 text-[#1b5e20]">
-                  ✓ Google will email you at <strong>digital@yellowsky.in</strong> once approved (usually 1–3 business days). No action needed - data will auto-load after approval.
+                  ✓ Nothing for you to do. Once Google approves Skylitee, your Google Ads data will load here automatically.
                 </p>
               </div>
             </div>

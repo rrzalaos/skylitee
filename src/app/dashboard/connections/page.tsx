@@ -454,8 +454,8 @@ function ConnectionsContent() {
                 /* Test token mode - auto-detect blocked, allow manual entry */
                 <div className="space-y-2">
                   <div className="text-[15px] text-[#7a5a00] bg-[#fffbe6] border border-[#ffe58f] rounded-lg px-3 py-2.5">
-                    <div className="font-semibold mb-0.5">Developer token in test mode</div>
-                    <div>Google is reviewing your token (1–3 business days). Meanwhile, enter your Customer ID manually - find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
+                    <div className="font-semibold mb-0.5">Account list not available yet</div>
+                    <div>Skylitee&apos;s Google Ads access is awaiting Google approval, so we can&apos;t list your ad accounts yet. Enter your Customer ID manually - find it in Google Ads → top-right account picker (e.g. <span className="font-mono">401-789-2231</span>).</div>
                   </div>
                   <input
                     type="text"
