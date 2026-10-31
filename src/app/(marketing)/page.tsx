@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Check, Zap, ShoppingBag, Target, Search, TrendingUp, ArrowRight, Binoculars, Megaphone, Globe, Tag, Scale } from "lucide-react";
 import { SkyLiteeLogo } from "@/components/ui/skylitee-logo";
 
-export const metadata = { title: "Skylitee - One Dashboard. All Your Brand Data." };
+export const metadata = {
+  title: "Skylitee - One Dashboard. All Your Brand Data.",
+  description: "Skylitee is a read-only analytics and reporting dashboard for Shopify brands. It brings Shopify sales, Meta Ads, Google Search Console, Google Analytics 4 and Google Ads reports into one place.",
+};
 
 function DashboardMockup() {
   const bars = [38, 55, 42, 70, 58, 83, 67, 88, 62, 79, 85, 96];
@@ -347,6 +350,35 @@ export default function HomePage() {
                   <span className="text-[14px] font-semibold text-[#71717A]">{p.name}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── What Skylitee is (plain-English purpose + Google data use, required for Google OAuth verification) ── */}
+      <section id="about-skylitee" className="bg-white text-[#18181B] py-14 sm:py-16 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-[26px] sm:text-[30px] font-black mb-4">What is Skylitee?</h2>
+          <p className="text-[17px] text-[#3F3F46] leading-relaxed mb-6">
+            Skylitee is a read-only analytics and reporting dashboard for Shopify store owners. After you sign in, you connect your own accounts and Skylitee shows your sales, ad spend and traffic together in one place, with reports and plain-English recommendations.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-[#E4E4E7] p-5">
+              <h3 className="text-[17px] font-bold mb-2">What it connects to</h3>
+              <ul className="text-[15px] text-[#52525B] leading-relaxed list-disc pl-5">
+                <li>Shopify - orders, products and revenue</li>
+                <li>Meta Ads - campaign spend and results</li>
+                <li>Google Search Console - clicks, impressions and keywords</li>
+                <li>Google Analytics 4 - sessions, users and traffic sources</li>
+                <li>Google Ads - campaign spend, clicks and conversions</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-[#E4E4E7] p-5">
+              <h3 className="text-[17px] font-bold mb-2">How Skylitee uses your Google data</h3>
+              <p className="text-[15px] text-[#52525B] leading-relaxed">
+                When you connect Google, Skylitee only reads your reporting data and shows it to you in your dashboard. It never creates, edits or deletes anything in your Google accounts, never sells your data and never uses it for advertising. You can disconnect at any time. Read our{" "}
+                <Link href="/privacy" className="text-[#F97316] font-semibold underline">Privacy Policy</Link>.
+              </p>
             </div>
           </div>
         </div>

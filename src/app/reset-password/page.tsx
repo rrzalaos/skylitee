@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <SkyLiteeLogo size={36} />
           <div>
-            <div className="text-[18px] font-black text-white">Sky Litee</div>
+            <div className="text-[18px] font-black text-white">Skylitee</div>
             <div className="text-[12px] text-white/50">Unified Analytics Platform</div>
           </div>
         </div>

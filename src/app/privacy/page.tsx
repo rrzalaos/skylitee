@@ -4,7 +4,13 @@ export default function PrivacyPage() {
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "48px 24px", fontFamily: "sans-serif", color: "#18181b", lineHeight: 1.7 }}>
       <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Privacy Policy</h1>
-      <p style={{ color: "#71717a", marginBottom: 32 }}>Last updated: October 31, 2026 · Skylitee – Ads and Reports by Orange Sky</p>
+      <p style={{ color: "#71717a", marginBottom: 32 }}>Last updated: October 31, 2026 · Skylitee - Ads and Reports by Orange Sky</p>
+
+      <section style={{ marginBottom: 32 }}>
+        <p>
+          This Privacy Policy explains how Skylitee (&quot;Skylitee&quot;, &quot;we&quot;, &quot;us&quot;), operated by Orange Sky, collects, uses, stores, shares and deletes information when you use the Skylitee website at skylitee.io and the Skylitee app for Shopify. Skylitee is a read-only analytics and reporting dashboard: it reads data from accounts you choose to connect and shows it back to you as charts, reports and recommendations. By using Skylitee you agree to this policy.
+        </p>
+      </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>1. What we collect</h2>
@@ -18,7 +24,9 @@ export default function PrivacyPage() {
           <li>Google Ads: accessible ad account IDs, campaign spend, clicks, impressions, conversions, keywords</li>
           <li>Meta Ads: campaign spend, ROAS, impressions, creative performance</li>
         </ul>
-        <p style={{ marginTop: 8 }}>We do not collect or store customer email addresses, phone numbers, or payment details.</p>
+        <p style={{ marginTop: 8 }}>
+          For your Skylitee login we store your name, email address and a securely hashed password (or your Shopify store identity if you sign in through Shopify), plus the settings you choose in the app. We do not collect or store your customers&apos; email addresses, phone numbers, or payment details.
+        </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
@@ -80,7 +88,17 @@ export default function PrivacyPage() {
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>9. Contact</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>9. Children</h2>
+        <p>Skylitee is a business tool for store owners and is not intended for anyone under 18. We do not knowingly collect information from children.</p>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>10. Changes to this policy</h2>
+        <p>If we change this policy we will update the date at the top of this page, and for significant changes we will notify you by email or in the app before the change takes effect.</p>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>11. Contact</h2>
         <p>
           For any privacy-related questions, contact us at{" "}
           <a href="mailto:account@skylitee.io" style={{ color: "#f97316" }}>account@skylitee.io</a>.

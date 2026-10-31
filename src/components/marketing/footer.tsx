@@ -42,7 +42,7 @@ export default function Footer() {
           <div className="col-span-2 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <SkyLiteeLogo size={34} />
-              <span className="font-black text-[20px] text-white">Sky Litee</span>
+              <span className="font-black text-[20px] text-white">Skylitee</span>
             </div>
             <p className="text-[17px] text-[#71717A] leading-relaxed mb-4">
               One dashboard for Shopify, Meta Ads, Google GSC and GA4. Built for Indian D2C brands.

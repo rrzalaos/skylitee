@@ -204,7 +204,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <div className="px-3 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2.5">
         <SkyLiteeLogo size={28} />
         <div className="flex-1 min-w-0">
-          <div className="text-[17px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Sky Litee</div>
+          <div className="text-[17px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Skylitee</div>
           <div className="text-[13px] text-[#A1A1AA] tracking-wide">Analytics Platform</div>
         </div>
         <button onClick={onClose} className="md:hidden p-1 rounded-lg hover:bg-[#F5F5F4] dark:hover:bg-[#1C1C1C] shrink-0">
